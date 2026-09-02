@@ -77,7 +77,7 @@ export function OperationalPage({ view }: { view: Exclude<AppView, "runs"> }) {
   if (view === "launchpad") return <LaunchpadPage />;
   if (view === "workspaces") return <WorkspacesPage />;
   if (view === "designs") return <Suspense fallback={<div className="designs-page designs-loading" role="status"><LoaderCircle className="spin" size={22} /><div><strong>Opening Design Explorer</strong><span>Loading the local sequence renderer.</span></div></div>}><DesignsPage /></Suspense>;
-  if (view === "models") return <ModelsPage />;
+  if (view === "models") return <LmStudioModelsPage />;
   if (view === "materials") return <MaterialsPage />;
   if (view === "sources") return <SourcesPage />;
   if (view === "reviews") return <ReviewsPage />;
@@ -345,241 +345,164 @@ function WorkspacesPage() {
   );
 }
 
-function ModelsPage() {
+function LmStudioModelsPage() {
   const models = useWorkbenchStore((state) => state.models);
+  const settings = useWorkbenchStore((state) => state.settings);
+  const runtime = useWorkbenchStore((state) => state.runtime);
   const isScanningModels = useWorkbenchStore((state) => state.isScanningModels);
   const refreshModels = useWorkbenchStore((state) => state.refreshModels);
   const loadModel = useWorkbenchStore((state) => state.loadModel);
   const unloadModel = useWorkbenchStore((state) => state.unloadModel);
-  const pinModel = useWorkbenchStore((state) => state.pinModel);
   const busyModelId = useWorkbenchStore((state) => state.busyModelId);
   const isAgentRunning = useWorkbenchStore((state) => state.isAgentRunning);
+  const llms = models.filter((model) => model.modelKind !== "embedding");
   const [selectedId, setSelectedId] = useState<string>();
-  const selected = models.find((model) => model.id === selectedId) ?? models[0];
-  const [options, setOptions] = useState<ModelLoadOptions>({
-    contextLength: 32_768,
-    gpuLayers: 999,
-    cacheType: "f16",
-    kvCachePlacement: "gpu",
-    allowUnsafeMemoryPressure: false,
-  });
-  const [estimate, setEstimate] = useState<VramEstimate>();
-  const [estimating, setEstimating] = useState(false);
-  const [loadElapsedSeconds, setLoadElapsedSeconds] = useState(0);
+  const selected = models.find((model) => model.id === selectedId) ?? llms[0] ?? models[0];
+  const [contextLength, setContextLength] = useState(32_768);
+  const [evalBatchSize, setEvalBatchSize] = useState(512);
+  const [flashAttention, setFlashAttention] = useState(true);
+  const [kvCachePlacement, setKvCachePlacement] = useState<"gpu" | "cpu">("gpu");
+  const [numExperts, setNumExperts] = useState<number>();
+  const [instanceId, setInstanceId] = useState<string>();
 
   useEffect(() => {
     if (!selected) return;
-    const totalLayers = selected.blockCount ? selected.blockCount + 1 : 999;
     setSelectedId(selected.id);
-    setOptions({
-      contextLength: selected.vramEstimate?.contextLength ?? Math.min(selected.contextLength, 32_768),
-      gpuLayers: selected.vramEstimate?.gpuLayers ?? totalLayers,
-      cacheType: selected.vramEstimate?.cacheType ?? "f16",
-      kvCachePlacement: selected.vramEstimate?.kvCachePlacement ?? "gpu",
-      allowUnsafeMemoryPressure: false,
-    });
+    const loaded = selected.loadedInstances?.find((instance) => instance.id === selected.workbenchInstance?.id)
+      ?? selected.loadedInstances?.[0];
+    setContextLength(loaded?.contextLength ?? Math.min(selected.contextLength, 32_768));
+    setEvalBatchSize(loaded?.evalBatchSize ?? 512);
+    setFlashAttention(loaded?.flashAttention ?? true);
+    setKvCachePlacement(loaded?.offloadKvCacheToGpu === false ? "cpu" : "gpu");
+    setNumExperts(loaded?.numExperts);
+    setInstanceId(loaded?.id);
   }, [selected?.id]);
 
-  useEffect(() => {
-    if (!selected) return;
-    let active = true;
-    let timer: number | undefined;
-    setEstimating(true);
-    const refresh = async (initial: boolean) => {
-      try {
-        const next = await workbenchApi().models.estimate(selected.id, options);
-        if (active) setEstimate(next);
-      } finally {
-        if (!active) return;
-        if (initial) setEstimating(false);
-        timer = window.setTimeout(() => void refresh(false), 2_000);
-      }
-    };
-    timer = window.setTimeout(() => void refresh(true), 100);
-    return () => {
-      active = false;
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
-  }, [
-    selected?.id,
-    selected?.loadState,
-    selected?.measuredVramBytes,
-    options.contextLength,
-    options.gpuLayers,
-    options.cacheType,
-    options.kvCachePlacement,
-  ]);
-
-  useEffect(() => {
-    if (estimate?.memoryPressure === "unsafe" || !options.allowUnsafeMemoryPressure) return;
-    setOptions((value) => ({ ...value, allowUnsafeMemoryPressure: false }));
-  }, [estimate?.memoryPressure, options.allowUnsafeMemoryPressure]);
-
-  useEffect(() => {
-    if (!selected || busyModelId !== selected.id) {
-      setLoadElapsedSeconds(0);
-      return;
-    }
-    const startedAt = Date.now();
-    const updateElapsed = () => setLoadElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1_000)));
-    updateElapsed();
-    const timer = window.setInterval(updateElapsed, 1_000);
-    return () => window.clearInterval(timer);
-  }, [busyModelId, selected?.id]);
-
-  const resident = selected && ["active", "warm"].includes(selected.loadState);
-  const totalLayers = selected?.blockCount ? selected.blockCount + 1 : 999;
-  const contextPresets = selected
-    ? [32_768, 131_072, 524_288, 1_048_576].filter((value) => value <= selected.contextLength)
-    : [];
-  const applyContextPreset = (contextLength: number) => {
-    const longContext = contextLength >= 524_288;
-    setOptions((value) => ({
-      ...value,
-      contextLength,
-      gpuLayers: longContext ? Math.max(1, Math.ceil(totalLayers * 0.75)) : value.gpuLayers,
-      cacheType: longContext ? "q4_0" : value.cacheType,
-      kvCachePlacement: longContext ? "cpu" : value.kvCachePlacement,
-      allowUnsafeMemoryPressure: false,
-    }));
+  const loadedCount = selected?.loadedInstances?.length ?? 0;
+  const connected = Boolean(selected?.workbenchInstance && selected.loadState === "active");
+  const busy = selected?.id === busyModelId;
+  const modelOptions: Partial<ModelLoadOptions> = {
+    contextLength,
+    evalBatchSize,
+    flashAttention,
+    kvCachePlacement,
+    ...(numExperts ? { numExperts } : {}),
+    ...(loadedCount ? { instanceId } : {}),
   };
-  const unsafeMemory = estimate?.memoryPressure === "unsafe";
-  const measuredConfiguration = Boolean(
-    resident
-      && selected?.measuredVramBytes
-      && selected.vramEstimate?.contextLength === options.contextLength
-      && selected.vramEstimate?.gpuLayers === options.gpuLayers
-      && selected.vramEstimate?.cacheType === (options.cacheType ?? "f16")
-      && (selected.vramEstimate?.kvCachePlacement ?? "gpu") === (options.kvCachePlacement ?? "gpu"),
-  );
-  const loadingSelected = busyModelId === selected?.id;
+  const contextPresets = selected
+    ? [8_192, 32_768, 131_072, 262_144, 524_288, 1_048_576]
+      .filter((value) => value <= selected.contextLength)
+    : [];
+
   return (
     <div className="operational-page">
       <PageHeader
         icon={Boxes}
-        title="Local models"
-        subtitle="Read-only GGUF catalog with calculated load cost and live process VRAM after launch."
+        title="LM Studio models"
+        subtitle={`Native discovery and explicit instance control at ${settings.inference.baseUrl}. Chat uses OpenAI-compatible SSE.`}
         actions={
           <button className="secondary-button" type="button" disabled={isScanningModels} onClick={() => void refreshModels()}>
             {isScanningModels ? <LoaderCircle className="spin" size={14} /> : <RefreshCw size={14} />}
-            {isScanningModels ? "Scanning" : "Rescan"}
+            {isScanningModels ? "Synchronizing" : "Refresh LM Studio"}
           </button>
         }
       />
+      <section className="metric-strip" aria-label="LM Studio status">
+        <Metric label="Endpoint" value={runtime.available ? "Reachable" : "Unavailable"} icon={runtime.available ? CheckCircle2 : CircleAlert} />
+        <Metric label="Catalog models" value={String(runtime.modelCount ?? models.length)} icon={Boxes} />
+        <Metric label="Loaded instances" value={String(runtime.loadedModelCount ?? models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0))} icon={Gauge} />
+      </section>
       <div className="model-page-layout">
         <section className="model-catalog-panel">
-          <div className="model-catalog-heading"><span>Model</span><span>State</span><span>VRAM</span></div>
+          <div className="model-catalog-heading"><span>Model</span><span>Type</span><span>State</span></div>
           <div className="model-catalog-list">
             {models.length === 0 && isScanningModels && (
-              <EmptyState busy icon={LoaderCircle} title="Scanning GGUF metadata" detail="Reading model headers and stable fingerprints from the selected read-only library." />
+              <EmptyState busy icon={LoaderCircle} title="Synchronizing LM Studio" detail="Reading native model metadata and loaded_instances from /api/v1/models." />
             )}
             {models.length === 0 && !isScanningModels && (
-              <EmptyState icon={Boxes} title="No GGUF models found" detail="Choose the LM Studio model directory in Settings, then rescan." />
+              <EmptyState icon={Boxes} title="No LM Studio models discovered" detail={`Start LM Studio's local server at ${settings.inference.baseUrl}, then refresh.`} />
             )}
-            {models.map((model) => (
-              <button className={`catalog-model-row ${selected?.id === model.id ? "is-selected" : ""}`} type="button" key={model.id} onClick={() => setSelectedId(model.id)}>
-                <span className={`model-dot is-${model.loadState}`} />
-                <span className="catalog-model-copy"><strong>{model.name}</strong><small>{model.quantization} · {model.architecture} · {formatContext(model.contextLength)}</small></span>
-                <span className={`model-state is-${model.loadState}`}>{model.loadState}</span>
-                <span>{formatGb(model.measuredVramBytes ?? model.estimatedVramBytes)}</span>
-              </button>
-            ))}
+            {models.map((model) => {
+              const instances = model.loadedInstances?.length ?? 0;
+              const state = model.workbenchInstance
+                ? "Connected"
+                : instances
+                  ? `${instances} loaded`
+                  : "Available";
+              return (
+                <button
+                  className={`catalog-model-row ${selected?.id === model.id ? "is-selected" : ""}`}
+                  type="button"
+                  key={model.id}
+                  onClick={() => setSelectedId(model.id)}
+                >
+                  <span className={`model-dot is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`} />
+                  <span className="catalog-model-copy">
+                    <strong>{model.name}</strong>
+                    <small>{model.publisher || "Local"} · {model.quantization} · {formatContext(model.contextLength)}</small>
+                  </span>
+                  <span>{model.modelKind ?? "llm"}</span>
+                  <span className={`model-state is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`}>{state}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
         <section className="model-load-panel">
-          {!selected ? <EmptyState icon={Gauge} title="Select a model" detail="Its load controls and memory breakdown will appear here." /> : <>
+          {!selected ? <EmptyState icon={Gauge} title="Select a model" detail="LM Studio load controls will appear here." /> : <>
             <div className="model-detail-heading">
-              <div><h2>{selected.name}</h2><p title={selected.path}>{selected.path}</p></div>
-              <button className="icon-button" type="button" onClick={() => void pinModel(selected.id, !selected.pinned)} title={selected.pinned ? "Unpin model" : "Pin model"} aria-label={selected.pinned ? "Unpin model" : "Pin model"}><ShieldCheck size={15} /></button>
-            </div>
-            <div className="load-control-group">
-              <label><span>Context length</span><output>{options.contextLength.toLocaleString()} tokens</output></label>
-              <div className="context-preset-row" aria-label="Context presets">
-                {contextPresets.map((contextLength) => (
-                  <button
-                    className={options.contextLength === contextLength ? "is-selected" : ""}
-                    type="button"
-                    key={contextLength}
-                    onClick={() => applyContextPreset(contextLength)}
-                  >
-                    {contextPresetLabel(contextLength)}
-                  </button>
-                ))}
+              <div>
+                <h2>{selected.name}</h2>
+                <p title={selected.providerModelId}>{selected.providerModelId}</p>
               </div>
-              <input type="range" min={512} max={selected.contextLength} step={512} value={options.contextLength} onChange={(event) => setOptions((value) => ({ ...value, contextLength: Number(event.target.value) }))} />
-              <input className="number-field" type="number" min={512} max={selected.contextLength} step={512} value={options.contextLength} onChange={(event) => setOptions((value) => ({ ...value, contextLength: Number(event.target.value) }))} />
+              <span className={`runtime-status-line is-${runtime.available ? "cuda" : "missing"}`}><span />{runtime.available ? "LM Studio connected" : "LM Studio unavailable"}</span>
             </div>
-            <div className="load-control-group">
-              <label><span>GPU offload</span><output>{options.gpuLayers === totalLayers ? "All layers" : `${options.gpuLayers} / ${totalLayers}`}</output></label>
-              <input type="range" min={0} max={totalLayers} step={1} value={Math.min(options.gpuLayers, totalLayers)} onChange={(event) => setOptions((value) => ({ ...value, gpuLayers: Number(event.target.value) }))} />
+            <div className="data-list">
+              <div className="data-row"><strong>Architecture</strong><span>{selected.architecture}</span><strong>Format</strong><span>{selected.format ?? "unknown"}</span></div>
+              <div className="data-row"><strong>Capabilities</strong><span>{[selected.vision ? "vision" : undefined, selected.toolCapability === "agent-ready" ? "tools" : undefined, selected.reasoning ? `reasoning:${selected.reasoning.default}` : undefined].filter(Boolean).join(" · ") || "chat"}</span></div>
+              <div className="data-row"><strong>LM Studio instances</strong><span>{loadedCount || "None"}</span><strong>Workbench</strong><span>{selected.workbenchInstance ? `${selected.workbenchInstance.ownedByWorkbench ? "Owned" : "Attached"}: ${selected.workbenchInstance.id}` : "Not connected"}</span></div>
             </div>
-            <div className="load-control-line">
-              <span>KV cache precision</span>
-              <div className="segmented-control compact">
-                <button className={options.cacheType === "f16" ? "is-selected" : ""} type="button" onClick={() => setOptions((value) => ({ ...value, cacheType: "f16" }))}>F16</button>
-                <button className={options.cacheType === "q8_0" ? "is-selected" : ""} type="button" onClick={() => setOptions((value) => ({ ...value, cacheType: "q8_0" }))}>Q8_0</button>
-                <button className={options.cacheType === "q4_0" ? "is-selected" : ""} type="button" onClick={() => setOptions((value) => ({ ...value, cacheType: "q4_0" }))}>Q4_0</button>
-              </div>
-            </div>
-            <div className="load-control-line">
-              <span>KV cache location</span>
-              <div className="segmented-control compact">
-                <button className={options.kvCachePlacement !== "cpu" ? "is-selected" : ""} type="button" onClick={() => setOptions((value) => ({ ...value, kvCachePlacement: "gpu", allowUnsafeMemoryPressure: false }))}>GPU layers</button>
-                <button className={options.kvCachePlacement === "cpu" ? "is-selected" : ""} type="button" onClick={() => setOptions((value) => ({ ...value, kvCachePlacement: "cpu", allowUnsafeMemoryPressure: false }))}>System RAM</button>
-              </div>
-            </div>
-            <div className="vram-breakdown">
-              <div className="memory-total-grid">
-                <div className="vram-total"><span>{measuredConfiguration ? "GPU measured now" : "GPU calculated"}</span><strong>{formatGb(measuredConfiguration ? selected.measuredVramBytes : estimate?.totalBytes ?? selected.estimatedVramBytes)}</strong>{estimating && <LoaderCircle className="spin" size={14} />}</div>
-                <div className="vram-total"><span>System RAM calculated</span><strong>{formatGb(estimate?.ramTotalBytes)}</strong><MemoryStick size={14} /></div>
-              </div>
-              <div className="memory-breakdown-grid">
-                <div>
-                  <strong className="breakdown-heading">GPU allocation</strong>
-                  <Breakdown label="Model weights" value={estimate?.weightBytes} />
-                  <Breakdown label="KV cache" value={estimate?.kvCacheBytes} />
-                  <Breakdown label="Compute + projector" value={(estimate?.computeBytes ?? 0) + (estimate?.projectorBytes ?? 0)} />
-                  <Breakdown label="Runtime reserve" value={estimate?.runtimeBytes} />
+            {selected.modelKind === "embedding" ? (
+              <div className="model-load-error" role="status"><CircleAlert size={14} /><span>Embedding models are discoverable for inventory, but cannot be selected for Workbench chat.</span></div>
+            ) : <>
+              {loadedCount > 0 && !connected && (
+                <div className="load-control-group">
+                  <label><span>Exact loaded instance</span><output>{loadedCount} available</output></label>
+                  <select value={instanceId ?? ""} onChange={(event) => setInstanceId(event.target.value)}>
+                    {selected.loadedInstances?.map((instance) => <option key={instance.id} value={instance.id}>{instance.id} · {formatContext(instance.contextLength)}</option>)}
+                  </select>
                 </div>
-                <div>
-                  <strong className="breakdown-heading">System RAM allocation</strong>
-                  <Breakdown label="Model weights" value={estimate?.ramWeightBytes} />
-                  <Breakdown label="KV cache" value={estimate?.ramKvCacheBytes} />
-                  <Breakdown label="Compute + runtime" value={(estimate?.ramComputeBytes ?? 0) + (estimate?.ramRuntimeBytes ?? 0)} />
-                  <Breakdown label="Available now" value={estimate?.systemRamAvailableBytes} />
-                </div>
-              </div>
-              <div className={`memory-pressure is-${estimate?.memoryPressure ?? "normal"}`} role="status">
-                {estimate?.memoryPressure === "unsafe" ? <ShieldAlert size={14} /> : <ShieldCheck size={14} />}
-                <span>{estimate?.memoryDiagnostics?.join(" ") ?? "Calculating current memory headroom..."}</span>
-              </div>
-              {unsafeMemory && (
-                <label className="memory-pressure-override">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(options.allowUnsafeMemoryPressure)}
-                    onChange={(event) => setOptions((value) => ({ ...value, allowUnsafeMemoryPressure: event.target.checked }))}
-                  />
-                  <span>Allow experimental high-memory load</span>
-                </label>
               )}
-              <p>GGUF metadata drives both budgets. Live NVIDIA usage replaces the GPU estimate after launch; CPU KV preserves model weights and sampling but reduces throughput.</p>
-            </div>
-            {selected.error && <div className="model-load-error" role="status"><CircleAlert size={14} /><span>{selected.error}</span></div>}
-            {loadingSelected && (
-              <div className="model-load-progress" role="status">
-                <LoaderCircle className="spin" size={14} />
-                <span>Allocating {formatContext(options.contextLength).replace(" ctx", "")} exact context and checking llama.cpp health</span>
-                <time>{formatElapsed(loadElapsedSeconds)}</time>
+              <div className="load-control-group">
+                <label><span>Context length</span><output>{contextLength.toLocaleString()} tokens</output></label>
+                <div className="context-preset-row" aria-label="Context presets">
+                  {contextPresets.map((value) => <button className={contextLength === value ? "is-selected" : ""} type="button" key={value} onClick={() => setContextLength(value)}>{contextPresetLabel(value)}</button>)}
+                </div>
+                <input className="number-field" type="number" min={256} max={selected.contextLength} step={256} value={contextLength} onChange={(event) => setContextLength(Number(event.target.value))} />
               </div>
-            )}
-            <div className="model-load-actions">
-              {resident && <button className="secondary-button danger" type="button" disabled={isAgentRunning} onClick={() => void unloadModel(selected.id)}>Unload</button>}
-              <button className="primary-button" type="button" disabled={isAgentRunning || loadingSelected || estimating || (unsafeMemory && !options.allowUnsafeMemoryPressure)} onClick={() => void loadModel(selected.id, options)}>
-                {loadingSelected ? <LoaderCircle className="spin" size={14} /> : <Gauge size={14} />}
-                {loadingSelected ? `Loading ${formatElapsed(loadElapsedSeconds)}` : resident ? "Reload with settings" : "Load model"}
-              </button>
-            </div>
+              <div className="load-control-group">
+                <label><span>Evaluation batch size</span><output>{evalBatchSize.toLocaleString()} tokens</output></label>
+                <input className="number-field" type="number" min={1} max={65_536} step={1} value={evalBatchSize} onChange={(event) => setEvalBatchSize(Number(event.target.value))} />
+              </div>
+              <div className="load-control-line">
+                <span>Flash Attention</span>
+                <div className="segmented-control compact"><button className={flashAttention ? "is-selected" : ""} type="button" onClick={() => setFlashAttention(true)}>On</button><button className={!flashAttention ? "is-selected" : ""} type="button" onClick={() => setFlashAttention(false)}>Off</button></div>
+              </div>
+              <div className="load-control-line">
+                <span>KV cache location</span>
+                <div className="segmented-control compact"><button className={kvCachePlacement === "gpu" ? "is-selected" : ""} type="button" onClick={() => setKvCachePlacement("gpu")}>GPU</button><button className={kvCachePlacement === "cpu" ? "is-selected" : ""} type="button" onClick={() => setKvCachePlacement("cpu")}>System RAM</button></div>
+              </div>
+              <div className="load-control-group">
+                <label><span>MoE experts (optional)</span><output>{numExperts ?? "LM Studio default"}</output></label>
+                <input className="number-field" type="number" min={1} max={1_024} placeholder="Default" value={numExperts ?? ""} onChange={(event) => setNumExperts(event.target.value ? Number(event.target.value) : undefined)} />
+              </div>
+              <p>Load is always explicit. Before every chat, Workbench re-reads loaded_instances and refuses inference if this exact instance is absent. Disconnect only unloads instances created by Workbench.</p>
+              {selected.error && <div className="model-load-error" role="status"><CircleAlert size={14} /><span>{selected.error}</span></div>}
+              <div className="model-load-actions">
+                {connected && <button className="secondary-button danger" type="button" disabled={isAgentRunning || busy} onClick={() => void unloadModel(selected.id)}>{selected.workbenchInstance?.ownedByWorkbench ? "Unload owned instance" : "Disconnect"}</button>}
+                {!connected && <button className="primary-button" type="button" disabled={isAgentRunning || busy || Boolean(loadedCount && !instanceId) || contextLength < 256 || contextLength > selected.contextLength} onClick={() => void loadModel(selected.id, modelOptions)}>{busy ? <LoaderCircle className="spin" size={14} /> : <Gauge size={14} />}{loadedCount ? "Connect loaded instance" : "Load in LM Studio"}</button>}
+              </div>
+            </>}
           </>}
         </section>
       </div>
@@ -631,6 +554,8 @@ function MaterialsPage() {
   const [syncSource, setSyncSource] = useState<"uniprot" | "igem" | "rhea" | "biomodels">("uniprot");
   const [syncLimit, setSyncLimit] = useState(1000);
   const [snapshotInput, setSnapshotInput] = useState("");
+  const [activationOperator, setActivationOperator] = useState("");
+  const [activationApprovalReference, setActivationApprovalReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -730,6 +655,11 @@ function MaterialsPage() {
   const snapshots = status?.snapshots ?? [];
   const activeSummary = status?.snapshots.find((item) => item.snapshot_id === active);
   const statusCounts = activeSummary?.status_counts ?? {};
+  const activationEvidence = {
+    operator: activationOperator.trim(),
+    approval_reference: activationApprovalReference.trim(),
+  };
+  const activationEvidenceComplete = Boolean(activationEvidence.operator && activationEvidence.approval_reference);
   return (
     <div className="operational-page materials-page">
       <PageHeader icon={Database} title="Materials" subtitle="External, versioned biological materials with evidence, rights, and safety gates." actions={<button className="secondary-button" type="button" disabled={busy} onClick={() => void refresh()}><RefreshCw className={busy ? "spin" : undefined} size={14} />Refresh</button>} />
@@ -746,7 +676,24 @@ function MaterialsPage() {
         <section className="page-section materials-results-section"><div className="section-heading"><div><h2>Design-eligible materials</h2><p>{matches.length} bounded summaries · full sequences stay out of search responses</p></div></div><div className="data-list materials-result-list">{matches.length === 0 && <EmptyState icon={Database} title="No eligible materials found" detail="The seed contains software templates only. Activate a reviewed source snapshot or import a record for review." />}{matches.map((item) => <button className={`data-row materials-result-row ${selected?.resource_id === item.resource_id ? "is-selected" : ""}`} type="button" key={item.resource_id} onClick={() => setSelected(item)}><Database size={14} /><span className="data-row-copy"><strong>{item.name}</strong><span>{item.resource_id} · {item.kind} · {item.sequence_kind || "no sequence"} {item.sequence_length ? `· ${item.sequence_length.toLocaleString()} bp/aa` : ""}</span></span><span className="materials-result-source">{String(item.source.provider ?? "unknown")}</span></button>)}</div></section>
         <section className="page-section materials-detail-section"><div className="section-heading"><div><h2>Record detail</h2><p>Source and rights stay attached to every material.</p></div></div>{selected ? <div className="materials-detail"><span className="eyebrow">{selected.review_status}</span><h3>{selected.name}</h3><code>{selected.resource_id}</code><p>{selected.description_en}</p><p className="materials-description-zh">{selected.description_zh}</p><dl><dt>Kind</dt><dd>{selected.kind}</dd><dt>Organism</dt><dd>{String(selected.organism.name ?? "—")}</dd><dt>Sequence</dt><dd>{selected.sequence_kind || "—"} · {selected.sequence_length.toLocaleString()} · {shortHash(selected.sequence_sha256)}</dd><dt>Source</dt><dd>{String(selected.source.provider ?? "—")} · {String(selected.source.release ?? selected.source.revision ?? "—")}</dd><dt>License</dt><dd>{String(selected.license.id ?? "—")} · {String(selected.license.redistribution_status ?? "—")}</dd><dt>Safety</dt><dd>{selected.safety_status}{selected.safety_flags.length ? ` · ${selected.safety_flags.join(", ")}` : ""}</dd></dl><a className="inline-link" href={String(selected.source.url ?? "#")} target="_blank" rel="noreferrer">Open source record <ExternalLink size={12} /></a></div> : <EmptyState icon={FileSearch} title="Select a material" detail="Choose a result to inspect bilingual descriptions, sequence hash, rights, source, and safety metadata." />}</section>
       </div>
-      <section className="page-section materials-admin-section"><div className="section-heading"><div><h2>Snapshot administration</h2><p>Sync creates an inactive staging snapshot; activation and rollback are explicit human actions.</p></div></div><div className="materials-admin-controls"><select value={syncSource} onChange={(event) => setSyncSource(event.target.value as typeof syncSource)} aria-label="Source to sync"><option value="uniprot">UniProtKB/Swiss-Prot</option><option value="igem">iGEM Registry</option><option value="rhea">Rhea</option><option value="biomodels">BioModels</option></select><input className="number-field" type="number" min={1} max={2_000_000} value={syncLimit} onChange={(event) => setSyncLimit(Number(event.target.value))} aria-label="Maximum records" /><button className="secondary-button" type="button" disabled={busy} onClick={() => void runAdminAction(() => workbenchApi().materials.sync(syncSource, syncLimit), `Created an inactive ${syncSource} staging snapshot. Review its diff before activation.`)}><RefreshCw size={14} />Sync to staging</button><button className="secondary-button" type="button" disabled={busy} onClick={() => void workbenchApi().materials.importFile().then((result) => { if (result) { setNotice("Imported a review-required staging snapshot."); void refresh(); } })}><FolderOpen size={14} />Import local file</button></div><div className="materials-diff-controls"><span className="eyebrow">Diff preview</span><select value={diffLeft} onChange={(event) => setDiffLeft(event.target.value)} aria-label="Left snapshot"><option value="">Left snapshot</option>{snapshots.map((snapshot) => <option key={`left-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><span aria-hidden="true">→</span><select value={diffRight} onChange={(event) => setDiffRight(event.target.value)} aria-label="Right snapshot"><option value="">Right snapshot</option>{snapshots.map((snapshot) => <option key={`right-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><button className="secondary-button compact-command" type="button" disabled={busy || !diffLeft || !diffRight} onClick={() => void runDiff()}><FileSearch size={13} />Compare</button>{diff && <span className="materials-diff-summary">+{String(diff.added_count ?? 0)} · −{String(diff.removed_count ?? 0)} · Δ{String(diff.changed_count ?? 0)}</span>}</div><div className="materials-snapshot-list">{snapshots.map((snapshot) => <div className={`data-row ${snapshot.active ? "is-selected" : ""}`} key={snapshot.snapshot_id}><Database size={14} /><span className="data-row-copy"><strong>{snapshot.snapshot_id}</strong><span>{snapshot.record_count.toLocaleString()} records · {Object.entries(snapshot.status_counts).map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`).join(" · ")}</span></span>{snapshot.active ? <span className="module-status is-verified">Active</span> : <button className="secondary-button compact-command" type="button" disabled={busy} onClick={() => void runAdminAction(() => workbenchApi().materials.activate(snapshot.snapshot_id), `Activated ${snapshot.snapshot_id}.`)}>Activate</button>}</div>)}</div><div className="materials-rollback-row"><input value={snapshotInput} onChange={(event) => setSnapshotInput(event.target.value)} placeholder="snapshot id for rollback" aria-label="Snapshot id for rollback" /><button className="secondary-button" type="button" disabled={busy || !snapshotInput.trim()} onClick={() => void runAdminAction(() => workbenchApi().materials.rollback(snapshotInput.trim()), `Rolled back to ${snapshotInput.trim()}.`)}><RotateCcw size={14} />Rollback</button></div></section>
+      <section className="page-section materials-admin-section">
+        <div className="section-heading"><div><h2>Snapshot administration</h2><p>Sync creates an inactive staging snapshot; activation and rollback require operator-supplied approval evidence.</p></div></div>
+        <div className="materials-admin-controls">
+          <select value={syncSource} onChange={(event) => setSyncSource(event.target.value as typeof syncSource)} aria-label="Source to sync"><option value="uniprot">UniProtKB/Swiss-Prot</option><option value="igem">iGEM Registry</option><option value="rhea">Rhea</option><option value="biomodels">BioModels</option></select>
+          <input className="number-field" type="number" min={1} max={2_000_000} value={syncLimit} onChange={(event) => setSyncLimit(Number(event.target.value))} aria-label="Maximum records" />
+          <button className="secondary-button" type="button" disabled={busy} onClick={() => void runAdminAction(() => workbenchApi().materials.sync(syncSource, syncLimit), `Created an inactive ${syncSource} staging snapshot. Review its diff before activation.`)}><RefreshCw size={14} />Sync to staging</button>
+          <button className="secondary-button" type="button" disabled={busy} onClick={() => void workbenchApi().materials.importFile().then((result) => { if (result) { setNotice("Imported a review-required staging snapshot."); void refresh(); } })}><FolderOpen size={14} />Import local file</button>
+        </div>
+        <div className="materials-diff-controls"><span className="eyebrow">Diff preview</span><select value={diffLeft} onChange={(event) => setDiffLeft(event.target.value)} aria-label="Left snapshot"><option value="">Left snapshot</option>{snapshots.map((snapshot) => <option key={`left-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><span aria-hidden="true">→</span><select value={diffRight} onChange={(event) => setDiffRight(event.target.value)} aria-label="Right snapshot"><option value="">Right snapshot</option>{snapshots.map((snapshot) => <option key={`right-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><button className="secondary-button compact-command" type="button" disabled={busy || !diffLeft || !diffRight} onClick={() => void runDiff()}><FileSearch size={13} />Compare</button>{diff && <span className="materials-diff-summary">+{String(diff.added_count ?? 0)} · −{String(diff.removed_count ?? 0)} · Δ{String(diff.changed_count ?? 0)}</span>}</div>
+        <div className="materials-activation-evidence">
+          <span className="eyebrow">Activation evidence</span>
+          <input value={activationOperator} maxLength={128} onChange={(event) => setActivationOperator(event.target.value)} placeholder="operator label" aria-label="Activation operator label" />
+          <input value={activationApprovalReference} maxLength={512} onChange={(event) => setActivationApprovalReference(event.target.value)} placeholder="approval or change-record reference" aria-label="Activation approval reference" />
+          <small>The operator label is self-declared and is not authenticated by Proto Workbench. Both fields are written to the local active pointer.</small>
+        </div>
+        <div className="materials-snapshot-list">{snapshots.map((snapshot) => <div className={`data-row ${snapshot.active ? "is-selected" : ""}`} key={snapshot.snapshot_id}><Database size={14} /><span className="data-row-copy"><strong>{snapshot.snapshot_id}</strong><span>{snapshot.record_count.toLocaleString()} records · {Object.entries(snapshot.status_counts).map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`).join(" · ")}</span></span>{snapshot.active ? <span className="module-status is-verified">Active</span> : <button className="secondary-button compact-command" type="button" disabled={busy || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.activate(snapshot.snapshot_id, activationEvidence), `Activated ${snapshot.snapshot_id} with the supplied approval reference; operator identity remains self-declared.`)}>Activate</button>}</div>)}</div>
+        <div className="materials-rollback-row"><input value={snapshotInput} maxLength={128} onChange={(event) => setSnapshotInput(event.target.value)} placeholder="snapshot id for rollback" aria-label="Snapshot id for rollback" /><button className="secondary-button" type="button" disabled={busy || !snapshotInput.trim() || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.rollback(snapshotInput.trim(), activationEvidence), `Rolled back to ${snapshotInput.trim()} with the supplied approval reference; operator identity remains self-declared.`)}><RotateCcw size={14} />Rollback</button></div>
+      </section>
       <section className="page-section materials-review-section"><div className="section-heading"><div><h2>Description review overlay</h2><p>Record a bilingual description decision without mutating source facts, safety, rights, or eligibility.</p></div></div><div className="materials-review-controls"><input value={reviewResourceId} onChange={(event) => setReviewResourceId(event.target.value)} placeholder="resource id (namespace:record)" aria-label="Resource id for review" /><input value={reviewer} onChange={(event) => setReviewer(event.target.value)} placeholder="reviewer" aria-label="Reviewer" /><textarea value={reviewDescriptionEn} onChange={(event) => setReviewDescriptionEn(event.target.value)} placeholder="English description draft" aria-label="English description draft" /><textarea value={reviewDescriptionZh} onChange={(event) => setReviewDescriptionZh(event.target.value)} placeholder="中文描述草稿" aria-label="中文描述草稿" /><div className="materials-review-buttons"><button className="secondary-button" type="button" disabled={busy} onClick={() => void runReview("hold")}>Hold</button><button className="secondary-button" type="button" disabled={busy} onClick={() => void runReview("reject")}>Reject</button><button className="primary-button" type="button" disabled={busy} onClick={() => void runReview("accept")}><Check size={14} />Accept text</button></div></div>{(status?.overlays?.length ?? 0) > 0 && <div className="materials-overlay-history"><span className="eyebrow">Audit history</span>{status?.overlays?.map((overlay) => <div className="materials-overlay-row" key={String(overlay.overlay_id)}><strong>{String(overlay.decision ?? "unknown")}</strong><span>{String(overlay.resource_id ?? "")} · {String(overlay.reviewer ?? "human")} · {String(overlay.created_at ?? "")}</span></div>)}</div>}</section>
       {facets && <p className="materials-facet-note">Eligible facets · kinds: {Object.entries(facets.kinds).map(([key, value]) => `${key} ${value}`).join(" · ") || "none"} · sources: {Object.entries(facets.sources).map(([key, value]) => `${key} ${value}`).join(" · ") || "none"}</p>}
     </div>
@@ -853,16 +800,12 @@ function SettingsPage() {
   const integrity = useWorkbenchStore((state) => state.moduleIntegrity);
   const moduleAudits = useWorkbenchStore((state) => state.moduleAudits);
   const chooseWorkspace = useWorkbenchStore((state) => state.chooseWorkspace);
-  const chooseModelRoot = useWorkbenchStore((state) => state.chooseModelRoot);
-  const chooseRuntime = useWorkbenchStore((state) => state.chooseRuntime);
   const updateSettings = useWorkbenchStore((state) => state.updateSettings);
-  const [budgetGiB, setBudgetGiB] = useState(settings.residencyPolicy.budgetBytes / GIB);
   const [ttl, setTtl] = useState(settings.residencyPolicy.warmTtlMinutes);
   const [mode, setMode] = useState(settings.residencyPolicy.mode);
   const [moduleProfile, setModuleProfile] = useState<ModuleProfile>(settings.modules.profile);
   const [enabledOptional, setEnabledOptional] = useState<OptionalModuleId[]>(settings.modules.enabledOptional);
   useEffect(() => {
-    setBudgetGiB(settings.residencyPolicy.budgetBytes / GIB);
     setTtl(settings.residencyPolicy.warmTtlMinutes);
     setMode(settings.residencyPolicy.mode);
     setModuleProfile(settings.modules.profile);
@@ -892,17 +835,16 @@ function SettingsPage() {
     residencyPolicy: {
       ...settings.residencyPolicy,
       mode,
-      budgetBytes: Math.round(budgetGiB * GIB),
       warmTtlMinutes: ttl,
     },
     modules: { profile: moduleProfile, enabledOptional },
   });
   return (
     <div className="operational-page settings-page">
-      <PageHeader icon={Settings} title="Settings" subtitle="Local paths, runtime policy, module load profile, and integrity audit." actions={<button className="primary-button" type="button" onClick={() => void save()}><Save size={14} />Save settings</button>} />
-      <section className="settings-section"><div className="settings-section-title"><HardDrive size={17} /><div><h2>Storage</h2><p>Model weights stay read-only; generated artifacts remain inside the workspace.</p></div></div><SettingPath label="Workspace" value={settings.workspacePath} onBrowse={() => void chooseWorkspace()} /><SettingPath label="LM Studio model library" value={settings.modelRoot} onBrowse={() => void chooseModelRoot()} /></section>
-      <section className="settings-section"><div className="settings-section-title"><Cpu size={17} /><div><h2>Inference runtime</h2><p>{runtime.detail}</p></div></div><SettingPath label="llama-server" value={runtime.path ?? settings.runtimePath ?? "Packaged automatic selection"} onBrowse={() => void chooseRuntime()} /><div className={`runtime-status-line is-${runtime.backend ?? "missing"}`}><span />{runtime.available ? `${runtime.backend?.toUpperCase()} available` : "Runtime unavailable"}</div></section>
-      <section className="settings-section"><div className="settings-section-title"><MemoryStick size={17} /><div><h2>Residency</h2><p>Controls how multiple loaded models share the local GPU budget. A selected model may load by itself above this pool target.</p></div></div><div className="settings-field"><label>Policy</label><div className="segmented-control"><button className={mode === "quick-switch" ? "is-selected" : ""} type="button" onClick={() => setMode("quick-switch")}>Quick switch</button><button className={mode === "auto-evict" ? "is-selected" : ""} type="button" onClick={() => setMode("auto-evict")}>Auto-evict pool</button></div></div><div className="settings-field"><label htmlFor="vram-budget">VRAM pool target</label><input id="vram-budget" type="range" min={2} max={48} step={0.5} value={budgetGiB} onChange={(event) => setBudgetGiB(Number(event.target.value))} /><output>{budgetGiB.toFixed(1)} GB</output></div><div className="settings-field"><label htmlFor="warm-ttl">Warm model TTL</label><input id="warm-ttl" className="number-field" type="number" min={1} max={240} value={ttl} onChange={(event) => setTtl(Number(event.target.value))} /><output>minutes</output></div></section>
+      <PageHeader icon={Settings} title="Settings" subtitle="Fixed local inference, workspace policy, module load profile, and integrity audit." actions={<button className="primary-button" type="button" onClick={() => void save()}><Save size={14} />Save settings</button>} />
+      <section className="settings-section"><div className="settings-section-title"><HardDrive size={17} /><div><h2>Storage</h2><p>LM Studio owns model weights; generated artifacts remain inside the selected workspace.</p></div></div><SettingPath label="Workspace" value={settings.workspacePath} onBrowse={() => void chooseWorkspace()} /></section>
+      <section className="settings-section"><div className="settings-section-title"><Cpu size={17} /><div><h2>LM Studio inference</h2><p>{runtime.detail}</p></div></div><div className="settings-field"><label>Fixed endpoint</label><code>{settings.inference.baseUrl}</code><output>Native v1 + OpenAI SSE</output></div><div className="settings-field"><label>Optional bearer token</label><code>{settings.inference.tokenEnvNames.join(" → ")}</code><output>Environment only; never persisted</output></div><div className={`runtime-status-line is-${runtime.available ? "cuda" : "missing"}`}><span />{runtime.available ? `${runtime.modelCount ?? 0} models · ${runtime.loadedModelCount ?? 0} loaded instances` : "LM Studio unavailable"}</div></section>
+      <section className="settings-section"><div className="settings-section-title"><MemoryStick size={17} /><div><h2>Workbench connections</h2><p>Controls Workbench's explicit instance bindings; LM Studio remains authoritative for allocation and engine policy.</p></div></div><div className="settings-field"><label>Policy</label><div className="segmented-control"><button className={mode === "quick-switch" ? "is-selected" : ""} type="button" onClick={() => setMode("quick-switch")}>One connection</button><button className={mode === "auto-evict" ? "is-selected" : ""} type="button" onClick={() => setMode("auto-evict")}>Managed warm pool</button></div></div><div className="settings-field"><label htmlFor="warm-ttl">Warm connection TTL</label><input id="warm-ttl" className="number-field" type="number" min={1} max={240} value={ttl} onChange={(event) => setTtl(Number(event.target.value))} /><output>minutes; only owned instances unload</output></div></section>
       <section className="settings-section module-settings-section">
         <div className="settings-section-title">
           <Fingerprint size={17} />
@@ -990,11 +932,11 @@ function HelpPage() {
       <PageHeader icon={HelpCircle} title="Help & diagnostics" subtitle="Operational guidance for the local, approval-gated Proto workflow." />
       <section className="help-route-grid">
         <button type="button" onClick={() => navigate("workspaces")}><FolderOpen size={18} /><span><strong>Choose a workspace</strong><small>Inspect source and generated evidence.</small></span></button>
-        <button type="button" onClick={() => navigate("models")}><Boxes size={18} /><span><strong>Load a local model</strong><small>Calculate and measure VRAM before work.</small></span></button>
+        <button type="button" onClick={() => navigate("models")}><Boxes size={18} /><span><strong>Connect an LM Studio model</strong><small>Review native metadata, then load or attach explicitly.</small></span></button>
         <button type="button" onClick={() => navigate("runs")}><SlidersHorizontal size={18} /><span><strong>Run the agent</strong><small>Use Plan or Act with explicit approvals.</small></span></button>
         <button type="button" onClick={() => navigate("reviews")}><CheckCircle2 size={18} /><span><strong>Review evidence</strong><small>Complete the human gate and decision log.</small></span></button>
       </section>
-      <section className="page-section diagnostics-section"><div className="section-heading"><div><h2>Runtime diagnostics</h2><p>Independent from LM Studio except for read-only GGUF files.</p></div></div><div className="diagnostic-row"><Cpu size={15} /><span>Backend</span><strong>{runtime.backend?.toUpperCase() ?? "Unavailable"}</strong></div><div className="diagnostic-row"><Gauge size={15} /><span>Status</span><strong>{runtime.detail}</strong></div><div className="diagnostic-row"><ShieldCheck size={15} /><span>Security</span><strong>Sandboxed renderer · loopback inference · per-call approvals</strong></div></section>
+      <section className="page-section diagnostics-section"><div className="section-heading"><div><h2>Runtime diagnostics</h2><p>LM Studio is the single model catalog, residency manager, and inference provider.</p></div></div><div className="diagnostic-row"><Cpu size={15} /><span>Provider</span><strong>{runtime.provider === "lmstudio" ? "LM Studio" : "Unavailable"}</strong></div><div className="diagnostic-row"><Gauge size={15} /><span>Status</span><strong>{runtime.detail}</strong></div><div className="diagnostic-row"><ShieldCheck size={15} /><span>Security</span><strong>Sandboxed renderer · fixed loopback origin · environment-only token · explicit load</strong></div></section>
       <section className="page-section"><div className="section-heading"><div><h2>Safety boundary</h2><p>Proto Workbench validates software artifacts and evidence. It does not certify wet-lab readiness, orderability, biosafety, regulatory compliance, or experimental performance.</p></div></div></section>
     </div>
   );

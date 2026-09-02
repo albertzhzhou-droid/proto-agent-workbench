@@ -17,7 +17,14 @@ class CliSecurityCommandTests(unittest.TestCase):
     def setUp(self) -> None:
         self._temporary = tempfile.TemporaryDirectory(prefix="proto-cli-security-")
         self.workspace = Path(self._temporary.name).resolve()
-        for name in ("designs", "parts", "workflows", "literature"):
+        for name in (
+            "designs",
+            "parts",
+            "workflows",
+            "literature",
+            "connectors",
+            ".codex",
+        ):
             shutil.copytree(ROOT / name, self.workspace / name)
         shutil.copytree(
             ROOT / "tests" / "security_corpus",

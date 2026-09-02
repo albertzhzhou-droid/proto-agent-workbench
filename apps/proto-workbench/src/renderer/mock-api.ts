@@ -1426,10 +1426,12 @@ const mockWorkbench: WorkbenchApi = {
     async getRuntimeStatus() {
       return {
         available: true,
-        path: "runtime/llama.cpp/cuda/llama-server.exe",
-        backend: "cuda" as const,
+        provider: "lmstudio" as const,
+        endpoint: "http://127.0.0.1:1234",
+        modelCount: models.length,
+        loadedModelCount: models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0),
         degraded: false,
-        detail: "Independent upstream llama.cpp runtime is available.",
+        detail: "LM Studio native API is available at the fixed loopback endpoint.",
       };
     },
     async getStartupRecovery() {
@@ -1525,9 +1527,21 @@ const mockWorkbench: WorkbenchApi = {
     },
     async load(modelId) {
       models = models.map((model) => {
-        if (model.id === modelId) return { ...model, loadState: "active", lastUsedAt: new Date().toISOString() };
-        if (settings.residencyPolicy.mode === "quick-switch") return { ...model, loadState: "unloaded" };
-        return model.loadState === "active" ? { ...model, loadState: "warm" } : model;
+        if (model.id === modelId) {
+          const instanceId = model.loadedInstances?.[0]?.id ?? `${model.id}-mock-workbench`;
+          const loadedInstances = model.loadedInstances?.length
+            ? model.loadedInstances
+            : [{ id: instanceId, contextLength: Math.min(model.contextLength, 32_768), evalBatchSize: 512, flashAttention: true, offloadKvCacheToGpu: true }];
+          return {
+            ...model,
+            loadedInstances,
+            workbenchInstance: { id: instanceId, ownedByWorkbench: model.loadedInstances?.length ? false : true },
+            loadState: "active",
+            lastUsedAt: new Date().toISOString(),
+          };
+        }
+        if (settings.residencyPolicy.mode === "quick-switch") return { ...model, workbenchInstance: undefined, loadState: model.loadedInstances?.length ? "warm" : "unloaded" };
+        return model.loadState === "active" ? { ...model, workbenchInstance: undefined, loadState: model.loadedInstances?.length ? "warm" : "unloaded" } : model;
       });
       notifyModels();
       return {
@@ -1539,7 +1553,14 @@ const mockWorkbench: WorkbenchApi = {
       };
     },
     async unload(modelId) {
-      models = models.map((model) => (model.id === modelId ? { ...model, loadState: "unloaded" } : model));
+      models = models.map((model) => (model.id === modelId
+        ? {
+            ...model,
+            loadedInstances: model.workbenchInstance?.ownedByWorkbench ? [] : model.loadedInstances,
+            workbenchInstance: undefined,
+            loadState: model.workbenchInstance?.ownedByWorkbench || !model.loadedInstances?.length ? "unloaded" : "warm",
+          }
+        : model));
       notifyModels();
     },
     async setPolicy(policy: ResidencyPolicy) {
@@ -1717,6 +1738,7 @@ const mockWorkbench: WorkbenchApi = {
         verifiedAt,
         decoder: "browser-preview" as const,
         externalResourcesBlocked: false,
+        renderedMapLayers: input.metadata.renderedMapLayers,
         reviewStatus: "human_review_required" as const,
       };
       downloadPreviewPayload(bytes, input.filename, input.format === "svg" ? "image/svg+xml" : "image/png");

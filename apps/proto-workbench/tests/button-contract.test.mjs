@@ -117,3 +117,14 @@ test("full Review keeps evidence and packet navigation wired", async () => {
   assert.match(pages, /review\.claims\.map\(\(claim\) =>[\s\S]*?<button className="inline-link"[\s\S]*?disabled=\{!claim\.evidence\[0\]\}[\s\S]*?openFile\(claim\.evidence\[0\]\)/);
   assert.match(pages, /review\.packetPath && <button className="section-link"[\s\S]*?openFile\(review\.packetPath as string\)\}>Open review packet/);
 });
+
+test("materials activation and rollback require operator-supplied evidence in the UI", async () => {
+  const pages = await readFile(resolve("src", "renderer", "OperationalPages.tsx"), "utf8");
+
+  assert.match(pages, /activationOperator[\s\S]*?useState\(""\)/);
+  assert.match(pages, /aria-label="Activation operator label"/);
+  assert.match(pages, /aria-label="Activation approval reference"/);
+  assert.match(pages, /operator label is self-declared and is not authenticated by Proto Workbench/);
+  assert.match(pages, /disabled=\{busy \|\| !activationEvidenceComplete\}[\s\S]*?materials\.activate\(snapshot\.snapshot_id, activationEvidence\)/);
+  assert.match(pages, /disabled=\{busy \|\| !snapshotInput\.trim\(\) \|\| !activationEvidenceComplete\}[\s\S]*?materials\.rollback\(snapshotInput\.trim\(\), activationEvidence\)/);
+});

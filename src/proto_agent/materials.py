@@ -29,12 +29,32 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 from uuid import uuid4
 
+from .protein_integrity import (
+    CATALOG_ATTESTATION_ISSUER,
+    CATALOG_ATTESTATION_KIND,
+    CATALOG_PROMOTION_INDEX_SCHEMA_VERSION,
+    CATALOG_SELECTION_ATTESTATION_SCHEMA_VERSION,
+    CATALOG_SIGNATURE_STATUS,
+    PROTEIN_SELECTION_SCHEMA_VERSION,
+    canonical_json_sha256,
+    catalog_selection_binding_sha256,
+    protein_selection_digest,
+    protein_selection_record,
+    protein_selection_record_sha256,
+    promotion_attestation_structure_error,
+)
 from .security import MAX_JSON_FILE_BYTES, SecurityBoundaryError, WorkspacePaths, read_json_bounded
 
 
 MATERIALS_SCHEMA_VERSION = "proto-agent.materials.v1"
 PARTS_SCHEMA_VERSION = "proto-agent.parts-library.v1"
-PROTEIN_SELECTION_SCHEMA_VERSION = "proto-agent.protein-selection.v1"
+PROMOTION_AUDIT_SCHEMA_VERSION = "proto-agent.materials-promotion-audit.v1"
+PROMOTION_POLICY_VERSION = "proto-agent.materials-promotion-policy.2026-09"
+PROMOTION_ROUND_IDS = (
+    "provenance_rights",
+    "sequence_ontology_safety",
+    "duplicate_roundtrip_visibility",
+)
 DEFAULT_MATERIALS_DIRECTORY_NAME = "Proto CLI Materials"
 DEFAULT_SNAPSHOT_ID = "seed-2026.08"
 MAX_RESULT_LIMIT = 200
@@ -42,6 +62,8 @@ MAX_MCP_RESULT_LIMIT = 50
 MAX_QUERY_CHARS = 512
 MAX_RESOURCE_ID_CHARS = 256
 MAX_DESCRIPTION_CHARS = 4000
+MAX_ACTIVATION_OPERATOR_CHARS = 128
+MAX_APPROVAL_REFERENCE_CHARS = 512
 MAX_SEQUENCE_CHARS = 10_000_000
 MAX_NETWORK_PAGE_BYTES = 24 * 1024 * 1024
 DNA_ALPHABET = set("ACGTUNRYKMSWBDHV")
@@ -57,6 +79,41 @@ HARD_SAFETY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}")
+
+# Design eligibility is deliberately narrower than catalog ingestion.  Unknown
+# or conditional rights may still be indexed as REFERENCE_ONLY, but only a
+# provider/license pair reviewed here can pass the controlled promotion gate.
+# URLs are compared after stripping a trailing slash so the policy tolerates
+# the canonical Creative Commons deed and legal-code spellings used by the
+# upstream APIs without accepting an arbitrary lookalike URL.
+KNOWN_PROVIDER_LICENSES: dict[str, dict[str, frozenset[str]]] = {
+    "iGEM Registry": {
+        "CC-BY-4.0": frozenset({
+            "https://creativecommons.org/licenses/by/4.0",
+            "https://creativecommons.org/licenses/by/4.0/legalcode",
+        }),
+        "CC0-1.0": frozenset({
+            "https://creativecommons.org/publicdomain/zero/1.0",
+            "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        }),
+    },
+    "UniProtKB/Swiss-Prot": {
+        "CC-BY-4.0": frozenset({"https://creativecommons.org/licenses/by/4.0"}),
+    },
+    "Rhea": {
+        "CC-BY-4.0": frozenset({"https://creativecommons.org/licenses/by/4.0"}),
+    },
+    "BioModels": {
+        "CC0-1.0": frozenset({"https://creativecommons.org/publicdomain/zero/1.0"}),
+    },
+    "Proto Agent": {
+        "CC0-1.0": frozenset({"https://creativecommons.org/publicdomain/zero/1.0"}),
+    },
+    # Test fixtures are a declared source rather than an arbitrary provider.
+    "fixture": {
+        "CC0-1.0": frozenset({"https://creativecommons.org/publicdomain/zero/1.0"}),
+    },
+}
 
 
 class MaterialsError(ValueError):
@@ -87,6 +144,109 @@ def _json(value: Any) -> str:
 
 def _sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+def canonical_license_id(value: Any) -> str:
+    """Return the canonical SPDX spelling used by promotion policy."""
+
+    text = str(value or "").strip()
+    return {
+        "cc-by-4.0": "CC-BY-4.0",
+        "cc0-1.0": "CC0-1.0",
+    }.get(text.casefold(), text)
+
+
+def provider_license_policy_errors(source: Any, license_info: Any) -> list[str]:
+    """Return fail-closed promotion-policy errors for one source/license pair."""
+
+    if not isinstance(source, dict) or not isinstance(license_info, dict):
+        return ["SOURCE_OR_LICENSE_MISSING"]
+    provider = str(source.get("provider") or "").strip()
+    license_id = canonical_license_id(license_info.get("id"))
+    allowed = KNOWN_PROVIDER_LICENSES.get(provider, {}).get(license_id)
+    errors: list[str] = []
+    if allowed is None:
+        errors.append("PROVIDER_LICENSE_POLICY_UNKNOWN")
+    license_url = str(license_info.get("url") or "").strip().rstrip("/")
+    try:
+        parsed = urllib.parse.urlsplit(license_url)
+        public_https = parsed.scheme == "https" and bool(parsed.hostname) and not parsed.username and not parsed.password
+    except ValueError:
+        public_https = False
+    if not public_https:
+        errors.append("LICENSE_URL_INVALID")
+    elif allowed is not None and license_url not in allowed:
+        errors.append("LICENSE_URL_POLICY_MISMATCH")
+    if not str(license_info.get("attribution") or "").strip():
+        errors.append("LICENSE_ATTRIBUTION_MISSING")
+    if not str(license_info.get("rights_notes") or "").strip():
+        errors.append("LICENSE_RIGHTS_NOTES_MISSING")
+    if str(license_info.get("redistribution_status") or "").strip().upper() != "REDISTRIBUTABLE":
+        errors.append("LICENSE_NOT_REDISTRIBUTABLE")
+    return errors
+
+
+def promotion_record_digest(raw: dict[str, Any]) -> str:
+    """Bind a promotion decision to the policy-relevant candidate fields."""
+
+    if not isinstance(raw, dict):
+        raise MaterialsError("INVALID_RECORD", "Promotion candidates must be objects.")
+    fields = (
+        "resource_id",
+        "kind",
+        "name",
+        "aliases",
+        "tags",
+        "description_en",
+        "description_zh",
+        "organism",
+        "chassis",
+        "role_terms",
+        "part_type",
+        "sequence_kind",
+        "sequence",
+        "sequence_sha256",
+        "source",
+        "license",
+        "evidence_refs",
+        "review_status",
+        "safety_status",
+        "design_eligibility",
+        "metadata",
+    )
+    payload = {key: raw.get(key) for key in fields}
+    return _sha256_bytes(_json(payload).encode("utf-8"))
+
+
+def promotion_attestation_valid(raw: dict[str, Any], attestation: Any) -> bool:
+    """Validate a locked three-round promotion decision for ``raw``.
+
+    The attestation is supplied by a trusted importer/exporter after its audit
+    report hash has been checked against ``materials/bundles/source-lock.json``.
+    Ordinary JSON import never supplies this argument and therefore cannot
+    promote itself merely by setting DESIGN_ELIGIBLE fields.
+    """
+
+    if not isinstance(attestation, dict):
+        return False
+    if attestation.get("policy_version") != PROMOTION_POLICY_VERSION:
+        return False
+    if str(attestation.get("resource_id") or "") != str(raw.get("resource_id", raw.get("id")) or ""):
+        return False
+    if str(attestation.get("record_sha256") or "").lower() != promotion_record_digest(raw):
+        return False
+    if str(attestation.get("decision") or "").upper() != "PASS":
+        return False
+    rounds = attestation.get("rounds")
+    if not isinstance(rounds, list) or [item.get("round_id") for item in rounds if isinstance(item, dict)] != list(PROMOTION_ROUND_IDS):
+        return False
+    for item in rounds:
+        if not isinstance(item, dict) or str(item.get("status") or "").upper() != "PASS":
+            return False
+        reasons = item.get("reason_codes")
+        if not isinstance(reasons, list) or not reasons or any(not isinstance(reason, str) or not reason for reason in reasons):
+            return False
+    return True
 
 
 def _sha256_file(path: Path) -> str:
@@ -152,6 +312,94 @@ def _safe_read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def load_locked_promotion_attestations(
+    workspace: Path,
+    source_path: Path,
+    audit_path: Path,
+    source_lock_path: Path,
+) -> dict[str, dict[str, Any]]:
+    """Load attestations only after source, audit, and lock hashes agree."""
+
+    workspace = workspace.resolve()
+    resolved = [source_path.resolve(), audit_path.resolve(), source_lock_path.resolve()]
+    for path in resolved:
+        if path.is_symlink() or not path.is_file():
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", f"Promotion input is missing or unsafe: {path}")
+        try:
+            path.relative_to(workspace)
+        except ValueError as exc:
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion inputs must be repository-local locked files.") from exc
+    source_path, audit_path, source_lock_path = resolved
+    lock = _safe_read_json(source_lock_path)
+    if lock.get("schema_version") != "proto-agent.public-materials-source-lock.v1":
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Unsupported materials source lock.")
+    source_relative = source_path.relative_to(workspace).as_posix()
+    source_entry = next(
+        (item for item in lock.get("eligible_inputs", []) if isinstance(item, dict) and item.get("path") == source_relative),
+        None,
+    )
+    if not source_entry or str(source_entry.get("sha256") or "").lower() != _sha256_file(source_path):
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Reviewed source is absent from or mismatched with the source lock.")
+    audit_relative = audit_path.relative_to(workspace).as_posix()
+    locked_audit = lock.get("promotion_audit")
+    if (
+        not isinstance(locked_audit, dict)
+        or locked_audit.get("path") != audit_relative
+        or str(locked_audit.get("sha256") or "").lower() != _sha256_file(audit_path)
+    ):
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion audit is absent from or mismatched with the source lock.")
+    report = _safe_read_json(audit_path)
+    if report.get("schema_version") != PROMOTION_AUDIT_SCHEMA_VERSION or report.get("policy_version") != PROMOTION_POLICY_VERSION:
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Unsupported promotion audit policy.")
+    candidates = report.get("candidates")
+    if not isinstance(candidates, list):
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion audit candidates are missing.")
+    locked_evidence: dict[str, str] = {}
+    evidence_entries = lock.get("source_evidence")
+    if not isinstance(evidence_entries, list) or not evidence_entries:
+        raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion source evidence is absent from the source lock.")
+    for item in evidence_entries:
+        if not isinstance(item, dict):
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion source evidence lock entry is invalid.")
+        relative = str(item.get("path") or "")
+        expected_sha256 = str(item.get("sha256") or "").lower()
+        evidence_path = (workspace / relative).resolve()
+        try:
+            evidence_path.relative_to(workspace)
+        except ValueError as exc:
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion source evidence escaped the repository.") from exc
+        if (
+            not relative
+            or relative in locked_evidence
+            or evidence_path.is_symlink()
+            or not evidence_path.is_file()
+            or not re.fullmatch(r"[a-f0-9]{64}", expected_sha256)
+            or _sha256_file(evidence_path) != expected_sha256
+        ):
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", f"Promotion source evidence is missing or mismatched: {relative}")
+        locked_evidence[relative] = expected_sha256
+    attestations: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion audit candidate is invalid.")
+        resource_id = str(candidate.get("resource_id") or "")
+        if not resource_id or resource_id.casefold() in {item.casefold() for item in attestations}:
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Promotion audit contains a duplicate resource ID.")
+        evidence = candidate.get("source_evidence")
+        if not isinstance(evidence, dict):
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", f"Promotion audit has no source evidence for {resource_id}.")
+        for evidence_name in ("record_response", "license_response"):
+            response = evidence.get(evidence_name)
+            if not isinstance(response, dict):
+                raise MaterialsError("PROMOTION_AUDIT_INVALID", f"Promotion audit is missing {evidence_name} for {resource_id}.")
+            relative = str(response.get("path") or "")
+            digest = str(response.get("sha256") or "").lower()
+            if not relative or locked_evidence.get(relative) != digest:
+                raise MaterialsError("PROMOTION_AUDIT_INVALID", f"Promotion audit evidence is not source-locked for {resource_id}.")
+        attestations[resource_id] = candidate
+    return attestations
+
+
 def _clean_text(value: Any, *, field: str, limit: int = MAX_DESCRIPTION_CHARS) -> str:
     if value is None:
         return ""
@@ -159,6 +407,87 @@ def _clean_text(value: Any, *, field: str, limit: int = MAX_DESCRIPTION_CHARS) -
     if len(text) > limit:
         raise MaterialsError("FIELD_TOO_LARGE", f"{field} exceeds the {limit}-character limit.")
     return text
+
+
+def _activation_policy(manifest: dict[str, Any]) -> str:
+    """Resolve the strongest activation policy declared by a snapshot.
+
+    Public exports and reviewed imports can carry their policy in different
+    manifest sections. DENY always wins, followed by the explicit-human
+    evidence gate. Snapshots without a policy retain compatibility with the
+    small built-in seed and historical local development snapshots.
+    """
+
+    public_export = manifest.get("public_export") if isinstance(manifest.get("public_export"), dict) else {}
+    promotion_audit = manifest.get("promotion_audit") if isinstance(manifest.get("promotion_audit"), dict) else {}
+    policies = {
+        str(value).strip()
+        for value in (
+            manifest.get("activation_policy"),
+            public_export.get("activation_policy"),
+            promotion_audit.get("activation_policy"),
+        )
+        if value is not None and str(value).strip()
+    }
+    unsupported = sorted(policies - {"DENY", "EXPLICIT_HUMAN_ONLY"})
+    if unsupported:
+        raise MaterialsError(
+            "ACTIVATION_POLICY_INVALID",
+            f"Snapshot declares an unsupported activation policy: {', '.join(unsupported)}",
+        )
+    if (
+        "DENY" in policies
+        or manifest.get("profile") == "PUBLIC_QUARANTINE"
+        or public_export.get("profile") == "PUBLIC_QUARANTINE"
+    ):
+        return "DENY"
+    if "EXPLICIT_HUMAN_ONLY" in policies:
+        return "EXPLICIT_HUMAN_ONLY"
+    return "COMPATIBILITY"
+
+
+def _activation_evidence(
+    operator: Any,
+    approval_reference: Any,
+    *,
+    required: bool,
+    error_code: str | None = None,
+) -> tuple[str, str]:
+    """Validate bounded, single-line operator-supplied activation evidence.
+
+    The operator value is deliberately a self-declared label, not an
+    authenticated principal. Its assurance level is recorded separately in
+    the active pointer so downstream consumers cannot mistake it for identity
+    proof.
+    """
+
+    raw_operator = "" if operator is None else str(operator)
+    raw_reference = "" if approval_reference is None else str(approval_reference)
+    if any(
+        ord(character) < 32 or ord(character) in {127, 0x85, 0x2028, 0x2029}
+        for character in raw_operator + raw_reference
+    ):
+        raise MaterialsError(error_code or "ACTIVATION_EVIDENCE_INVALID", "Activation evidence must use bounded single-line text without control characters.")
+    try:
+        operator_text = _clean_text(raw_operator, field="operator", limit=MAX_ACTIVATION_OPERATOR_CHARS)
+        reference_text = _clean_text(
+            raw_reference,
+            field="approval_reference",
+            limit=MAX_APPROVAL_REFERENCE_CHARS,
+        )
+    except MaterialsError as exc:
+        raise MaterialsError(error_code or "ACTIVATION_EVIDENCE_INVALID", str(exc)) from exc
+    if required and (not operator_text or not reference_text):
+        raise MaterialsError(
+            error_code or "ACTIVATION_EVIDENCE_REQUIRED",
+            "This snapshot requires both a self-declared operator label and a non-empty approval reference.",
+        )
+    if bool(operator_text) != bool(reference_text):
+        raise MaterialsError(
+            error_code or "ACTIVATION_EVIDENCE_REQUIRED",
+            "Operator and approval reference must either both be supplied or both be omitted for compatibility snapshots.",
+        )
+    return operator_text, reference_text
 
 
 def _clean_list(value: Any, *, field: str, limit: int = 128) -> list[str]:
@@ -251,7 +580,7 @@ def _description_zh(record: dict[str, Any], description_en: str) -> str:
     return "；".join(segments) + "。"
 
 
-def normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
+def normalize_record(raw: dict[str, Any], *, promotion_attestation: dict[str, Any] | None = None) -> dict[str, Any]:
     """Normalize and classify an untrusted upstream/user record."""
 
     if not isinstance(raw, dict):
@@ -279,6 +608,7 @@ def normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
         raise MaterialsError("INVALID_SEQUENCE_KIND", "sequence_kind must be DNA, RNA, or PROTEIN when sequence is present.")
     if sequence and not _sequence_valid(sequence, sequence_kind):
         raise MaterialsError("INVALID_SEQUENCE", f"Sequence for {resource_id} contains unsupported symbols or exceeds the limit.")
+    sequence_sha256 = _sha256_bytes(sequence.encode("ascii")) if sequence else ""
     source = raw.get("source")
     if not isinstance(source, dict):
         raise MaterialsError("MISSING_SOURCE", f"Source metadata is required for {resource_id}.")
@@ -290,17 +620,27 @@ def normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
         "url": _clean_text(source.get("url"), field="source.url", limit=2048),
         "retrieved_at": _clean_text(source.get("retrieved_at"), field="source.retrieved_at", limit=64),
         "content_sha256": _clean_text(source.get("content_sha256"), field="source.content_sha256", limit=64).lower(),
+        "sequence_sha256": _clean_text(source.get("sequence_sha256"), field="source.sequence_sha256", limit=64).lower(),
     }
     if not source["provider"] or not source["record_id"] or not source["url"]:
         raise MaterialsError("MISSING_SOURCE", f"Source provider, record_id, and url are required for {resource_id}.")
     if not re.fullmatch(r"[a-f0-9]{64}", source["content_sha256"]):
         raise MaterialsError("INVALID_SOURCE_HASH", f"source.content_sha256 must be a SHA-256 digest for {resource_id}.")
+    if source["sequence_sha256"] and not re.fullmatch(r"[a-f0-9]{64}", source["sequence_sha256"]):
+        raise MaterialsError("INVALID_SOURCE_HASH", f"source.sequence_sha256 must be a SHA-256 digest for {resource_id}.")
+    if source["sequence_sha256"] and source["sequence_sha256"] != sequence_sha256:
+        raise MaterialsError("SOURCE_SEQUENCE_HASH_MISMATCH", f"source.sequence_sha256 does not match the sequence for {resource_id}.")
+    if sequence and not source["sequence_sha256"]:
+        # Keep the sequence digest distinct from the raw/page response digest.
+        # Promotion audits still require it to have been explicit in the raw
+        # reviewed record; reference-only ingestion may derive it here.
+        source["sequence_sha256"] = sequence_sha256
     source_version_present = bool(source["revision"] or source["release"])
     license_info = raw.get("license")
     if not isinstance(license_info, dict):
         raise MaterialsError("MISSING_LICENSE", f"License metadata is required for {resource_id}.")
     license_info = {
-        "id": _clean_text(license_info.get("id"), field="license.id", limit=128),
+        "id": canonical_license_id(_clean_text(license_info.get("id"), field="license.id", limit=128)),
         "url": _clean_text(license_info.get("url"), field="license.url", limit=2048),
         "attribution": _clean_text(license_info.get("attribution"), field="license.attribution", limit=1024),
         "rights_notes": _clean_text(license_info.get("rights_notes"), field="license.rights_notes", limit=2048),
@@ -309,18 +649,32 @@ def normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
     if not license_info["id"] or license_info["redistribution_status"] not in REDISTRIBUTION_VALUES:
         raise MaterialsError("INVALID_LICENSE", f"License ID and redistribution status are required for {resource_id}.")
     safety_status, safety_flags = _safety_classification({**raw, "name": name, "description_en": description_en, "description_zh": description_zh, "organism": organism, "role_terms": role_terms})
+    derived_safety_status = safety_status
     supplied_safety = _clean_text(raw.get("safety_status"), field="safety_status", limit=32).upper()
     safety_metadata_valid = not supplied_safety or supplied_safety in {"NO_FLAG", "HARD_FLAG"}
     if supplied_safety == "HARD_FLAG":
         safety_status = "HARD_FLAG"
         safety_flags = sorted(set([*safety_flags, "explicit-hard-flag"]))
-    elif supplied_safety == "NO_FLAG":
+    elif supplied_safety == "NO_FLAG" and derived_safety_status == "NO_FLAG":
         safety_status = "NO_FLAG"
     elif supplied_safety:
         safety_flags = sorted(set([*safety_flags, "invalid-safety-status"]))
     requested_status = _clean_text(raw.get("review_status"), field="review_status", limit=32).upper()
     if requested_status not in STATUS_VALUES:
         requested_status = "REVIEW_REQUIRED"
+    if requested_status == "DESIGN_ELIGIBLE":
+        promotion_errors = provider_license_policy_errors(source, license_info)
+        explicit_sequence_digest = str((raw.get("source") or {}).get("sequence_sha256") or "").lower() if isinstance(raw.get("source"), dict) else ""
+        controlled_promotion = (
+            promotion_attestation_valid(raw, promotion_attestation)
+            and supplied_safety == "NO_FLAG"
+            and not promotion_errors
+            and bool(raw.get("evidence_refs"))
+            and bool(source["retrieved_at"])
+            and explicit_sequence_digest == sequence_sha256
+        )
+        if not controlled_promotion:
+            requested_status = "REVIEW_REQUIRED"
     if not sequence:
         requested_status = "REFERENCE_ONLY"
     if license_info["redistribution_status"] == "LINK_ONLY":
@@ -346,7 +700,6 @@ def normalize_record(raw: dict[str, Any]) -> dict[str, Any]:
         design_eligibility = False
     if requested_status != "DESIGN_ELIGIBLE":
         design_eligibility = False
-    sequence_sha256 = _sha256_bytes(sequence.encode("ascii")) if sequence else ""
     metadata = raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {}
     normalized = {
         "resource_id": resource_id,
@@ -534,6 +887,122 @@ class MaterialsStore:
             raise MaterialsError("SNAPSHOT_NOT_FOUND", f"Snapshot not found: {snapshot_id}")
         return _safe_read_json(path)
 
+    def _snapshot_promotion_attestations(
+        self,
+        snapshot_id: str,
+        manifest: dict[str, Any],
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+        """Resolve the manifest-bound promotion decisions used for selection receipts.
+
+        New snapshots carry a content-addressed attestation index in their
+        manifest.  The already-published 2026.09 snapshot predates that index,
+        so it can be migrated without changing its bundle by reading the
+        repository-locked audit named by the immutable manifest.  Compilation
+        never calls this method; all evidence is copied into the selection.
+        """
+
+        index = manifest.get("promotion_attestation_index")
+        indexed: dict[str, dict[str, Any]] = {}
+        index_digest = ""
+        if index is not None:
+            if not isinstance(index, dict) or index.get("schema_version") != CATALOG_PROMOTION_INDEX_SCHEMA_VERSION:
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-attestation index is invalid.")
+            if index.get("policy_version") != PROMOTION_POLICY_VERSION:
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion policy is unsupported.")
+            candidates = index.get("attestations")
+            if not isinstance(candidates, list) or not candidates:
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-attestation index is empty.")
+            index_digest = canonical_json_sha256(candidates)
+            if str(index.get("attestations_sha256") or "").lower() != index_digest:
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-attestation index digest does not match.")
+            for candidate in candidates:
+                resource_id = str(candidate.get("resource_id") or "") if isinstance(candidate, dict) else ""
+                problem = promotion_attestation_structure_error(candidate, resource_id)
+                if problem or resource_id.casefold() in {item.casefold() for item in indexed}:
+                    raise MaterialsError("PROMOTION_ATTESTATION_INVALID", problem or "Snapshot promotion-attestation index contains duplicate IDs.")
+                indexed[resource_id] = candidate
+
+        annotation = manifest.get("promotion_audit")
+        audited: dict[str, dict[str, Any]] = {}
+        audit_summary: dict[str, Any] | None = None
+        if annotation is not None:
+            if not isinstance(annotation, dict):
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-audit annotation is invalid.")
+            audit_digest = str(annotation.get("sha256") or "").lower()
+            if (
+                annotation.get("schema_version") != PROMOTION_AUDIT_SCHEMA_VERSION
+                or annotation.get("policy_version") != PROMOTION_POLICY_VERSION
+                or not re.fullmatch(r"[a-f0-9]{64}", audit_digest)
+            ):
+                raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-audit binding is incomplete.")
+            audit_summary = {
+                "schema_version": PROMOTION_AUDIT_SCHEMA_VERSION,
+                "policy_version": PROMOTION_POLICY_VERSION,
+                "sha256": audit_digest,
+                "source": "snapshot-manifest-locked-audit",
+            }
+            relative = str(annotation.get("path") or "")
+            if relative:
+                report_path = (self.workspace / relative).resolve()
+                try:
+                    report_path.relative_to(self.workspace)
+                except ValueError as exc:
+                    raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-audit path escaped the workspace.") from exc
+                if report_path.is_file() and not report_path.is_symlink():
+                    if _sha256_file(report_path) != audit_digest:
+                        raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-audit file digest does not match its manifest.")
+                    report = _safe_read_json(report_path)
+                    candidates = report.get("candidates")
+                    if (
+                        report.get("schema_version") != PROMOTION_AUDIT_SCHEMA_VERSION
+                        or report.get("policy_version") != PROMOTION_POLICY_VERSION
+                        or not isinstance(candidates, list)
+                    ):
+                        raise MaterialsError("PROMOTION_ATTESTATION_INVALID", "Snapshot promotion-audit report is invalid.")
+                    for candidate in candidates:
+                        resource_id = str(candidate.get("resource_id") or "") if isinstance(candidate, dict) else ""
+                        problem = promotion_attestation_structure_error(candidate, resource_id)
+                        if problem or resource_id.casefold() in {item.casefold() for item in audited}:
+                            raise MaterialsError("PROMOTION_ATTESTATION_INVALID", problem or "Snapshot promotion audit contains duplicate IDs.")
+                        audited[resource_id] = candidate
+
+        if audited and indexed:
+            for resource_id, candidate in indexed.items():
+                audited_candidate = audited.get(resource_id)
+                if audited_candidate is None or canonical_json_sha256(audited_candidate) != canonical_json_sha256(candidate):
+                    raise MaterialsError("PROMOTION_ATTESTATION_INVALID", f"Snapshot promotion index disagrees with the locked audit for {resource_id}.")
+        attestations = audited or indexed
+        if not attestations:
+            public_export = manifest.get("public_export")
+            eligible_count = int((manifest.get("status_counts") or {}).get("DESIGN_ELIGIBLE", -1)) if isinstance(manifest.get("status_counts"), dict) else -1
+            audit_pass_count = int(annotation.get("pass_count", -1)) if isinstance(annotation, dict) else -1
+            if (
+                audit_summary is not None
+                and isinstance(public_export, dict)
+                and public_export.get("profile") == "PUBLIC_CATALOG"
+                and eligible_count == int(manifest.get("record_count", -2))
+                and audit_pass_count == eligible_count
+            ):
+                # Installed public bundles intentionally omit the repository
+                # audit report. The immutable manifest still binds its digest
+                # and pass count; materialization issues a per-record catalogue
+                # receipt below and labels that derivation explicitly.
+                audit_summary["source"] = "public-bundle-manifest-audit-root"
+                audit_summary["attestation_resolution"] = "catalog-issued-normalized-record-binding"
+                return {}, audit_summary
+            raise MaterialsError(
+                "PROMOTION_ATTESTATION_MISSING",
+                f"Snapshot {snapshot_id} has no locally verifiable promotion attestations; reissue or rematerialize it with the current catalogue.",
+            )
+        if audit_summary is None:
+            audit_summary = {
+                "schema_version": PROMOTION_AUDIT_SCHEMA_VERSION,
+                "policy_version": PROMOTION_POLICY_VERSION,
+                "sha256": index_digest,
+                "source": "snapshot-manifest-promotion-index",
+            }
+        return attestations, audit_summary
+
     def search(
         self,
         query: str = "",
@@ -695,10 +1164,16 @@ class MaterialsStore:
                     "description": item["description_en"],
                     "description_zh": item["description_zh"],
                     "sequence": item["sequence"],
+                    "sequence_kind": item["sequence_kind"],
                     "sequence_sha256": item["sequence_sha256"],
                     "source": item["source"],
                     "license": item["license"],
                     "resource_id": item["resource_id"],
+                    "review_status": item["review_status"],
+                    "safety_status": item["safety_status"],
+                    "safety_flags": item["safety_flags"],
+                    "design_eligibility": bool(item["design_eligibility"]),
+                    "evidence_refs": item["evidence_refs"],
                 }
                 for item in selected
             ],
@@ -715,7 +1190,7 @@ class MaterialsStore:
         snapshot_id: str | None = None,
         auto_initialize: bool = True,
     ) -> dict[str, Any]:
-        """Materialize explicitly eligible protein records for the protein compiler."""
+        """Materialize eligible proteins with a self-contained catalogue receipt."""
 
         if not resource_ids or len(resource_ids) > 256:
             raise MaterialsError("INVALID_SELECTION", "Select between 1 and 256 protein resources.")
@@ -725,6 +1200,9 @@ class MaterialsStore:
                 raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
             self.initialize_seed()
             snapshot_id = self._active_id()
+        manifest = self.manifest(snapshot_id)
+        self._verify_snapshot(snapshot_id, manifest)
+        attestations, audit_summary = self._snapshot_promotion_attestations(snapshot_id, manifest)
         selected: list[dict[str, Any]] = []
         seen: set[str] = set()
         for resource_id in resource_ids:
@@ -737,22 +1215,14 @@ class MaterialsStore:
                 raise MaterialsError("NOT_COMPILABLE_PROTEIN", f"Resource is not a supported protein sequence: {resource_id}")
             if not resource["design_eligibility"] or resource["review_status"] != "DESIGN_ELIGIBLE":
                 raise MaterialsError("PROTEIN_NOT_ELIGIBLE", f"Resource is not explicitly design-eligible: {resource_id}")
-            if resource["safety_status"] == "HARD_FLAG" or resource["license"].get("redistribution_status") != "REDISTRIBUTABLE":
+            if resource["safety_status"] != "NO_FLAG" or resource.get("safety_flags"):
+                raise MaterialsError("PROTEIN_NOT_ELIGIBLE", f"Resource does not pass the protein safety gate: {resource_id}")
+            if resource["license"].get("redistribution_status") != "REDISTRIBUTABLE":
                 raise MaterialsError("PROTEIN_NOT_ELIGIBLE", f"Resource does not pass the protein rights/safety gate: {resource_id}")
             selected.append(resource)
-        clean_design_id = _clean_text(design_id, field="design_id", limit=256) if design_id is not None else ""
-        canonical = _json({"schema_version": PROTEIN_SELECTION_SCHEMA_VERSION, "snapshot_id": snapshot_id, "design_id": clean_design_id, "ids": sorted(item["resource_id"] for item in selected)}).encode("utf-8")
-        digest = _sha256_bytes(canonical)
-        paths = WorkspacePaths.create(self.workspace)
-        target = paths.build_file(output or f"build/materials/selections/{digest}/proteins.json", extensions={".json"})
-        payload = {
-            "schema_version": PROTEIN_SELECTION_SCHEMA_VERSION,
-            "selection_id": f"protein-selection:{digest}",
-            "snapshot_id": snapshot_id,
-            "design_id": clean_design_id or f"protein-selection-{digest[:16]}",
-            "chassis": "protein_sequence",
-            "notice": "Materialized from an auditable external catalog. Protein compilation is software-only; human scientific review remains required.",
-            "proteins": [
+        selected.sort(key=lambda item: (item["resource_id"].casefold(), item["resource_id"]))
+        selected_records = [
+            protein_selection_record(
                 {
                     "id": item["resource_id"],
                     "resource_id": item["resource_id"],
@@ -766,11 +1236,99 @@ class MaterialsStore:
                     "license": item["license"],
                     "review_status": item["review_status"],
                     "safety_status": item["safety_status"],
+                    "safety_flags": item["safety_flags"],
                     "design_eligibility": bool(item["design_eligibility"]),
+                    "evidence_refs": item["evidence_refs"],
+                    "organism": item["organism"],
+                    "role_terms": item["role_terms"],
+                    "metadata": item["metadata"],
                 }
-                for item in selected
-            ],
+            )
+            for item in selected
+        ]
+        clean_design_id = _clean_text(design_id, field="design_id", limit=256) if design_id is not None else ""
+        if not clean_design_id:
+            identity_digest = canonical_json_sha256(
+                {
+                    "schema_version": PROTEIN_SELECTION_SCHEMA_VERSION,
+                    "snapshot_id": snapshot_id,
+                    "proteins": selected_records,
+                }
+            )
+            clean_design_id = f"protein-selection-{identity_digest[:16]}"
+        payload = {
+            "schema_version": PROTEIN_SELECTION_SCHEMA_VERSION,
+            "snapshot_id": snapshot_id,
+            "design_id": clean_design_id,
+            "chassis": "protein_sequence",
+            "proteins": selected_records,
         }
+        digest = protein_selection_digest(payload)
+        payload["selection_id"] = f"protein-selection:{digest}"
+        payload["selection_digest"] = digest
+        snapshot_binding = {
+            "schema_version": manifest.get("schema_version"),
+            "snapshot_id": manifest.get("snapshot_id"),
+            "created_at": manifest.get("created_at"),
+            "record_count": manifest.get("record_count"),
+            "manifest_sha256": _sha256_file(self._snapshot_dir(snapshot_id) / "manifest.json"),
+            "catalog_sha256": str(manifest.get("catalog", {}).get("sha256") or "").lower(),
+            "license_catalog_sha256": str(manifest.get("license_catalog", {}).get("sha256") or "").lower(),
+            "promotion_audit": audit_summary,
+        }
+        record_bindings: list[dict[str, Any]] = []
+        for record in selected_records:
+            resource_id = str(record["resource_id"])
+            attestation = attestations.get(resource_id)
+            if attestation is None and audit_summary.get("attestation_resolution") == "catalog-issued-normalized-record-binding":
+                attestation = {
+                    "policy_version": PROMOTION_POLICY_VERSION,
+                    "resource_id": resource_id,
+                    "record_sha256": protein_selection_record_sha256(record),
+                    "decision": "PASS",
+                    "rounds": [
+                        {
+                            "round_id": round_id,
+                            "status": "PASS",
+                            "reason_codes": ["PUBLIC_BUNDLE_MANIFEST_AUDIT_ROOT_BOUND"],
+                        }
+                        for round_id in PROMOTION_ROUND_IDS
+                    ],
+                    "attestation_scope": "normalized-catalog-selection-record",
+                    "issued_by": CATALOG_ATTESTATION_ISSUER,
+                    "source_audit_sha256": audit_summary["sha256"],
+                    "signature_status": CATALOG_SIGNATURE_STATUS,
+                }
+            problem = promotion_attestation_structure_error(attestation, resource_id)
+            if problem:
+                raise MaterialsError("PROMOTION_ATTESTATION_MISSING", problem)
+            assert isinstance(attestation, dict)
+            record_bindings.append(
+                {
+                    "resource_id": resource_id,
+                    "selection_record_sha256": protein_selection_record_sha256(record),
+                    "promotion_attestation": attestation,
+                    "promotion_attestation_sha256": canonical_json_sha256(attestation),
+                    "promotion_audit_sha256": audit_summary["sha256"],
+                }
+            )
+        catalog_attestation = {
+            "schema_version": CATALOG_SELECTION_ATTESTATION_SCHEMA_VERSION,
+            "issuer": CATALOG_ATTESTATION_ISSUER,
+            "attestation_kind": CATALOG_ATTESTATION_KIND,
+            "signature_status": CATALOG_SIGNATURE_STATUS,
+            "cryptographic_signature": False,
+            "authenticity": "NOT_ESTABLISHED",
+            "trust_statement": "Content-addressed catalogue receipt only; no cryptographic author identity or external trust anchor is established.",
+            "selection_digest": digest,
+            "snapshot_manifest": snapshot_binding,
+            "records": record_bindings,
+        }
+        catalog_attestation["binding_sha256"] = catalog_selection_binding_sha256(catalog_attestation)
+        payload["catalog_attestation"] = catalog_attestation
+        payload["notice"] = "Materialized from a manifest-bound catalogue audit. Protein compilation is software-only; human scientific review remains required. The catalogue receipt is content-addressed but UNSIGNED."
+        paths = WorkspacePaths.create(self.workspace)
+        target = paths.build_file(output or f"build/materials/selections/{digest}/proteins.json", extensions={".json"})
         _safe_write(target, (_json(payload) + "\n").encode("utf-8"))
         return {
             "ok": True,
@@ -804,19 +1362,65 @@ class MaterialsStore:
         _safe_write(target, ("\n".join(lines) + "\n").encode("utf-8"))
         return {"ok": True, "template_id": template_id, "output": str(target.relative_to(paths.workspace)).replace("\\", "/"), "bindings": bindings, "review_status": "human_review_required"}
 
-    def activate(self, snapshot_id: str) -> dict[str, Any]:
+    def activate(
+        self,
+        snapshot_id: str,
+        *,
+        operator: str | None = None,
+        approval_reference: str | None = None,
+    ) -> dict[str, Any]:
+        return self._switch_active(
+            snapshot_id,
+            action="activate",
+            operator=operator,
+            approval_reference=approval_reference,
+        )
+
+    def rollback(
+        self,
+        snapshot_id: str,
+        *,
+        operator: str | None = None,
+        approval_reference: str | None = None,
+    ) -> dict[str, Any]:
+        return self._switch_active(
+            snapshot_id,
+            action="rollback",
+            operator=operator,
+            approval_reference=approval_reference,
+        )
+
+    def _switch_active(
+        self,
+        snapshot_id: str,
+        *,
+        action: str,
+        operator: str | None,
+        approval_reference: str | None,
+    ) -> dict[str, Any]:
         snapshot_id = _clean_text(snapshot_id, field="snapshot_id", limit=256)
         manifest = self.manifest(snapshot_id)
-        public_export = manifest.get("public_export") if isinstance(manifest.get("public_export"), dict) else {}
-        if manifest.get("activation_policy") == "DENY" or public_export.get("activation_policy") == "DENY" or public_export.get("profile") == "PUBLIC_QUARANTINE":
+        policy = _activation_policy(manifest)
+        if policy == "DENY":
             raise MaterialsError("SNAPSHOT_NOT_ACTIVATABLE", "Quarantine-only public bundles cannot be activated as normal materials snapshots.")
+        operator_text, reference_text = _activation_evidence(
+            operator,
+            approval_reference,
+            required=policy == "EXPLICIT_HUMAN_ONLY",
+        )
         self._verify_snapshot(snapshot_id, manifest)
-        pointer = {"schema_version": MATERIALS_SCHEMA_VERSION, "active_snapshot": snapshot_id, "manifest_sha256": _sha256_file(self._snapshot_dir(snapshot_id) / "manifest.json"), "activated_at": _now()}
+        pointer = {
+            "schema_version": MATERIALS_SCHEMA_VERSION,
+            "active_snapshot": snapshot_id,
+            "action": action,
+            "operator": operator_text,
+            "operator_identity_assurance": "SELF_DECLARED_UNVERIFIED" if operator_text else "NOT_REQUIRED_BY_SNAPSHOT_POLICY",
+            "approval_reference": reference_text,
+            "manifest_sha256": _sha256_file(self._snapshot_dir(snapshot_id) / "manifest.json"),
+            "activated_at": _now(),
+        }
         _safe_write(self.active_pointer, (_json(pointer) + "\n").encode("utf-8"))
         return {"ok": True, **pointer}
-
-    def rollback(self, snapshot_id: str) -> dict[str, Any]:
-        return self.activate(snapshot_id)
 
     def diff(self, left: str, right: str) -> dict[str, Any]:
         left_rows = self._all_identity(left)
@@ -920,6 +1524,62 @@ class MaterialsStore:
             self.activate(snapshot_id)
         return manifest
 
+    def import_reviewed_file(
+        self,
+        path: str | Path,
+        *,
+        audit_path: str | Path,
+        source_lock_path: str | Path | None = None,
+        activate: bool = False,
+    ) -> dict[str, Any]:
+        """Import a repository-locked, three-round reviewed materials seed.
+
+        This is the only file-import path that may preserve DESIGN_ELIGIBLE.
+        The ordinary ``import_file`` path deliberately supplies no attestation
+        and therefore downgrades self-asserted eligibility to REVIEW_REQUIRED.
+        """
+
+        source_path = Path(path).resolve()
+        report_path = Path(audit_path).resolve()
+        lock_path = Path(source_lock_path).resolve() if source_lock_path is not None else self.workspace / "materials" / "bundles" / "source-lock.json"
+        payload = _safe_read_json(source_path)
+        raw_records = payload.get("records", payload.get("parts", []))
+        if not isinstance(raw_records, list):
+            raise MaterialsError("INVALID_IMPORT", "Reviewed JSON import must contain records or parts array.")
+        attestations = load_locked_promotion_attestations(self.workspace, source_path, report_path, lock_path)
+        selected_ids = {
+            str(record.get("resource_id", record.get("id")) or "")
+            for record in raw_records
+            if isinstance(record, dict) and str(record.get("review_status") or "").upper() == "DESIGN_ELIGIBLE"
+        }
+        if not selected_ids or any(resource_id not in attestations for resource_id in selected_ids):
+            raise MaterialsError("PROMOTION_AUDIT_INVALID", "Every reviewed design-eligible record requires a locked audit decision.")
+        snapshot_id = f"reviewed-{int(time.time())}-{_sha256_file(source_path)[:12]}"
+        providers = sorted({
+            str(record.get("source", {}).get("provider") or "")
+            for record in raw_records
+            if isinstance(record, dict) and isinstance(record.get("source"), dict)
+        })
+        manifest = self._create_snapshot(
+            raw_records,
+            snapshot_id,
+            sources=[{"provider": provider, "release": "locked-reviewed-seed"} for provider in providers if provider],
+            label=f"Reviewed {source_path.name}",
+            manifest_annotations={
+                "promotion_audit": {
+                    "schema_version": PROMOTION_AUDIT_SCHEMA_VERSION,
+                    "policy_version": PROMOTION_POLICY_VERSION,
+                    "path": report_path.relative_to(self.workspace).as_posix(),
+                    "sha256": _sha256_file(report_path),
+                    "activation_policy": "EXPLICIT_HUMAN_ONLY",
+                }
+            },
+            promotion_attestations=attestations,
+        )
+        if activate:
+            self.activate(snapshot_id)
+        return manifest
+
     def sync_uniprot(self, *, max_records: int = 100_000, page_size: int = 500, activate: bool = False) -> dict[str, Any]:
         if max_records < 1 or max_records > 2_000_000:
             raise MaterialsError("INVALID_LIMIT", "max_records must be between 1 and 2,000,000.")
@@ -947,7 +1607,18 @@ class MaterialsStore:
                 "organism": {"tax_id": int(tax_id) if tax_id.isdigit() else None, "name": organism},
                 "sequence": sequence,
                 "sequence_kind": "PROTEIN",
-                "source": {"provider": "UniProtKB/Swiss-Prot", "record_id": accession, "revision": "entry", "release": release, "url": f"https://www.uniprot.org/uniprotkb/{accession}/entry", "retrieved_at": _now(), "content_sha256": str(row.get("_response_content_sha256") or _sha256_bytes(sequence.encode("ascii")))},
+                "source": {
+                    "provider": "UniProtKB/Swiss-Prot",
+                    "record_id": accession,
+                    "revision": "entry",
+                    "release": release,
+                    "url": f"https://www.uniprot.org/uniprotkb/{accession}/entry",
+                    "retrieved_at": _now(),
+                    # Raw/page response provenance is distinct from the
+                    # sequence object digest used by the protein compiler.
+                    "content_sha256": str(row.get("_response_content_sha256") or _sha256_bytes(sequence.encode("ascii"))),
+                    "sequence_sha256": _sha256_bytes(sequence.encode("ascii")),
+                },
                 "license": {"id": "CC-BY-4.0", "url": "https://creativecommons.org/licenses/by/4.0/", "attribution": "UniProt Consortium", "rights_notes": "UniProt disclaims third-party patent or other rights.", "redistribution_status": "REDISTRIBUTABLE"},
                 "review_status": "REFERENCE_ONLY",
                 "design_eligibility": False,
@@ -1179,6 +1850,7 @@ class MaterialsStore:
         created_at: str | None = None,
         manifest_annotations: dict[str, Any] | None = None,
         vacuum_catalogs: bool = False,
+        promotion_attestations: dict[str, dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", snapshot_id):
             raise MaterialsError("INVALID_SNAPSHOT_ID", "Snapshot IDs must be path-safe.")
@@ -1191,12 +1863,15 @@ class MaterialsStore:
         stage = self.staging / f"{snapshot_id}-{uuid4().hex}"
         _ensure_directory(stage)
         all_records: list[dict[str, Any]] = []
+        snapshot_attestations: list[dict[str, Any]] = []
         seen: set[str] = set()
         status_counts: dict[str, int] = {key: 0 for key in sorted(STATUS_VALUES)}
         source_counts: dict[str, int] = {}
         try:
             for raw in records:
-                record = normalize_record(raw)
+                raw_id = str(raw.get("resource_id", raw.get("id")) or "") if isinstance(raw, dict) else ""
+                attestation = (promotion_attestations or {}).get(raw_id)
+                record = normalize_record(raw, promotion_attestation=attestation)
                 supplied_hash = raw.get("sequence_sha256") if isinstance(raw, dict) else None
                 if supplied_hash and record["sequence"] and str(supplied_hash).lower() != record["sequence_sha256"]:
                     raise MaterialsError("SEQUENCE_HASH_MISMATCH", f"Sequence hash does not match {record['resource_id']}.")
@@ -1205,6 +1880,16 @@ class MaterialsStore:
                     raise MaterialsError("DUPLICATE_RESOURCE_ID", f"Duplicate or normalization-collision resource ID: {record['resource_id']}")
                 seen.add(canonical_id)
                 all_records.append(record)
+                if record["review_status"] == "DESIGN_ELIGIBLE":
+                    if not promotion_attestation_valid(raw, attestation):
+                        raise MaterialsError(
+                            "PROMOTION_ATTESTATION_MISSING",
+                            f"Design-eligible record has no valid promotion attestation: {record['resource_id']}",
+                        )
+                    assert isinstance(attestation, dict)
+                    # JSON round-tripping detaches the immutable manifest
+                    # evidence from caller-owned mutable objects.
+                    snapshot_attestations.append(json.loads(_json(attestation)))
                 status_counts[record["review_status"]] += 1
                 source_counts[record["source"]["provider"]] = source_counts.get(record["source"]["provider"], 0) + 1
         except Exception:
@@ -1255,6 +1940,16 @@ class MaterialsStore:
             "license_catalog": {"path": "licenses/catalog.json", "sha256": _sha256_file(license_catalog)},
             "notice": "Metadata and sequences are source-derived and untrusted. Software checks do not establish wet-lab readiness.",
         }
+        if snapshot_attestations:
+            snapshot_attestations.sort(key=lambda item: (str(item.get("resource_id") or "").casefold(), str(item.get("resource_id") or "")))
+            manifest["promotion_attestation_index"] = {
+                "schema_version": CATALOG_PROMOTION_INDEX_SCHEMA_VERSION,
+                "policy_version": PROMOTION_POLICY_VERSION,
+                "attestation_count": len(snapshot_attestations),
+                "attestations_sha256": canonical_json_sha256(snapshot_attestations),
+                "attestations": snapshot_attestations,
+                "signature_status": CATALOG_SIGNATURE_STATUS,
+            }
         if manifest_annotations:
             collisions = sorted(set(manifest).intersection(manifest_annotations))
             if collisions:
@@ -1440,6 +2135,8 @@ class MaterialsStore:
         if not self.active_pointer.is_file():
             return None
         payload = _safe_read_json(self.active_pointer)
+        if payload.get("schema_version") != MATERIALS_SCHEMA_VERSION:
+            raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer uses an unsupported schema.")
         active = payload.get("active_snapshot")
         if not isinstance(active, str) or not active:
             raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer does not name a snapshot.")
@@ -1448,6 +2145,28 @@ class MaterialsStore:
             expected = payload.get("manifest_sha256")
             if not isinstance(expected, str) or not re.fullmatch(r"[a-f0-9]{64}", expected) or not manifest_path.is_file() or _sha256_file(manifest_path) != expected:
                 raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer does not match its manifest.")
+            manifest = _safe_read_json(manifest_path)
+            policy = _activation_policy(manifest)
+            if policy == "DENY":
+                raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer targets a snapshot that denies activation.")
+            if policy == "EXPLICIT_HUMAN_ONLY":
+                if payload.get("action") not in {"activate", "rollback"}:
+                    raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer has no valid activation action.")
+                _activation_evidence(
+                    payload.get("operator"),
+                    payload.get("approval_reference"),
+                    required=True,
+                    error_code="ACTIVE_POINTER_INVALID",
+                )
+                if payload.get("operator_identity_assurance") != "SELF_DECLARED_UNVERIFIED":
+                    raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer overstates or omits operator identity assurance.")
+                activated_at = payload.get("activated_at")
+                if not isinstance(activated_at, str) or not activated_at.endswith("Z") or len(activated_at) > 64:
+                    raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer has no valid UTC activation timestamp.")
+                try:
+                    datetime.fromisoformat(activated_at.replace("Z", "+00:00"))
+                except ValueError as exc:
+                    raise MaterialsError("ACTIVE_POINTER_INVALID", "The active materials pointer has no valid UTC activation timestamp.") from exc
         except MaterialsError:
             raise
         except OSError as exc:

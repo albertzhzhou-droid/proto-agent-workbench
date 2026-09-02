@@ -40,6 +40,10 @@ def build_evidence_cards(
     if manifest.get("score"):
         cards.append(_score_card(len(cards) + 1, manifest))
 
+    compatibility = manifest.get("skill_compatibility")
+    if isinstance(compatibility, dict) and compatibility.get("status") == "needs_review":
+        cards.append(_skill_compatibility_card(len(cards) + 1, manifest, compatibility))
+
     cards.append(_review_gate_card(len(cards) + 1, manifest))
 
     if literature_query:
@@ -120,6 +124,22 @@ def _score_card(index: int, manifest: dict[str, Any]) -> dict[str, Any]:
         "status": "supported" if score.get("ok") else "failed",
         "artifacts": [],
         "details": score,
+    }
+
+
+def _skill_compatibility_card(
+    index: int,
+    manifest: dict[str, Any],
+    compatibility: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "id": f"evidence-{index:03d}-legacy-skill-compatibility",
+        "claim": "The workflow must define governed Skill bindings before the run can be accepted.",
+        "evidence_type": "skill_compatibility",
+        "source": f"manifest:{manifest.get('run_id', '')}:skill_compatibility",
+        "status": "needs_review",
+        "artifacts": [manifest.get("manifest_path", "")],
+        "details": compatibility,
     }
 
 

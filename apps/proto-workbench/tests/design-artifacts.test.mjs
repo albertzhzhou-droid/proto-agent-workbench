@@ -78,6 +78,70 @@ test("provenance statements bind the current artifact digest and size", () => {
   assert.equal(digestBindingForArtifact("build/runs/run-2/design.ir.json", sha256, 42, [parsed.statement]), undefined);
 });
 
+test("digest binding aggregates every claim and a mismatch or conflict blocks independent of statement order", () => {
+  const path = "runs/shared/design.ir.json";
+  const currentSha256 = "a".repeat(64);
+  const matching = {
+    statementPath: "build/runs/run-a/provenance.json",
+    runId: "run-a",
+    subjectSha256: "1".repeat(64),
+    artifacts: [{ path, sha256: currentSha256, sizeBytes: 42 }],
+  };
+  const conflicting = {
+    statementPath: "build/runs/run-b/provenance.json",
+    runId: "run-b",
+    subjectSha256: "2".repeat(64),
+    artifacts: [{ path, sha256: "b".repeat(64), sizeBytes: 42 }],
+  };
+
+  for (const statements of [[matching, conflicting], [conflicting, matching]]) {
+    const binding = digestBindingForArtifact(`build/${path}`, currentSha256, 42, statements);
+    assert.ok(binding);
+    assert.equal(binding.status, "mismatch");
+    assert.equal(binding.conflict, true);
+    assert.equal(binding.declarations.length, 2);
+    assert.deepEqual(binding.declarations.map((claim) => claim.status).sort(), ["match", "mismatch"]);
+    assert.deepEqual(binding.declarations.map((claim) => claim.statement.runId), ["run-a", "run-b"]);
+  }
+});
+
+test("duplicate same-path records inside one statement are all evaluated instead of trusting the first", () => {
+  const path = "runs/run-1/design.ir.json";
+  const currentSha256 = "a".repeat(64);
+  const statement = {
+    statementPath: "build/runs/run-1/provenance.json",
+    runId: "run-1",
+    subjectSha256: "1".repeat(64),
+    artifacts: [
+      { path, sha256: currentSha256, sizeBytes: 42 },
+      { path, sha256: currentSha256, sizeBytes: 43 },
+    ],
+  };
+  const binding = digestBindingForArtifact(`build/${path}`, currentSha256, 42, [statement]);
+
+  assert.ok(binding);
+  assert.equal(binding.status, "mismatch");
+  assert.equal(binding.conflict, true);
+  assert.equal(binding.declarations.length, 2);
+});
+
+test("repeated identical provenance claims remain a non-conflicting match", () => {
+  const path = "runs/shared/design.ir.json";
+  const sha256 = "a".repeat(64);
+  const statements = ["run-b", "run-a"].map((runId) => ({
+    statementPath: `build/runs/${runId}/provenance.json`,
+    runId,
+    subjectSha256: "1".repeat(64),
+    artifacts: [{ path, sha256, sizeBytes: 42 }],
+  }));
+  const binding = digestBindingForArtifact(`build/${path}`, sha256, 42, statements);
+
+  assert.ok(binding);
+  assert.equal(binding.status, "match");
+  assert.equal(binding.conflict, false);
+  assert.deepEqual(binding.declarations.map((claim) => claim.statement.runId), ["run-a", "run-b"]);
+});
+
 test("malformed provenance digest records fail closed", () => {
   const parsed = parseDesignProvenanceStatement({
     schema_version: "proto-agent.provenance.v1",

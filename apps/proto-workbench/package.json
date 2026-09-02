@@ -16,15 +16,19 @@
     "dev": "vite --configLoader runner",
     "dev:desktop": "electron-vite dev",
     "build": "vite build --configLoader runner",
-    "build:desktop": "electron-vite build && node --experimental-strip-types scripts/generate-module-manifest.mjs",
+    "build:desktop": "pnpm sync:workspace-template && electron-vite build && node --experimental-strip-types scripts/generate-module-manifest.mjs",
     "preview": "vite preview --configLoader runner",
     "build:icon": "node scripts/build-app-icon.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "verify:visualization": "node --experimental-strip-types --test tests/sha256.test.mjs tests/protein-sequence.test.mjs tests/design-visualization.test.mjs tests/map-export.test.mjs tests/map-export-service.test.mjs tests/designs-safety-contract.test.mjs tests/cgview-adapter.test.mjs tests/security-boundaries.test.mjs tests/visualization-envelope.test.mjs",
+    "sync:workspace-template": "node scripts/sync-workspace-template.mjs --write",
+    "verify:workspace-template": "node scripts/sync-workspace-template.mjs --check",
     "verify:offline": "node scripts/verify-offline.mjs",
-    "verify:sidecars": "node scripts/verify-sidecars.mjs",
+    "build:sidecars": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-proto-sidecar.ps1",
+    "verify:sidecars": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-sidecars.ps1",
     "verify:inference": "node --experimental-strip-types scripts/verify-inference.mjs",
-    "package:win": "pnpm build:icon && pnpm build:desktop && electron-builder --win nsis portable",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-win.ps1",
     "rebuild:native": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -116,18 +120,22 @@
         "to": "licenses/TUF-JS-MIT.txt"
       },
       {
-        "from": "runtime/llama.cpp",
-        "to": "runtime/llama.cpp",
+        "from": "runtime/proto-agent/proto-agent",
+        "to": "runtime/proto-agent/proto-agent",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "runtime/proto-agent",
-        "to": "runtime/proto-agent",
+        "from": "runtime/proto-agent/proto-agent-mcp",
+        "to": "runtime/proto-agent/proto-agent-mcp",
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "runtime/proto-agent/README.md",
+        "to": "runtime/proto-agent/README.md"
       },
       {
         "from": "runtime/workspace-template",

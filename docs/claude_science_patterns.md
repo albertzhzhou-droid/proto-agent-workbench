@@ -64,9 +64,18 @@ Sources checked on 2026-07-08:
 | Notebook workflow | `proto-agent notebook run` and `proto_run_notebook` |
 | Optional R runtime | `proto-agent r status`, `proto-agent r run`, `proto_r_status`, and `proto_run_r` |
 | Exchange-format bridge | `proto-agent export --format sbol`, `proto-agent sbol validate`, and `proto_validate_sbol` |
+| Portable research Skills | `.codex/skills`, `proto-agent skills list|resolve|audit`, and `proto_skills_list|resolve` |
+| Managed local model endpoint | LM Studio loopback REST lifecycle and OpenAI-compatible chat through `lm-studio-model-endpoint` |
+
+## AcademicForge adaptations
+
+The project also uses a reviewed subset of the public [AcademicForge](https://github.com/HughYau/AcademicForge) catalogue. Claude-specific endpoint lifecycle calls were replaced by a generic declarative interface manifest resolved against Proto's connector registry. Literature, figure, provenance, materials-review, and sequence-analysis patterns are mapped to existing bounded Proto CLI, MCP, and loopback HTTP interfaces. Resolution never executes Skill content and is not reported as execution evidence; review packets attach concrete evidence paths when a Skill is actually applied.
+
+Remote compute, autonomous training, protein generation, structure prediction, and wet-lab automation Skills are not adapted because they would add new dependencies, authorization, data, and scientific-validation risk.
 
 ## Explicit Non-Goals
 
 - Do not bypass Claude Science access controls or inspect non-public binaries, network calls, or private APIs.
 - Do not copy proprietary UI, code, schemas, or internal prompts.
 - Do not claim biological readiness from toy fixtures.
+- Do not treat Skill availability, connector resolution, or a model health response as proof that the corresponding scientific work or generation ran.

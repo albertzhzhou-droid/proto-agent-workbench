@@ -11,6 +11,10 @@ Desktop.ini
 # Local agent/application configuration
 .agents/
 .codex/
+!.codex/
+.codex/*
+!.codex/skills/
+!.codex/skills/**
 
 # Secrets and machine-local configuration
 .env

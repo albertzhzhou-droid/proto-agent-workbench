@@ -33,7 +33,6 @@ workbench = [
 [project.scripts]
 proto-agent = "proto_agent.cli:main"
 proto-agent-mcp = "proto_agent.mcp_server:main"
-proto-workbench-sidecar = "proto_agent.workbench_bridge:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

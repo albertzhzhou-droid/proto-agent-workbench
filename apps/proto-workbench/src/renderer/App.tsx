@@ -317,12 +317,12 @@ function TopBar() {
         <ChevronDown size={14} />
       </button>
       <div className="runtime-inline" title={runtime.detail}>
-        <Circle size={8} fill={runtime.backend === "cuda" ? "#35a45d" : "#d59615"} stroke="none" />
-        <span>{runtime.backend === "cuda" ? "CUDA ready" : runtime.available ? "CPU fallback" : "Runtime setup"}</span>
+        <Circle size={8} fill={runtime.available ? "#35a45d" : "#d59615"} stroke="none" />
+        <span>{runtime.available ? "LM Studio ready" : "LM Studio setup"}</span>
       </div>
       <button className="topbar-control runtime-picker" type="button" onClick={() => navigate("settings")}>
         <Atom size={15} />
-        <span>llama.cpp (independent)</span>
+        <span>LM Studio · 127.0.0.1:1234</span>
         <ChevronDown size={14} />
       </button>
       <button className="icon-button topbar-icon" type="button" title="Settings" aria-label="Settings" onClick={() => navigate("settings")}>
@@ -1290,28 +1290,25 @@ function ModelPopover() {
   const busyModelId = useWorkbenchStore((state) => state.busyModelId);
   const isAgentRunning = useWorkbenchStore((state) => state.isAgentRunning);
   const navigate = useWorkbenchStore((state) => state.navigate);
-  const budget = settings.residencyPolicy.budgetBytes;
-  const used = models
-    .filter((model) => ["active", "warm", "loading"].includes(model.loadState))
-    .reduce((sum, model) => sum + (model.measuredVramBytes ?? model.estimatedVramBytes), 0);
+  const loadedInstances = models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0);
   const visible = modelTab === "quick-switch" ? models.slice().sort(sortModels) : models;
 
   return (
     <section className="model-popover" aria-label="Model loader">
       <div className="popover-tabs">
-        <button className={modelTab === "quick-switch" ? "is-selected" : ""} type="button" onClick={() => void setModelTab("quick-switch")}>Quick switch</button>
-        <button className={modelTab === "auto-evict" ? "is-selected" : ""} type="button" onClick={() => void setModelTab("auto-evict")}>Auto-evict pool</button>
+        <button className={modelTab === "quick-switch" ? "is-selected" : ""} type="button" onClick={() => void setModelTab("quick-switch")}>One connection</button>
+        <button className={modelTab === "auto-evict" ? "is-selected" : ""} type="button" onClick={() => void setModelTab("auto-evict")}>Managed pool</button>
         <button className="icon-button popover-close" type="button" onClick={() => toggleModels(false)} title="Close model loader" aria-label="Close model loader"><X size={14} /></button>
       </div>
       <div className="vram-block">
         <div className="vram-heading">
-          <strong>VRAM budget</strong>
-          <span>{formatGb(budget)} budget</span>
+          <strong>LM Studio inventory</strong>
+          <span>{runtime.modelCount ?? models.length} models</span>
         </div>
-        <div className="vram-meter"><span style={{ width: `${Math.min(100, (used / budget) * 100)}%` }} /></div>
-        <div className="vram-labels"><span>{formatGb(used)} resident</span><span>{formatGb(Math.max(0, budget - used))} free</span></div>
+        <div className="vram-meter"><span style={{ width: runtime.available ? "100%" : "0%" }} /></div>
+        <div className="vram-labels"><span>{loadedInstances} loaded instance{loadedInstances === 1 ? "" : "s"}</span><span>{runtime.available ? "Synchronized" : "Unavailable"}</span></div>
       </div>
-      <div className="model-table-head"><span>Model</span><span>Status</span><span>VRAM</span><span>Action</span></div>
+      <div className="model-table-head"><span>Model</span><span>Status</span><span>Size</span><span>Action</span></div>
       <div className="model-list">
         {visible.map((model) => (
           <ModelRow
@@ -1329,16 +1326,16 @@ function ModelPopover() {
         <strong>{modelTab === "quick-switch" ? "Switching policy" : "Eviction policy"}</strong>
         <p>
           {modelTab === "quick-switch"
-            ? "Keep exactly one model resident. Per-model context and sampling presets are restored on return."
-            : "Evict unpinned least-recently-used models before the VRAM budget is exceeded. Warm TTL: 30 min."}
+            ? "Keep one Workbench connection active. Existing external LM Studio instances are attached without taking ownership."
+            : "Allow a reviewed pool of explicit Workbench connections; only Workbench-owned instances can be unloaded."}
         </p>
       </div>
-      <button className="model-configure-button" type="button" onClick={() => navigate("models")}><SlidersHorizontal size={14} />Configure context, offload & VRAM</button>
+      <button className="model-configure-button" type="button" onClick={() => navigate("models")}><SlidersHorizontal size={14} />Configure LM Studio load options</button>
       <footer className="model-popover-footer">
-        <span title={settings.modelRoot}>Model directory: {shortDirectory(settings.modelRoot)} <em>read-only</em></span>
+        <span title={settings.inference.baseUrl}>Endpoint: {settings.inference.baseUrl} <em>fixed</em></span>
         <span className={runtime.available ? "runtime-ok" : "runtime-missing"}>
           {runtime.available ? <CheckCircle2 size={12} /> : <Unplug size={12} />}
-          {runtime.backend === "cuda" ? "llama.cpp CUDA" : runtime.available ? "llama.cpp CPU fallback" : "llama.cpp unavailable"}
+          {runtime.available ? "LM Studio API ready" : "LM Studio unavailable"}
         </span>
       </footer>
     </section>
@@ -1360,21 +1357,22 @@ function ModelRow({
   onUnload: () => void;
   onPin: () => void;
 }) {
-  const resident = model.loadState === "active" || model.loadState === "warm";
+  const resident = Boolean(model.workbenchInstance && (model.loadState === "active" || model.loadState === "warm"));
+  const embedding = model.modelKind === "embedding";
   return (
     <div className="model-row">
       <div className="model-name-cell">
         <StatusDot status={model.loadState} />
         <span><strong>{model.name}</strong><small>{model.quantization} · {formatContext(model.contextLength)} ctx</small></span>
       </div>
-      <span className={`model-state is-${model.loadState}`}>{model.loadState === "warm" ? "Warm standby" : capitalize(model.loadState)}</span>
-      <span title={model.measuredVramBytes ? "Live process VRAM" : "Calculated load estimate"}>{model.measuredVramBytes ? "" : "≈"}{formatGb(model.measuredVramBytes ?? model.estimatedVramBytes)}</span>
+      <span className={`model-state is-${model.loadState}`}>{resident ? "Connected" : model.loadedInstances?.length ? "Loaded in LM Studio" : embedding ? "Embedding" : "Available"}</span>
+      <span title="Model weight size reported by LM Studio">{formatGb(model.sizeBytes)}</span>
       <div className="model-actions">
         <button className="icon-button" type="button" onClick={onPin} title={model.pinned ? "Unpin model" : "Pin model"} aria-label={model.pinned ? "Unpin model" : "Pin model"}>
           {model.pinned ? <PinOff size={13} /> : <Pin size={13} />}
         </button>
-        <button className="text-action" type="button" onClick={resident ? onUnload : onLoad} disabled={disabled || busy || model.loadState === "queued"}>
-          {busy ? <LoaderCircle className="spin" size={13} /> : resident ? "Evict" : "Load"}
+        <button className="text-action" type="button" onClick={resident ? onUnload : onLoad} disabled={disabled || busy || embedding || model.loadState === "queued"}>
+          {busy ? <LoaderCircle className="spin" size={13} /> : resident ? "Disconnect" : embedding ? "Inventory" : model.loadedInstances?.length ? "Connect" : "Load"}
         </button>
       </div>
     </div>

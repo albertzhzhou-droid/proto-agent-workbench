@@ -12,8 +12,15 @@ from .json_validation import JsonValidationError, strict_json_loads
 from .literature import DEFAULT_LITERATURE_PATH
 from .parts import DEFAULT_PARTS_PATH
 from .provenance import ProvenanceError, create_provenance, verify_provenance
-from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
-from .security import MAX_JSON_FILE_BYTES, MAX_TEXT_FILE_BYTES, WorkspacePaths, read_bytes_bounded, write_text_bounded
+from .workflow import DEFAULT_WORKFLOW_PATH, resolve_workflow_skills, run_design_review
+from .security import (
+    MAX_JSON_FILE_BYTES,
+    MAX_TEXT_FILE_BYTES,
+    WorkspacePaths,
+    read_bytes_bounded,
+    write_text_bounded,
+)
+from .skill_sdk import resolve_skill_adapter
 
 
 DEFAULT_REVIEW_OUT_DIR = Path("build") / "reviews"
@@ -57,6 +64,11 @@ def build_review_packet(
         "workflow": workflow_source.relative_to(paths.workspace).as_posix(),
     }
     _validate_manifest(manifest, expected_inputs=expected_inputs)
+    _verify_current_workflow_skill_bindings(
+        manifest,
+        {"design": design_source, "parts": parts_source, "workflow": workflow_source},
+        paths,
+    )
     workflow_code = 0 if manifest["ok"] else 1
 
     run_id = manifest.get("run_id") or _fallback_run_id(design_path)
@@ -93,6 +105,20 @@ def build_review_packet(
         },
         "review_status": manifest.get("review_status", "human_review_required"),
         "summary": manifest.get("summary", ""),
+        "skill_compatibility": manifest["skill_compatibility"],
+        "skill_catalog_sha256": manifest.get("skill_catalog_sha256", ""),
+        "connector_registry_sha256": manifest.get("connector_registry_sha256", ""),
+        "workflow_skill_bindings": manifest.get("skill_bindings", []),
+        "review_skill_bindings": _review_skill_bindings(
+            paths,
+            literature_query,
+            evidence_path,
+            checklist_path,
+            workflow_provenance,
+            manifest["skill_catalog_sha256"],
+            manifest["connector_registry_sha256"],
+            manifest["skill_compatibility"],
+        ),
         "evidence_summary": evidence_payload["summary"],
         "artifacts": _artifact_list(
             manifest,
@@ -201,8 +227,127 @@ def _review_gates(manifest: dict[str, Any], evidence_payload: dict[str, Any]) ->
     ]
 
 
+def _review_skill_bindings(
+    paths: WorkspacePaths,
+    literature_query: str | None,
+    evidence_path: Path,
+    checklist_path: Path,
+    workflow_provenance: Path,
+    expected_catalog_sha256: str,
+    expected_connector_registry_sha256: str,
+    skill_compatibility: dict[str, str],
+) -> list[dict[str, Any]]:
+    if skill_compatibility["status"] == "needs_review":
+        return []
+    requests = [
+        ("research-provenance", ["capture-human-review", "verify-provenance"]),
+        (
+            "evidence-first-literature-review",
+            ["bind-review-evidence"] + (["search-local-sources"] if literature_query else []),
+        ),
+    ]
+    bindings: list[dict[str, Any]] = []
+    for skill_id, requested_operations in requests:
+        resolution = resolve_skill_adapter(skill_id, workspace_root=paths.workspace)
+        if (
+            resolution["catalog_sha256"] != expected_catalog_sha256
+            or resolution["connector_registry_sha256"] != expected_connector_registry_sha256
+        ):
+            raise ProvenanceError("Skill catalog or connector registry changed after the workflow was recorded")
+        adapter = resolution["adapter"]
+        operations = {operation["id"]: operation for operation in adapter["operations"]}
+        missing = [
+            operation_id
+            for operation_id in requested_operations
+            if operation_id not in operations or not operations[operation_id]["available"]
+        ]
+        if missing:
+            raise ValueError(f"Review skill operations are unavailable for {skill_id}: {', '.join(missing)}")
+        bindings.append(
+            {
+                "skill_id": skill_id,
+                "application_status": "applied_with_evidence",
+                "operations": requested_operations,
+                "evidence": [
+                    path.relative_to(paths.workspace).as_posix()
+                    for path in (
+                        (workflow_provenance, evidence_path, checklist_path)
+                        if skill_id == "research-provenance"
+                        else (evidence_path,)
+                    )
+                ],
+                "adapter_version": adapter["version"],
+                "catalog_sha256": resolution["catalog_sha256"],
+                "connector_registry_sha256": resolution["connector_registry_sha256"],
+                "manifest_sha256": adapter["manifest_sha256"],
+                "document_sha256": adapter["document_sha256"],
+            }
+        )
+    return bindings
+
+
+def _verify_current_workflow_skill_bindings(
+    manifest: dict[str, Any],
+    input_sources: dict[str, Path],
+    paths: WorkspacePaths,
+) -> None:
+    """Verify consumed snapshots, then re-resolve rather than trust self-described bindings."""
+
+    current_payloads: dict[str, bytes] = {}
+    for name, source in input_sources.items():
+        limit = MAX_TEXT_FILE_BYTES if name == "design" else MAX_JSON_FILE_BYTES
+        current_bytes = read_bytes_bounded(source, limit)
+        snapshot_source = paths.build_file(
+            manifest["inputs"][f"consumed_{name}"],
+            extensions={".proto"} if name == "design" else {".json"},
+            must_exist=True,
+        )
+        snapshot_bytes = read_bytes_bounded(snapshot_source, limit)
+        expected = manifest["input_digests"][name]
+        if (
+            len(current_bytes) != expected["size"]
+            or hashlib.sha256(current_bytes).hexdigest() != expected["sha256"]
+            or snapshot_bytes != current_bytes
+        ):
+            raise ProvenanceError(f"{name} input no longer matches the immutable bytes consumed by the run")
+        current_payloads[name] = current_bytes
+
+    current_bytes = current_payloads["workflow"]
+    try:
+        current_workflow = strict_json_loads(current_bytes.decode("utf-8"), max_bytes=MAX_JSON_FILE_BYTES)
+    except (UnicodeDecodeError, JsonValidationError) as exc:
+        raise ProvenanceError("workflow definition is not strict bounded UTF-8 JSON") from exc
+    if not isinstance(current_workflow, dict) or current_workflow != manifest["workflow"]:
+        raise ProvenanceError("workflow definition changed after the workflow manifest was recorded")
+    if hashlib.sha256(current_bytes).hexdigest() != manifest["workflow_sha256"]:
+        raise ProvenanceError("workflow input digest does not match the bytes consumed by the run")
+    try:
+        (
+            expected_catalog_sha256,
+            expected_connector_registry_sha256,
+            expected_bindings,
+            expected_compatibility,
+        ) = resolve_workflow_skills(current_workflow, paths)
+    except ValueError as exc:
+        raise ProvenanceError("workflow Skill bindings no longer resolve against the governed catalog") from exc
+
+    if manifest["connector_registry_sha256"] != expected_connector_registry_sha256:
+        raise ProvenanceError("connector registry changed after the workflow was recorded")
+    if manifest["skill_catalog_sha256"] != expected_catalog_sha256:
+        raise ProvenanceError("Skill catalog changed after the workflow was recorded")
+    if manifest["skill_compatibility"] != expected_compatibility:
+        raise ProvenanceError("workflow Skill compatibility evidence does not match current governed resolution")
+    if manifest["skill_bindings"] != expected_bindings:
+        raise ProvenanceError("workflow Skill bindings do not match current governed resolution")
+
+
 def _next_actions(manifest: dict[str, Any], evidence_payload: dict[str, Any]) -> list[str]:
     actions = []
+    if manifest["skill_compatibility"]["status"] == "needs_review":
+        actions.append(
+            "Review and explicitly adopt a current workflow with governed Skill bindings; "
+            "do not overwrite the existing workflow automatically."
+        )
     if evidence_payload["summary"]["status_counts"].get("failed", 0):
         actions.append("Resolve failed evidence cards and rerun the design review workflow.")
     actions.append("Review human-review evidence cards before using outputs in any scientific decision.")
@@ -217,6 +362,11 @@ def _write_checklist(path: Path, manifest: dict[str, Any], evidence_payload: dic
         "# Human Review Checklist",
         "",
         f"- [ ] Confirm design intent for `{manifest.get('inputs', {}).get('design', '')}`.",
+        *(
+            ["- [ ] Explicitly adopt a current workflow with governed Skill bindings; preserve the legacy source file."]
+            if manifest["skill_compatibility"]["status"] == "needs_review"
+            else []
+        ),
         "- [ ] Review all failed and needs-review evidence cards.",
         "- [ ] Verify part library provenance and intended chassis.",
         "- [ ] Verify sequence constraints and export format expectations.",
@@ -289,18 +439,122 @@ def _validate_manifest(
     if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", run_id):
         raise ValueError("Review manifest run_id is missing or unsafe.")
     inputs = manifest.get("inputs")
+    expected_input_fields = {
+        "design",
+        "parts",
+        "workflow",
+        "consumed_design",
+        "consumed_parts",
+        "consumed_workflow",
+    }
     if (
         not isinstance(inputs, dict)
-        or set(inputs) != {"design", "parts", "workflow"}
+        or set(inputs) != expected_input_fields
         or not all(isinstance(value, str) and 1 <= len(value) <= 512 for value in inputs.values())
     ):
-        raise ValueError("Review manifest inputs must contain only bounded design, parts, and workflow paths.")
-    if expected_inputs is not None and inputs != expected_inputs:
+        raise ValueError("Review manifest inputs must contain the original and consumed bounded input paths.")
+    if expected_inputs is not None and any(inputs[name] != value for name, value in expected_inputs.items()):
         raise ValueError("Review manifest inputs do not match the requested design, parts, and workflow.")
+    input_digests = manifest.get("input_digests")
+    if not isinstance(input_digests, dict) or set(input_digests) != {"design", "parts", "workflow"}:
+        raise ValueError("Review manifest input digests are missing or malformed.")
+    for digest in input_digests.values():
+        if (
+            not isinstance(digest, dict)
+            or set(digest) != {"sha256", "size"}
+            or not isinstance(digest.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", digest["sha256"])
+            or not isinstance(digest.get("size"), int)
+            or isinstance(digest["size"], bool)
+            or not 0 <= digest["size"] <= MAX_JSON_FILE_BYTES
+        ):
+            raise ValueError("Review manifest input digest record is malformed.")
     if manifest.get("review_status") != "human_review_required":
         raise ValueError("Review manifest must retain the human_review_required gate.")
     if not isinstance(manifest.get("summary"), str) or len(manifest["summary"]) > 8192:
         raise ValueError("Review manifest summary is malformed or exceeds the limit.")
+    compatibility = manifest.get("skill_compatibility")
+    compatibility_fields = {"mode", "status", "reason_code", "message"}
+    if (
+        not isinstance(compatibility, dict)
+        or set(compatibility) != compatibility_fields
+        or not isinstance(compatibility.get("message"), str)
+        or not 1 <= len(compatibility["message"]) <= 1024
+    ):
+        raise ValueError("Review manifest Skill compatibility evidence is missing or malformed.")
+    workflow_payload = manifest.get("workflow")
+    if not isinstance(workflow_payload, dict):
+        raise ValueError("Review manifest workflow definition is missing or malformed.")
+    workflow_sha256 = manifest.get("workflow_sha256")
+    if not isinstance(workflow_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", workflow_sha256):
+        raise ValueError("Review manifest workflow input digest is missing or malformed.")
+    if workflow_sha256 != input_digests["workflow"]["sha256"]:
+        raise ValueError("Review manifest workflow digest claims disagree.")
+    declared_skill_bindings = workflow_payload.get("skill_bindings", [])
+    skill_catalog_sha256 = manifest.get("skill_catalog_sha256")
+    connector_registry_sha256 = manifest.get("connector_registry_sha256")
+    skill_bindings = manifest.get("skill_bindings")
+    if compatibility == {
+        "mode": "legacy_no_skill_bindings",
+        "status": "needs_review",
+        "reason_code": "LEGACY_WORKFLOW_SKILL_BINDINGS_MISSING",
+        "message": compatibility["message"],
+    }:
+        if declared_skill_bindings != []:
+            raise ValueError("Legacy Skill compatibility cannot be used with declared workflow Skill bindings.")
+        if skill_catalog_sha256 != "" or connector_registry_sha256 != "" or skill_bindings != []:
+            raise ValueError("Legacy Skill compatibility must not claim catalog, connector, or binding evidence.")
+        if manifest["ok"]:
+            raise ValueError("Legacy workflows without governed Skill bindings must fail closed.")
+    elif compatibility == {
+        "mode": "skill_bound",
+        "status": "resolved",
+        "reason_code": "SKILL_BINDINGS_RESOLVED",
+        "message": compatibility["message"],
+    }:
+        if not isinstance(declared_skill_bindings, list) or not declared_skill_bindings:
+            raise ValueError("Resolved Skill compatibility requires declared workflow Skill bindings.")
+        if not isinstance(skill_catalog_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", skill_catalog_sha256):
+            raise ValueError("Review manifest skill catalogue digest is missing or malformed.")
+        if not isinstance(connector_registry_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", connector_registry_sha256):
+            raise ValueError("Review manifest connector registry digest is missing or malformed.")
+        if not isinstance(skill_bindings, list) or not 1 <= len(skill_bindings) <= 16:
+            raise ValueError("Review manifest skill bindings are missing or exceed the limit.")
+    else:
+        raise ValueError("Review manifest Skill compatibility mode is unsupported.")
+    for binding in skill_bindings:
+        expected_fields = {
+            "skill_id",
+            "stage",
+            "required",
+            "resolution_status",
+            "operations",
+            "missing_operations",
+            "adapter_version",
+            "manifest_sha256",
+            "document_sha256",
+        }
+        if not isinstance(binding, dict) or set(binding) != expected_fields:
+            raise ValueError("Review manifest skill binding contains missing or unknown fields.")
+        if (
+            not isinstance(binding["skill_id"], str)
+            or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", binding["skill_id"])
+            or not isinstance(binding["stage"], str)
+            or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", binding["stage"])
+            or not isinstance(binding["required"], bool)
+            or binding["resolution_status"] != "resolved"
+            or not isinstance(binding["operations"], list)
+            or not 1 <= len(binding["operations"]) <= 16
+            or not all(isinstance(item, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", item) for item in binding["operations"])
+            or binding["missing_operations"] != []
+            or not isinstance(binding["adapter_version"], str)
+            or len(binding["adapter_version"]) > 64
+            or not isinstance(binding["manifest_sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", binding["manifest_sha256"])
+            or not isinstance(binding["document_sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", binding["document_sha256"])
+        ):
+            raise ValueError("Review manifest skill binding is malformed or unresolved.")
 
     steps = manifest.get("steps")
     artifacts = manifest.get("artifacts")
@@ -352,8 +606,9 @@ def _validate_manifest(
         raise ValueError("Review manifest diagnostics do not match its step diagnostics.")
     if artifacts != flattened_artifacts:
         raise ValueError("Review manifest artifacts do not match its step artifacts.")
-    recomputed_ok = all(
+    recomputed_software_ok = all(
         step["ok"] for step in steps if not step["skipped"] and step["required"]
     ) and not any(item.get("severity") == "error" for item in flattened_diagnostics)
+    recomputed_ok = recomputed_software_ok and compatibility["status"] == "resolved"
     if manifest["ok"] != recomputed_ok:
         raise ValueError("Review manifest ok does not match its required steps and diagnostics.")

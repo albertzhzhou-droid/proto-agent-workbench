@@ -23,7 +23,7 @@ The current implementation is intentionally conservative: it uses a tiny Proto-l
 
 ## Biological Materials Catalogue
 
-The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`. Large synchronized snapshots and local state stay outside Git, but `materials/bundles/` contains a small, deterministic public distribution: 10 reviewed iGEM DNA parts and 3 reviewed UniProt protein records, plus a physically separate metadata-only quarantine index. The 1,795 quarantine rows retain public source, license, original length/hash, and isolation reasons, while all quarantine sequence objects and personal or machine-local fields are omitted.
+The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`. Large synchronized snapshots and local state stay outside Git, but `materials/bundles/` contains a small, deterministic public distribution: 15 reviewed iGEM DNA parts and 3 reviewed UniProt protein records, plus a physically separate metadata-only quarantine index. The 1,795 quarantine rows retain public source, license, original length/hash, and isolation reasons, while all quarantine sequence objects and personal or machine-local fields are omitted.
 
 Verify both profiles before use. Installing the public catalog does not activate it; activation remains a separate human decision. The quarantine profile has `activation_policy: DENY`, is not accepted by the public installer, and is never enumerated by model-facing MCP tools.
 
@@ -32,8 +32,16 @@ proto-agent materials bundle-verify --profile PUBLIC_CATALOG
 proto-agent materials bundle-verify --profile PUBLIC_QUARANTINE
 proto-agent materials bundle-install-public
 # Optional explicit human action after reviewing the installed snapshot:
-proto-agent materials bundle-install-public --activate
+proto-agent materials bundle-install-public --activate `
+  --operator "<self-declared operator label>" `
+  --approval-reference "<review or change-record reference>"
 ```
+
+For an `EXPLICIT_HUMAN_ONLY` snapshot, both values are mandatory, bounded,
+single-line evidence. The operator label is recorded as self-declared and is
+not treated as authenticated identity. Activation and rollback atomically
+replace `active.json` with the action, evidence, UTC time, and exact manifest
+SHA-256; the checked-in public bundle remains inactive.
 
 Source synchronization still creates inactive staging snapshots, and the active external catalogue still uses SQLite/FTS, content-addressed sequence objects, manual activation/rollback, and a separate admin-only quarantine. See [`docs/materials_library.md`](docs/materials_library.md) and [`materials/bundles/README.md`](materials/bundles/README.md) for schema, provenance, rights, sanitization, and regeneration details.
 
@@ -59,13 +67,14 @@ proto-agent parts search promoter --chassis ecoli_k12
 proto-agent check designs\toggle_switch.proto --json
 proto-agent compile designs\toggle_switch.proto --out build\toggle_switch.ir.json
 proto-agent connectors check
+proto-agent skills audit
 proto-agent workflow run designs\toggle_switch.proto
 proto-agent review run designs\toggle_switch.proto
 proto-agent mcp --once-file examples\mcp\tools_list.request.json
 ```
 
 The fixture-only path above is local and deterministic. Materials snapshots,
-live literature connectors, GGUF inference, and code-execution adapters have
+live literature connectors, LM Studio inference, and code-execution adapters have
 separate configuration and approval boundaries; see the linked documentation
 before enabling them. Unsafe host execution is intentionally not part of the
 quick start.
@@ -110,6 +119,9 @@ structured diagnostics.
 The local workbench has three parts:
 
 - `connectors/proto_workbench.json` declares available integrations such as the Proto DSL, local parts library, PubMed, Jupyter-lite, optional R runtime, SBOL, and DNA Chisel-style sequence optimization.
+- `.codex/skills/` contains seven project-scoped AcademicForge adaptations. `proto-agent skills list|resolve|audit` and the read-only `proto_skills_list|resolve` MCP tools parse their bounded vendor-neutral manifests, resolve only declared CLI/MCP/HTTP interfaces, and never execute Skill content. See [`docs/academicforge_skill_adaptation.md`](docs/academicforge_skill_adaptation.md).
+- Workflow manifests bind the exact Skill catalogue digest and resolved policy operations. Review packets distinguish resolution from application and attach provenance/evidence/checklist paths whenever a review Skill is marked applied.
+- Proto Workbench obtains every model catalogue, lifecycle action, and chat completion from LM Studio at `http://127.0.0.1:1234`; it no longer scans a model directory or starts a bundled model runtime.
 - `literature/seed_sources.json` stores local source notes for auditable design rationale.
 - `proto-agent literature pubmed` searches PubMed through NCBI E-utilities and caches metadata under `build/cache/pubmed`.
 - `certifi` is used for TLS verification when available. A custom CA must be passed as a bounded workspace-relative `--cafile <cert.pem>` on the direct CLI; MCP requests cannot select CA or cache paths.

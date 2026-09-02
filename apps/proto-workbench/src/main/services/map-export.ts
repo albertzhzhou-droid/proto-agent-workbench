@@ -59,6 +59,7 @@ export async function exportVerifiedMap(
 ): Promise<MapExportVerificationReceipt> {
   const bytes = validateMapExportRequest(request);
   const canonicalRoot = await canonicalDirectory(workspaceRoot, workspaceRoot);
+  await revalidateSourceArtifact(canonicalRoot, request.metadata);
   const outputDirectory = join(canonicalRoot, "build", "visualization-exports");
   await canonicalDirectory(outputDirectory, canonicalRoot, true);
 
@@ -119,6 +120,7 @@ export async function exportVerifiedMap(
       pixelSha256: evidence.pixelSha256,
       sampledColorCount: evidence.sampledColorCount,
       externalResourcesBlocked: true,
+      renderedMapLayers: request.metadata.renderedMapLayers,
       reviewStatus: "human_review_required",
     };
     const verificationBytes = Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`, "utf8");
@@ -143,6 +145,7 @@ export async function exportVerifiedMap(
     ) {
       throw new Error("Published map export failed its final digest reopen check.");
     }
+    await revalidateSourceArtifact(canonicalRoot, request.metadata);
     return receipt;
   } catch (error) {
     await Promise.allSettled(publishedPaths.map((path) => rm(path, { force: true })));
@@ -231,11 +234,57 @@ function validateMetadata(metadata: MapExportMetadata, format: MapExportRequest[
   if (metadata.reviewStatus !== "human_review_required" || metadata.renderer?.name !== "CGView.js") {
     throw new Error("Map export metadata is missing its renderer or review boundary.");
   }
-  if (metadata.artifactSha256 && !/^[a-f0-9]{64}$/.test(metadata.artifactSha256)) {
-    throw new Error("Map export metadata contains an invalid artifact digest.");
+  if (typeof metadata.renderedMapLayers?.primerBindings !== "boolean") {
+    throw new Error("Map export metadata is missing the primer-binding display state.");
+  }
+  if (
+    typeof metadata.artifactPath !== "string"
+    || !metadata.artifactPath.trim()
+    || !/^[a-f0-9]{64}$/.test(metadata.artifactSha256)
+    || !Number.isSafeInteger(metadata.artifactSizeBytes)
+    || metadata.artifactSizeBytes < 1
+    || metadata.artifactSizeBytes > 16 * 1024 * 1024
+  ) {
+    throw new Error("Map export metadata is missing its bounded source-artifact binding.");
+  }
+  if (metadata.digestStatus === "mismatch") {
+    throw new Error("Map export is blocked for an artifact with a mismatched provenance digest.");
+  }
+  if (
+    metadata.governance?.status !== "verified"
+    || metadata.governance.unverifiedPartCount !== 0
+    || !Array.isArray(metadata.governance.gaps)
+    || metadata.governance.gaps.length !== 0
+  ) {
+    throw new Error("Map export is blocked until every rendered DNA part has complete governance metadata.");
   }
   const serialized = JSON.stringify(metadata);
   if (serialized.length > 64 * 1024) throw new Error("Map export metadata exceeds the supported size envelope.");
+}
+
+async function revalidateSourceArtifact(workspaceRoot: string, metadata: MapExportMetadata): Promise<void> {
+  const normalized = metadata.artifactPath.replaceAll("\\", "/");
+  if (
+    !normalized.toLocaleLowerCase().startsWith("build/")
+    || normalized.includes("\0")
+    || normalized.split("/").some((segment) => segment === "" || segment === "." || segment === "..")
+    || !normalized.toLocaleLowerCase().endsWith(".json")
+  ) {
+    throw new Error("Map export source artifact must be a canonical JSON file under build/.");
+  }
+  const requested = resolve(workspaceRoot, normalized);
+  const relativePath = relative(workspaceRoot, requested);
+  if (!relativePath || relativePath.startsWith("..") || resolve(workspaceRoot, relativePath) !== requested) {
+    throw new Error("Map export source artifact escaped the active workspace.");
+  }
+  const info = await lstat(requested);
+  if (info.isSymbolicLink() || !info.isFile()) throw new Error("Map export source artifact must be a canonical regular file.");
+  const canonical = await realpath(requested);
+  if (!samePath(requested, canonical)) throw new Error("Map export source artifact cannot traverse a linked path.");
+  const sourceBytes = await readFile(canonical);
+  if (sourceBytes.byteLength !== metadata.artifactSizeBytes || digest(sourceBytes) !== metadata.artifactSha256) {
+    throw new Error("Map export source artifact changed after visualization; refresh the artifact inventory and retry.");
+  }
 }
 
 function validDimension(value: number): boolean {

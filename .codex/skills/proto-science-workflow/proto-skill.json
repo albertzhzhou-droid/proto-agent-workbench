@@ -1,0 +1,70 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "proto-science-workflow",
+  "name": "Proto Science Workflow",
+  "version": "1.0.0",
+  "description": "Route governed materials, local inference, sequence validation, provenance, and human review through Proto's declared interfaces.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Project-specific orchestration distilled into vendor-neutral policy and existing Proto interfaces.",
+    "upstream": [
+      {
+        "id": "literature-review",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+      },
+      {
+        "id": "figure-style",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-style",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "7bd8416f1abc9d520d99e5b5c2a13fb816af5ea9ef6d0a695fde42d9b2b5348d"
+      },
+      {
+        "id": "managed-model-endpoints",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/managed-model-endpoints",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "48cb2bf810b3c54d43ab8384effe019c725e1faf14161464eb8fabf7e8d8d47a"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "mixed-explicit",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "inspect-connectors",
+      "purpose": "Resolve the project's real capability registry before routing work.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_connectors_check"}
+      ]
+    },
+    {
+      "id": "search-governed-materials",
+      "purpose": "Search only governed, model-visible material records.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_search"}
+      ]
+    },
+    {
+      "id": "run-design-review",
+      "purpose": "Run the design workflow and preserve structured diagnostics and artifacts.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_workflow_run"}
+      ]
+    },
+    {
+      "id": "build-review-packet",
+      "purpose": "Create a human-review packet that preserves evidence and safety boundaries.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_review_packet"}
+      ]
+    }
+  ]
+}

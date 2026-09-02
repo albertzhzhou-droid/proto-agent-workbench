@@ -9,10 +9,14 @@ const IDEMPOTENCY_KEY = z.string().min(8).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9
 const FILE_PATH = z.string().min(1).max(4_096);
 const REVISION = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const MODEL_OPTIONS = z.object({
-  contextLength: z.number().int().min(256).max(2_097_152).optional(),
+  instanceId: z.string().min(1).max(1_024).optional(),
+  contextLength: z.number().int().min(256).max(16_777_216).optional(),
   gpuLayers: z.number().int().min(0).max(2_048).optional(),
   cacheType: z.enum(["f16", "q8_0", "q4_0"]).optional(),
   kvCachePlacement: z.enum(["gpu", "cpu"]).optional(),
+  evalBatchSize: z.number().int().min(1).max(65_536).optional(),
+  flashAttention: z.boolean().optional(),
+  numExperts: z.number().int().min(1).max(1_024).optional(),
   allowUnsafeMemoryPressure: z.boolean().optional(),
 }).strict();
 const RESIDENCY_POLICY = z.object({
@@ -54,6 +58,10 @@ const MATERIALS_SEARCH = z.object({
   snapshot: z.string().max(128).optional(),
 }).strict();
 const MATERIALS_SNAPSHOT_ID = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+const MATERIALS_ACTIVATION_EVIDENCE = z.object({
+  operator: z.string().trim().min(1).max(128).regex(/^[^\x00-\x1f\x7f\u0085\u2028\u2029]+$/u),
+  approval_reference: z.string().trim().min(1).max(512).regex(/^[^\x00-\x1f\x7f\u0085\u2028\u2029]+$/u),
+}).strict();
 const MATERIALS_RESOURCE_ID = z.string().min(1).max(256).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*:[^\\/\\\\]+(?:[\\/\\\\][^\\/\\\\]+)*$/);
 const MATERIALS_REVIEW = z.object({
   resource_id: MATERIALS_RESOURCE_ID,
@@ -93,9 +101,15 @@ const MAP_EXPORT_METADATA = z.object({
   format: z.enum(["svg", "png"]),
   designId: z.string().min(1).max(512),
   construct: z.string().min(1).max(512),
-  artifactPath: FILE_PATH.optional(),
-  artifactSha256: SHA256.optional(),
+  artifactPath: FILE_PATH,
+  artifactSha256: SHA256,
+  artifactSizeBytes: z.number().int().min(1).max(16 * 1024 * 1024),
   digestStatus: z.enum(["match", "mismatch", "unverified"]),
+  governance: z.object({
+    status: z.enum(["verified", "unverified"]),
+    unverifiedPartCount: z.number().int().min(0).max(20_000),
+    gaps: z.array(z.string().min(1).max(256)).max(64),
+  }).strict(),
   renderer: z.object({ name: z.literal("CGView.js"), version: z.string().min(1).max(32) }).strict(),
   topology: z.object({
     source: z.enum(["linear", "circular", "unknown"]),
@@ -110,6 +124,7 @@ const MAP_EXPORT_METADATA = z.object({
   coordinates: z.literal("internal 0-based end-exclusive; display 1-based inclusive"),
   renderedMapLayers: z.object({
     partAnnotations: z.boolean(),
+    primerBindings: z.boolean(),
     softwareOrfDiscovery: z.boolean(),
     softwareOrfMinimumAminoAcids: z.number().int().min(1).max(10_000).nullable(),
     coordinateRuler: z.boolean(),
@@ -200,8 +215,8 @@ const schemas: Record<string, z.ZodType<unknown[]>> = {
   [IPC.materialsSearch]: z.tuple([MATERIALS_SEARCH]),
   [IPC.materialsGet]: z.tuple([MATERIALS_RESOURCE_ID, z.boolean()]),
   [IPC.materialsFacets]: noArguments,
-  [IPC.materialsActivate]: z.tuple([MATERIALS_SNAPSHOT_ID]),
-  [IPC.materialsRollback]: z.tuple([MATERIALS_SNAPSHOT_ID]),
+  [IPC.materialsActivate]: z.tuple([MATERIALS_SNAPSHOT_ID, MATERIALS_ACTIVATION_EVIDENCE]),
+  [IPC.materialsRollback]: z.tuple([MATERIALS_SNAPSHOT_ID, MATERIALS_ACTIVATION_EVIDENCE]),
   [IPC.materialsSync]: z.tuple([z.enum(["uniprot", "igem", "rhea", "biomodels"]), z.number().int().min(1).max(2_000_000)]),
   [IPC.materialsImport]: noArguments,
   [IPC.materialsDiff]: z.tuple([MATERIALS_SNAPSHOT_ID, MATERIALS_SNAPSHOT_ID]),

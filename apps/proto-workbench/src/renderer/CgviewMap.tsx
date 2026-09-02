@@ -20,7 +20,7 @@ export interface ProductMapHandle {
 interface ProductMapProps {
   construct: DesignConstruct;
   selectedFeatureIndex?: number;
-  selectedRange?: { readonly start: number; readonly end: number };
+  selectedRanges?: ReadonlyArray<{ readonly start: number; readonly end: number }>;
   hiddenFeatureIndexes?: ReadonlySet<number>;
   showAnnotations: boolean;
   labelDensity: Exclude<DesignLabelDensity, "auto">;
@@ -42,7 +42,7 @@ interface CapturedDocumentListener {
 export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function CgviewMap({
   construct,
   selectedFeatureIndex,
-  selectedRange,
+  selectedRanges,
   hiddenFeatureIndexes,
   showAnnotations,
   labelDensity,
@@ -318,19 +318,20 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
       selectedFeature.highlight();
       return;
     }
-    if (!selectedRange) return;
-    const coordinates = toCgviewFeatureCoordinates({ ...selectedRange, direction: 0 }, construct.length);
-    if (!coordinates) return;
-    viewer.canvas.drawElement(
-      "ui",
-      coordinates.start,
-      coordinates.stop,
-      viewer.backbone.adjustedCenterOffset,
-      "rgba(5, 121, 108, 0.58)",
-      Math.max(8, viewer.backbone.adjustedThickness + 5),
-      "arc",
-    );
-  }, [construct.length, selectedFeatureIndex, selectedRange]);
+    for (const selectedRange of selectedRanges ?? []) {
+      const coordinates = toCgviewFeatureCoordinates({ ...selectedRange, direction: 0 }, construct.length);
+      if (!coordinates) continue;
+      viewer.canvas.drawElement(
+        "ui",
+        coordinates.start,
+        coordinates.stop,
+        viewer.backbone.adjustedCenterOffset,
+        "rgba(5, 121, 108, 0.58)",
+        Math.max(8, viewer.backbone.adjustedThickness + 5),
+        "arc",
+      );
+    }
+  }, [construct.length, selectedFeatureIndex, selectedRanges]);
 
   return (
     <div className="cgview-map" data-testid="cgview-map" role="group" aria-label={`Interactive ${mapFormat} product map for ${construct.name}`} aria-describedby={`${containerId}-summary`}>

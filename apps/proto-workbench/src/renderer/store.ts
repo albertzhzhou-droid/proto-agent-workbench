@@ -146,7 +146,12 @@ interface WorkbenchState {
 
 const GIB = 1024 ** 3;
 const EMPTY_SETTINGS: AppSettings = {
-  modelRoot: "",
+  inference: {
+    provider: "lmstudio",
+    baseUrl: "http://127.0.0.1:1234",
+    tokenEnvNames: ["LMSTUDIO_API_KEY", "LM_API_TOKEN"],
+    explicitLoadOnly: true,
+  },
   workspacePath: "",
   residencyPolicy: { mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: [] },
   modules: defaultModuleSettings(),
@@ -187,7 +192,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   modelsOpen: false,
   modelTab: "quick-switch",
   settings: structuredClone(EMPTY_SETTINGS),
-  runtime: { available: false, detail: "Checking independent runtime..." },
+  runtime: { available: false, provider: "lmstudio", endpoint: "http://127.0.0.1:1234", detail: "Checking LM Studio..." },
   startupRecovery: structuredClone(EMPTY_STARTUP_RECOVERY),
   moduleIntegrity: structuredClone(EMPTY_MODULE_INTEGRITY),
   moduleAudits: [],
@@ -402,10 +407,12 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
   async refreshModels() {
     if (get().isScanningModels) return;
-    set({ isScanningModels: true, toast: "Scanning the read-only GGUF model library..." });
+    set({ isScanningModels: true, toast: "Synchronizing the LM Studio native model catalog..." });
     try {
       const models = await workbenchApi().models.scan();
-      set({ models, toast: `Scanned ${models.length} local GGUF model${models.length === 1 ? "" : "s"}.` });
+      const loaded = models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0);
+      const runtime = await workbenchApi().app.getRuntimeStatus();
+      set({ models, runtime, toast: `Discovered ${models.length} LM Studio model${models.length === 1 ? "" : "s"}; ${loaded} loaded instance${loaded === 1 ? "" : "s"}.` });
     } catch (error) {
       set({ toast: friendlyError(error) });
     } finally {
@@ -423,7 +430,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       const thread = get().thread;
       if (thread) set({ thread: await workbenchApi().threads.update(thread.id, { modelId }) });
       const runtime = await workbenchApi().app.getRuntimeStatus();
-      set({ runtime, toast: "Model is ready and live VRAM measurement has started." });
+      set({ runtime, toast: "The exact LM Studio instance is connected for Workbench chat." });
     } catch (error) {
       set({ toast: friendlyError(error) });
     } finally {
@@ -438,7 +445,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     try {
       await workbenchApi().models.unload(modelId);
       const runtime = await workbenchApi().app.getRuntimeStatus();
-      set({ runtime, toast: "Model unloaded." });
+      set({ runtime, toast: "Workbench disconnected; only a Workbench-owned LM Studio instance was eligible for unload." });
     } catch (error) {
       set({ toast: friendlyError(error) });
     }

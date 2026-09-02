@@ -45,12 +45,23 @@ test("preview fixtures have a global, persistent safety boundary", async () => {
 });
 
 test("Design Explorer binds current artifact bytes to provenance and blocks invalid IR", async () => {
-  const designs = await readFile(resolve("src", "renderer", "DesignsPage.tsx"), "utf8");
+  const [designs, mapExport] = await Promise.all([
+    readFile(resolve("src", "renderer", "DesignsPage.tsx"), "utf8"),
+    readFile(resolve("src", "main", "services", "map-export.ts"), "utf8"),
+  ]);
 
   assert.ok(designs.includes("const provenanceCandidates = entries"));
   assert.ok(designs.includes("provenance\\.json"));
   assert.match(designs, /const parsed = parseDesignProvenanceStatement\(JSON\.parse\(file\.content\) as unknown, entry\.path\)/);
-  assert.match(designs, /digestBindingForArtifact\(entry\.relativePath, file\.sha256, entry\.sizeBytes, provenanceStatements\)/);
+  assert.match(designs, /const artifactSizeBytes = new TextEncoder\(\)\.encode\(file\.content\)\.byteLength/);
+  assert.match(designs, /digestBindingForArtifact\(entry\.relativePath, file\.sha256, artifactSizeBytes, provenanceStatements\)/);
+  assert.match(designs, /artifactSizeBytes: selectedDocument\.sizeBytes/);
+  assert.equal(
+    mapExport.match(/await revalidateSourceArtifact\(canonicalRoot, request\.metadata\)/g)?.length,
+    2,
+    "map export must re-read and re-hash the source artifact before rendering and after publication",
+  );
+  assert.match(mapExport, /sourceBytes\.byteLength !== metadata\.artifactSizeBytes \|\| digest\(sourceBytes\) !== metadata\.artifactSha256/);
   assert.match(designs, /if \(!parsed\.ok \|\| !parsed\.design\)[\s\S]*?status: "invalid"[\s\S]*?diagnostics: parsed\.diagnostics/);
   assert.match(designs, /if \(!design \|\| !construct\)[\s\S]*?className="designs-page has-invalid-artifact"/);
   assert.match(designs, /<section className="design-artifact-error" role="alert">/);

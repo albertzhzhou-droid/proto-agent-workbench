@@ -32,10 +32,17 @@ export interface DesignProvenanceStatement {
   artifacts: DesignArtifactDigestRecord[];
 }
 
-export interface DesignArtifactDigestBinding {
+export interface DesignArtifactDigestDeclaration {
   status: "match" | "mismatch";
   statement: DesignProvenanceStatement;
   record: DesignArtifactDigestRecord;
+}
+
+export interface DesignArtifactDigestBinding extends DesignArtifactDigestDeclaration {
+  /** Every digest claim for this path, retained in deterministic order. */
+  declarations: DesignArtifactDigestDeclaration[];
+  /** True when provenance statements declare different digest/size pairs for the same path. */
+  conflict: boolean;
 }
 
 export type DesignProvenanceInventoryCandidate =
@@ -162,16 +169,27 @@ export function digestBindingForArtifact(
   statements: ReadonlyArray<DesignProvenanceStatement>,
 ): DesignArtifactDigestBinding | undefined {
   const key = normalizeBuildRelativePath(artifactRelativePath);
+  const normalizedSha256 = sha256.toLocaleLowerCase();
+  const declarations: DesignArtifactDigestDeclaration[] = [];
   for (const statement of statements) {
-    const record = statement.artifacts.find((item) => item.path === key);
-    if (!record) continue;
-    return {
-      status: record.sha256 === sha256.toLocaleLowerCase() && record.sizeBytes === sizeBytes ? "match" : "mismatch",
-      statement,
-      record,
-    };
+    for (const record of statement.artifacts) {
+      if (record.path !== key) continue;
+      declarations.push({
+        status: record.sha256 === normalizedSha256 && record.sizeBytes === sizeBytes ? "match" : "mismatch",
+        statement,
+        record,
+      });
+    }
   }
-  return undefined;
+  if (declarations.length === 0) return undefined;
+  declarations.sort(compareDigestDeclarations);
+  const distinctClaims = new Set(declarations.map(({ record }) => `${record.sha256}:${record.sizeBytes}`));
+  const conflict = distinctClaims.size > 1;
+  const status = conflict || declarations.some((declaration) => declaration.status === "mismatch")
+    ? "mismatch"
+    : "match";
+  const representative = declarations.find((declaration) => declaration.status === status) ?? declarations[0];
+  return { ...representative, status, declarations, conflict };
 }
 
 /**
@@ -199,6 +217,12 @@ export function summarizeDesignProvenanceInventory(
 function normalizeBuildRelativePath(value: string) {
   const normalized = normalizeWorkspaceRelativePath(value);
   return normalized.startsWith("build/") ? normalized.slice("build/".length) : normalized;
+}
+
+function compareDigestDeclarations(left: DesignArtifactDigestDeclaration, right: DesignArtifactDigestDeclaration): number {
+  const leftKey = `${normalizeWorkspaceRelativePath(left.statement.statementPath)}\0${left.statement.runId}\0${left.record.sha256}\0${left.record.sizeBytes}`;
+  const rightKey = `${normalizeWorkspaceRelativePath(right.statement.statementPath)}\0${right.statement.runId}\0${right.record.sha256}\0${right.record.sizeBytes}`;
+  return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
 }
 
 function isSha256(value: unknown): value is string {

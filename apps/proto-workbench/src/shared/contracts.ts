@@ -15,11 +15,34 @@ export type KvCachePlacement = "gpu" | "cpu";
 export type MemoryPressure = "normal" | "tight" | "unsafe";
 
 export interface ModelLoadOptions {
+  /** Exact pre-loaded LM Studio instance to attach; never treated as Workbench-owned. */
+  instanceId?: string;
   contextLength: number;
   gpuLayers: number;
   cacheType?: KvCacheType;
   kvCachePlacement?: KvCachePlacement;
+  /** LM Studio native load option. */
+  evalBatchSize?: number;
+  /** LM Studio native load option. */
+  flashAttention?: boolean;
+  /** LM Studio native MoE load option. */
+  numExperts?: number;
   allowUnsafeMemoryPressure?: boolean;
+}
+
+export interface LmStudioLoadedInstance {
+  id: string;
+  contextLength: number;
+  evalBatchSize?: number;
+  parallel?: number;
+  flashAttention?: boolean;
+  numExperts?: number;
+  offloadKvCacheToGpu?: boolean;
+}
+
+export interface ModelReasoningCapability {
+  allowed_options: Array<"off" | "on" | "low" | "medium" | "high">;
+  default: "off" | "on" | "low" | "medium" | "high";
 }
 
 export interface VramEstimate {
@@ -73,6 +96,7 @@ export interface ModelDescriptor {
   projectorPath?: string;
   toolCapability: ToolCapability;
   fingerprint: string;
+  fingerprintSource?: "file-content" | "provider-metadata";
   estimatedVramBytes: number;
   measuredVramBytes?: number;
   vramEstimate?: VramEstimate;
@@ -80,17 +104,36 @@ export interface ModelDescriptor {
   pinned: boolean;
   lastUsedAt?: string;
   error?: string;
-  metadataSource: "gguf" | "filename";
+  metadataSource: "gguf" | "filename" | "lmstudio";
+  provider?: "lmstudio" | "llama.cpp";
+  providerModelId?: string;
+  publisher?: string;
+  modelKind?: "llm" | "embedding";
+  format?: string;
+  paramsString?: string;
+  description?: string;
+  loadedInstances?: LmStudioLoadedInstance[];
+  workbenchInstance?: {
+    id: string;
+    ownedByWorkbench: boolean;
+  };
+  reasoning?: ModelReasoningCapability;
 }
 
 export interface ModelInstance {
   modelId: string;
+  instanceId?: string;
+  provider?: "lmstudio" | "llama.cpp";
+  ownedByWorkbench?: boolean;
   state: ModelLoadState;
   port?: number;
   contextLength: number;
   gpuLayers: number;
   cacheType?: KvCacheType;
   kvCachePlacement?: KvCachePlacement;
+  evalBatchSize?: number;
+  flashAttention?: boolean;
+  numExperts?: number;
   estimatedVramBytes?: number;
   measuredVramBytes?: number;
   processId?: number;
@@ -536,9 +579,15 @@ export interface MapExportMetadata {
   readonly format: MapExportFormat;
   readonly designId: string;
   readonly construct: string;
-  readonly artifactPath?: string;
-  readonly artifactSha256?: string;
+  readonly artifactPath: string;
+  readonly artifactSha256: string;
+  readonly artifactSizeBytes: number;
   readonly digestStatus: "match" | "mismatch" | "unverified";
+  readonly governance: {
+    readonly status: "verified" | "unverified";
+    readonly unverifiedPartCount: number;
+    readonly gaps: readonly string[];
+  };
   readonly renderer: { readonly name: "CGView.js"; readonly version: string };
   readonly topology: {
     readonly source: "linear" | "circular" | "unknown";
@@ -553,6 +602,7 @@ export interface MapExportMetadata {
   readonly coordinates: "internal 0-based end-exclusive; display 1-based inclusive";
   readonly renderedMapLayers: {
     readonly partAnnotations: boolean;
+    readonly primerBindings: boolean;
     readonly softwareOrfDiscovery: boolean;
     readonly softwareOrfMinimumAminoAcids: number | null;
     readonly coordinateRuler: boolean;
@@ -597,6 +647,7 @@ export interface MapExportVerificationReceipt {
   readonly pixelSha256?: string;
   readonly sampledColorCount?: number;
   readonly externalResourcesBlocked: boolean;
+  readonly renderedMapLayers: MapExportMetadata["renderedMapLayers"];
   readonly reviewStatus: "human_review_required";
 }
 
@@ -1357,9 +1408,13 @@ export interface ReviewPacketView {
 }
 
 export interface AppSettings {
-  modelRoot: string;
+  inference: {
+    provider: "lmstudio";
+    baseUrl: "http://127.0.0.1:1234";
+    tokenEnvNames: ["LMSTUDIO_API_KEY", "LM_API_TOKEN"];
+    explicitLoadOnly: true;
+  };
   workspacePath: string;
-  runtimePath?: string;
   residencyPolicy: ResidencyPolicy;
   modules: ModuleSettings;
 }
@@ -1396,6 +1451,13 @@ export interface MaterialsStatus {
   snapshots: MaterialsSnapshotSummary[];
   staging: string[];
   overlays?: Array<Record<string, unknown>>;
+}
+
+export interface MaterialsActivationEvidence {
+  /** Operator-supplied label only; this is not an authenticated identity. */
+  operator: string;
+  /** Reference to an external approval, review, or change record. */
+  approval_reference: string;
 }
 
 export interface MaterialSummary {
@@ -1692,6 +1754,10 @@ export interface ReviewComment {
 
 export interface RuntimeStatus {
   available: boolean;
+  provider?: "lmstudio" | "llama.cpp";
+  endpoint?: string;
+  modelCount?: number;
+  loadedModelCount?: number;
   path?: string;
   backend?: "cuda" | "cpu";
   degraded?: boolean;
@@ -1778,8 +1844,8 @@ export interface WorkbenchApi {
     search(input: MaterialsSearchRequest): Promise<MaterialsSearchResult>;
     get(resourceId: string, includeSequence?: boolean): Promise<{ ok: boolean; snapshot_id: string; resource: MaterialSummary }>;
     facets(): Promise<MaterialsFacets>;
-    activate(snapshotId: string): Promise<Record<string, unknown>>;
-    rollback(snapshotId: string): Promise<Record<string, unknown>>;
+    activate(snapshotId: string, evidence: MaterialsActivationEvidence): Promise<Record<string, unknown>>;
+    rollback(snapshotId: string, evidence: MaterialsActivationEvidence): Promise<Record<string, unknown>>;
     sync(source: "uniprot" | "igem" | "rhea" | "biomodels", maxRecords: number): Promise<Record<string, unknown>>;
     importFile(): Promise<Record<string, unknown> | undefined>;
     diff(leftSnapshot: string, rightSnapshot: string): Promise<Record<string, unknown>>;

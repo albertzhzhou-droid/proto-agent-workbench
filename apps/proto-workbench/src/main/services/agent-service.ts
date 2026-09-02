@@ -22,7 +22,7 @@ import {
   type OptionalModuleId,
 } from "../../shared/modules.ts";
 import type { AppDatabase } from "./database.ts";
-import type { ChatCompletionChunk } from "./llama-server.ts";
+import type { ChatCompletionChunk } from "./inference-provider.ts";
 import type { McpClient, McpTool } from "./mcp-client.ts";
 import type { ModelService } from "./model-service.ts";
 import { classifyToolCall, isNetworkTool, isToolExposedToModel } from "./permissions.ts";

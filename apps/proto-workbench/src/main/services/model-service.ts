@@ -9,10 +9,8 @@ import type {
   ResidencyPolicy,
   VramEstimate,
 } from "../../shared/contracts.ts";
-import type { ChatCompletionChunk } from "./llama-server.ts";
+import type { ChatCompletionChunk, InferenceRuntime, ModelCatalogSource } from "./inference-provider.ts";
 import type { AppDatabase } from "./database.ts";
-import type { LlamaServerManager } from "./llama-server.ts";
-import type { ModelCatalogService } from "./model-catalog.ts";
 import { nvidiaSmiExecutable } from "./nvidia-smi.ts";
 import { defaultVramBudget, expiredWarmModels, retryContext, selectEvictions, GIB } from "./residency.ts";
 import {
@@ -43,8 +41,8 @@ export class ModelService {
   private readonly instances = new Map<string, ModelInstance>();
   private readonly emitter = new EventEmitter();
   private readonly database: AppDatabase;
-  private readonly catalogService: ModelCatalogService;
-  private readonly runtime: LlamaServerManager;
+  private readonly catalogService: ModelCatalogSource;
+  private readonly runtime: InferenceRuntime;
   private readonly gpuMemoryProbe: GpuMemoryProbe;
   private readonly systemMemoryProbe: SystemMemoryProbe;
   private policy: ResidencyPolicy;
@@ -61,8 +59,8 @@ export class ModelService {
 
   constructor(
     database: AppDatabase,
-    catalogService: ModelCatalogService,
-    runtime: LlamaServerManager,
+    catalogService: ModelCatalogSource,
+    runtime: InferenceRuntime,
     gpuMemoryProbe: GpuMemoryProbe = queryNvidiaMemorySnapshot,
     systemMemoryProbe: SystemMemoryProbe = querySystemMemorySnapshot,
   ) {
@@ -150,7 +148,7 @@ export class ModelService {
     signal?: AbortSignal,
   ): Promise<void> {
     if (!this.runtime.has(modelId)) {
-      throw new Error("The selected model is not loaded. Review the memory estimate and load it explicitly first.");
+      throw new Error("The selected model is not loaded or connected. Load or attach an exact instance explicitly first.");
     }
     await this.runtime.chat(modelId, payload, onChunk, signal);
   }
@@ -198,10 +196,26 @@ export class ModelService {
       throw error;
     }
     if (generation !== this.scanGeneration) return this.list();
+    for (const modelId of this.instances.keys()) {
+      if (this.runtime.has(modelId)) continue;
+      this.instances.delete(modelId);
+      if (this.activeModelId === modelId) this.activeModelId = undefined;
+    }
     const previous = new Map(this.catalog.map((model) => [model.id, model]));
     this.catalog = scanned.map((model) => {
       const old = previous.get(model.id);
       const instance = this.instances.get(model.id);
+      if (model.provider === "lmstudio") {
+        return {
+          ...model,
+          pinned: this.policy.pinnedModelIds.includes(model.id) || old?.pinned || false,
+          loadState: instance?.state ?? model.loadState,
+          lastUsedAt: instance?.lastUsedAt ?? old?.lastUsedAt,
+          workbenchInstance: instance?.instanceId
+            ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true }
+            : undefined,
+        };
+      }
       const saved = old?.vramEstimate;
       const estimate = estimateModelVram({ ...model, vramEstimate: old?.vramEstimate }, saved ? {
         contextLength: saved.contextLength,
@@ -294,6 +308,10 @@ export class ModelService {
       return { ...this.instances.get(modelId)! };
     }
     if (resident) await this.performUnload(modelId);
+
+    if (model.provider === "lmstudio") {
+      return this.performProviderLoad(model, options, generation, signal);
+    }
 
     const defaults = defaultLoadOptions(model);
     const requested = estimateModelVram(model, {
@@ -388,7 +406,7 @@ export class ModelService {
       ) {
         await this.runtime.unload(modelId);
         throw new Error(
-          `llama.cpp allocated only ${formatGib(instance.measuredVramBytes)} for a requested full-GPU load. ` +
+          `The legacy runtime allocated only ${formatGib(instance.measuredVramBytes)} for a requested full-GPU load. ` +
           "Silent partial CPU offload was rejected; free VRAM or choose explicit partial GPU offload.",
         );
       }
@@ -462,6 +480,42 @@ export class ModelService {
     }
   }
 
+  private async performProviderLoad(
+    model: ModelDescriptor,
+    options: Partial<ModelLoadOptions>,
+    generation: number,
+    signal: AbortSignal,
+  ): Promise<ModelInstance> {
+    if (model.modelKind === "embedding") {
+      throw new Error("Embedding models cannot be selected for Workbench chat.");
+    }
+    if (this.policy.mode === "quick-switch") {
+      await Promise.all(
+        [...this.instances.keys()]
+          .filter((modelId) => modelId !== model.id)
+          .map((modelId) => this.performUnload(modelId)),
+      );
+    }
+    this.setModelState(model.id, "loading");
+    try {
+      const instance = await this.runtime.load(model, options, signal);
+      if (generation !== this.loadGeneration || signal.aborted) {
+        await this.runtime.unload(model.id);
+        throw new ModelLoadSupersededError();
+      }
+      this.instances.set(model.id, instance);
+      this.markActive(model.id);
+      return { ...instance };
+    } catch (error) {
+      if (error instanceof ModelLoadSupersededError || (isAbortError(error) && signal.aborted)) {
+        this.setModelState(model.id, "unloaded");
+        throw new ModelLoadSupersededError();
+      }
+      this.setModelError(model.id, safeRuntimeError(error));
+      throw error;
+    }
+  }
+
   async unload(modelId: string): Promise<void> {
     if (this.loadController?.modelId === modelId) {
       this.loadController.controller.abort();
@@ -516,6 +570,10 @@ export class ModelService {
       model.loadState = state;
       if (state !== "error") model.error = undefined;
       if (state === "active" || state === "warm") model.lastUsedAt = new Date().toISOString();
+      const instance = this.instances.get(modelId);
+      model.workbenchInstance = instance?.instanceId && (state === "active" || state === "warm")
+        ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true }
+        : undefined;
       this.database.saveModels(this.catalog);
     }
     this.emitChanged();
@@ -609,6 +667,11 @@ class ModelLoadSupersededError extends Error {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
+}
+
+function safeRuntimeError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.replace(/[\u0000-\u001f\u007f]+/g, " ").slice(0, 2_048);
 }
 
 async function queryNvidiaMemorySnapshot(): Promise<GpuMemorySnapshot> {

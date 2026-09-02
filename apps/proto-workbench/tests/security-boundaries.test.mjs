@@ -69,6 +69,34 @@ test("privileged IPC requires the exact main webContents, top frame, URL, and bo
 
   assert.deepEqual(validateIpcArguments(IPC.modelsScan, []), []);
   assert.throws(() => validateIpcArguments(IPC.modelsScan, ["C:\\arbitrary"]), /Invalid arguments/);
+  const activationEvidence = {
+    operator: "operator-supplied-label",
+    approval_reference: "change-record:MAT-18",
+  };
+  assert.deepEqual(
+    validateIpcArguments(IPC.materialsActivate, ["public-reviewed-2026.09", activationEvidence]),
+    ["public-reviewed-2026.09", activationEvidence],
+  );
+  assert.deepEqual(
+    validateIpcArguments(IPC.materialsRollback, ["public-reviewed-2026.09", activationEvidence]),
+    ["public-reviewed-2026.09", activationEvidence],
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsActivate, ["public-reviewed-2026.09"]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsActivate, ["public-reviewed-2026.09", { ...activationEvidence, operator: "" }]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsRollback, ["public-reviewed-2026.09", { ...activationEvidence, approval_reference: "line 1\nline 2" }]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsActivate, ["public-reviewed-2026.09", { ...activationEvidence, operator: "line 1\u2028line 2" }]),
+    /Invalid arguments/,
+  );
   const validMapExport = {
     format: "svg",
     filename: "design-map.svg",
@@ -83,13 +111,16 @@ test("privileged IPC requires the exact main webContents, top frame, URL, and bo
       construct: "construct-1",
       artifactPath: "build/design.ir.json",
       artifactSha256: "a".repeat(64),
+      artifactSizeBytes: 128,
       digestStatus: "match",
+      governance: { status: "verified", unverifiedPartCount: 0, gaps: [] },
       renderer: { name: "CGView.js", version: "1.8.2" },
       topology: { source: "circular", rendered: "circular", projection: false },
       viewOrigin: { applied: false, sourceBaseOneBased: 1, mutatesSource: false },
       coordinates: "internal 0-based end-exclusive; display 1-based inclusive",
       renderedMapLayers: {
         partAnnotations: true,
+        primerBindings: true,
         softwareOrfDiscovery: false,
         softwareOrfMinimumAminoAcids: null,
         coordinateRuler: true,

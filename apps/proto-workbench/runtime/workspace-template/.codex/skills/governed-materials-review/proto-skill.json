@@ -1,0 +1,70 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "governed-materials-review",
+  "name": "Governed Materials Review",
+  "version": "1.0.0",
+  "description": "Three-pass evidence and policy review for safely expanding Proto's design-eligible materials.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Combined evidence-first review and biological sequence validation with Proto's immutable catalog and activation boundary.",
+    "upstream": [
+      {
+        "id": "literature-review",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+      },
+      {
+        "id": "biopython",
+        "url": "https://github.com/K-Dense-AI/scientific-agent-skills/tree/1dd0fccf46fc3c9855c4a0c313a0c57fe4319883/skills/biopython",
+        "license": "MIT",
+        "revision": "1dd0fccf46fc3c9855c4a0c313a0c57fe4319883",
+        "content_sha256": "81eab1bd7db605635dc94bfc97e7264657325db5b220b40edf48ec178392c668"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "mixed-explicit",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "search-candidates",
+      "purpose": "Search governed candidate records without bypassing visibility policy.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_search"}
+      ]
+    },
+    {
+      "id": "inspect-evidence",
+      "purpose": "Inspect bounded metadata and evidence for an exact resource identifier.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_get"}
+      ]
+    },
+    {
+      "id": "audit-promotion",
+      "purpose": "Run the machine-readable multi-pass eligibility audit.",
+      "interfaces": [
+        {"kind": "cli", "command": "proto-agent materials promotion-audit"}
+      ]
+    },
+    {
+      "id": "materialize-dna",
+      "purpose": "Materialize only approved DNA parts into a bounded parts snapshot.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_materialize"}
+      ]
+    },
+    {
+      "id": "materialize-protein",
+      "purpose": "Materialize only approved protein records into a bounded protein selection.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_materialize_proteins"}
+      ]
+    }
+  ]
+}

@@ -49,7 +49,7 @@ import {
   type DesignViewModel,
 } from "./design-visualization.ts";
 import { groupDesignArtifacts } from "./design-inventory.ts";
-import { normalizeSequenceSelection } from "./design-selection.ts";
+import { normalizeSegmentedSequenceSelection, normalizeSequenceSelection } from "./design-selection.ts";
 import { mapWithConcurrency } from "./bounded-concurrency.ts";
 import { CGVIEW_RENDERER_VERSION, CgviewMap, type ProductMapHandle } from "./CgviewMap.tsx";
 import { SequenceNavigator } from "./SequenceNavigator.tsx";
@@ -117,6 +117,10 @@ interface RangeSelection {
   start: number;
   end: number;
   viewer?: "LINEAR" | "CIRCULAR";
+  /** Complete view-local logical selection, including circular-origin crossings. */
+  segments?: Array<{ start: number; end: number }>;
+  /** Canonical immutable source segments retained for search-derived selections. */
+  sourceSegments?: Array<{ start: number; end: number }>;
 }
 
 interface LayerState {
@@ -237,10 +241,11 @@ export function DesignsPage() {
       const loaded = await mapWithConcurrency(candidates, 8, async (entry): Promise<LoadedDesign> => {
         try {
           const file = await workbenchApi().files.read(entry.path);
+          const artifactSizeBytes = new TextEncoder().encode(file.content).byteLength;
           const parsedJson: unknown = JSON.parse(file.content);
           const parsed = parseDesignIr(parsedJson);
           const provenance = provenanceForArtifact(entry.relativePath, manifests);
-          const digestBinding = digestBindingForArtifact(entry.relativePath, file.sha256, entry.sizeBytes, provenanceStatements);
+          const digestBinding = digestBindingForArtifact(entry.relativePath, file.sha256, artifactSizeBytes, provenanceStatements);
           if (!parsed.ok || !parsed.design) {
             const primary = parsed.diagnostics.find((item) => item.severity === "error");
             return {
@@ -248,7 +253,7 @@ export function DesignsPage() {
               relativePath: entry.relativePath,
               name: entry.name,
               modifiedAt: entry.modifiedAt,
-              sizeBytes: entry.sizeBytes,
+              sizeBytes: artifactSizeBytes,
               status: "invalid",
               sha256: file.sha256,
               diagnostics: parsed.diagnostics,
@@ -262,7 +267,7 @@ export function DesignsPage() {
             relativePath: entry.relativePath,
             name: entry.name,
             modifiedAt: entry.modifiedAt,
-            sizeBytes: entry.sizeBytes,
+            sizeBytes: artifactSizeBytes,
             status: "ready",
             sha256: file.sha256,
             design: parsed.design,
@@ -419,9 +424,19 @@ export function DesignsPage() {
     }),
   } : undefined, [design, discoveredOrfsByConstruct, layers.discoveredOrfs, viewOrigins]);
   const construct = visualDesign?.constructs[constructIndex] ?? visualDesign?.constructs[0];
+  const hiddenFeatureIndexes = useMemo(
+    () => new Set(hiddenFeatureIndexesByConstruct[constructIndex] ?? []),
+    [constructIndex, hiddenFeatureIndexesByConstruct],
+  );
+  const hiddenFeatureCount = hiddenFeatureIndexes.size;
   const activeViewOrigin = construct?.viewOrigin ?? 0;
   const orfDiscovery = discoveredOrfsByConstruct[constructIndex] ?? discoveredOrfsByConstruct[0] ?? { features: [], truncated: false };
   const selectedFeature = selectedFeatureIndex === undefined ? undefined : construct?.features[selectedFeatureIndex];
+  const selectionSegments = rangeSelection?.segments ?? (rangeSelection ? [{ start: rangeSelection.start, end: rangeSelection.end }] : []);
+  const selectionLength = selectionSegments.reduce((sum, segment) => sum + segment.end - segment.start, 0);
+  const unverifiedParts = construct?.parts.filter((part) => part.governanceStatus !== "verified") ?? [];
+  const governanceGaps = [...new Set(unverifiedParts.flatMap((part) => part.governanceGaps))].sort();
+  const governanceBlocked = unverifiedParts.length > 0;
   const artifactIntegrityBlocked = selectedDocument?.digestBinding?.status === "mismatch";
   const provenanceInventoryBlocked = provenanceInventory.status !== "complete";
   const visualizationEnvelope = construct
@@ -431,7 +446,7 @@ export function DesignsPage() {
   const selectionAnnouncement = selectedFeature
     ? `${selectedFeature.id}, ${selectedFeature.type}, ${formatFeatureIntervals(selectedFeature)}, selected in ${construct?.name ?? "the active construct"}.`
     : rangeSelection
-      ? `Bases ${rangeSelection.start + 1} to ${rangeSelection.end}, ${rangeSelection.end - rangeSelection.start} base pairs, selected in ${construct?.name ?? "the active construct"}.`
+      ? `${formatCoordinateSegments(selectionSegments, segmentsWrapOrigin(selectionSegments))}, ${selectionLength} base pairs, selected in ${construct?.name ?? "the active construct"}.`
       : `No feature or sequence range is selected in ${construct?.name ?? "the active construct"}.`;
 
   const searchHits = useMemo(() => visualDesign ? searchDesign(visualDesign, searchQuery) : [], [searchQuery, visualDesign]);
@@ -459,7 +474,15 @@ export function DesignsPage() {
     const selectsWholeFeature = Boolean(targetFeature && hit.field !== "sequence");
     setSelectedFeatureIndex(selectsWholeFeature ? hit.featureIndex : undefined);
     if (hit.featureIndex !== undefined) setFeaturePage(Math.floor(hit.featureIndex / VISUALIZATION_INTERACTIVE_LIMITS.maxAccessibleRows));
-    setRangeSelection({ start: hit.start, end: hit.end });
+    const viewSegments = hit.viewSegments?.length
+      ? hit.viewSegments.map(({ start, end }) => ({ start, end }))
+      : [{ start: hit.start, end: hit.end }];
+    const logicalSelection = normalizeSegmentedSequenceSelection(
+      viewSegments,
+      targetConstruct.length,
+      hit.segments?.map(({ start, end }) => ({ start, end })),
+    );
+    setRangeSelection(logicalSelection ?? { start: hit.start, end: hit.end });
   };
 
   useEffect(() => {
@@ -563,7 +586,7 @@ export function DesignsPage() {
   };
 
   const mapExportMetadata = (format: "svg" | "png"): MapExportMetadata | undefined => {
-    if (!design || !construct) return undefined;
+    if (!design || !construct || !selectedDocument?.relativePath || !selectedDocument.sha256) return undefined;
     const effectiveGcWindowSize = calculateGcContentSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize || undefined).windowSize;
     return {
       schema: "proto-workbench.map-export.v1",
@@ -571,9 +594,15 @@ export function DesignsPage() {
       format,
       designId: design.designId,
       construct: construct.name,
-      artifactPath: selectedDocument?.relativePath,
-      artifactSha256: selectedDocument?.sha256,
+      artifactPath: selectedDocument.relativePath,
+      artifactSha256: selectedDocument.sha256,
+      artifactSizeBytes: selectedDocument.sizeBytes,
       digestStatus: selectedDocument?.digestBinding?.status ?? "unverified",
+      governance: {
+        status: governanceBlocked ? "unverified" : "verified",
+        unverifiedPartCount: unverifiedParts.length,
+        gaps: governanceGaps,
+      },
       renderer: { name: "CGView.js", version: CGVIEW_RENDERER_VERSION },
       topology: {
         source: construct.topology,
@@ -588,6 +617,9 @@ export function DesignsPage() {
       coordinates: "internal 0-based end-exclusive; display 1-based inclusive",
       renderedMapLayers: {
         partAnnotations: layers.annotations,
+        primerBindings: layers.primers && construct.features.some(
+          (feature, featureIndex) => feature.type.toLocaleLowerCase() === "primer" && !hiddenFeatureIndexes.has(featureIndex),
+        ),
         softwareOrfDiscovery: layers.annotations && layers.discoveredOrfs && orfDiscovery.features.length > 0,
         softwareOrfMinimumAminoAcids: layers.discoveredOrfs ? orfMinimumAminoAcids : null,
         coordinateRuler: layers.index && construct.length >= 200,
@@ -606,6 +638,10 @@ export function DesignsPage() {
   };
 
   const exportMap = async (format: "svg" | "png") => {
+    if (governanceBlocked) {
+      setNotice("Map export is blocked because one or more DNA parts have incomplete governance metadata.");
+      return;
+    }
     if (artifactIntegrityBlocked) {
       setNotice("Map export is blocked because the artifact does not match its recorded digest.");
       return;
@@ -779,8 +815,6 @@ export function DesignsPage() {
   const nucleotideSearch = /^[ACGTUN]+$/i.test(searchQuery.trim()) && searchQuery.trim().length > 1
     ? searchQuery.trim().toUpperCase()
     : undefined;
-  const hiddenFeatureIndexes = new Set(hiddenFeatureIndexesByConstruct[constructIndex] ?? []);
-  const hiddenFeatureCount = hiddenFeatureIndexes.size;
   const renderableFeatures = construct.features.filter((_, featureIndex) => !hiddenFeatureIndexes.has(featureIndex));
   const annotations = layers.annotations
     ? renderableFeatures.filter((feature) => feature.type.toLocaleLowerCase() !== "primer").flatMap((feature) => feature.segments.map((segment, segmentIndex) => ({
@@ -836,9 +870,8 @@ export function DesignsPage() {
       color: feature.color,
     }))
     : [];
-  const selectedFeatureHighlights = selectedFeature
-    ? selectedFeature.segments.map((segment) => ({ start: segment.start, end: segment.end, color: "rgba(5, 121, 108, 0.2)" }))
-    : [];
+  const selectedFeatureHighlights = (selectedFeature?.segments ?? selectionSegments)
+    .map((segment) => ({ start: segment.start, end: segment.end, color: "rgba(5, 121, 108, 0.2)" }));
   const enzymes = layers.restrictionSites ? restrictionEnzymes(design.constraints) : [];
   const visibleDiagnostics = selectedDocument?.diagnostics.filter((item) => item.severity !== "info") ?? [];
   const hiddenDiagnosticCount = Math.max(0, visibleDiagnostics.length - 8);
@@ -872,9 +905,10 @@ export function DesignsPage() {
   const hoverSourceBase = mapHoverBase
     ? viewBaseToSourceBase(mapHoverBase - 1, activeViewOrigin, construct.length)
     : undefined;
-  const selectedSourceSegments = rangeSelection && activeViewOrigin !== 0
-    ? viewIntervalToSourceSegments(rangeSelection.start, rangeSelection.end, activeViewOrigin, construct.length)
-    : [];
+  const selectedSourceSegments = rangeSelection?.sourceSegments
+    ?? (rangeSelection && activeViewOrigin !== 0
+      ? selectionSegments.flatMap((segment) => viewIntervalToSourceSegments(segment.start, segment.end, activeViewOrigin, construct.length))
+      : selectionSegments);
 
   const setFeatureHidden = (featureIndex: number, hidden: boolean) => {
     if (!Number.isSafeInteger(featureIndex) || featureIndex < 0 || featureIndex >= construct.features.length) return;
@@ -932,8 +966,10 @@ export function DesignsPage() {
         onExportSvg={exportMapSvg}
         onExportPng={exportMapPng}
         exportingFormat={exportingFormat}
-        exportDisabled={Boolean(exportingFormat) || viewerMode === "linear" || artifactIntegrityBlocked || provenanceInventoryBlocked || interactiveVisualizationBlocked}
-        exportDisabledReason={artifactIntegrityBlocked
+        exportDisabled={Boolean(exportingFormat) || viewerMode === "linear" || governanceBlocked || artifactIntegrityBlocked || provenanceInventoryBlocked || interactiveVisualizationBlocked}
+        exportDisabledReason={governanceBlocked
+          ? "Export is blocked because this construct contains parts with incomplete governance metadata."
+          : artifactIntegrityBlocked
           ? "Export is blocked because the artifact digest does not match its provenance record."
           : provenanceInventoryBlocked
             ? provenanceInventory.status === "loading"
@@ -961,6 +997,9 @@ export function DesignsPage() {
           {dataMode === "preview" && <span className="design-mode-badge">Development fixture</span>}
           {selectedDocument?.digestBinding?.status === "match" && <span className="design-digest-badge is-match">Digest matched</span>}
           {selectedDocument?.digestBinding?.status === "mismatch" && <span className="design-digest-badge is-mismatch">Digest mismatch</span>}
+          {governanceBlocked
+            ? <span className="design-digest-badge is-mismatch">Governance unverified · export blocked</span>
+            : <span className="design-digest-badge is-match">Governance verified</span>}
           <span className="design-review-badge"><CircleAlert size={13} />Software-level view · review required</span>
         </div>
       </div>
@@ -1032,7 +1071,7 @@ export function DesignsPage() {
                   ref={mapRef}
                   construct={construct}
                   selectedFeatureIndex={selectedFeatureIndex}
-                  selectedRange={rangeSelection}
+                  selectedRanges={selectionSegments}
                   hiddenFeatureIndexes={hiddenFeatureIndexes}
                   showAnnotations={layers.annotations}
                   labelDensity={effectiveLabelDensity}
@@ -1053,7 +1092,7 @@ export function DesignsPage() {
                   <SequenceNavigator
                     construct={construct}
                     selectedFeatureIndex={selectedFeatureIndex}
-                    selectedRange={rangeSelection}
+                    selectedRanges={selectionSegments}
                     hiddenFeatureIndexes={hiddenFeatureIndexes}
                     showAnnotations={layers.annotations}
                     showPrimers={layers.primers}
@@ -1078,7 +1117,7 @@ export function DesignsPage() {
                       primers={primers}
                       enzymes={enzymes}
                       search={nucleotideSearch ? { query: nucleotideSearch, mismatch: 0 } : undefined}
-                      selection={rangeSelection ? { start: rangeSelection.start, end: rangeSelection.end } : undefined}
+                      selection={selectionSegments.length === 1 ? selectionSegments[0] : undefined}
                       onSelection={handleSelection}
                       onSearch={() => undefined}
                       viewer="linear"
@@ -1142,8 +1181,8 @@ export function DesignsPage() {
             {selectedFeature ? <SelectedFeatureInspector feature={selectedFeature} construct={construct} /> : rangeSelection ? (
               <>
                 <span className="eyebrow">Sequence selection</span>
-                <h3>{rangeSelection.end - rangeSelection.start} bp selected</h3>
-                <dl><div><dt>{activeViewOrigin !== 0 ? "View from" : "From"}</dt><dd>{rangeSelection.start + 1}</dd></div><div><dt>{activeViewOrigin !== 0 ? "View to" : "To"}</dt><dd>{rangeSelection.end}</dd></div>{activeViewOrigin !== 0 && <div><dt>Source interval</dt><dd>{formatCoordinateSegments(selectedSourceSegments)}</dd></div>}</dl>
+                <h3>{selectionLength} bp selected</h3>
+                <dl><div><dt>View interval</dt><dd>{formatCoordinateSegments(selectionSegments, segmentsWrapOrigin(selectionSegments))}</dd></div><div><dt>Source interval</dt><dd>{formatCoordinateSegments(selectedSourceSegments, segmentsWrapOrigin(selectedSourceSegments))}</dd></div></dl>
                 <p>Select a named annotation to inspect its identity and artifact context.</p>
               </>
             ) : (
@@ -1197,10 +1236,11 @@ export function DesignsPage() {
             {design.constraints.map((constraint, index) => <ConstraintRow key={`${String(constraint.type)}-${index}`} constraint={constraint} />)}
           </section>
 
-          {(visibleDiagnostics.length > 0 || provenanceInventory.diagnostics.length > 0 || design.constraints.length === 0 || denseMapLabels || orfDiscovery.truncated || unknownDirectionPrimerCount > 0 || unknownDirectionCodingFeatureCount > 0 || segmentedCodingFeatureCount > 0 || unknownDirectionOrfFeatureCount > 0 || segmentedOrfFeatureCount > 0) && (
+          {(governanceBlocked || visibleDiagnostics.length > 0 || provenanceInventory.diagnostics.length > 0 || design.constraints.length === 0 || denseMapLabels || orfDiscovery.truncated || unknownDirectionPrimerCount > 0 || unknownDirectionCodingFeatureCount > 0 || segmentedCodingFeatureCount > 0 || unknownDirectionOrfFeatureCount > 0 || segmentedOrfFeatureCount > 0) && (
             <section className="diagnostic-panel" aria-label="Visualization diagnostics">
               <div className="inspector-section-title"><span><CircleAlert size={14} />Needs attention</span></div>
               {visibleDiagnostics.slice(0, 8).map((diagnostic, index) => <p key={`${diagnostic.code}-${index}`}><strong>{diagnostic.code}</strong>{diagnostic.message}</p>)}
+              {governanceBlocked && <p><strong>DNA_PART_GOVERNANCE_UNVERIFIED</strong>{unverifiedParts.length} part{unverifiedParts.length === 1 ? " is" : "s are"} missing required governed source, rights, eligibility, safety, or evidence fields. Missing fields: {governanceGaps.join(", ") || "not declared"}. Reading remains available; map export is blocked.</p>}
               {hiddenDiagnosticCount > 0 && <p><strong>MORE_DIAGNOSTICS</strong>{hiddenDiagnosticCount} additional diagnostics are retained in the artifact report.</p>}
               {provenanceInventory.diagnostics.slice(0, 8).map((diagnostic, index) => <p key={`provenance-${diagnostic.path}-${index}`}><strong>PROVENANCE_INVENTORY_INCOMPLETE</strong><code>{diagnostic.path}</code>{diagnostic.message}</p>)}
               {provenanceInventory.diagnostics.length > 8 && <p><strong>MORE_PROVENANCE_DIAGNOSTICS</strong>{provenanceInventory.diagnostics.length - 8} additional provenance inventory diagnostics are retained.</p>}
@@ -1229,6 +1269,7 @@ export function DesignsPage() {
             <div><dt>Format</dt><dd>{exportReceipt.format.toUpperCase()}</dd></div>
             <div><dt>Decoder</dt><dd>{exportReceipt.decoder === "chromium-isolated-image" ? "Isolated Chromium" : exportReceipt.decoder === "electron-native-image" ? "Electron native image" : "Browser preview"}</dd></div>
             <div><dt>SHA-256</dt><dd title={exportReceipt.sha256}>{exportReceipt.sha256.slice(0, 12)}…</dd></div>
+            <div><dt>Primers</dt><dd>{exportReceipt.renderedMapLayers.primerBindings ? "Rendered" : "Not rendered"}</dd></div>
           </dl>
           {exportReceipt.relativePath && <button className="secondary-button compact-command" type="button" onClick={() => void revealWorkspacePath(exportReceipt.relativePath)}><FolderOpen size={13} />Reveal</button>}
         </section>
@@ -1299,13 +1340,13 @@ function ProteinDesignPage({
         onExportSvg={onExportSvg}
         onExportPng={onExportPng}
         exportDisabled
-        exportDisabledReason="Map export is DNA-specific; use the protein residue view and FASTA export for protein artifacts."
+        exportDisabledReason="Map export is DNA-specific. This protein viewer is read-only; export FASTA from validated protein IR with: proto-agent export build/protein.ir.json --format fasta --out build/protein.fasta"
       />
 
       <div className="design-product-bar protein-product-bar">
         <div className="design-product-title">
           <span className="design-status-icon"><Atom size={16} /></span>
-          <div><span className="eyebrow">Renderable protein IR</span><h2>{design.designId}</h2></div>
+          <div><span className="eyebrow">Governed protein IR</span><h2>{design.designId}</h2></div>
         </div>
         <dl>
           <div><dt>Sequences</dt><dd>{design.proteins.length.toLocaleString()}</dd></div>
@@ -1313,7 +1354,7 @@ function ProteinDesignPage({
           <div><dt>First record</dt><dd>{firstProtein?.name ?? "—"}</dd></div>
           <div><dt>Chassis</dt><dd>{design.chassis}</dd></div>
         </dl>
-        <div className="design-product-badges"><span className="design-review-badge"><CircleAlert size={13} />Software-level view · review required</span></div>
+        <div className="design-product-badges"><span className="design-digest-badge is-match">Governance verified on read</span><span className="design-review-badge"><CircleAlert size={13} />Unsigned content binding · review required</span></div>
       </div>
 
       <div className="design-explorer-grid protein-explorer-grid">
@@ -1349,7 +1390,7 @@ function ProteinDesignPage({
           </section>
           <section className="diagnostic-panel" aria-label="Protein visualization boundary">
             <div className="inspector-section-title"><span><CircleAlert size={14} />Needs attention</span></div>
-            <p><strong>PROTEIN_HUMAN_REVIEW_REQUIRED</strong>Eligibility and sequence hashes passed local checks. Scientific review remains mandatory.</p>
+            <p><strong>PROTEIN_HUMAN_REVIEW_REQUIRED</strong>Workbench recomputed sequence SHA-256 digests and enforced the governed identity, source, rights, eligibility, safety, evidence, organism, role, and derived-metric fields for every visible record. The catalog binding remains explicitly UNSIGNED; scientific review and author-authenticity review remain mandatory.</p>
             <p><strong>NO_WET_LAB_CLAIM</strong>This artifact is a sequence/design representation only; it does not establish function, orderability, biosafety, or regulatory compliance.</p>
           </section>
         </aside>

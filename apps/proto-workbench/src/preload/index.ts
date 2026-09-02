@@ -7,6 +7,7 @@ import type {
   DecisionBundleExportRequest,
   DecisionBundleRequest,
   GlobalEvidenceSearchRequest,
+  MaterialsActivationEvidence,
   ModelDescriptor,
   ModelLoadOptions,
   MaterialsSearchRequest,
@@ -49,6 +50,15 @@ function boundedString(value: unknown, label: string, maximum: number, allowEmpt
     throw new Error(`${label} is invalid or exceeds ${maximum} characters.`);
   }
   return value;
+}
+
+function boundedActivationEvidence(input: MaterialsActivationEvidence): MaterialsActivationEvidence {
+  const operator = boundedString(input?.operator, "operator", 128).trim();
+  const approvalReference = boundedString(input?.approval_reference, "approval_reference", 512).trim();
+  if (!operator || !approvalReference || /[\u0000-\u001f\u007f\u0085\u2028\u2029]/u.test(operator + approvalReference)) {
+    throw new Error("Activation evidence must contain bounded, non-empty, single-line operator and approval-reference values.");
+  }
+  return { operator, approval_reference: approvalReference };
 }
 
 function sha256Digest(value: unknown, label: string): string {
@@ -171,8 +181,16 @@ const api: WorkbenchApi = {
     },
     get: (resourceId: string, includeSequence = false) => invoke(IPC.materialsGet, boundedString(resourceId, "resourceId", 256), Boolean(includeSequence)),
     facets: () => invoke(IPC.materialsFacets),
-    activate: (snapshotId: string) => invoke(IPC.materialsActivate, boundedString(snapshotId, "snapshotId", 128)),
-    rollback: (snapshotId: string) => invoke(IPC.materialsRollback, boundedString(snapshotId, "snapshotId", 128)),
+    activate: (snapshotId: string, evidence: MaterialsActivationEvidence) => invoke(
+      IPC.materialsActivate,
+      boundedString(snapshotId, "snapshotId", 128),
+      boundedActivationEvidence(evidence),
+    ),
+    rollback: (snapshotId: string, evidence: MaterialsActivationEvidence) => invoke(
+      IPC.materialsRollback,
+      boundedString(snapshotId, "snapshotId", 128),
+      boundedActivationEvidence(evidence),
+    ),
     sync: (source: "uniprot" | "igem" | "rhea" | "biomodels", maxRecords: number) => invoke(IPC.materialsSync, source, Math.max(1, Math.min(2_000_000, Math.trunc(maxRecords)))),
     importFile: () => invoke(IPC.materialsImport),
     diff: (leftSnapshot: string, rightSnapshot: string) => invoke(IPC.materialsDiff, boundedString(leftSnapshot, "leftSnapshot", 128), boundedString(rightSnapshot, "rightSnapshot", 128)),

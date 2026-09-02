@@ -4,19 +4,31 @@ import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_MODULES, OPTIONAL_MODULES } from "../src/shared/modules.ts";
+import { collectConfiguredRuntimeResources } from "./packaging-resources.mjs";
+import { verifyWorkspaceTemplate } from "./workspace-template-sync.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(await readFile(join(projectRoot, "package.json"), "utf8"));
 const outputPath = join(projectRoot, "out", "module-manifest.json");
 const allModules = [...CORE_MODULES, ...OPTIONAL_MODULES];
+await verifyWorkspaceTemplate();
 const moduleDescriptorRoot = join(projectRoot, "runtime", "modules");
 await writeModuleDescriptors(moduleDescriptorRoot, allModules);
 
 const appFiles = await collectFiles(join(projectRoot, "out"), "app", projectRoot, (path) => path !== outputPath);
-const llamaFiles = await collectFiles(join(projectRoot, "runtime", "llama.cpp"), "resource", projectRoot);
-const protoFiles = await collectFiles(join(projectRoot, "runtime", "proto-agent"), "resource", projectRoot);
-const templateFiles = await collectFiles(join(projectRoot, "runtime", "workspace-template"), "resource", projectRoot);
-const descriptorFiles = await collectFiles(moduleDescriptorRoot, "resource", projectRoot);
+const runtimeResources = (await collectConfiguredRuntimeResources(projectRoot, packageJson))
+  .map((resource) => ({ scope: "resource", ...resource }));
+const protoFiles = resourcesUnder(runtimeResources, "runtime/proto-agent");
+const templateFiles = resourcesUnder(runtimeResources, "runtime/workspace-template");
+const descriptorFiles = resourcesUnder(runtimeResources, "runtime/modules");
+const trustFiles = resourcesUnder(runtimeResources, "runtime/trust");
+const knownRuntimePrefixes = ["runtime/proto-agent", "runtime/workspace-template", "runtime/modules", "runtime/trust"];
+const unknownRuntimeResources = runtimeResources.filter((resource) =>
+  !knownRuntimePrefixes.some((prefix) => resource.path === prefix || resource.path.startsWith(`${prefix}/`)));
+if (unknownRuntimeResources.length) {
+  throw new Error(`Runtime resources have no module ownership: ${unknownRuntimeResources.map((resource) => resource.path).join(", ")}`);
+}
+if (!trustFiles.length) throw new Error("The packaged runtime/trust tree is empty and cannot be integrity-bound.");
 const hashCache = new Map();
 
 async function materialize(files) {
@@ -38,10 +50,10 @@ async function materialize(files) {
 
 const groups = {
   app: await materialize(appFiles),
-  llama: await materialize(llamaFiles),
   proto: await materialize(protoFiles),
   template: await materialize(templateFiles),
   descriptors: await materialize(descriptorFiles),
+  trust: await materialize(trustFiles),
 };
 
 const modules = allModules.map((module) => {
@@ -69,15 +81,24 @@ process.stdout.write(`Module manifest: ${relative(projectRoot, outputPath)} (${m
 
 function artifactsForModule(moduleId) {
   const descriptor = groups.descriptors.filter((artifact) => artifact.path === `runtime/modules/${moduleId}.json`);
-  if (moduleId === "core.audit" || moduleId === "core.workspace" || moduleId === "core.governance") {
+  if (moduleId === "core.governance") {
+    return uniqueArtifacts([...descriptor, ...groups.app, ...groups.trust]);
+  }
+  if (moduleId === "core.audit" || moduleId === "core.workspace") {
     return uniqueArtifacts([...descriptor, ...groups.app]);
   }
-  if (moduleId === "core.inference") return uniqueArtifacts([...descriptor, ...groups.app, ...groups.llama]);
+  if (moduleId === "core.inference") return uniqueArtifacts([...descriptor, ...groups.app]);
   if (moduleId === "core.validation" || moduleId === "core.review") {
     return uniqueArtifacts([...descriptor, ...groups.proto, ...groups.template]);
   }
-  if (moduleId === "media.vision") return uniqueArtifacts([...descriptor, ...groups.app, ...groups.llama]);
+  if (moduleId === "media.vision") return uniqueArtifacts([...descriptor, ...groups.app]);
   return uniqueArtifacts([...descriptor, ...groups.proto]);
+}
+
+function resourcesUnder(resources, prefix) {
+  return resources
+    .filter((resource) => resource.path === prefix || resource.path.startsWith(`${prefix}/`))
+    .sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function uniqueArtifacts(artifacts) {

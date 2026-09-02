@@ -1,8 +1,18 @@
-# llama.cpp runtime
+# Retired llama.cpp staging area
 
-This directory is reserved for independent upstream `llama.cpp` Windows builds.
-Proto Workbench never searches for or invokes LM Studio executables, services,
-extensions, configuration, or private runtime files.
+> **Legacy developer artifact; not a product, packaging, release, or
+> verification entry point.** Proto Workbench uses only the operator-managed
+> LM Studio server at `http://127.0.0.1:1234` for model discovery, loading,
+> chat, and ownership-safe unloading. This directory is excluded from the
+> packaged resources and module-integrity manifest.
+
+This directory is retained only so historical, isolated runtime experiments can
+be reproduced by a developer who explicitly invokes the retired staging script.
+No product, package, or live-model verification command consumes the staged
+binaries. The automated suite only reads the lock and negatively exercises the
+staging script as a legacy integrity regression; passing that regression does
+not qualify a runtime for product use. Staging files here does not make them
+trusted or usable by the product.
 
 Expected layout:
 
@@ -12,14 +22,17 @@ runtime/llama.cpp/
   cpu/llama-server.exe
 ```
 
-The exact upstream release and published digests are pinned in
+For historical reproduction, the old upstream release and published digests are pinned in
 `release-lock.json`. Stage the reviewed archives with
 `scripts/stage-llama-runtime.ps1`. CUDA builds pass the separate official CUDART
 archive through `-CompanionArchivePath`. The script verifies every SHA256, copies
 `llama-server.exe` and its required DLLs, then records the inputs in
 `runtime-manifest.json`.
 
-## Local launch security contract
+## Archived local-launch security notes
+
+The remainder documents the retired independent-runtime design. It is not the
+current Workbench security contract and must not be cited as product behavior.
 
 The pinned `b9970` server supports `--api-key-file`. Proto Workbench therefore
 does not put the bearer key in process arguments. It writes a random per-launch
@@ -52,5 +65,6 @@ The relevant upstream behavior is pinned in
 [`server.cpp`](https://github.com/ggml-org/llama.cpp/blob/b9970/tools/server/server.cpp#L401-L427),
 and [`server-context.cpp`](https://github.com/ggml-org/llama.cpp/blob/b9970/tools/server/server-context.cpp#L1004-L1041).
 
-Do not place model weights here. GGUF files remain read-only in
-`%USERPROFILE%\.lmstudio\models` by default.
+Do not place model weights here. Current model residency belongs to LM Studio;
+Workbench neither reads LM Studio's private model directory nor accepts a model
+root path.

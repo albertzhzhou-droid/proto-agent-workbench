@@ -21,7 +21,14 @@ from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlsplit
 
-from proto_agent.materials import MaterialsError, MaterialsStore, normalize_record
+from proto_agent.materials import (
+    MaterialsError,
+    MaterialsStore,
+    PROMOTION_AUDIT_SCHEMA_VERSION,
+    PROMOTION_POLICY_VERSION,
+    load_locked_promotion_attestations,
+    normalize_record,
+)
 
 
 PUBLIC_BUNDLE_ID = "public-reviewed-2026.09"
@@ -36,7 +43,7 @@ EMAIL_PATTERN = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
 
 MAIN_METADATA_ALLOWLIST = {
     "iGEM Registry": {"registry_status", "role_accession", "chassis_basis"},
-    "UniProtKB/Swiss-Prot": {"entry_length", "eligibility_basis"},
+    "UniProtKB/Swiss-Prot": {"entry_length", "eligibility_basis", "reviewed_record"},
 }
 QUARANTINE_METADATA_ALLOWLIST = {
     "UniProtKB/Swiss-Prot": {"entry_length"},
@@ -86,7 +93,7 @@ def _assert_no_local_or_identity_text(value: Any, *, field: str) -> None:
         raise ValueError(f"Email address rejected in {field}")
 
 
-def _sanitize_source(value: Any, *, provider: str, keep_retrieved_at: bool) -> dict[str, Any]:
+def _sanitize_source(value: Any, *, provider: str, keep_retrieved_at: bool, require_sequence_digest: bool = False) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("source metadata must be an object")
     if str(value.get("provider") or "") != provider:
@@ -98,6 +105,7 @@ def _sanitize_source(value: Any, *, provider: str, keep_retrieved_at: bool) -> d
         "release": str(value.get("release") or "").strip(),
         "url": _public_https(value.get("url"), field="source.url"),
         "content_sha256": str(value.get("content_sha256") or "").strip().lower(),
+        "sequence_sha256": str(value.get("sequence_sha256") or "").strip().lower(),
     }
     if keep_retrieved_at and value.get("retrieved_at"):
         result["retrieved_at"] = str(value["retrieved_at"]).strip()
@@ -105,6 +113,10 @@ def _sanitize_source(value: Any, *, provider: str, keep_retrieved_at: bool) -> d
         raise ValueError("Public source record ID and revision/release are required")
     if not re.fullmatch(r"[a-f0-9]{64}", result["content_sha256"]):
         raise ValueError("Public source content SHA-256 is required")
+    if require_sequence_digest and not re.fullmatch(r"[a-f0-9]{64}", result["sequence_sha256"]):
+        raise ValueError("Public source sequence SHA-256 is required")
+    if not result["sequence_sha256"]:
+        result.pop("sequence_sha256")
     _assert_no_local_or_identity_text(result, field="source")
     return result
 
@@ -145,13 +157,13 @@ def _metadata_allowlist(value: Any, *, provider: str, quarantine: bool) -> dict[
     return result
 
 
-def _sanitize_main_record(raw: dict[str, Any], *, provider: str) -> dict[str, Any]:
+def _sanitize_main_record(raw: dict[str, Any], *, provider: str, attestation: dict[str, Any]) -> dict[str, Any]:
     record = dict(raw)
-    record["source"] = _sanitize_source(record.get("source"), provider=provider, keep_retrieved_at=True)
+    record["source"] = _sanitize_source(record.get("source"), provider=provider, keep_retrieved_at=True, require_sequence_digest=True)
     record["license"] = _sanitize_license(record.get("license"))
     record["evidence_refs"] = _sanitize_evidence(record.get("evidence_refs"))
     record["metadata"] = _metadata_allowlist(record.get("metadata"), provider=provider, quarantine=False)
-    normalized = normalize_record(record)
+    normalized = normalize_record(record, promotion_attestation=attestation)
     if normalized["review_status"] != "DESIGN_ELIGIBLE" or not normalized["design_eligibility"]:
         raise ValueError(f"Public catalog record is not design eligible: {normalized['resource_id']}")
     if normalized["safety_status"] != "NO_FLAG":
@@ -249,10 +261,16 @@ def _read_quarantine_records(database: Path, lock: dict[str, Any]) -> list[dict[
     return [_sanitize_quarantine_row(row, provider=str(lock["provider"]), expected_licenses=licenses) for row in rows]
 
 
-def _normalized_summaries(records: Iterable[dict[str, Any]], *, quarantine: bool) -> list[dict[str, Any]]:
+def _normalized_summaries(
+    records: Iterable[dict[str, Any]],
+    *,
+    quarantine: bool,
+    promotion_attestations: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     summaries: list[dict[str, Any]] = []
     for raw in records:
-        record = normalize_record(raw)
+        attestation = (promotion_attestations or {}).get(str(raw.get("resource_id") or ""))
+        record = normalize_record(raw, promotion_attestation=attestation)
         summary = {key: value for key, value in record.items() if key not in {"sequence", "tags"}}
         if record["sequence_sha256"]:
             prefix = "quarantine/blobs" if quarantine else "blobs"
@@ -293,7 +311,7 @@ license URL, attribution, rights notes, and redistribution status.
 """
     else:
         source_lines = """- iGEM Registry records: the declared license is evaluated per record. This
-  bundle contains nine CC BY 4.0 records and one CC0 1.0 record.
+  bundle contains fourteen CC BY 4.0 records and one CC0 1.0 record.
 """
     if quarantine:
         boundary = """
@@ -346,7 +364,7 @@ def _finalize_bundle(directory: Path, *, profile: str, bundle_id: str, records: 
 
 def _public_sources() -> list[dict[str, Any]]:
     return [
-        {"provider": "iGEM Registry", "record_count": 10, "release": "per-record revisions", "license_policy": "per-record declared CC-BY-4.0 or CC0-1.0"},
+        {"provider": "iGEM Registry", "record_count": 15, "release": "per-record revisions", "license_policy": "per-record declared CC-BY-4.0 or CC0-1.0"},
         {"provider": "UniProtKB/Swiss-Prot", "record_count": 3, "release": "2026_02", "license": "CC-BY-4.0"},
     ]
 
@@ -368,8 +386,24 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
     lock_path = repo / "materials" / "bundles" / "source-lock.json"
     lock = _load_json(lock_path)
     created_at = str(lock["exported_at"])
+    audit_entry = lock.get("promotion_audit")
+    if not isinstance(audit_entry, dict):
+        raise ValueError("Source lock is missing the promotion audit")
+    audit_path = repo / str(audit_entry.get("path") or "")
+    if _sha256_file(audit_path) != str(audit_entry.get("sha256") or ""):
+        raise ValueError("Promotion audit hash mismatch")
+    audit_payload = _load_json(audit_path)
+    if audit_payload.get("schema_version") != PROMOTION_AUDIT_SCHEMA_VERSION or audit_payload.get("policy_version") != PROMOTION_POLICY_VERSION:
+        raise ValueError("Unsupported promotion audit policy")
+    for evidence in lock.get("source_evidence", []):
+        if not isinstance(evidence, dict):
+            raise ValueError("Invalid source evidence lock entry")
+        evidence_path = repo / str(evidence.get("path") or "")
+        if _sha256_file(evidence_path) != str(evidence.get("sha256") or ""):
+            raise ValueError(f"Source evidence hash mismatch: {evidence.get('path')}")
 
     public_records: list[dict[str, Any]] = []
+    promotion_attestations: dict[str, dict[str, Any]] = {}
     for item in lock["eligible_inputs"]:
         source_path = repo / str(item["path"])
         if _sha256_file(source_path) != str(item["sha256"]):
@@ -379,7 +413,15 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
         selected = [record for record in payload.get("records", []) if isinstance(record, dict) and record.get("source", {}).get("provider") == provider and record.get("review_status") == "DESIGN_ELIGIBLE" and record.get("design_eligibility") is True]
         if len(selected) != int(item["selected_record_count"]):
             raise ValueError(f"Reviewed input selection count mismatch: {item['path']}")
-        public_records.extend(_sanitize_main_record(record, provider=provider) for record in selected)
+        locked = load_locked_promotion_attestations(repo, source_path, audit_path, lock_path)
+        for record in selected:
+            resource_id = str(record.get("resource_id") or "")
+            attestation = locked.get(resource_id)
+            if not attestation:
+                raise ValueError(f"Reviewed record has no locked promotion decision: {resource_id}")
+            sanitized = _sanitize_main_record(record, provider=provider, attestation=attestation)
+            public_records.append(sanitized)
+            promotion_attestations[resource_id] = attestation
 
     quarantine_records: list[dict[str, Any]] = []
     for item in lock["quarantine_inputs"]:
@@ -388,7 +430,7 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
 
     public_records.sort(key=lambda item: (str(item["resource_id"]).casefold(), str(item["resource_id"])))
     quarantine_records.sort(key=lambda item: (str(item["resource_id"]).casefold(), str(item["resource_id"])))
-    if len(public_records) != 13 or len(quarantine_records) != 1795:
+    if len(public_records) != 18 or len(quarantine_records) != 1795:
         raise ValueError("Public export count invariant failed")
     ids = [str(item["resource_id"]).casefold() for item in [*public_records, *quarantine_records]]
     if len(ids) != len(set(ids)):
@@ -415,13 +457,25 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
                     "activation_policy": "EXPLICIT_HUMAN_ONLY",
                     "default_model_visibility": "DESIGN_ELIGIBLE_ONLY",
                     "local_runtime_state_included": False,
-                }
+                },
+                "promotion_audit": {
+                    "schema_version": PROMOTION_AUDIT_SCHEMA_VERSION,
+                    "policy_version": PROMOTION_POLICY_VERSION,
+                    "path": str(audit_entry["path"]),
+                    "sha256": str(audit_entry["sha256"]),
+                    "pass_count": int(audit_payload.get("pass_count", 0)),
+                },
             },
             vacuum_catalogs=True,
+            promotion_attestations=promotion_attestations,
         )
         public_source = Path(str(public_manifest["snapshot_path"]))
         shutil.copytree(public_source, public_target)
-        public_summaries = _normalized_summaries(public_records, quarantine=False)
+        public_provenance = _load_json(public_target / "provenance.json")
+        public_provenance["source_lock_sha256"] = _sha256_file(lock_path)
+        public_provenance["promotion_audit_sha256"] = str(audit_entry["sha256"])
+        _write_json(public_target / "provenance.json", public_provenance)
+        public_summaries = _normalized_summaries(public_records, quarantine=False, promotion_attestations=promotion_attestations)
         _write_jsonl(public_target / "records.jsonl", public_summaries)
         (public_target / "LICENSES.md").write_text(_data_license_notice(quarantine=False), encoding="utf-8", newline="\n")
 
@@ -484,7 +538,7 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
         )
         (quarantine_target / "LICENSES.md").write_text(_data_license_notice(quarantine=True), encoding="utf-8", newline="\n")
 
-    _finalize_bundle(public_target, profile="PUBLIC_CATALOG", bundle_id=PUBLIC_BUNDLE_ID, records=_normalized_summaries(public_records, quarantine=False), activation_policy="EXPLICIT_HUMAN_ONLY", model_visibility=True)
+    _finalize_bundle(public_target, profile="PUBLIC_CATALOG", bundle_id=PUBLIC_BUNDLE_ID, records=_normalized_summaries(public_records, quarantine=False, promotion_attestations=promotion_attestations), activation_policy="EXPLICIT_HUMAN_ONLY", model_visibility=True)
     _finalize_bundle(quarantine_target, profile="PUBLIC_QUARANTINE", bundle_id=QUARANTINE_BUNDLE_ID, records=_normalized_summaries(quarantine_records, quarantine=True), activation_policy="DENY", model_visibility=False)
     return public_target, quarantine_target
 

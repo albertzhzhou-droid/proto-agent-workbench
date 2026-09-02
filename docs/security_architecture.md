@@ -10,7 +10,7 @@ flowchart LR
   R["Sandboxed renderer"] -->|"typed, origin-checked IPC"| M["Electron main"]
   M -->|"session/workspace/thread/run/digest-bound approval"| A["Agent service"]
   A -->|"bounded JSON-RPC + cancellation + one-call HMAC"| P["Python MCP sidecar"]
-  A -->|"ephemeral key file + owned random loopback port"| L["Owned llama-server tree"]
+  A -->|"exact model + bound instance; bounded SSE"| L["LM Studio at fixed 127.0.0.1:1234"]
   P -->|"canonical workspace capabilities"| W["workspace read"]
   P -->|"atomic bounded writes"| B["build output"]
   P -->|"digest-pinned, no-network OCI only"| O["analysis worker"]
@@ -43,13 +43,16 @@ flowchart LR
   capabilities, no-new-privileges, and CPU/memory/PID/time/output limits. The
   explicit CLI-only unsafe-host option is recorded as unsandboxed and is not
   available to MCP or the desktop.
-- Model runtimes must match the release lock and recorded digest. The parent
-  selects a high random loopback port without a reserve-close handoff; readiness
-  accepts only the pinned runtime's post-bind, pre-metadata marker plus a bounded
-  public health response. This ordering prevents untrusted model metadata from
-  spoofing readiness. The random API key is delivered through a short-lived
-  restricted file, never command-line arguments. Cleanup targets only the owned
-  process group/tree.
+- Model discovery, residency, and inference use the single compiled LM Studio
+  origin `http://127.0.0.1:1234`; renderer input and settings cannot replace it.
+  Workbench neither accepts a model-root path nor scans or launches a model
+  executable. A user explicitly selects an exact native-catalog key and, when
+  multiple instances exist, an exact instance. Chat re-synchronizes that bound
+  instance immediately before sending bounded OpenAI-compatible SSE. Unload is
+  sent only for an instance created and tracked by this Workbench process;
+  externally loaded instances are disconnected locally but never unloaded.
+  Optional LM Studio credentials are read from named environment variables per
+  request, redacted from errors, and never persisted or exposed to the renderer.
 - Approvals bind session, workspace, thread, run, immutable canonical arguments,
   executable/resource digest, and expiry. A changed call, recreated service,
   stale approval, or different workspace requires a new decision.
@@ -88,8 +91,11 @@ claim about any unrelated application or emulator.
 - Windows standard library atomic replacement cannot completely exclude a
   malicious same-user parent-directory replacement race without a verified
   directory-handle/native implementation.
-- Job Object, OCI daemon/image behavior, packaged renderer behavior, and real
-  model generation need controlled integration verification on the target
-  release environment.
+- OCI daemon/image behavior, packaged renderer behavior, and real model
+  generation need controlled integration verification on the target release
+  environment. LM Studio's application-level JIT-loading setting is not exposed
+  by its documented server API, so operators must disable it separately; the
+  Workbench cannot attest that setting or eliminate races caused by other local
+  LM Studio clients.
 - Digest provenance is not signed, and cooperative in-process stress timing is
   not hard preemption.

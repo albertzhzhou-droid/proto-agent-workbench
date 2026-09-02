@@ -62,6 +62,22 @@ test("core tampering blocks startup and the append-only audit record survives", 
   }
 });
 
+test("tampering a packaged trust root blocks startup through core governance", async () => {
+  const fixture = await integrityFixture();
+  await writeFile(fixture.trustPath, '{"checkpoint":"tampered"}\n', "utf8");
+  const report = await verifyModuleIntegrity({
+    appRoot: fixture.appRoot,
+    resourceRoot: fixture.resourceRoot,
+    enforce: true,
+    expectedAppVersion: "0.1.2",
+  });
+  const governance = report.modules.find((module) => module.moduleId === "core.governance");
+  assert.equal(report.ok, false);
+  assert.equal(governance?.status, "tampered");
+  assert.equal(governance?.disposition, "blocked-startup");
+  assert.ok(governance?.diagnostics.some((diagnostic) => /runtime\/trust\/checkpoint\.json/.test(diagnostic)));
+});
+
 test("a packaged build cannot proceed without an integrity manifest", async () => {
   const root = await mkdtemp(join(tmpdir(), "proto-workbench-no-manifest-"));
   const report = await verifyModuleIntegrity({ appRoot: root, resourceRoot: root, enforce: true });
@@ -76,9 +92,19 @@ async function integrityFixture() {
   await mkdir(join(appRoot, "out", "modules"), { recursive: true });
   await mkdir(join(resourceRoot, "modules"), { recursive: true });
   await mkdir(join(resourceRoot, "runtime", "modules"), { recursive: true });
+  await mkdir(join(resourceRoot, "runtime", "trust"), { recursive: true });
   const corePaths = new Map();
   const optionalPaths = new Map();
   const modules = [];
+  const trustPath = join(resourceRoot, "runtime", "trust", "checkpoint.json");
+  const trustContent = '{"checkpoint":"trusted"}\n';
+  await writeFile(trustPath, trustContent, "utf8");
+  const trustArtifact = {
+    scope: "resource",
+    path: "runtime/trust/checkpoint.json",
+    sizeBytes: Buffer.byteLength(trustContent),
+    sha256: sha256(trustContent),
+  };
 
   for (const descriptor of [...CORE_MODULES, ...OPTIONAL_MODULES]) {
     const safeId = descriptor.id.replaceAll(".", "-");
@@ -115,7 +141,9 @@ async function integrityFixture() {
       moduleId: descriptor.id,
       version: descriptor.version,
       core: descriptor.core,
-      artifacts: [identityArtifact, artifact],
+      artifacts: descriptor.id === "core.governance"
+        ? [identityArtifact, artifact, trustArtifact]
+        : [identityArtifact, artifact],
     };
     modules.push({ ...entry, moduleSha256: moduleDigest(entry) });
     (descriptor.core ? corePaths : optionalPaths).set(descriptor.id, absolutePath);
@@ -130,7 +158,7 @@ async function integrityFixture() {
   };
   await writeFile(join(appRoot, "out", "module-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   assert.equal((await readFile(join(appRoot, "out", "module-manifest.json"), "utf8")).length > 0, true);
-  return { appRoot, resourceRoot, corePaths, optionalPaths };
+  return { appRoot, resourceRoot, corePaths, optionalPaths, trustPath };
 }
 
 function moduleDigest(entry) {

@@ -42,11 +42,11 @@ export function deriveWorkbenchReadiness(input: {
 }): WorkbenchReadiness {
   const { settings, runtime, moduleIntegrity, models, workspaceEntries, threadModelId } = input;
   const selectedModel = threadModelId ? models.find((model) => model.id === threadModelId) : undefined;
-  const activeModel = selectedModel?.loadState === "active"
+  const activeModel = selectedModel?.loadState === "active" && selectedModel.workbenchInstance
     ? selectedModel
     : threadModelId
       ? undefined
-      : models.find((model) => model.loadState === "active");
+      : models.find((model) => model.loadState === "active" && model.workbenchInstance);
   const workspaceSelected = Boolean(settings.workspacePath.trim());
   const workspaceReady = workspaceSelected && workspaceEntries.length > 0;
 
@@ -93,27 +93,25 @@ export function deriveWorkbenchReadiness(input: {
       ? {
           id: "runtime",
           state: "ready",
-          title: "Inference runtime",
-          detail: runtime.backend === "cuda"
-            ? "The trusted llama.cpp runtime is available with CUDA."
-            : "The trusted llama.cpp runtime is available with CPU fallback.",
-          action: "choose-runtime",
-          actionLabel: "Change runtime",
+          title: "LM Studio API",
+          detail: `The fixed local endpoint is reachable with ${runtime.modelCount ?? 0} catalog model(s) and ${runtime.loadedModelCount ?? 0} loaded instance(s).`,
+          action: "open-settings",
+          actionLabel: "View provider",
         }
       : {
           id: "runtime",
           state: "action",
-          title: "Inference runtime",
-          detail: runtime.detail || "Choose a trusted upstream llama-server executable.",
-          action: "choose-runtime",
-          actionLabel: "Choose runtime",
+          title: "LM Studio API",
+          detail: runtime.detail || `Start LM Studio's local server at ${settings.inference.baseUrl}.`,
+          action: "open-settings",
+          actionLabel: "View setup",
         },
     activeModel
       ? {
           id: "model",
           state: "ready",
           title: "Active model",
-          detail: `${activeModel.name} is loaded and selected for local runs.`,
+          detail: `${activeModel.name} is connected to an exact LM Studio instance for local runs.`,
           action: "open-models",
           actionLabel: "Manage models",
         }
@@ -122,7 +120,7 @@ export function deriveWorkbenchReadiness(input: {
             id: "model",
             state: "action",
             title: "Selected model",
-            detail: `${selectedModel.name} is selected for this run but is ${selectedModel.loadState}; review its memory estimate and load it explicitly.`,
+            detail: `${selectedModel.name} is selected but is not connected to an exact loaded instance; connect or load it explicitly.`,
             action: "open-models",
             actionLabel: "Load selected model",
           }
@@ -131,7 +129,7 @@ export function deriveWorkbenchReadiness(input: {
               id: "model",
               state: "action",
               title: "Selected model",
-              detail: "The model selected for this run is no longer in the discovered catalog. Choose and load another local model.",
+              detail: "The model selected for this run is no longer in the LM Studio catalog. Choose and explicitly connect another model.",
               action: "open-models",
               actionLabel: "Choose model",
             }
@@ -140,17 +138,17 @@ export function deriveWorkbenchReadiness(input: {
             id: "model",
             state: "action",
             title: "Active model",
-            detail: `${models.length} local model${models.length === 1 ? "" : "s"} discovered; load one explicitly after reviewing its memory estimate.`,
+            detail: `${models.filter((model) => model.modelKind !== "embedding").length} chat model(s) discovered from LM Studio; connect or load one explicitly.`,
             action: "open-models",
-            actionLabel: "Review models",
+            actionLabel: "Manage models",
           }
           : {
               id: "model",
               state: "action",
-              title: "Model library",
-              detail: "No GGUF models were discovered in the configured read-only library.",
-              action: "choose-model-root",
-              actionLabel: "Choose model folder",
+              title: "LM Studio catalog",
+              detail: `No models were discovered from ${settings.inference.baseUrl}.`,
+              action: "open-models",
+              actionLabel: "Refresh LM Studio",
             },
   ];
   const readyCount = steps.filter((step) => step.state === "ready").length;

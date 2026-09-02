@@ -1,7 +1,7 @@
 # Visualization Product Roadmap
 
 - Status: engineering roadmap, not a release-completion claim
-- Research snapshot: 2026-08-31
+- Research snapshot: 2026-09-01
 - Applies to: `apps/proto-workbench` Design Explorer and `proto-agent.ir.v1`
 
 ## Purpose and bounded scope
@@ -68,6 +68,19 @@ promises:
   diagnostics. Optional construct annotations use a bounded logical-feature
   model with one to 64 canonical segments; invalid bounds, overlap, ordering,
   or a linear-origin wrap fail closed.
+- Protein-domain IR parsing now recomputes every sequence SHA-256 synchronously
+  in the renderer and requires the compiled source/content digest, explicit
+  redistributable license, `DESIGN_ELIGIBLE`, `NO_FLAG`, sequence-kind, and
+  deterministic metric bindings to match. Any missing or drifting binding
+  rejects the entire view before React receives a protein model.
+- `ProteinSequenceView.tsx` renders one selected protein and at most 1,200
+  residues at a time. ID, name, source-record, and exact sequence-motif search
+  share one global 500-result envelope and preserve overlapping motif hits.
+  Previous/next navigation, 1-based inclusive range validation, a 100,000-
+  residue processing ceiling, selected-range composition/mass summaries, and a
+  read-only sequence extract are explicitly software-derived. Large multi-
+  record inputs disclose bounded summary mode rather than adding every residue
+  to the document.
 - Internal intervals are zero-based and end-exclusive. The current unit suite
   verifies contiguity and length derivation across parts and constructs.
 - `CgviewMap.tsx` converts canonical segments to CGView's one-based inclusive
@@ -80,8 +93,9 @@ promises:
   explicitly software-derived.
 - `DesignsPage.tsx` provides Map, Sequence, and Split modes; the user-facing map
   export provides SVG with embedded review metadata and PNG with a sibling JSON
-  metadata record. Export metadata records only the CGView layers actually
-  rendered into the map, explicitly records that the transient selection
+  metadata record. Export metadata and the independent verification receipt
+  preserve the actual primer-binding display state alongside the other CGView
+  layers rendered into the map, explicitly record that the transient selection
   overlay is excluded, and excludes sequence-only layers. SeqViz provides the
   linear sequence, complement, coordinate index, logical annotations flattened
   into synchronized display segments, direction-known
@@ -117,6 +131,9 @@ promises:
   CGView, the sequence navigator, SeqViz annotations, primers, and translations,
   while the muted inventory row remains available as the accessible recovery
   path. Map exports record the active label density and hidden-feature count.
+  The hidden-feature index set is memoized, so hover-only state changes retain a
+  stable adapter input instead of tearing down and rebuilding the CGView map and
+  whole-construct navigator.
 - A fail-closed, versioned local preference envelope persists viewer mode,
   construct, layers, label density, zoom, GC/ORF controls, view origin, feature
   visibility, and inventory state per exact artifact SHA-256. The store is

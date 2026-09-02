@@ -1,0 +1,63 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "sequence-resource-analysis",
+  "name": "Sequence Resource Analysis",
+  "version": "1.0.0",
+  "description": "Governed DNA and protein sequence inspection through Proto's typed materialization and validation interfaces.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Reduced a broad package-oriented bioinformatics skill to Proto's governed, dependency-light sequence contracts.",
+    "upstream": [
+      {
+        "id": "biopython",
+        "url": "https://github.com/K-Dense-AI/scientific-agent-skills/tree/1dd0fccf46fc3c9855c4a0c313a0c57fe4319883/skills/biopython",
+        "license": "MIT",
+        "revision": "1dd0fccf46fc3c9855c4a0c313a0c57fe4319883",
+        "content_sha256": "81eab1bd7db605635dc94bfc97e7264657325db5b220b40edf48ec178392c668"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "offline",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "materialize-dna",
+      "purpose": "Build a bounded DNA parts snapshot from exact eligible resource identifiers.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_materialize"}
+      ]
+    },
+    {
+      "id": "search-materialized-parts",
+      "purpose": "Search only the selected materialized DNA parts.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_search_parts"}
+      ]
+    },
+    {
+      "id": "validate-dna",
+      "purpose": "Validate selected DNA sequences and constraints.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_validate_sequences"}
+      ]
+    },
+    {
+      "id": "materialize-protein",
+      "purpose": "Build a bounded protein selection from exact eligible resource identifiers.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_materials_materialize_proteins"}
+      ]
+    },
+    {
+      "id": "compile-protein",
+      "purpose": "Validate metadata, sequence digest, alphabet, fractions, and provenance before protein analysis.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_protein_compile"}
+      ]
+    }
+  ]
+}

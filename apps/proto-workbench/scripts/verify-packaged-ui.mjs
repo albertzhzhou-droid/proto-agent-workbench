@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { lstat, readdir, realpath } from "node:fs/promises";
-import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,12 +12,9 @@ import { terminateOwnedProcessTree } from "../src/main/services/process-security
 import { seedWorkspace } from "../src/main/services/workspace-bootstrap.ts";
 
 const CONFIRMATION_ENV = "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS";
-const CONFIRMATION_VALUE = "YES_START_OWNED_MODEL_PROCESSES";
-const CONFIRMATION_FLAG = "--confirm-owned-execution=YES_START_OWNED_MODEL_PROCESSES";
+const CONFIRMATION_VALUE = "YES_LOAD_CHAT_UNLOAD_LM_STUDIO";
+const CONFIRMATION_FLAG = "--confirm-owned-execution=YES_LOAD_CHAT_UNLOAD_LM_STUDIO";
 const PROMPT = "研发一个表达左旋多巴的ecoli菌株";
-const MODEL_NAME = "Qwen3.6 35B A3B";
-const MODEL_FILE = "Qwen3.6-35B-A3B-Q4_K_M.gguf";
-const MODEL_ROOT = process.env.PROTO_WORKBENCH_TEST_MODEL_ROOT || join(homedir(), ".lmstudio", "models");
 const MODEL_TIMEOUT_MS = 8 * 60_000;
 const RUN_TIMEOUT_MS = 20 * 60_000;
 const APP_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -55,31 +51,50 @@ try {
 
   stage = "model-scan";
   await page.locator("nav button").filter({ hasText: /^Models$/ }).click();
-  await page.getByRole("heading", { name: "Local models" }).waitFor({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Rescan" }).waitFor({ timeout: 3 * 60_000 });
-  const modelRow = page.locator(".catalog-model-row")
-    .filter({ hasText: /Qwen3\.6-35B-A3B/i })
-    .filter({ hasText: /Q4[_ ]K[_ ]M/i });
-  if (await modelRow.count() !== 1) throw coded("PACKAGED_UI_MODEL_MATCH_INVALID");
-  await modelRow.click();
+  await page.getByRole("heading", { name: "LM Studio models" }).waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Refresh LM Studio" }).waitFor({ timeout: 3 * 60_000 });
   const modelPanel = page.locator(".model-load-panel");
-  await modelPanel.locator(".model-detail-heading h2").filter({ hasText: /Qwen3\.6-35B-A3B/i }).waitFor();
-  const selectedPath = await modelPanel.locator(".model-detail-heading p").getAttribute("title");
-  if (!selectedPath || basename(selectedPath) !== MODEL_FILE) throw coded("PACKAGED_UI_MODEL_FILE_MISMATCH");
+  const modelRows = page.locator(".catalog-model-row");
+  const rowCount = await modelRows.count();
+  let exactMatches = 0;
+  for (let index = 0; index < rowCount; index += 1) {
+    await modelRows.nth(index).click();
+    await page.waitForFunction(
+      (rowIndex) => document.querySelectorAll(".catalog-model-row")[rowIndex]?.classList.contains("is-selected"),
+      index,
+    );
+    const providerModelId = await modelPanel.locator(".model-detail-heading p").getAttribute("title");
+    if (providerModelId === options.modelKey) exactMatches += 1;
+  }
+  if (exactMatches !== 1) throw coded("PACKAGED_UI_EXACT_MODEL_KEY_MATCH_INVALID");
+  for (let index = 0; index < rowCount; index += 1) {
+    await modelRows.nth(index).click();
+    await page.waitForFunction(
+      (rowIndex) => document.querySelectorAll(".catalog-model-row")[rowIndex]?.classList.contains("is-selected"),
+      index,
+    );
+    const providerModelId = await modelPanel.locator(".model-detail-heading p").getAttribute("title");
+    if (providerModelId === options.modelKey) break;
+  }
+  const selectedKey = await modelPanel.locator(".model-detail-heading p").getAttribute("title");
+  if (selectedKey !== options.modelKey) throw coded("PACKAGED_UI_EXACT_MODEL_KEY_SELECTION_FAILED");
+  const instanceSummary = await modelPanel.locator(".data-row")
+    .filter({ hasText: "LM Studio instances" })
+    .textContent();
+  if (!instanceSummary?.includes("None")) throw coded("PACKAGED_UI_MODEL_ALREADY_LOADED");
 
   stage = "model-load";
   await modelPanel.getByRole("button", { name: "System RAM", exact: true }).click();
-  const gpuLayers = modelPanel.locator('input[type="range"]').nth(1);
-  await gpuLayers.focus();
-  await gpuLayers.press("Home");
-  for (let index = 0; index < 26; index += 1) await gpuLayers.press("ArrowRight");
-  await modelPanel.getByText(/Projected headroom:/).waitFor({ timeout: 30_000 });
-  await modelPanel.getByRole("button", { name: "Load model", exact: true }).click();
-  await modelPanel.getByRole("button", { name: "Unload", exact: true }).waitFor({ timeout: MODEL_TIMEOUT_MS });
-  const measured = await modelPanel.getByText("GPU measured now", { exact: true }).waitFor({ timeout: 30_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!measured) findings.push("PACKAGED_UI_MODEL_NOT_MEASURED");
+  await modelPanel.locator(".load-control-group")
+    .filter({ hasText: "Context length" })
+    .locator('input[type="number"]')
+    .fill("2048");
+  await modelPanel.locator(".load-control-group")
+    .filter({ hasText: "Evaluation batch size" })
+    .locator('input[type="number"]')
+    .fill("128");
+  await modelPanel.getByRole("button", { name: "Load in LM Studio", exact: true }).click();
+  await modelPanel.getByRole("button", { name: "Unload owned instance", exact: true }).waitFor({ timeout: MODEL_TIMEOUT_MS });
   await saveScreenshot(page, options.evidenceRoot, "02-model-active.png");
 
   stage = "agent-run";
@@ -120,6 +135,11 @@ try {
   if (findings.length) throw coded(findings[0]);
   await saveScreenshot(page, options.evidenceRoot, "05-quizzes-finished.png");
 
+  stage = "model-unload";
+  await page.locator("nav button").filter({ hasText: /^Models$/ }).click();
+  await modelPanel.getByRole("button", { name: "Unload owned instance", exact: true }).click();
+  await modelPanel.getByRole("button", { name: "Load in LM Studio", exact: true }).waitFor({ timeout: MODEL_TIMEOUT_MS });
+
   stage = "shutdown";
   await closeOwnedApplication();
   queuePath = await writeStressUpgradeQueue(options.buildRoot, {
@@ -134,8 +154,10 @@ try {
     ok: true,
     mode: options.mode,
     prompt: PROMPT,
-    model: MODEL_NAME,
-    modelFile: MODEL_FILE,
+    provider: "lmstudio",
+    modelKey: options.modelKey,
+    ownedInstanceCreated: true,
+    ownedInstanceUnloaded: true,
     queuePath,
     screenshots: 5,
     metrics,
@@ -167,10 +189,14 @@ try {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
 
 async function parseOptions(argv) {
-  if (process.env[CONFIRMATION_ENV] !== CONFIRMATION_VALUE || !argv.includes(CONFIRMATION_FLAG)) {
+  if (
+    process.env[CONFIRMATION_ENV] !== CONFIRMATION_VALUE
+    || argv.at(-1) !== CONFIRMATION_FLAG
+    || argv.filter((value) => value === CONFIRMATION_FLAG).length !== 1
+  ) {
     throw coded("REAL_MODEL_TEST_DISABLED");
   }
-  if (argv.length !== 6 || argv[5] !== CONFIRMATION_FLAG) throw coded("INVALID_ARGUMENTS");
+  if (argv.length !== 7 || argv[6] !== CONFIRMATION_FLAG) throw coded("INVALID_ARGUMENTS");
   const executable = await canonicalSingleLinkFile(argv[0], "packaged executable");
   const executableName = basename(executable);
   let mode;
@@ -190,7 +216,8 @@ async function parseOptions(argv) {
   const evidenceRoot = await canonicalDirectory(argv[2], "evidence root");
   const buildRoot = await canonicalDirectory(argv[3], "build root");
   const workspace = await canonicalDirectory(argv[4], "workspace");
-  return { executable, userData, evidenceRoot, buildRoot, workspace, mode };
+  const modelKey = requireModelKey(argv[5]);
+  return { executable, userData, evidenceRoot, buildRoot, workspace, modelKey, mode };
 }
 
 async function prepareIsolatedState(options) {
@@ -199,15 +226,25 @@ async function prepareIsolatedState(options) {
   const template = await canonicalDirectory(options.mode === "packaged-ui"
     ? join(dirname(options.executable), "resources", "runtime", "workspace-template")
     : join(APP_ROOT, "runtime", "workspace-template"), "workspace template");
-  const modelRoot = await canonicalDirectory(MODEL_ROOT, "model root");
   await seedWorkspace(template, options.workspace);
   const database = new AppDatabase(join(options.userData, "proto-workbench.sqlite"));
   try {
-    database.setSetting("modelRoot", modelRoot);
     database.setSetting("workspacePath", options.workspace);
   } finally {
     database.close();
   }
+}
+
+function requireModelKey(value) {
+  if (
+    typeof value !== "string"
+    || value.length < 1
+    || value.length > 1_024
+    || /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    throw coded("INVALID_LM_STUDIO_MODEL_KEY");
+  }
+  return value;
 }
 
 async function drainRun(page, timeoutMs) {

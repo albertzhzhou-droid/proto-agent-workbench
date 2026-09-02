@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -18,7 +19,18 @@ DESIGN_ASSETS = (
     "designs/toggle_switch.proto",
     "parts/ecoli_k12_library.json",
 )
-WORKFLOW_ASSETS = (*DESIGN_ASSETS, "workflows/design_review.json")
+SKILL_ASSETS = tuple(
+    str(path.relative_to(ROOT)).replace("\\", "/")
+    for path in sorted((ROOT / ".codex" / "skills").rglob("*"))
+    if path.is_file()
+)
+WORKFLOW_ASSETS = (
+    *DESIGN_ASSETS,
+    "workflows/design_review.json",
+    "connectors/proto_workbench.json",
+    "literature/seed_sources.json",
+    *SKILL_ASSETS,
+)
 REVIEW_ASSETS = (*WORKFLOW_ASSETS, "literature/seed_sources.json")
 ANALYSIS_ASSETS = (
     "analyses/summarize_design.py",
@@ -29,6 +41,15 @@ CONNECTOR_ASSETS = (
     "connectors/proto_workbench.json",
     "parts/ecoli_k12_library.json",
     "literature/seed_sources.json",
+    "apps/proto-workbench/package.json",
+    "src/proto_agent/materials_promotion.py",
+    *SKILL_ASSETS,
+)
+SKILL_CATALOG_ASSETS = (
+    "connectors/proto_workbench.json",
+    "parts/ecoli_k12_library.json",
+    "literature/seed_sources.json",
+    *SKILL_ASSETS,
 )
 PUBMED_FIXTURE = ("tests/fixtures/pubmed_esummary.json",)
 SOURCE_FIXTURES = (
@@ -37,6 +58,76 @@ SOURCE_FIXTURES = (
     "tests/fixtures/uniprot_search.json",
     "tests/fixtures/rhea_search.tsv",
 )
+
+
+def _promotion_cli_candidate(resource_id: str = "igem:cli-evidence") -> dict:
+    sequence = "TTGACATATAAT"
+    sequence_sha256 = hashlib.sha256(sequence.encode("ascii")).hexdigest()
+    source_url = "https://api.registry.igem.org/v1/parts/cli-evidence"
+    return {
+        "resource_id": resource_id,
+        "kind": "genetic_part",
+        "name": "Governed CLI promoter candidate",
+        "aliases": ["CLI promoter candidate"],
+        "description_en": "A deterministic software-catalog candidate for CLI evidence tests.",
+        "description_zh": "用于 CLI 来源证据测试的确定性软件目录候选记录。",
+        "chassis": ["ecoli_k12"],
+        "role_terms": ["Promoter"],
+        "part_type": "promoter",
+        "sequence": sequence,
+        "sequence_sha256": sequence_sha256,
+        "sequence_kind": "DNA",
+        "source": {
+            "provider": "iGEM Registry",
+            "record_id": "cli-evidence",
+            "revision": "2026-09",
+            "release": "2026-09",
+            "url": source_url,
+            "retrieved_at": "2026-09-01T00:00:00Z",
+            "content_sha256": "1" * 64,
+            "sequence_sha256": sequence_sha256,
+        },
+        "license": {
+            "id": "CC-BY-4.0",
+            "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+            "attribution": "iGEM Registry CLI evidence fixture",
+            "rights_notes": "Explicit redistribution terms for the deterministic CLI evidence fixture.",
+            "redistribution_status": "REDISTRIBUTABLE",
+        },
+        "evidence_refs": [
+            source_url,
+            "https://creativecommons.org/licenses/by/4.0/legalcode",
+        ],
+        "review_status": "DESIGN_ELIGIBLE",
+        "safety_status": "NO_FLAG",
+        "design_eligibility": True,
+        "metadata": {
+            "role_accession": "SO:0000167",
+            "registry_status": "published",
+            "chassis_basis": "human_review_software_annotation",
+        },
+    }
+
+
+def _promotion_cli_source_evidence() -> dict:
+    return {
+        "record_response": {
+            "path": "evidence/igem/cli-evidence.json",
+            "url": "https://api.registry.igem.org/v1/parts/cli-evidence",
+            "retrieved_at": "2026-09-01T00:00:00Z",
+            "sha256": "1" * 64,
+            "byte_count": 512,
+        },
+        "license_response": {
+            "path": "evidence/igem/cc-by-4.0.json",
+            "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+            "retrieved_at": "2026-09-01T00:00:00Z",
+            "sha256": "2" * 64,
+            "byte_count": 256,
+            "declared_license_id": "CC-BY-4.0",
+            "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        },
+    }
 
 
 class CliTests(unittest.TestCase):
@@ -107,6 +198,11 @@ class CliTests(unittest.TestCase):
         except subprocess.TimeoutExpired as exc:
             self.fail(f"CLI exceeded {CLI_TIMEOUT_SECONDS}s timeout: {exc.cmd}")
 
+    def run_materials_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
+        materials_root = self.workspace.parent / f"{self.workspace.name}-materials"
+        self.addCleanup(shutil.rmtree, materials_root, True)
+        return self.run_cli("--materials-root", str(materials_root), "materials", *args)
+
     def workspace_path(self, value: str) -> Path:
         candidate = Path(value)
         if not candidate.is_absolute():
@@ -149,6 +245,57 @@ class CliTests(unittest.TestCase):
         payload = json.loads(validate_result.stdout)
         self.assertTrue(payload["ok"])
         self.assertGreaterEqual(payload["component_count"], 1)
+
+    def test_cli_and_mcp_export_reject_forged_dna_ir_before_writing(self) -> None:
+        build = self.workspace / "build"
+        build.mkdir()
+        forged = build / "forged.ir.json"
+        forged.write_text(
+            json.dumps(
+                {
+                    "schema_version": "proto-agent.ir.v1",
+                    "domain": "dna",
+                    "design_id": "forged",
+                    "chassis": "ecoli_k12",
+                    "constructs": [
+                        {
+                            "name": "forged",
+                            "topology": "linear",
+                            "parts": [{"id": "fake", "type": "promoter", "sequence": "NOT-DNA-123"}],
+                        }
+                    ],
+                    "constraints": [],
+                    "provenance": {"source": "forged.proto"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        cli_result = self.run_cli("export", "build/forged.ir.json", "--format", "fasta", "--out", "build/forged.fasta")
+        self.assertNotEqual(cli_result.returncode, 0)
+        self.assertIn("unsupported DNA symbols", cli_result.stderr)
+        self.assertFalse((build / "forged.fasta").exists())
+
+        request = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 101,
+                "method": "tools/call",
+                "params": {
+                    "name": "proto_export",
+                    "arguments": {
+                        "ir_path": "build/forged.ir.json",
+                        "format": "fasta",
+                        "out": "build/forged-mcp.fasta",
+                    },
+                },
+            }
+        )
+        mcp_result = self.run_cli("mcp", "--once", request)
+        self.assertEqual(mcp_result.returncode, 0, mcp_result.stderr)
+        structured = json.loads(mcp_result.stdout)["result"]["structuredContent"]
+        self.assertFalse(structured["ok"])
+        self.assertIn("unsupported DNA symbols", structured["diagnostics"][0]["message"])
+        self.assertFalse((build / "forged-mcp.fasta").exists())
 
     def test_parts_search(self) -> None:
         self.stage_assets("parts/ecoli_k12_library.json")
@@ -278,6 +425,13 @@ class CliTests(unittest.TestCase):
         self.assertIn("proto_run_r", mcp["tools"])
         self.assertIn("proto_validate_sbol", mcp["tools"])
         self.assertIn("proto_review_packet", mcp["tools"])
+        self.assertIn("proto_skills_list", mcp["tools"])
+        self.assertIn("proto_skills_resolve", mcp["tools"])
+        lm_studio = next(connector for connector in payload["connectors"] if connector["id"] == "lm-studio")
+        self.assertEqual(lm_studio["base_url"], "http://127.0.0.1:1234")
+        self.assertIn("POST /v1/chat/completions", lm_studio["http_routes"])
+        skill_adapters = next(connector for connector in payload["connectors"] if connector["id"] == "skill-adapters")
+        self.assertEqual(skill_adapters["status"], "available")
         validator = next(connector for connector in payload["connectors"] if connector["id"] == "sequence_validator")
         self.assertEqual(validator["status"], "available")
         analysis = next(connector for connector in payload["connectors"] if connector["id"] == "python_analysis")
@@ -294,6 +448,16 @@ class CliTests(unittest.TestCase):
         self.assertEqual(optimizer["status"], "available")
         review_packet = next(connector for connector in payload["connectors"] if connector["id"] == "review_packet")
         self.assertEqual(review_packet["status"], "available")
+
+    def test_skill_catalog_audit_is_fully_resolved(self) -> None:
+        self.stage_assets(*SKILL_CATALOG_ASSETS)
+        result = self.run_cli("skills", "audit")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["pass_count"], 3)
+        self.assertEqual(payload["status_counts"], {"available": 7, "partial": 0, "unavailable": 0})
+        self.assertEqual(payload["findings"], [])
 
     def test_analysis_run_is_denied_without_explicit_execution_mode(self) -> None:
         self.stage_assets(*ANALYSIS_ASSETS)
@@ -335,6 +499,11 @@ class CliTests(unittest.TestCase):
         self.assertIn("sbol_validate", step_ids)
         self.assertTrue(manifest["sequence_validation"]["ok"])
         self.assertTrue(manifest["sbol_validation"]["ok"])
+        self.assertRegex(manifest["skill_catalog_sha256"], r"^[a-f0-9]{64}$")
+        self.assertRegex(manifest["connector_registry_sha256"], r"^[a-f0-9]{64}$")
+        self.assertEqual(manifest["skill_compatibility"]["status"], "resolved")
+        self.assertTrue(manifest["skill_bindings"])
+        self.assertTrue(all(binding["resolution_status"] == "resolved" for binding in manifest["skill_bindings"]))
 
     def test_review_run_writes_packet_and_evidence_cards(self) -> None:
         self.stage_assets(*REVIEW_ASSETS)
@@ -363,6 +532,21 @@ class CliTests(unittest.TestCase):
         self.assertEqual(evidence["schema_version"], "proto-agent.evidence.v1")
         self.assertGreaterEqual(evidence["summary"]["card_count"], 8)
         self.assertIn("evidence.cards.json", "\n".join(packet["artifacts"]))
+        self.assertRegex(packet["connector_registry_sha256"], r"^[a-f0-9]{64}$")
+        self.assertEqual(packet["skill_compatibility"]["status"], "resolved")
+        self.assertTrue(packet["workflow_skill_bindings"])
+        self.assertEqual(
+            {binding["skill_id"] for binding in packet["review_skill_bindings"]},
+            {"research-provenance", "evidence-first-literature-review"},
+        )
+        self.assertTrue(all(binding["application_status"] == "applied_with_evidence" for binding in packet["review_skill_bindings"]))
+        self.assertTrue(all(binding["evidence"] for binding in packet["review_skill_bindings"]))
+        self.assertTrue(
+            all(
+                binding["connector_registry_sha256"] == packet["connector_registry_sha256"]
+                for binding in packet["review_skill_bindings"]
+            )
+        )
 
     def test_mcp_tools_list(self) -> None:
         request = json.dumps(
@@ -393,6 +577,32 @@ class CliTests(unittest.TestCase):
         self.assertIn("proto_run_r", tool_names)
         self.assertIn("proto_validate_sbol", tool_names)
         self.assertIn("proto_review_packet", tool_names)
+        self.assertIn("proto_skills_list", tool_names)
+        self.assertIn("proto_skills_resolve", tool_names)
+
+    def test_mcp_skill_resolution_is_read_only_and_available(self) -> None:
+        self.stage_assets(*SKILL_CATALOG_ASSETS)
+        request = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                    "name": "proto_skills_resolve",
+                    "arguments": {"skill_id": "lm-studio-model-endpoint"},
+                },
+            }
+        )
+        result = self.run_cli("mcp", "--once", request)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        resolved = json.loads(payload["result"]["content"][0]["text"])
+        self.assertTrue(resolved["ok"])
+        self.assertEqual(resolved["adapter"]["status"], "available")
+        self.assertEqual(
+            {operation["id"] for operation in resolved["adapter"]["operations"]},
+            {"discover-models", "load-model", "generate-chat", "unload-owned-model"},
+        )
 
     def test_mcp_proto_check_tool_call(self) -> None:
         self.stage_assets(*DESIGN_ASSETS)
@@ -648,6 +858,171 @@ class CliTests(unittest.TestCase):
         structured = payload["result"]["structuredContent"]
         self.assertTrue(structured["ok"])
         self.assertFalse(payload["result"]["isError"])
+
+    def test_public_materials_cli_activation_requires_and_records_operator_evidence(self) -> None:
+        installed = self.run_materials_cli("bundle-install-public")
+        self.assertEqual(installed.returncode, 0, installed.stderr)
+        snapshot_id = json.loads(installed.stdout)["snapshot_id"]
+
+        missing = self.run_materials_cli("activate", snapshot_id)
+        self.assertEqual(missing.returncode, 2)
+        self.assertIn("requires both a self-declared operator label", missing.stderr)
+
+        activated = self.run_materials_cli(
+            "activate",
+            snapshot_id,
+            "--operator",
+            "cli-test-operator-label",
+            "--approval-reference",
+            "review-ticket:CLI-1",
+        )
+        self.assertEqual(activated.returncode, 0, activated.stderr)
+        payload = json.loads(activated.stdout)
+        self.assertEqual(payload["action"], "activate")
+        self.assertEqual(payload["operator"], "cli-test-operator-label")
+        self.assertEqual(payload["approval_reference"], "review-ticket:CLI-1")
+        self.assertEqual(payload["operator_identity_assurance"], "SELF_DECLARED_UNVERIFIED")
+
+        materials_root = self.workspace.parent / f"{self.workspace.name}-materials"
+        pointer = json.loads((materials_root / "active.json").read_text(encoding="utf-8"))
+        self.assertEqual(pointer["action"], "activate")
+        self.assertEqual(pointer["approval_reference"], "review-ticket:CLI-1")
+
+    def test_materials_promotion_audit_non_fixture_without_source_evidence_fails_closed(self) -> None:
+        candidate_path = self.workspace / "inputs" / "promotion-candidates.json"
+        candidate_path.parent.mkdir(parents=True)
+        candidate_path.write_text(
+            json.dumps({"records": [_promotion_cli_candidate()]}),
+            encoding="utf-8",
+        )
+        result = self.run_materials_cli(
+            "promotion-audit",
+            "inputs/promotion-candidates.json",
+            "--generated-at",
+            "2026-09-01T00:00:00Z",
+            "--out",
+            "build/materials/no-evidence-audit.json",
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload["ok"])
+        self.assertIn(
+            "SOURCE_EVIDENCE_MISSING",
+            payload["candidates"][0]["rounds"][0]["reason_codes"],
+        )
+
+    def test_materials_promotion_audit_explicit_source_evidence_passes_and_writes_artifact(self) -> None:
+        resource_id = "igem:cli-evidence"
+        candidate_path = self.workspace / "inputs" / "promotion-candidates.json"
+        evidence_path = self.workspace / "inputs" / "promotion-evidence.json"
+        candidate_path.parent.mkdir(parents=True)
+        candidate_path.write_text(
+            json.dumps({"records": [_promotion_cli_candidate(resource_id)]}),
+            encoding="utf-8",
+        )
+        evidence_path.write_text(
+            json.dumps({"source_evidence": {resource_id: _promotion_cli_source_evidence()}}),
+            encoding="utf-8",
+        )
+        result = self.run_materials_cli(
+            "promotion-audit",
+            "inputs/promotion-candidates.json",
+            "--source-evidence",
+            "inputs/promotion-evidence.json",
+            "--generated-at",
+            "2026-09-01T00:00:00Z",
+            "--out",
+            "build/materials/explicit-evidence-audit.json",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["pass_count"], 1)
+        artifact = self.workspace_path(payload["artifact"])
+        self.assertTrue(artifact.is_file())
+        persisted = json.loads(artifact.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["candidates"][0]["source_evidence"], _promotion_cli_source_evidence())
+
+    def test_materials_promotion_audit_accepts_locked_audit_evidence_schema(self) -> None:
+        resource_id = "igem:cli-evidence"
+        inputs = self.workspace / "inputs"
+        inputs.mkdir(parents=True)
+        (inputs / "promotion-candidates.json").write_text(
+            json.dumps({"records": [_promotion_cli_candidate(resource_id)]}),
+            encoding="utf-8",
+        )
+        (inputs / "locked-promotion-audit.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "proto-agent.materials-promotion-audit.v1",
+                    "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+                    "candidates": [
+                        {
+                            "resource_id": resource_id,
+                            "source_evidence": _promotion_cli_source_evidence(),
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_materials_cli(
+            "promotion-audit",
+            "inputs/promotion-candidates.json",
+            "--source-evidence",
+            "inputs/locked-promotion-audit.json",
+            "--generated-at",
+            "2026-09-01T00:00:00Z",
+            "--out",
+            "build/materials/locked-evidence-audit.json",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)["ok"])
+
+    def test_materials_promotion_audit_rejects_malformed_or_duplicate_evidence_ids(self) -> None:
+        resource_id = "igem:cli-evidence"
+        inputs = self.workspace / "inputs"
+        inputs.mkdir(parents=True)
+        (inputs / "promotion-candidates.json").write_text(
+            json.dumps({"records": [_promotion_cli_candidate(resource_id)]}),
+            encoding="utf-8",
+        )
+        malformed_path = inputs / "malformed-evidence.json"
+        malformed_path.write_text(
+            json.dumps({"source_evidence": {resource_id: []}}),
+            encoding="utf-8",
+        )
+        malformed = self.run_materials_cli(
+            "promotion-audit",
+            "inputs/promotion-candidates.json",
+            "--source-evidence",
+            "inputs/malformed-evidence.json",
+        )
+        self.assertEqual(malformed.returncode, 2)
+        self.assertIn("source_evidence must be an object", malformed.stderr)
+
+        duplicate_path = inputs / "duplicate-evidence.json"
+        duplicate_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "proto-agent.materials-promotion-audit.v1",
+                    "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+                    "candidates": [
+                        {"resource_id": resource_id, "source_evidence": _promotion_cli_source_evidence()},
+                        {"resource_id": resource_id.upper(), "source_evidence": _promotion_cli_source_evidence()},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        duplicate = self.run_materials_cli(
+            "promotion-audit",
+            "inputs/promotion-candidates.json",
+            "--source-evidence",
+            "inputs/duplicate-evidence.json",
+        )
+        self.assertEqual(duplicate.returncode, 2)
+        self.assertIn("Duplicate promotion source-evidence resource_id", duplicate.stderr)
 
 
 if __name__ == "__main__":

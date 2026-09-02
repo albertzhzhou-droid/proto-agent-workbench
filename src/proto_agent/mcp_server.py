@@ -36,6 +36,7 @@ from .source_search import (
     search_rhea,
     search_uniprot,
 )
+from .skill_sdk import DEFAULT_SKILLS_ROOT, list_skill_adapters, resolve_skill_adapter
 from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
 from .execution import ExecutionBroker, ExecutionDenied, MAX_EXECUTION_ARG_CHARS, MAX_EXECUTION_ARGS, MAX_EXECUTION_TIMEOUT_SECONDS
 from .json_validation import JsonValidationError, strict_json_loads, validate_json_schema, validate_json_shape
@@ -85,7 +86,7 @@ def _secure_tool_schema(schema: dict[str, Any]) -> None:
         if field_type == "string":
             if name in required:
                 field.setdefault("minLength", 1)
-            if name in {"path", "script", "ir_path", "parts_path", "out", "out_dir", "workflow_path", "manifest_path", "registry", "cache_dir", "fixture", "cafile"}:
+            if name in {"path", "script", "ir_path", "parts_path", "out", "out_dir", "workflow_path", "manifest_path", "registry", "root", "cache_dir", "fixture", "cafile"}:
                 field.setdefault("maxLength", MAX_PATH_CHARS)
             elif name in {"query", "literature_query"}:
                 field.setdefault("maxLength", MAX_QUERY_CHARS)
@@ -234,7 +235,7 @@ TOOLS: list[dict[str, Any]] = [
                 "status": {"type": "string", "enum": ["DESIGN_ELIGIBLE"], "default": "DESIGN_ELIGIBLE"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": MAX_MCP_RESULT_LIMIT, "default": 20},
                 "cursor": {"type": "string"},
-                "snapshot": {"type": "string"},
+                "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
             },
         },
     },
@@ -247,7 +248,7 @@ TOOLS: list[dict[str, Any]] = [
             "properties": {
                 "resource_id": {"type": "string"},
                 "include_sequence": {"type": "boolean", "default": False},
-                "snapshot": {"type": "string"},
+                "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
             },
         },
     },
@@ -257,7 +258,7 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "snapshot": {"type": "string"},
+                "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
             },
         },
     },
@@ -271,7 +272,7 @@ TOOLS: list[dict[str, Any]] = [
                 "resource_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
                 "chassis": {"type": "string"},
                 "out": {"type": "string"},
-                "snapshot": {"type": "string"},
+                "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
             },
         },
     },
@@ -285,7 +286,7 @@ TOOLS: list[dict[str, Any]] = [
                 "resource_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
                 "design_id": {"type": "string"},
                 "out": {"type": "string"},
-                "snapshot": {"type": "string"},
+                "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
             },
         },
     },
@@ -474,6 +475,30 @@ TOOLS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "name": "proto_skills_list",
+        "description": "List and resolve bounded vendor-neutral project Skill adapters without executing them.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "root": {"type": "string", "default": str(DEFAULT_SKILLS_ROOT)},
+                "registry": {"type": "string", "default": "connectors/proto_workbench.json"},
+            },
+        },
+    },
+    {
+        "name": "proto_skills_resolve",
+        "description": "Resolve one bounded project Skill adapter against declared CLI, MCP, and HTTP interfaces without invoking it.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["skill_id"],
+            "properties": {
+                "skill_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$", "maxLength": 64},
+                "root": {"type": "string", "default": str(DEFAULT_SKILLS_ROOT)},
+                "registry": {"type": "string", "default": "connectors/proto_workbench.json"},
+            },
+        },
+    },
 ]
 
 for _tool in TOOLS:
@@ -549,6 +574,8 @@ class McpServer:
             "proto_r_status": self._tool_r_status,
             "proto_run_r": self._tool_run_r,
             "proto_connectors_check": self._tool_connectors_check,
+            "proto_skills_list": self._tool_skills_list,
+            "proto_skills_resolve": self._tool_skills_resolve,
         }
 
     def serve(self) -> int:
@@ -874,9 +901,40 @@ class McpServer:
         # active workspace. MCP never accepts an arbitrary materials path.
         return MaterialsStore(workspace=self.paths.workspace)
 
+    def _active_materials_store(self, arguments: dict[str, Any]) -> tuple[MaterialsStore, str]:
+        """Resolve the model-visible store without permitting snapshot bypasses.
+
+        MCP callers may optionally repeat the active snapshot ID as a
+        reproducibility assertion, but they cannot select an inactive or
+        historical snapshot.  Activation is the human-controlled visibility
+        boundary; accepting an arbitrary snapshot here would make that
+        boundary ineffective for every model-facing materials tool.
+        """
+
+        store = self._materials_store()
+        active_snapshot = store._active_id()
+        if not active_snapshot:
+            raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
+        requested_snapshot = arguments.get("snapshot")
+        if requested_snapshot is not None:
+            if not isinstance(requested_snapshot, str) or requested_snapshot != active_snapshot:
+                raise MaterialsError(
+                    "MATERIALS_SNAPSHOT_NOT_ACTIVE",
+                    "Model-facing materials tools may only access the currently active snapshot.",
+                )
+        manifest = store.manifest(active_snapshot)
+        store._verify_snapshot(active_snapshot, manifest)
+        if store._active_id() != active_snapshot:
+            raise MaterialsError(
+                "ACTIVE_POINTER_CHANGED",
+                "The active materials snapshot changed while its contents were being verified.",
+            )
+        return store, active_snapshot
+
     def _tool_materials_search(self, arguments: dict[str, Any]) -> dict[str, Any]:
         limit = min(int(arguments.get("limit", 20)), MAX_MCP_RESULT_LIMIT)
-        payload = self._materials_store().search(
+        store, active_snapshot = self._active_materials_store(arguments)
+        payload = store.search(
             str(arguments.get("query", "")),
             kind=arguments.get("kind"),
             organism=arguments.get("organism"),
@@ -886,7 +944,7 @@ class McpServer:
             status="DESIGN_ELIGIBLE",
             limit=limit,
             cursor=arguments.get("cursor"),
-            snapshot_id=arguments.get("snapshot"),
+            snapshot_id=active_snapshot,
             auto_initialize=False,
         )
         # Metadata is source-derived and untrusted.  Keep the model-facing
@@ -900,10 +958,11 @@ class McpServer:
 
     def _tool_materials_get(self, arguments: dict[str, Any]) -> dict[str, Any]:
         resource_id = _required_string(arguments, "resource_id")
-        payload = self._materials_store().get(
+        store, active_snapshot = self._active_materials_store(arguments)
+        payload = store.get(
             resource_id,
             include_sequence=bool(arguments.get("include_sequence", False)),
-            snapshot_id=arguments.get("snapshot"),
+            snapshot_id=active_snapshot,
             auto_initialize=False,
         )
         resource = payload.get("resource")
@@ -917,17 +976,19 @@ class McpServer:
         return payload
 
     def _tool_materials_facets(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        return self._materials_store().facets(snapshot_id=arguments.get("snapshot"), status="DESIGN_ELIGIBLE", auto_initialize=False)
+        store, active_snapshot = self._active_materials_store(arguments)
+        return store.facets(snapshot_id=active_snapshot, status="DESIGN_ELIGIBLE", auto_initialize=False)
 
     def _tool_materials_materialize(self, arguments: dict[str, Any]) -> dict[str, Any]:
         resource_ids = arguments.get("resource_ids")
         if not isinstance(resource_ids, list) or not resource_ids or len(resource_ids) > 50 or not all(isinstance(item, str) for item in resource_ids):
             raise MaterialsError("INVALID_SELECTION", "MCP materialization accepts 1-50 resource IDs.")
-        return self._materials_store().materialize_parts(
+        store, active_snapshot = self._active_materials_store(arguments)
+        return store.materialize_parts(
             list(resource_ids),
             _required_string(arguments, "chassis"),
             output=arguments.get("out"),
-            snapshot_id=arguments.get("snapshot"),
+            snapshot_id=active_snapshot,
             auto_initialize=False,
         )
 
@@ -935,11 +996,12 @@ class McpServer:
         resource_ids = arguments.get("resource_ids")
         if not isinstance(resource_ids, list) or not resource_ids or len(resource_ids) > 50 or not all(isinstance(item, str) for item in resource_ids):
             raise MaterialsError("INVALID_SELECTION", "MCP protein materialization accepts 1-50 resource IDs.")
-        return self._materials_store().materialize_proteins(
+        store, active_snapshot = self._active_materials_store(arguments)
+        return store.materialize_proteins(
             list(resource_ids),
             design_id=arguments.get("design_id"),
             output=arguments.get("out"),
-            snapshot_id=arguments.get("snapshot"),
+            snapshot_id=active_snapshot,
             auto_initialize=False,
         )
 
@@ -1007,6 +1069,21 @@ class McpServer:
         registry = self.paths.workspace_file(arguments.get("registry", "connectors/proto_workbench.json"), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
         return connector_summary(
             registry.relative_to(self.paths.workspace),
+            workspace_root=self.paths.workspace,
+        )
+
+    def _tool_skills_list(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return list_skill_adapters(
+            arguments.get("root", str(DEFAULT_SKILLS_ROOT)),
+            arguments.get("registry", "connectors/proto_workbench.json"),
+            workspace_root=self.paths.workspace,
+        )
+
+    def _tool_skills_resolve(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return resolve_skill_adapter(
+            _required_string(arguments, "skill_id"),
+            arguments.get("root", str(DEFAULT_SKILLS_ROOT)),
+            arguments.get("registry", "connectors/proto_workbench.json"),
             workspace_root=self.paths.workspace,
         )
 

@@ -1,0 +1,63 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "lm-studio-model-endpoint",
+  "name": "LM Studio Model Endpoint",
+  "version": "1.0.0",
+  "description": "Vendor-neutral HTTP adaptation for LM Studio catalogue, lifecycle, and chat operations.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Replaced the vendor lifecycle SDK with explicit loopback REST operations and ownership-safe state reconciliation.",
+    "upstream": [
+      {
+        "id": "managed-model-endpoints",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/managed-model-endpoints",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "48cb2bf810b3c54d43ab8384effe019c725e1faf14161464eb8fabf7e8d8d47a"
+      },
+      {
+        "id": "using-model-endpoint",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/using-model-endpoint",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "2ee613c4530f85e21db322b4e15d510a1800c228dee4c010a2849e55f852af00"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "loopback-only",
+    "human_review": false
+  },
+  "operations": [
+    {
+      "id": "discover-models",
+      "purpose": "Read the authoritative rich local model catalogue.",
+      "interfaces": [
+        {"kind": "http", "connector": "lm-studio", "method": "GET", "path": "/api/v1/models"}
+      ]
+    },
+    {
+      "id": "load-model",
+      "purpose": "Explicitly load an exact discovered model key.",
+      "interfaces": [
+        {"kind": "http", "connector": "lm-studio", "method": "POST", "path": "/api/v1/models/load"}
+      ]
+    },
+    {
+      "id": "generate-chat",
+      "purpose": "Obtain a bounded response from the selected loaded model.",
+      "interfaces": [
+        {"kind": "http", "connector": "lm-studio", "method": "POST", "path": "/v1/chat/completions"}
+      ]
+    },
+    {
+      "id": "unload-owned-model",
+      "purpose": "Unload only an instance owned by the current Workbench session.",
+      "interfaces": [
+        {"kind": "governed", "connector": "lm-studio", "operation": "unload-owned-model"}
+      ]
+    }
+  ]
+}

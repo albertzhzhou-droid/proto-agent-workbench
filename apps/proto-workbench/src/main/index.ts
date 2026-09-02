@@ -2,12 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
 import { lstat, realpath, stat } from "node:fs/promises";
-import { homedir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { AgentService } from "./services/agent-service.ts";
 import { AppDatabase } from "./services/database.ts";
-import { LlamaServerManager } from "./services/llama-server.ts";
+import { LmStudioProvider, LM_STUDIO_BASE_URL, LM_STUDIO_TOKEN_ENV_NAMES } from "./services/lm-studio-provider.ts";
 import { McpClient } from "./services/mcp-client.ts";
 import { buildMissionPreflight } from "./services/mission-preflight.ts";
 import { buildPolicySimulation } from "./services/policy-simulation.ts";
@@ -19,8 +18,6 @@ import {
 import { workspaceBindingIdentity } from "./services/run-checkpoints.ts";
 import { buildOperatorCockpit, OPERATOR_COCKPIT_LIMITS } from "./services/operator-cockpit.ts";
 import { buildGlobalEvidenceSearch, GLOBAL_EVIDENCE_LIMITS } from "./services/global-evidence.ts";
-import { ModelCatalogService } from "./services/model-catalog.ts";
-import { resolveModelLibraryRoot } from "./services/model-root.ts";
 import { ModelService } from "./services/model-service.ts";
 import { verifyModuleIntegrity } from "./services/module-integrity.ts";
 import { WorkspaceFiles } from "./services/workspace-files.ts";
@@ -40,8 +37,6 @@ import { activateStartupWorkspace, seedWorkspace } from "./services/workspace-bo
 import {
   assertSafeExternalOpenPath,
   canonicalSelectedDirectory,
-  trustRuntimeExecutable,
-  type RuntimeExecutableTrust,
 } from "./services/path-security.ts";
 import { assertPrivilegedIpcSender, resolveRendererTarget, validateIpcArguments } from "./ipc-security.ts";
 import type {
@@ -51,6 +46,7 @@ import type {
   GlobalEvidenceSearchRequest,
   MissionPreflight,
   MissionPreflightRequest,
+  MaterialsActivationEvidence,
   MaterialsReviewInput,
   MapExportRequest,
   DecisionBundleExportRequest,
@@ -80,7 +76,7 @@ import { IPC } from "../shared/ipc.ts";
 
 let mainWindow: BrowserWindow | null = null;
 let database: AppDatabase;
-let llamaRuntime: LlamaServerManager;
+let inferenceProvider: LmStudioProvider;
 let modelService: ModelService;
 let workspaceFiles: WorkspaceFiles;
 let mcpClient: McpClient;
@@ -122,7 +118,12 @@ let defaultWorkspacePath = repoRoot;
 
 function defaultSettings(): AppSettings {
   return {
-    modelRoot: join(homedir(), ".lmstudio", "models"),
+    inference: {
+      provider: "lmstudio",
+      baseUrl: LM_STUDIO_BASE_URL,
+      tokenEnvNames: [...LM_STUDIO_TOKEN_ENV_NAMES],
+      explicitLoadOnly: true,
+    },
     workspacePath: defaultWorkspacePath,
     residencyPolicy: modelService?.getPolicy() ?? {
       mode: "quick-switch",
@@ -149,31 +150,14 @@ function effectiveModuleSettings(settings: ModuleSettings): ModuleSettings {
 
 function readSettings(): AppSettings {
   const defaults = defaultSettings();
-  const runtimeTrust = readRuntimeTrust();
   return {
-    modelRoot: database.getSetting("modelRoot", defaults.modelRoot),
+    inference: defaults.inference,
     workspacePath: database.getSetting("workspacePath", defaults.workspacePath),
-    runtimePath: runtimeTrust?.path,
     residencyPolicy: modelService.getPolicy(),
     modules: effectiveModuleSettings(
       normalizeModuleSettings(database.getSetting<Partial<ModuleSettings>>("modules", defaults.modules)),
     ),
   };
-}
-
-function readRuntimeTrust(): RuntimeExecutableTrust | undefined {
-  const trust = database.getSetting<Partial<RuntimeExecutableTrust> | undefined>("runtimeTrust", undefined);
-  if (
-    !trust
-    || typeof trust.path !== "string"
-    || typeof trust.sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(trust.sha256)
-    || typeof trust.sizeBytes !== "number"
-    || !Number.isSafeInteger(trust.sizeBytes)
-  ) {
-    return undefined;
-  }
-  return { path: trust.path, sha256: trust.sha256, sizeBytes: trust.sizeBytes };
 }
 
 function broadcast(channel: string, payload: unknown): void {
@@ -420,7 +404,7 @@ async function captureMissionEnvironment(threadId: string) {
   const { thread } = agentService.getThread(threadId);
   const model = thread.modelId ? modelService.get(thread.modelId) : modelService.getActiveModel();
   const [runtime, capabilities, tools] = await Promise.all([
-    llamaRuntime.runtimeStatus(),
+    inferenceProvider.runtimeStatus(),
     mcpClient.capabilities(true),
     mcpClient.tools(true),
   ]);
@@ -450,15 +434,13 @@ function registerIpc(): void {
     if (patch.modules) database.setSetting("modules", normalizeModuleSettings(patch.modules));
     return readSettings();
   });
-  handlePrivileged(IPC.runtimeStatus, () => llamaRuntime.runtimeStatus());
+  handlePrivileged(IPC.runtimeStatus, () => inferenceProvider.runtimeStatus());
   handlePrivileged(IPC.startupRecovery, () => startupRecoveryReport);
   handlePrivileged(IPC.modulesIntegrity, () => moduleIntegrityReport);
   handlePrivileged(IPC.modulesAuditHistory, (_event, limit?: number) => database.listModuleAudits(limit));
 
   handlePrivileged(IPC.modelsScan, async () => {
-    const modelRoot = await resolveModelLibraryRoot(readSettings().modelRoot);
-    if (modelRoot !== readSettings().modelRoot) database.setSetting("modelRoot", modelRoot);
-    return modelService.scan(modelRoot);
+    return modelService.scan(LM_STUDIO_BASE_URL);
   });
   handlePrivileged(IPC.modelsList, () => modelService.list());
   handlePrivileged(IPC.modelsEstimate, (_event, modelId: string, options: ModelLoadOptions) =>
@@ -594,8 +576,16 @@ function registerIpc(): void {
     mcpClient.call("proto_materials_get", { resource_id: resourceId, include_sequence: Boolean(includeSequence) }),
   );
   handlePrivileged(IPC.materialsFacets, () => mcpClient.call("proto_materials_facets", {}));
-  handlePrivileged(IPC.materialsActivate, (_event, snapshotId: string) => runMaterialsCli(["materials", "activate", snapshotId]));
-  handlePrivileged(IPC.materialsRollback, (_event, snapshotId: string) => runMaterialsCli(["materials", "rollback", snapshotId]));
+  handlePrivileged(IPC.materialsActivate, (_event, snapshotId: string, evidence: MaterialsActivationEvidence) => runMaterialsCli([
+    "materials", "activate", snapshotId,
+    `--operator=${evidence.operator}`,
+    `--approval-reference=${evidence.approval_reference}`,
+  ]));
+  handlePrivileged(IPC.materialsRollback, (_event, snapshotId: string, evidence: MaterialsActivationEvidence) => runMaterialsCli([
+    "materials", "rollback", snapshotId,
+    `--operator=${evidence.operator}`,
+    `--approval-reference=${evidence.approval_reference}`,
+  ]));
   handlePrivileged(IPC.materialsSync, (_event, source: string, maxRecords: number) => {
     if (!["uniprot", "igem", "rhea", "biomodels"].includes(source)) throw new Error("Unknown materials source.");
     if (!Number.isSafeInteger(maxRecords) || maxRecords < 1 || maxRecords > 2_000_000) throw new Error("Materials sync limit is outside the supported range.");
@@ -715,25 +705,10 @@ function registerIpc(): void {
     return readSettings();
   });
   handlePrivileged(IPC.filesPickModelRoot, async () => {
-    const selected = await pickDirectory("Choose the read-only GGUF model directory", readSettings().modelRoot);
-    if (!selected) return undefined;
-    const modelRoot = await canonicalSelectedDirectory(selected);
-    database.setSetting("modelRoot", modelRoot);
-    return readSettings();
+    throw new Error("Model directory selection is disabled. Proto Workbench discovers models from LM Studio only.");
   });
   handlePrivileged(IPC.filesPickRuntime, async () => {
-    const options: OpenDialogOptions = {
-      title: "Choose an upstream llama-server.exe",
-      defaultPath: readSettings().runtimePath || process.resourcesPath,
-      properties: ["openFile"],
-      filters: [{ name: "llama.cpp server", extensions: ["exe"] }],
-    };
-    const result = await showPrivilegedOpenDialog(options);
-    if (result.canceled) return undefined;
-    const trust = await trustRuntimeExecutable(result.filePaths[0]);
-    database.setSetting("runtimeTrust", trust);
-    llamaRuntime.setOverrideTrust(trust);
-    return readSettings();
+    throw new Error("Runtime selection is disabled. Start LM Studio's local server at http://127.0.0.1:1234.");
   });
   handlePrivileged(IPC.filesList, () => workspaceFiles.list());
   handlePrivileged(IPC.filesOpen, async (_event, path: string) => {
@@ -1069,20 +1044,8 @@ app.whenReady().then(async () => {
     throw new Error(`Core module integrity verification failed. Startup is blocked. ${failures}`);
   }
   await prepareDefaultWorkspace();
-  llamaRuntime = new LlamaServerManager({
-    packaged: app.isPackaged,
-    resourcesPath: process.resourcesPath,
-    projectRoot,
-    overrideTrust: readRuntimeTrust(),
-  });
-  const catalog = new ModelCatalogService({
-    packaged: app.isPackaged,
-    resourcesPath: process.resourcesPath,
-    repoRoot,
-    cachePath: join(app.getPath("userData"), "model-catalog-cache.json"),
-  });
-  modelService = new ModelService(database, catalog, llamaRuntime);
-  await modelService.initializeBudget();
+  inferenceProvider = new LmStudioProvider();
+  modelService = new ModelService(database, inferenceProvider, inferenceProvider);
   modelService.subscribe((models) => broadcast(IPC.modelsChanged, models));
   const settings = readSettings();
   const workspaceActivation = await activateStartupWorkspace(
@@ -1100,9 +1063,7 @@ app.whenReady().then(async () => {
   }
   registerIpc();
   createWindow();
-  const modelRoot = await resolveModelLibraryRoot(settings.modelRoot).catch(() => settings.modelRoot);
-  if (modelRoot !== settings.modelRoot) database.setSetting("modelRoot", modelRoot);
-  void modelService.scan(modelRoot).catch((error) =>
+  void modelService.scan(LM_STUDIO_BASE_URL).catch((error) =>
     broadcast(IPC.threadStream, { threadId: "system", type: "error", error: String(error) } satisfies StreamEvent),
   );
 }).catch((error) => {

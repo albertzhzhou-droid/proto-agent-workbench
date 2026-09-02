@@ -10,13 +10,16 @@ const metadata = {
   construct: "construct_a",
   artifactPath: "build/design.ir.json",
   artifactSha256: "a".repeat(64),
+  artifactSizeBytes: 128,
   digestStatus: "match",
+  governance: { status: "verified", unverifiedPartCount: 0, gaps: [] },
   renderer: { name: "CGView.js", version: "1.8.2" },
   topology: { source: "unknown", rendered: "circular", projection: true },
   viewOrigin: { applied: true, sourceBaseOneBased: 11, mutatesSource: false },
   coordinates: "internal 0-based end-exclusive; display 1-based inclusive",
   renderedMapLayers: {
     partAnnotations: true,
+    primerBindings: true,
     softwareOrfDiscovery: false,
     softwareOrfMinimumAminoAcids: null,
     coordinateRuler: false,
@@ -50,6 +53,7 @@ test("SVG export embeds escaped, machine-readable review metadata", () => {
   assert.match(exported, /"featureLabelDensity":"balanced"/);
   assert.match(exported, /"hiddenFeatureCount":1/);
   assert.match(exported, /"selectionOverlay":false/);
+  assert.match(exported, /"primerBindings":true/);
   assert.match(exported, /"excludedUiOverlays":\["selection"\]/);
   assert.match(exported, /"excludedSequenceLayers":\["complement","restriction_sites","translations"\]/);
 });

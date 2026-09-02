@@ -1,15 +1,18 @@
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  assertDisposableWorkspace,
-  ensureDisposableBuildRoot,
-  revalidateDisposableWorkspace,
-  runJsonOwned,
-} from "./owned-process.mjs";
+  LmStudioProvider,
+  LM_STUDIO_BASE_URL,
+} from "../src/main/services/lm-studio-provider.ts";
 
-const REAL_MODEL_CONFIRMATION = "YES_START_OWNED_MODEL_PROCESSES";
+const REAL_MODEL_CONFIRMATION = "YES_LOAD_CHAT_UNLOAD_LM_STUDIO";
 const REAL_MODEL_CONFIRMATION_FLAG = `--confirm-owned-execution=${REAL_MODEL_CONFIRMATION}`;
+const MAX_MODEL_BYTES = 8 * 1024 ** 3;
+const MAX_STREAM_BYTES = 4 * 1024;
+const MAX_STREAM_CHUNKS = 2_048;
+const CHAT_TIMEOUT_MS = 120_000;
 
 if (isMainModule()) await runMain();
 
@@ -17,147 +20,160 @@ async function runMain() {
   try {
     await main();
   } catch {
-    console.error(JSON.stringify({ ok: false, code: "INFERENCE_VERIFICATION_FAILED", message: "Verification failed; sensitive details were suppressed." }));
+    console.error(JSON.stringify({
+      ok: false,
+      code: "INFERENCE_VERIFICATION_FAILED",
+      message: "LM Studio verification failed; model output and sensitive details were suppressed.",
+    }));
     process.exitCode = 1;
   }
 }
 
 export async function main() {
-const invocationArgs = process.argv.slice(2);
-if (
-  process.env.PROTO_AGENT_ALLOW_REAL_MODEL_TESTS !== REAL_MODEL_CONFIRMATION ||
-  invocationArgs.at(-1) !== REAL_MODEL_CONFIRMATION_FLAG ||
-  invocationArgs.filter((value) => value === REAL_MODEL_CONFIRMATION_FLAG).length !== 1
-) {
-  console.error(JSON.stringify({
-    ok: false,
-    code: "REAL_MODEL_TEST_DISABLED",
-    message: "Real-model verification requires matching environment and final command-line confirmations.",
-    requiredEnvironment: `PROTO_AGENT_ALLOW_REAL_MODEL_TESTS=${REAL_MODEL_CONFIRMATION}`,
-    requiredArgument: REAL_MODEL_CONFIRMATION_FLAG,
-  }));
-  process.exit(2);
-}
-const args = invocationArgs.slice(0, -1);
-
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const flavor = args[0] || "cpu";
-if (flavor !== "cpu" && flavor !== "cuda") throw new Error("Runtime flavor must be cpu or cuda.");
-if (!args[1] || !args[2]) {
-  console.error(JSON.stringify({
-    ok: false,
-    code: "EXPLICIT_ROOTS_REQUIRED",
-    message: "Pass explicit model and marked disposable workspace roots; implicit profile scans and source writes are forbidden.",
-    usage: `verify-inference.mjs <cpu|cuda> <model-root> <disposable-workspace-root> ${REAL_MODEL_CONFIRMATION_FLAG}`,
-  }));
-  process.exit(2);
-}
-const modelRoot = requireAbsoluteArgument(args[1], "model root");
-const repoRoot = resolve(appRoot, "..", "..");
-const workspaceRoot = await assertDisposableWorkspace(args[2], [appRoot, repoRoot]);
-await ensureDisposableBuildRoot(workspaceRoot);
-await revalidateDisposableWorkspace(workspaceRoot);
-const { LlamaServerManager } = await import("../src/main/services/llama-server.ts");
-const { trustRuntimeExecutable } = await import("../src/main/services/path-security.ts");
-const { estimateModelVram } = await import("../src/main/services/vram-estimator.ts");
-const scannerPath = join(
-  appRoot,
-  "runtime",
-  "proto-agent",
-  "proto-workbench-sidecar",
-  "proto-workbench-sidecar.exe",
-);
-const cachePath = join(workspaceRoot, "build", "inference-verification-catalog.json");
-const catalog = await runJsonOwned(
-  scannerPath,
-  ["scan-models", modelRoot, "--cache", cachePath],
-  {
-    cwd: workspaceRoot,
-    timeoutMs: 120_000,
-    maxStdoutBytes: 4 * 1024 * 1024,
-    maxStderrBytes: 128 * 1024,
-  },
-);
-const models = Array.isArray(catalog.models) ? catalog.models : [];
-if (!models.length) throw new Error("No GGUF model is available for inference verification.");
-const selected = [...models].sort((left, right) => left.sizeBytes - right.sizeBytes)[0];
-const textModel = selected;
-const runtimePath = join(appRoot, "runtime", "llama.cpp", flavor, "llama-server.exe");
-const runtimeTrust = await trustRuntimeExecutable(runtimePath);
-const runtime = new LlamaServerManager({
-  packaged: false,
-  resourcesPath: appRoot,
-  projectRoot: appRoot,
-  overrideTrust: runtimeTrust,
-});
-const runtimeStatus = await runtime.runtimeStatus();
-if (runtimeStatus.backend !== flavor) {
-  throw new Error(`Requested ${flavor} runtime resolved to ${runtimeStatus.backend || "unavailable"}: ${runtimeStatus.detail}`);
-}
-
-const loadStartedAt = performance.now();
-try {
-  await runtime.load(textModel, {
-    contextLength: 2_048,
-    gpuLayers: flavor === "cuda" ? 999 : 0,
-  });
-  const estimatedVramBytes = flavor === "cuda"
-    ? estimateModelVram(textModel, { contextLength: 2_048, gpuLayers: textModel.blockCount ? textModel.blockCount + 1 : 999, cacheType: "f16" }).totalBytes
-    : 0;
-  const measuredVramBytes = runtime.gpuAllocationBytes(textModel.id) ?? 0;
-  const loadMilliseconds = Math.round(performance.now() - loadStartedAt);
-  const chunks = [];
-  const reasoningChunks = [];
-  let streamedBytes = 0;
-  const chatController = new AbortController();
-  const chatDeadline = setTimeout(() => chatController.abort(), 60_000);
-  const completionStartedAt = performance.now();
-  try {
-    await runtime.chat(
-      textModel.id,
-      {
-        model: textModel.name,
-        messages: [{ role: "user", content: "Reply with the single word READY." }],
-        temperature: 0,
-        max_tokens: 128,
-      },
-      (chunk) => {
-        const delta = chunk.choices?.[0]?.delta;
-        const contentPart = typeof delta?.content === "string" ? delta.content : "";
-        const reasoningPart = typeof delta?.reasoning_content === "string"
-          ? delta.reasoning_content
-          : typeof delta?.reasoning === "string" ? delta.reasoning : "";
-        streamedBytes += Buffer.byteLength(contentPart, "utf8") + Buffer.byteLength(reasoningPart, "utf8");
-        if (streamedBytes > 16 * 1024) {
-          chatController.abort();
-          throw new Error("Model stream exceeded the verification output limit.");
-        }
-        chunks.push(contentPart);
-        reasoningChunks.push(reasoningPart);
-      },
-      chatController.signal,
-    );
-  } finally {
-    clearTimeout(chatDeadline);
+  const invocationArgs = process.argv.slice(2);
+  if (
+    process.env.PROTO_AGENT_ALLOW_REAL_MODEL_TESTS !== REAL_MODEL_CONFIRMATION
+    || invocationArgs.at(-1) !== REAL_MODEL_CONFIRMATION_FLAG
+    || invocationArgs.filter((value) => value === REAL_MODEL_CONFIRMATION_FLAG).length !== 1
+  ) {
+    console.error(JSON.stringify({
+      ok: false,
+      code: "REAL_MODEL_TEST_DISABLED",
+      message: "LM Studio load/chat/unload verification requires matching environment and final command-line confirmations.",
+      requiredEnvironment: `PROTO_AGENT_ALLOW_REAL_MODEL_TESTS=${REAL_MODEL_CONFIRMATION}`,
+      requiredArgument: REAL_MODEL_CONFIRMATION_FLAG,
+    }));
+    process.exit(2);
   }
-  const content = chunks.join("").trim();
-  const reasoning = reasoningChunks.join("").trim();
-  if (!content && !reasoning) throw new Error("The model returned an empty streamed completion.");
+
+  const args = invocationArgs.slice(0, -1);
+  if (args.length !== 1) {
+    console.error(JSON.stringify({
+      ok: false,
+      code: "EXPLICIT_MODEL_REQUIRED",
+      message: "Pass exactly one explicit LM Studio model key. Automatic model selection is forbidden.",
+      usage: `verify-inference.mjs <exact-lm-studio-model-key> ${REAL_MODEL_CONFIRMATION_FLAG}`,
+      endpoint: LM_STUDIO_BASE_URL,
+      maximumModelBytes: MAX_MODEL_BYTES,
+    }));
+    process.exit(2);
+  }
+  const modelKey = requireModelKey(args[0]);
+
+  const provider = new LmStudioProvider();
+  const discovered = await provider.scan(LM_STUDIO_BASE_URL);
+  const selected = discovered.find((model) => model.providerModelId === modelKey);
+  if (!selected) throw new Error("The explicit model key was not found in the LM Studio native catalog.");
+  if (selected.modelKind !== "llm") throw new Error("The explicit model key is not a chat model.");
+  if (selected.sizeBytes > MAX_MODEL_BYTES) {
+    throw new Error("The explicit model exceeds the verification model-size safety limit.");
+  }
+  if (selected.loadedInstances?.length) {
+    throw new Error("The explicit model already has a loaded instance; verification will not claim or unload it.");
+  }
+  if (selected.contextLength < 256) throw new Error("The explicit model has no supported bounded chat context.");
+
+  const contextLength = Math.min(2_048, selected.contextLength);
+  const loadStartedAt = performance.now();
+  let instanceId;
+  let owned = false;
+  let loadMilliseconds = 0;
+  let completionMilliseconds = 0;
+  let streamedBytes = 0;
+  let streamedChunks = 0;
+  let outputDigest;
+  try {
+    const instance = await provider.load(selected, {
+      contextLength,
+      evalBatchSize: 128,
+      flashAttention: true,
+      kvCachePlacement: "cpu",
+    });
+    instanceId = instance.instanceId;
+    owned = instance.ownedByWorkbench === true;
+    loadMilliseconds = Math.round(performance.now() - loadStartedAt);
+    if (!instanceId || !owned) {
+      throw new Error("Verification did not create a uniquely Workbench-owned LM Studio instance.");
+    }
+
+    const completionStartedAt = performance.now();
+    const content = [];
+    const reasoning = [];
+    const chatController = new AbortController();
+    const chatDeadline = setTimeout(() => chatController.abort(), CHAT_TIMEOUT_MS);
+    try {
+      await provider.chat(
+        selected.id,
+        {
+          messages: [{ role: "user", content: "Reply with exactly the single word READY." }],
+          temperature: 0,
+          max_tokens: 16,
+        },
+        (chunk) => {
+          streamedChunks += 1;
+          const delta = chunk.choices?.[0]?.delta;
+          const contentPart = typeof delta?.content === "string" ? delta.content : "";
+          const reasoningPart = typeof delta?.reasoning_content === "string"
+            ? delta.reasoning_content
+            : typeof delta?.reasoning === "string" ? delta.reasoning : "";
+          streamedBytes += Buffer.byteLength(contentPart, "utf8") + Buffer.byteLength(reasoningPart, "utf8");
+          if (streamedBytes > MAX_STREAM_BYTES || streamedChunks > MAX_STREAM_CHUNKS) {
+            chatController.abort();
+            throw new Error("LM Studio stream exceeded the verification output limit.");
+          }
+          content.push(contentPart);
+          reasoning.push(reasoningPart);
+        },
+        chatController.signal,
+      );
+    } finally {
+      clearTimeout(chatDeadline);
+    }
+    completionMilliseconds = Math.round(performance.now() - completionStartedAt);
+    const output = `${content.join("")}\n${reasoning.join("")}`.trim();
+    if (!output) throw new Error("LM Studio returned an empty streamed completion.");
+    outputDigest = createHash("sha256").update(output).digest("hex");
+  } finally {
+    // The provider sends /unload only when this exact instance was created by
+    // this Workbench process. An external instance is disconnected locally.
+    await provider.unload(selected.id);
+  }
+
+  const refreshed = await provider.scan(LM_STUDIO_BASE_URL);
+  const lingering = refreshed
+    .find((model) => model.id === selected.id)
+    ?.loadedInstances?.some((instance) => instance.id === instanceId);
+  if (lingering) throw new Error("The Workbench-owned LM Studio instance remained loaded after verification.");
+
   console.log(JSON.stringify({
     ok: true,
-    flavor,
-    modelSelected: true,
-    contextLength: 2_048,
+    provider: "lmstudio",
+    endpoint: LM_STUDIO_BASE_URL,
+    modelKey,
+    modelFingerprint: selected.fingerprint,
+    modelFingerprintSource: selected.fingerprintSource,
+    modelSizeBytes: selected.sizeBytes,
+    contextLength,
+    ownedInstanceCreated: owned,
+    ownedInstanceUnloaded: true,
     loadMilliseconds,
-    completionMilliseconds: Math.round(performance.now() - completionStartedAt),
-    estimatedVramBytes,
-    measuredVramBytes,
-    streamKind: content ? "content" : "reasoning",
+    completionMilliseconds,
     streamedBytes,
+    streamedChunks,
+    outputSha256: outputDigest,
   }));
-} finally {
-  await runtime.unloadAll();
 }
+
+function requireModelKey(value) {
+  if (
+    typeof value !== "string"
+    || value.length < 1
+    || value.length > 1_024
+    || /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    throw new Error("The LM Studio model key must be a bounded single-line identifier.");
+  }
+  return value;
 }
 
 function isMainModule() {
@@ -167,11 +183,4 @@ function isMainModule() {
 function samePath(left, right) {
   const normalize = (value) => process.platform === "win32" ? resolve(value).toLowerCase() : resolve(value);
   return normalize(left) === normalize(right);
-}
-
-function requireAbsoluteArgument(value, label) {
-  if (typeof value !== "string" || !isAbsolute(value) || value.includes("\0") || /[\r\n]/.test(value)) {
-    throw new Error(`${label} must be an absolute path.`);
-  }
-  return resolve(value);
 }

@@ -13,7 +13,7 @@ Set `PROTO_AGENT_MATERIALS_ROOT` to use a different absolute location. The
 default is a sibling of the checked-out workspace, so no username or drive is
 embedded in the repository.
 
-Large dynamic snapshots are neither committed to Git nor copied into the installer. The source repository does contain two narrowly scoped, generator-produced public bundles under `materials/bundles/`: an installable 13-record reviewed catalog and a non-installable 1,795-record quarantine metadata index. Neither bundle includes `active.json`, overlays, staging state, absolute paths, operator identity, logs, or cache data. The quarantine bundle additionally omits every sequence and sequence object; it retains only the original public length/hash as explicitly redacted-source metadata.
+Large dynamic snapshots are neither committed to Git nor copied into the installer. The source repository does contain two narrowly scoped, generator-produced public bundles under `materials/bundles/`: an installable 18-record reviewed catalog and a non-installable 1,795-record quarantine metadata index. Neither bundle includes `active.json`, overlays, staging state, absolute paths, operator identity, logs, or cache data. The quarantine bundle additionally omits every sequence and sequence object; it retains only the original public length/hash as explicitly redacted-source metadata.
 
 The public catalog is verified before installation and remains inactive unless a human explicitly passes `--activate`. The quarantine bundle declares `activation_policy: DENY`, is rejected by the public installer, is stored outside the normal snapshot tree in the repository, and is not an MCP/model data source.
 
@@ -21,10 +21,16 @@ The public catalog is verified before installation and remains inactive unless a
 proto-agent materials bundle-verify --profile PUBLIC_CATALOG
 proto-agent materials bundle-verify --profile PUBLIC_QUARANTINE
 proto-agent materials bundle-install-public
-proto-agent materials bundle-install-public --activate  # optional human decision
+proto-agent materials bundle-install-public --activate `
+  --operator "<self-declared operator label>" `
+  --approval-reference "<review or change-record reference>"
 ```
 
-For normal synchronized data, a snapshot can be activated manually only after downloading, normalization, hashing, license checks, and safety routing have completed in `staging`. `active.json` is replaced atomically, so a failed synchronization does not change the currently verified snapshot; `rollback` only switches to an existing snapshot that has passed integrity verification.
+For normal synchronized data, a snapshot can be activated manually only after downloading, normalization, hashing, license checks, and safety routing have completed in `staging`. An `EXPLICIT_HUMAN_ONLY` snapshot additionally requires a non-empty operator label and approval reference. Both are bounded, single-line, operator-supplied evidence; the label is explicitly recorded as `SELF_DECLARED_UNVERIFIED`, not as authenticated identity. `active.json` is replaced atomically with `action`, `operator`, `approval_reference`, `activated_at`, and the exact manifest SHA-256, so a failed synchronization or rejected activation does not change the current snapshot. `rollback` applies the same evidence gate and records `action: rollback` when switching to an existing verified snapshot.
+
+An older active pointer for an explicit-policy snapshot that lacks these fields
+fails closed. Re-run the manual activation command with real operator-supplied
+evidence; do not synthesize or backfill an identity.
 
 ## Records and statuses
 
@@ -91,8 +97,10 @@ proto-agent materials import imports\library.fasta
 # Synchronize the official UniProtKB/Swiss-Prot release to a new staging snapshot; separate manual activation is required
 proto-agent materials sync uniprot --max-records 100000
 proto-agent materials diff seed-2026.08 <new-snapshot-id>
-proto-agent materials activate <new-snapshot-id>
-proto-agent materials rollback seed-2026.08
+proto-agent materials activate <new-snapshot-id> `
+  --operator "<self-declared operator label>" --approval-reference "<approval reference>"
+proto-agent materials rollback seed-2026.08 `
+  --operator "<self-declared operator label>" --approval-reference "<approval reference>"
 
 # Only eligible genetic_part records can be materialized into the legacy parts schema
 proto-agent materials materialize ecoli_k12 proto:part/example --out build\materials\parts.json
@@ -118,6 +126,10 @@ proto-agent materials review fixture:promoter/pLac --decision accept --reviewer 
 `proto_materials_materialize_proteins` are read-only MCP tools for retrieving eligible records;
 `proto_protein_compile` accepts only a materialized, workspace-relative selection and writes a
 restricted summary under `build/`. These tools do not synchronize, activate, or read the quarantine;
+they can access only the currently active snapshot. An optional MCP `snapshot` value is an exact
+active-snapshot assertion for reproducibility, not an override for inactive or historical snapshots;
+before each model-facing operation, the active pointer and the manifest-declared catalogs, license
+catalog, counts, and content-addressed sequence objects are reverified and drift fails closed;
 pagination is limited to 50 records per page, and responses are constrained to 512 KiB. Source text
 is untrusted data and receives no prompt or instruction authority.
 

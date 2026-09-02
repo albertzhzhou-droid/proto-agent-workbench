@@ -7,7 +7,7 @@ import { CGVIEW_POPOVERS_ENABLED, toCgviewFeatureCoordinates, toCgviewFeatureGeo
 interface SequenceNavigatorProps {
   construct: DesignConstruct;
   selectedFeatureIndex?: number;
-  selectedRange?: { readonly start: number; readonly end: number };
+  selectedRanges?: ReadonlyArray<{ readonly start: number; readonly end: number }>;
   hiddenFeatureIndexes?: ReadonlySet<number>;
   showAnnotations: boolean;
   showPrimers: boolean;
@@ -24,7 +24,7 @@ interface CapturedDocumentListener {
 export function SequenceNavigator({
   construct,
   selectedFeatureIndex,
-  selectedRange,
+  selectedRanges,
   hiddenFeatureIndexes,
   showAnnotations,
   showPrimers,
@@ -176,19 +176,20 @@ export function SequenceNavigator({
       selectedFeature.highlight();
       return;
     }
-    if (!selectedRange) return;
-    const coordinates = toCgviewFeatureCoordinates({ ...selectedRange, direction: 0 }, construct.length);
-    if (!coordinates) return;
-    viewer.canvas.drawElement(
-      "ui",
-      coordinates.start,
-      coordinates.stop,
-      viewer.backbone.adjustedCenterOffset,
-      "rgba(5, 121, 108, 0.68)",
-      Math.max(7, viewer.backbone.adjustedThickness + 4),
-      "arc",
-    );
-  }, [construct.length, selectedFeatureIndex, selectedRange]);
+    for (const selectedRange of selectedRanges ?? []) {
+      const coordinates = toCgviewFeatureCoordinates({ ...selectedRange, direction: 0 }, construct.length);
+      if (!coordinates) continue;
+      viewer.canvas.drawElement(
+        "ui",
+        coordinates.start,
+        coordinates.stop,
+        viewer.backbone.adjustedCenterOffset,
+        "rgba(5, 121, 108, 0.68)",
+        Math.max(7, viewer.backbone.adjustedThickness + 4),
+        "arc",
+      );
+    }
+  }, [construct.length, selectedFeatureIndex, selectedRanges]);
 
   return (
     <div className="sequence-navigator" role="group" aria-label={`Linear sequence navigator for ${construct.name}`}>

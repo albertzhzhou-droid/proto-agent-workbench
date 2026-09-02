@@ -1,3 +1,15 @@
+<#
+.SYNOPSIS
+Stages a pinned llama.cpp build for historical, isolated developer reproduction.
+
+.NOTES
+RETIRED NON-PRODUCT TOOL. Proto Workbench does not invoke this script or the
+resulting runtime, and neither is included in packaging or module integrity.
+Tests may exercise this script as a negative legacy-integrity regression; that
+is not runtime qualification or a live-model release gate. Current inference
+uses only LM Studio at http://127.0.0.1:1234. Running this script does not
+authorize or configure a product model provider.
+#>
 param(
   [Parameter(Mandatory = $true)]
   [ValidateSet("cuda", "cpu")]
@@ -176,4 +188,4 @@ try {
   }
 }
 
-Write-Host "Independent llama.cpp $Flavor runtime staged at $Target"
+Write-Host "Legacy non-product llama.cpp $Flavor artifact staged at $Target"

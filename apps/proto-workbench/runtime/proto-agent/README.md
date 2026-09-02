@@ -1,15 +1,19 @@
-# Proto agent sidecar
+# Proto agent sidecars
 
-Packaged builds expect `proto-workbench-sidecar/proto-workbench-sidecar.exe`,
-`proto-agent-mcp/proto-agent-mcp.exe`, and the bounded admin CLI
-`proto-agent/proto-agent.exe` in this directory. Build all three from this repository with
-`scripts/build-proto-sidecar.ps1` after installing the root Python project with
-the `workbench` optional dependencies.
+Packaged builds contain exactly `proto-agent-mcp/proto-agent-mcp.exe` and the
+bounded admin CLI `proto-agent/proto-agent.exe` beneath this directory. Build
+both from the repository's project-local `.venv` with
+`scripts/build-proto-sidecar.ps1`. The legacy model-scanner sidecar is not part
+of the product: model discovery and inference use LM Studio at the fixed
+loopback endpoint.
 
-Both sidecars use PyInstaller's directory layout instead of temporary one-file
-extraction. This keeps startup latency predictable and avoids writing executable
-payloads into the user's temporary directory on every launch.
+Both executables use PyInstaller's directory layout instead of temporary
+one-file extraction. The build is created in a same-volume staging directory,
+checked for the exact layout, Skill catalogue, MCP tools, and executable hashes,
+then published with rollback to the previous complete runtime on failure.
 
-The sidecar exposes only structured model-catalog operations. Proto workflow
-tools continue to use the repository's JSON-RPC MCP process and remain behind the
-desktop permission policy.
+`proto-agent-mcp` exposes the structured JSON-RPC workflow tools used by the
+desktop permission policy. The admin CLI is limited to local catalogue and
+governance operations used by Workbench. Run `pnpm verify:sidecars` before any
+packaging attempt; it executes both owned binaries in a disposable workspace and
+rechecks that their complete file trees did not change.

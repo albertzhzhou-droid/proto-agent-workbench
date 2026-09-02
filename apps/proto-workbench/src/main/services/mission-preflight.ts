@@ -53,7 +53,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
     state: input.moduleIntegrity.ok && failedCoreModules.length === 0 ? "ready" : "blocked",
     detail: input.moduleIntegrity.ok && failedCoreModules.length === 0
       ? input.moduleIntegrity.enforced
-        ? "The signed module manifest passed its startup audit."
+        ? "The embedded SHA-256 module manifest passed its startup audit."
         : "Development module audit passed; packaged builds enforce the manifest at startup."
       : `Core module verification failed${failedCoreModules.length ? ` for ${failedCoreModules.map((module) => module.moduleId).join(", ")}` : ""}.`,
     action: input.moduleIntegrity.ok ? undefined : "settings",

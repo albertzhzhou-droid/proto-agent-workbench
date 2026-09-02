@@ -1,0 +1,1060 @@
+{
+  "schema_version": "proto-agent.materials-promotion-audit.v1",
+  "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+  "generated_at": "2026-09-02T03:02:18Z",
+  "round_order": [
+    "provenance_rights",
+    "sequence_ontology_safety",
+    "duplicate_roundtrip_visibility"
+  ],
+  "candidate_count": 18,
+  "pass_count": 18,
+  "fail_count": 0,
+  "candidates": [
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+      "record_sha256": "ad3974a691244b9954a5625c6a68d55b73378b5382d562795c8edc4ae1ccc026",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2.json",
+          "url": "https://api.registry.igem.org/v1/parts/09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+          "retrieved_at": "2026-09-02T03:01:52Z",
+          "sha256": "6cda02132a971f1575eeac0ddd9e8e61569d4e9f55932c9489c3a11a64198a68",
+          "byte_count": 1387
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:3c51179f-e370-4738-84b7-91773f750175",
+      "record_sha256": "d294c5ceae759494380acdf72b53d685cb91b9f5c1f58730b37af63e1de92266",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/3c51179f-e370-4738-84b7-91773f750175.json",
+          "url": "https://api.registry.igem.org/v1/parts/3c51179f-e370-4738-84b7-91773f750175",
+          "retrieved_at": "2026-09-02T03:01:52Z",
+          "sha256": "30e3cfb76814203c7d8ab852d5a107c0cc8a972849bf54f0993e8bb65add1b21",
+          "byte_count": 830
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:3e30ad4f-5360-49f7-bda4-60929b0f2971",
+      "record_sha256": "a231160bfe688a6e4c4bf79b44778236cacaa817a6b98f886b409ef9b607361a",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/3e30ad4f-5360-49f7-bda4-60929b0f2971.json",
+          "url": "https://api.registry.igem.org/v1/parts/3e30ad4f-5360-49f7-bda4-60929b0f2971",
+          "retrieved_at": "2026-09-02T03:01:53Z",
+          "sha256": "972e17ccb4ec7af5c6cc01991c6ede564ca5f1a74da6efb6941b07421c3991b3",
+          "byte_count": 959
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:54457b65-1485-4665-92e4-b549d19c4ebe",
+      "record_sha256": "502f1dd400df3e9474a144d95796f75f3229e0bf84e2f99ad192bb0794867de2",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/54457b65-1485-4665-92e4-b549d19c4ebe.json",
+          "url": "https://api.registry.igem.org/v1/parts/54457b65-1485-4665-92e4-b549d19c4ebe",
+          "retrieved_at": "2026-09-02T03:01:53Z",
+          "sha256": "491603f4a1c9e5ce5f9884a9b45db37ce1008afb7d970607535f6d050dd74fdb",
+          "byte_count": 1694
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/5b2a6fd4-f5fa-4626-a37f-35f1ea89eec7.json",
+          "url": "https://api.registry.igem.org/v1/licenses/5b2a6fd4-f5fa-4626-a37f-35f1ea89eec7",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "0538812bd065466a9b5bf458266b9b6dbd869f4c97d3386d15e88f599fa1b363",
+          "byte_count": 434,
+          "declared_license_id": "CC0-1.0",
+          "declared_license_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:64596782-8ede-4c91-9b8b-fb281f7c9bc6",
+      "record_sha256": "34740e57ca96aee6a7fb77262142843338d8478e3e2be1c716bd3aabce43feb7",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/64596782-8ede-4c91-9b8b-fb281f7c9bc6.json",
+          "url": "https://api.registry.igem.org/v1/parts/64596782-8ede-4c91-9b8b-fb281f7c9bc6",
+          "retrieved_at": "2026-09-02T03:02:01Z",
+          "sha256": "6e0e08d260d2aba797ca27932156eff8a978c3bdb7f9ee4bef9991109406300e",
+          "byte_count": 1013
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:83c27e59-1d6f-4fe4-9f61-7b44034025b9",
+      "record_sha256": "480f383e239fff8c1d672bcff84a1b5bd1bafba48b16c85795eb7ae85e25ece6",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/83c27e59-1d6f-4fe4-9f61-7b44034025b9.json",
+          "url": "https://api.registry.igem.org/v1/parts/83c27e59-1d6f-4fe4-9f61-7b44034025b9",
+          "retrieved_at": "2026-09-02T03:01:53Z",
+          "sha256": "4d85f98fc4b4396ed9d370bd32e17c9780d3b0a44b6ec1b38aefd09d66f6cd93",
+          "byte_count": 882
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:843d0552-bcc1-4539-a678-7b3dae4c9849",
+      "record_sha256": "ce955d97354c7405b6f55226ab312a0476cdb10680f8c4ac1c9a46663d5ce040",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/843d0552-bcc1-4539-a678-7b3dae4c9849.json",
+          "url": "https://api.registry.igem.org/v1/parts/843d0552-bcc1-4539-a678-7b3dae4c9849",
+          "retrieved_at": "2026-09-02T03:02:01Z",
+          "sha256": "dce8d31eab8a7ad380244949844617a935e8e0e5f045c778948c47703facc65c",
+          "byte_count": 941
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:8a1349a1-7bf2-4199-a79c-484de054629b",
+      "record_sha256": "1a308f58eb1ecbf664077c48423cfa5272a8348e94b6a49f7b11d1c1ee675d4e",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/8a1349a1-7bf2-4199-a79c-484de054629b.json",
+          "url": "https://api.registry.igem.org/v1/parts/8a1349a1-7bf2-4199-a79c-484de054629b",
+          "retrieved_at": "2026-09-02T03:02:01Z",
+          "sha256": "92aba49efbc8ff4bfac77623c54a5a4a08afd70de4526e2951e8cc3391d5c468",
+          "byte_count": 953
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:960d257b-aa5b-4852-873c-2257858df041",
+      "record_sha256": "f49e8361d650ee612d0c654eb59f99e037f627908a1f12a6a709790e284bb17a",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/960d257b-aa5b-4852-873c-2257858df041.json",
+          "url": "https://api.registry.igem.org/v1/parts/960d257b-aa5b-4852-873c-2257858df041",
+          "retrieved_at": "2026-09-02T03:02:01Z",
+          "sha256": "eeda6ba9e9401bb85498446233987b2bd2ee586e8d413778e11ce007da945f9b",
+          "byte_count": 841
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+      "record_sha256": "49a69dc9e3a6b81966a8e1f406d6847b44b98b43c9c9ce8af05aaebd94a6fe66",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/9b3b1fbd-1557-49a5-964a-7f8b491c9101.json",
+          "url": "https://api.registry.igem.org/v1/parts/9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+          "retrieved_at": "2026-09-02T03:02:02Z",
+          "sha256": "50ffbe7cf84ad2ebccf051780af2cc94ffa881a6a587de396882e2deb8871cae",
+          "byte_count": 842
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+      "record_sha256": "1fb68ee0484cb7ffbebea8fd787b10e3e161c3f83b60933457d6562f3aaa7603",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/a0ebeeab-3947-440e-9cf1-f0a47bbc4c33.json",
+          "url": "https://api.registry.igem.org/v1/parts/a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+          "retrieved_at": "2026-09-02T03:02:13Z",
+          "sha256": "6dd0b1f3b8f990e012a4eb9d42b535f6c1091ccf8f3b22acbf46663bceadc174",
+          "byte_count": 938
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+      "record_sha256": "3ba8b3b88ba723ceb10ad1d440cfb0fc2b73d8716510db9804b41000c24c2cb2",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/a7a86504-1527-423b-8d1d-0c6fda1aacf9.json",
+          "url": "https://api.registry.igem.org/v1/parts/a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+          "retrieved_at": "2026-09-02T03:02:10Z",
+          "sha256": "873d50ca903da6b474ed1c826ab9bc06012427cb89fc9f96a596e3133f7f8d76",
+          "byte_count": 952
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:dd29b240-f03a-42ce-8612-6d562f74308e",
+      "record_sha256": "55baad9a9d651f0b6e65a0b363004b844d8a54912814913d9a03397a0285c849",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/dd29b240-f03a-42ce-8612-6d562f74308e.json",
+          "url": "https://api.registry.igem.org/v1/parts/dd29b240-f03a-42ce-8612-6d562f74308e",
+          "retrieved_at": "2026-09-02T03:02:11Z",
+          "sha256": "cbcfa1630a1bea19a5eeaf06492cde6262a4407be5d5ada833d65782be640b03",
+          "byte_count": 956
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:ee82e626-e0dd-434a-8c06-41a4120e6d9a",
+      "record_sha256": "751e87c95fcacfd5d329fd2696e614713aa9444cc66b3ef520f04428cfa4c059",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/ee82e626-e0dd-434a-8c06-41a4120e6d9a.json",
+          "url": "https://api.registry.igem.org/v1/parts/ee82e626-e0dd-434a-8c06-41a4120e6d9a",
+          "retrieved_at": "2026-09-02T03:02:11Z",
+          "sha256": "83b5e6632ab7464052da365f17bc8dd1d3539d23cb9d74f05ee7578a93fbd492",
+          "byte_count": 804
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "igem:f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+      "record_sha256": "4b34d8ac148a341322ce539ed517d683653d7b21753a49d3dd3aac716b0be4bf",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/parts/f2171f1c-73c5-49ed-a466-b3a2c9ad9132.json",
+          "url": "https://api.registry.igem.org/v1/parts/f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+          "retrieved_at": "2026-09-02T03:02:12Z",
+          "sha256": "006a244a18ef0bb354018bc33000cf399771807b7dc5f36337d8c2ca066d76eb",
+          "byte_count": 846
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/igem/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6.json",
+          "url": "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+          "retrieved_at": "2026-09-02T03:01:51Z",
+          "sha256": "8e7369a041e34980cda0c91430120b112b9c2b5aed6074c262f818d5fbbfe0cd",
+          "byte_count": 405,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P42212",
+      "record_sha256": "3b4f3470f1473b7c188899440f145148a9c9b2b0cfc294e3e0b5bf571f3cb10d",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P42212.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
+          "retrieved_at": "2026-09-02T03:02:17Z",
+          "sha256": "aad567abb00545381f83daaa8ba940a253427b797e8a6a5ec917547a11db1803",
+          "byte_count": 236957
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T03:02:17Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:Q9U6Y4",
+      "record_sha256": "b15306e99c2501c640004c67ee0fe3b569c2ed8a0a107cd2354ab653207b078b",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y4.json",
+          "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y4.json",
+          "retrieved_at": "2026-09-02T03:02:16Z",
+          "sha256": "65c811cd09354a76cf1c732fd569698b4ae38c5f122ff272fde4f71f60cd7255",
+          "byte_count": 14906
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T03:02:17Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:Q9U6Y8",
+      "record_sha256": "663d36e6b664a8f592cebaa0883bf42e973412454dd11fc6f768189ed073321e",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y8.json",
+          "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y8.json",
+          "retrieved_at": "2026-09-02T03:02:18Z",
+          "sha256": "bb2a2f3e75121d915262621ecd9dcbd154de751dbd158bec83485407db717dde",
+          "byte_count": 19898
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T03:02:17Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    }
+  ],
+  "boundary": "Round three uses an inactive, explicit snapshot through catalog and materialization APIs. It does not establish human activation, wet-lab readiness, orderability, biosafety, or regulatory status."
+}

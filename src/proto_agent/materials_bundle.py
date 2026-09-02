@@ -12,7 +12,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from uuid import uuid4
 
-from .materials import MaterialsError, MaterialsStore
+from .materials import MATERIALS_SCHEMA_VERSION, MaterialsError, MaterialsStore, provider_license_policy_errors
 
 
 BUNDLE_SCHEMA_VERSION = "proto-agent.materials-bundle.v1"
@@ -130,6 +130,44 @@ def _verify_checksums(directory: Path, bundle: dict[str, Any]) -> None:
         raise MaterialsError("BUNDLE_INTEGRITY_FAILED", "SHA256SUMS does not match the materials bundle tree.")
 
 
+def _verify_activation_contract(directory: Path, bundle: dict[str, Any], *, profile: str) -> None:
+    """Bind the bundle profile to the activation policy consumed at runtime."""
+
+    manifest = _read_json(directory / "manifest.json")
+    bundle_id = str(bundle.get("bundle_id") or "")
+    if not bundle_id:
+        raise MaterialsError("BUNDLE_INVALID", "Materials bundle has no bundle ID.")
+    if profile == "PUBLIC_CATALOG":
+        public_export = manifest.get("public_export") if isinstance(manifest.get("public_export"), dict) else {}
+        if bundle.get("activation_policy") != "EXPLICIT_HUMAN_ONLY" or bundle.get("default_model_visibility") is not True:
+            raise MaterialsError(
+                "BUNDLE_POLICY_FAILED",
+                "Public catalog bundles must require explicit human activation and DESIGN_ELIGIBLE-only model visibility.",
+            )
+        if (
+            manifest.get("schema_version") != MATERIALS_SCHEMA_VERSION
+            or manifest.get("snapshot_id") != bundle_id
+            or public_export.get("profile") != "PUBLIC_CATALOG"
+            or public_export.get("activation_policy") != "EXPLICIT_HUMAN_ONLY"
+            or public_export.get("default_model_visibility") != "DESIGN_ELIGIBLE_ONLY"
+        ):
+            raise MaterialsError(
+                "BUNDLE_POLICY_FAILED",
+                "Public catalog manifest and bundle activation policies are inconsistent.",
+            )
+        return
+    if (
+        manifest.get("profile") != "PUBLIC_QUARANTINE"
+        or manifest.get("bundle_id") != bundle_id
+        or manifest.get("activation_policy") != "DENY"
+        or manifest.get("default_model_visibility") is not False
+    ):
+        raise MaterialsError(
+            "BUNDLE_POLICY_FAILED",
+            "Public quarantine manifest and bundle activation policies are inconsistent.",
+        )
+
+
 def _scan_text(value: str, *, context: str) -> None:
     if LOCAL_TEXT_PATTERN.search(value):
         raise MaterialsError("BUNDLE_PRIVACY_FAILED", f"Machine-local path or endpoint found in {context}.")
@@ -188,7 +226,12 @@ def _verify_database(path: Path, *, profile: str, expected_count: int) -> dict[s
             if profile == "PUBLIC_CATALOG":
                 if row["review_status"] != "DESIGN_ELIGIBLE" or row["safety_status"] != "NO_FLAG" or int(row["design_eligibility"]) != 1:
                     raise MaterialsError("BUNDLE_POLICY_FAILED", f"Non-eligible row in public catalog: {record_id}")
+                rights_errors = provider_license_policy_errors(source, license_info)
+                if rights_errors:
+                    raise MaterialsError("BUNDLE_RIGHTS_FAILED", f"Public bundle rights policy failed for {record_id}: {rights_errors[0]}")
                 digest = str(row["sequence_sha256"])
+                if str(source.get("sequence_sha256") or "") != digest:
+                    raise MaterialsError("BUNDLE_INTEGRITY_FAILED", f"Source sequence digest mismatch: {record_id}")
                 relative = str(row["sequence_path"])
                 if not re.fullmatch(r"[a-f0-9]{64}", digest):
                     raise MaterialsError("BUNDLE_INTEGRITY_FAILED", f"Missing public sequence digest: {record_id}")
@@ -257,6 +300,7 @@ def verify_materials_bundle(path: str | Path, *, expected_profile: str | None = 
     if profile == "PUBLIC_QUARANTINE" and (bundle.get("activation_policy") != "DENY" or bundle.get("default_model_visibility") is not False):
         raise MaterialsError("BUNDLE_POLICY_FAILED", "Quarantine bundle must deny activation and default model visibility.")
     _verify_checksums(directory, bundle)
+    _verify_activation_contract(directory, bundle, profile=profile)
     all_files = set(_bundle_files(directory, exclude={}))
     forbidden_names = {"active.json", "-wal", "-shm", "-journal"}
     for name in all_files:
@@ -304,7 +348,16 @@ def verify_materials_bundle(path: str | Path, *, expected_profile: str | None = 
     }
 
 
-def install_public_bundle(store: MaterialsStore, bundle_path: str | Path | None = None, *, activate: bool = False) -> dict[str, Any]:
+def install_public_bundle(
+    store: MaterialsStore,
+    bundle_path: str | Path | None = None,
+    *,
+    activate: bool = False,
+    operator: str | None = None,
+    approval_reference: str | None = None,
+) -> dict[str, Any]:
+    if not activate and (operator is not None or approval_reference is not None):
+        raise MaterialsError("ACTIVATION_EVIDENCE_UNUSED", "Activation evidence can only be supplied together with activate=True.")
     source = default_bundle_path("PUBLIC_CATALOG") if bundle_path is None else Path(bundle_path).resolve()
     verification = verify_materials_bundle(source, expected_profile="PUBLIC_CATALOG")
     manifest = _read_json(source / "manifest.json")
@@ -331,7 +384,15 @@ def install_public_bundle(store: MaterialsStore, bundle_path: str | Path | None 
             shutil.rmtree(stage, ignore_errors=True)
             raise
         installed = True
-    activation = store.activate(snapshot_id) if activate else None
+    activation = (
+        store.activate(
+            snapshot_id,
+            operator=operator,
+            approval_reference=approval_reference,
+        )
+        if activate
+        else None
+    )
     return {
         "ok": True,
         "bundle_id": verification["bundle_id"],

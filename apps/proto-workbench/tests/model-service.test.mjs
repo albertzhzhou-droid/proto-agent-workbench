@@ -89,6 +89,56 @@ const descriptor = (id, sizeBytes = 4 * GIB) => ({
 const abundantGpu = async () => ({ totalBytes: 64 * GIB, usedBytes: 0, freeBytes: 64 * GIB });
 const abundantRam = () => ({ totalBytes: 128 * GIB, availableBytes: 112 * GIB });
 
+test("LM Studio models bypass the legacy GPU estimator and preserve exact instance ownership", async () => {
+  const model = {
+    ...descriptor("lmstudio-model"),
+    path: "lmstudio:fixture/model",
+    files: [],
+    provider: "lmstudio",
+    providerModelId: "fixture/model",
+    modelKind: "llm",
+    metadataSource: "lmstudio",
+    loadedInstances: [],
+  };
+  const runtime = new FakeRuntime();
+  runtime.load = async (selected, options) => {
+    runtime.loads.push({ modelId: selected.id, ...options });
+    runtime.residents.add(selected.id);
+    return {
+      modelId: selected.id,
+      instanceId: "workbench-owned-instance",
+      provider: "lmstudio",
+      ownedByWorkbench: true,
+      state: "active",
+      contextLength: options.contextLength ?? 16_384,
+      gpuLayers: 0,
+    };
+  };
+  const database = new FakeDatabase([], {
+    mode: "quick-switch",
+    budgetBytes: 20 * GIB,
+    warmTtlMinutes: 30,
+    pinnedModelIds: [],
+  });
+  const service = new ModelService(
+    database,
+    { scan: async () => [model] },
+    runtime,
+    async () => { throw new Error("legacy GPU probe must not run"); },
+    () => { throw new Error("legacy RAM probe must not run"); },
+  );
+  try {
+    await service.scan("http://127.0.0.1:1234");
+    const instance = await service.load(model.id, { contextLength: 16_384, evalBatchSize: 512 });
+    assert.equal(instance.instanceId, "workbench-owned-instance");
+    assert.equal(instance.ownedByWorkbench, true);
+    assert.equal(service.get(model.id).workbenchInstance.id, "workbench-owned-instance");
+    assert.deepEqual(runtime.loads, [{ modelId: model.id, contextLength: 16_384, evalBatchSize: 512 }]);
+  } finally {
+    await service.shutdown();
+  }
+});
+
 test("auto-evict allows a selected model to exceed the pool target by itself", async () => {
   const runtime = new FakeRuntime();
   const database = new FakeDatabase([descriptor("target")], {

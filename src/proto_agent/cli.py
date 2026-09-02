@@ -6,6 +6,7 @@ import json
 import platform
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,8 +15,15 @@ from .compiler import compile_design, validate_design
 from .connectors import DEFAULT_CONNECTORS_PATH, connector_summary
 from .exporters import export_ir, load_ir
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
-from .materials import MAX_RESULT_LIMIT, MaterialsStore
+from .materials import (
+    MAX_RESOURCE_ID_CHARS,
+    MAX_RESULT_LIMIT,
+    PROMOTION_AUDIT_SCHEMA_VERSION,
+    PROMOTION_POLICY_VERSION,
+    MaterialsStore,
+)
 from .materials_bundle import default_bundle_path, install_public_bundle, verify_materials_bundle
+from .materials_promotion import audit_promotion_candidates
 from .models import Diagnostic
 from .notebook import DEFAULT_NOTEBOOK_OUT_DIR, run_notebook
 from .optimization import optimize_design
@@ -29,6 +37,12 @@ from .scoring import score_design
 from .sequence import validate_sequences
 from .sbol import validate_sbol_turtle
 from .stress import DEFAULT_SEED, run_stress
+from .skill_sdk import (
+    DEFAULT_SKILLS_ROOT,
+    audit_skill_adapters,
+    list_skill_adapters,
+    resolve_skill_adapter,
+)
 from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
 from .mcp_server import TOOLS, main as mcp_main
 from .execution import ExecutionBroker, ExecutionDenied
@@ -124,6 +138,8 @@ def main(argv: list[str] | None = None) -> int:
     materials_bundle_install = materials_subparsers.add_parser("bundle-install-public", help="Install the verified public catalog into the external materials root.")
     materials_bundle_install.add_argument("--bundle")
     materials_bundle_install.add_argument("--activate", action="store_true", help="Explicitly activate the installed catalog after verification.")
+    materials_bundle_install.add_argument("--operator", help="Self-declared operator label; this is recorded evidence, not authenticated identity.")
+    materials_bundle_install.add_argument("--approval-reference", help="External approval/ticket reference required with --activate for the public catalog.")
     materials_search = materials_subparsers.add_parser("search", help="Search the active materials catalog.")
     materials_search.add_argument("query", nargs="?", default="")
     materials_search.add_argument("--kind")
@@ -150,11 +166,27 @@ def main(argv: list[str] | None = None) -> int:
     materials_diff.add_argument("right")
     materials_activate = materials_subparsers.add_parser("activate", help="Activate a verified immutable snapshot.")
     materials_activate.add_argument("snapshot_id")
+    materials_activate.add_argument("--operator", help="Self-declared operator label; this is not authenticated identity.")
+    materials_activate.add_argument("--approval-reference", help="External approval/ticket reference for this activation action.")
     materials_rollback = materials_subparsers.add_parser("rollback", help="Roll back to a previously verified snapshot.")
     materials_rollback.add_argument("snapshot_id")
+    materials_rollback.add_argument("--operator", help="Self-declared operator label; this is not authenticated identity.")
+    materials_rollback.add_argument("--approval-reference", help="External approval/ticket reference for this rollback action.")
     materials_import = materials_subparsers.add_parser("import", help="Stage a local JSON, FASTA, SBOL Turtle, or GenBank resource file.")
     materials_import.add_argument("path")
     materials_import.add_argument("--activate", action="store_true")
+    materials_promotion_audit = materials_subparsers.add_parser("promotion-audit", help="Run the deterministic three-pass promotion audit over a reviewed JSON candidate file.")
+    materials_promotion_audit.add_argument("path")
+    materials_promotion_audit.add_argument("--out", default="build/materials/promotion-audit.json")
+    materials_promotion_audit.add_argument("--generated-at", help="Stable ISO-8601 audit timestamp; defaults to the current UTC time.")
+    materials_promotion_audit.add_argument(
+        "--source-evidence",
+        help="Explicit bounded JSON evidence map or locked promotion-audit report; candidate self-assertions are never used as evidence.",
+    )
+    materials_reviewed_import = materials_subparsers.add_parser("reviewed-import", help="Install a repository-locked reviewed seed as a new inactive snapshot.")
+    materials_reviewed_import.add_argument("path")
+    materials_reviewed_import.add_argument("--audit", required=True)
+    materials_reviewed_import.add_argument("--source-lock")
     materials_sync = materials_subparsers.add_parser("sync", help="Fetch a pinned source into a new staging snapshot.")
     materials_sync.add_argument("source", choices=["uniprot", "igem", "rhea", "biomodels"])
     materials_sync.add_argument("--max-records", type=int, default=100_000)
@@ -241,6 +273,15 @@ def main(argv: list[str] | None = None) -> int:
     connectors_subparsers = connectors_parser.add_subparsers(dest="connectors_command", required=True)
     connectors_subparsers.add_parser("list", help="List declared local and planned connectors.")
     connectors_subparsers.add_parser("check", help="Check connector registry structure and availability summary.")
+
+    skills_parser = subparsers.add_parser("skills", help="Inspect vendor-neutral project Skill adapters without executing them.")
+    skills_parser.add_argument("--root", default=str(DEFAULT_SKILLS_ROOT))
+    skills_parser.add_argument("--registry", default=str(DEFAULT_CONNECTORS_PATH))
+    skills_subparsers = skills_parser.add_subparsers(dest="skills_command", required=True)
+    skills_subparsers.add_parser("list", help="List installed Skill adapters and resolved capabilities.")
+    skills_resolve = skills_subparsers.add_parser("resolve", help="Resolve one Skill adapter against the connector registry.")
+    skills_resolve.add_argument("skill_id")
+    skills_subparsers.add_parser("audit", help="Run schema, vendor-neutrality, and capability-risk audit passes.")
 
     analysis_parser = subparsers.add_parser("analysis", help="Run local analysis scripts with an audit manifest.")
     analysis_subparsers = analysis_parser.add_subparsers(dest="analysis_command", required=True)
@@ -377,6 +418,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return _security_stress(args)
     if args.command == "connectors":
         return _connectors(args.connectors_command, args.registry)
+    if args.command == "skills":
+        return _skills(args.skills_command, args.root, args.registry, getattr(args, "skill_id", None))
     if args.command == "analysis" and args.analysis_command == "run":
         return _analysis_run(args.script, args.script_args, args.out_dir, args.timeout, _execution_broker(args))
     if args.command == "notebook" and args.notebook_command == "run":
@@ -592,6 +635,109 @@ def _parts_search(query: str, chassis: str | None, parts_path: str) -> int:
     return 0
 
 
+def _promotion_evidence_resource_id(value: Any, *, context: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{context} resource_id must be a string.")
+    resource_id = value.strip()
+    if (
+        not resource_id
+        or resource_id != value
+        or len(resource_id) > MAX_RESOURCE_ID_CHARS
+        or "\x00" in resource_id
+    ):
+        raise ValueError(
+            f"{context} resource_id must contain 1 to {MAX_RESOURCE_ID_CHARS} characters without surrounding whitespace or NUL."
+        )
+    return resource_id
+
+
+def _promotion_evidence_entry(value: Any, *, context: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{context} source_evidence must be an object.")
+    expected = {"record_response", "license_response"}
+    if set(value) != expected:
+        raise ValueError(
+            f"{context} source_evidence must contain exactly record_response and license_response."
+        )
+    if not all(isinstance(value[key], dict) for key in expected):
+        raise ValueError(f"{context} source_evidence response entries must be objects.")
+    return dict(value)
+
+
+def _promotion_source_evidence(
+    payload: Any,
+    records: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(payload, dict):
+        raise ValueError("Promotion source evidence must be a JSON object.")
+
+    has_map = "source_evidence" in payload
+    has_candidates = "candidates" in payload
+    if has_map == has_candidates:
+        raise ValueError(
+            "Promotion source evidence must contain either a top-level source_evidence map or locked audit candidates, but not both."
+        )
+
+    entries: list[tuple[str, Any, str]] = []
+    if has_map:
+        source_evidence = payload["source_evidence"]
+        if not isinstance(source_evidence, dict) or not source_evidence:
+            raise ValueError("Top-level source_evidence must be a non-empty resource_id-to-evidence object.")
+        entries = [
+            (resource_id, evidence, f"source_evidence[{resource_id!r}]")
+            for resource_id, evidence in source_evidence.items()
+        ]
+    else:
+        if (
+            payload.get("schema_version") != PROMOTION_AUDIT_SCHEMA_VERSION
+            or payload.get("policy_version") != PROMOTION_POLICY_VERSION
+        ):
+            raise ValueError("Promotion audit evidence uses an unsupported schema or policy version.")
+        candidates = payload["candidates"]
+        if not isinstance(candidates, list) or not candidates or len(candidates) > 1_000:
+            raise ValueError("Promotion audit evidence candidates must contain 1 to 1,000 objects.")
+        for index, candidate in enumerate(candidates):
+            if not isinstance(candidate, dict):
+                raise ValueError(f"Promotion audit evidence candidate {index} must be an object.")
+            if "source_evidence" not in candidate:
+                raise ValueError(f"Promotion audit evidence candidate {index} is missing source_evidence.")
+            entries.append(
+                (
+                    candidate.get("resource_id"),
+                    candidate["source_evidence"],
+                    f"candidates[{index}]",
+                )
+            )
+
+    evidence_by_id: dict[str, dict[str, Any]] = {}
+    seen_ids: dict[str, str] = {}
+    for raw_resource_id, evidence, context in entries:
+        resource_id = _promotion_evidence_resource_id(raw_resource_id, context=context)
+        identity = resource_id.casefold()
+        if identity in seen_ids:
+            raise ValueError(
+                f"Duplicate promotion source-evidence resource_id: {resource_id!r} conflicts with {seen_ids[identity]!r}."
+            )
+        seen_ids[identity] = resource_id
+        evidence_by_id[resource_id] = _promotion_evidence_entry(evidence, context=context)
+
+    candidate_ids = {
+        _promotion_evidence_resource_id(
+            record.get("resource_id", record.get("id")),
+            context=f"promotion candidate {index}",
+        )
+        for index, record in enumerate(records)
+    }
+    # A repository-locked audit may cover more records than the candidate file
+    # currently being re-audited. Select only exact resource-id matches; never
+    # bind evidence by array position or by a candidate's self-reported fields.
+    return {
+        resource_id: evidence_by_id[resource_id]
+        for resource_id in candidate_ids
+        if resource_id in evidence_by_id
+    }
+
+
 def _materials(args: argparse.Namespace) -> int:
     command = args.materials_command
     if command == "bundle-verify":
@@ -600,7 +746,13 @@ def _materials(args: argparse.Namespace) -> int:
         return 0
     store = MaterialsStore(root=args.materials_root)
     if command == "bundle-install-public":
-        _print_json(install_public_bundle(store, args.bundle, activate=args.activate))
+        _print_json(install_public_bundle(
+            store,
+            args.bundle,
+            activate=args.activate,
+            operator=args.operator,
+            approval_reference=args.approval_reference,
+        ))
         return 0
     if command == "status":
         _print_json(store.status())
@@ -630,8 +782,19 @@ def _materials(args: argparse.Namespace) -> int:
     if command == "facets":
         _print_json(store.facets(snapshot_id=args.snapshot, include_quarantine=args.include_quarantine, status=args.status))
         return 0
-    if command in {"activate", "rollback"}:
-        _print_json(store.activate(args.snapshot_id))
+    if command == "activate":
+        _print_json(store.activate(
+            args.snapshot_id,
+            operator=args.operator,
+            approval_reference=args.approval_reference,
+        ))
+        return 0
+    if command == "rollback":
+        _print_json(store.rollback(
+            args.snapshot_id,
+            operator=args.operator,
+            approval_reference=args.approval_reference,
+        ))
         return 0
     if command == "diff":
         _print_json(store.diff(args.left, args.right))
@@ -640,6 +803,47 @@ def _materials(args: argparse.Namespace) -> int:
         paths = WorkspacePaths.create()
         source = paths.workspace_file(args.path, extensions={".json", ".fasta", ".fa", ".fas", ".ttl", ".rdf", ".gb", ".gbk", ".genbank"}, max_bytes=64 * 1024 * 1024)
         _print_json(store.import_file(source, activate=args.activate))
+        return 0
+    if command == "promotion-audit":
+        paths = WorkspacePaths.create()
+        source = paths.workspace_file(args.path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        payload = read_json_bounded(source, MAX_JSON_FILE_BYTES)
+        if not isinstance(payload, dict):
+            raise ValueError("Promotion candidates must be a JSON object.")
+        records = payload.get("records", payload.get("parts", []))
+        if not isinstance(records, list) or not records or len(records) > 1_000 or not all(isinstance(item, dict) for item in records):
+            raise ValueError("Promotion candidates must contain 1 to 1,000 record objects.")
+        generated_at = args.generated_at or datetime.now(timezone.utc).isoformat()
+        try:
+            datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError("--generated-at must be a valid ISO-8601 timestamp.") from exc
+        source_evidence: dict[str, dict[str, Any]] | None = None
+        if args.source_evidence:
+            evidence_source = paths.workspace_file(
+                args.source_evidence,
+                extensions={".json"},
+                max_bytes=MAX_JSON_FILE_BYTES,
+            )
+            evidence_payload = read_json_bounded(evidence_source, MAX_JSON_FILE_BYTES)
+            source_evidence = _promotion_source_evidence(evidence_payload, records)
+        report = audit_promotion_candidates(
+            records,
+            generated_at=generated_at,
+            source_evidence=source_evidence,
+        )
+        report["ok"] = report["fail_count"] == 0
+        output = paths.build_file(args.out, extensions={".json"})
+        write_text_bounded(output, json.dumps(report, indent=2, sort_keys=True) + "\n", boundary=paths.build)
+        report["artifact"] = output.relative_to(paths.workspace).as_posix()
+        _print_json(report)
+        return 0 if report["ok"] else 1
+    if command == "reviewed-import":
+        paths = WorkspacePaths.create()
+        source = paths.workspace_file(args.path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        audit = paths.workspace_file(args.audit, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        source_lock = paths.workspace_file(args.source_lock, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES) if args.source_lock else None
+        _print_json(store.import_reviewed_file(source, audit_path=audit, source_lock_path=source_lock, activate=False))
         return 0
     if command == "sync":
         _bounded_number("max_records", args.max_records, minimum=1, maximum=2_000_000)
@@ -724,6 +928,21 @@ def _connectors(command: str, registry_path: str) -> int:
         _print_json(summary)
         return 0 if summary["ok"] else 1
     return 2
+
+
+def _skills(command: str, skills_root: str, registry_path: str, skill_id: str | None) -> int:
+    if command == "list":
+        payload = list_skill_adapters(skills_root, registry_path)
+    elif command == "resolve":
+        if skill_id is None:
+            raise ValueError("Skill id is required.")
+        payload = resolve_skill_adapter(skill_id, skills_root, registry_path)
+    elif command == "audit":
+        payload = audit_skill_adapters(skills_root, registry_path)
+    else:
+        return 2
+    _print_json(payload)
+    return 0 if payload.get("ok", False) else 1
 
 
 def _analysis_run(script: str, script_args: list[str], out_dir: str, timeout: int, broker: ExecutionBroker) -> int:

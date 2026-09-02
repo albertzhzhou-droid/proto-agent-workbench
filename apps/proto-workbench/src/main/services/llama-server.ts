@@ -15,6 +15,9 @@ import type {
 import { revalidateRuntimeExecutable, type RuntimeExecutableTrust } from "./path-security.ts";
 import { minimalChildEnvironment, terminateOwnedProcessTree } from "./process-security.ts";
 import { nvidiaSmiExecutable } from "./nvidia-smi.ts";
+import type { ChatCompletionChunk } from "./inference-provider.ts";
+
+export type { ChatCompletionChunk } from "./inference-provider.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -477,23 +480,6 @@ async function listDevices(executable: string, signal?: AbortSignal): Promise<st
     if (signal?.aborted) throw error;
     return [];
   }
-}
-
-export interface ChatCompletionChunk {
-  choices?: Array<{
-    finish_reason?: string | null;
-    delta?: {
-      content?: string;
-      reasoning?: string;
-      reasoning_content?: string;
-      tool_calls?: Array<{
-        index: number;
-        id?: string;
-        type?: "function";
-        function?: { name?: string; arguments?: string };
-      }>;
-    };
-  }>;
 }
 
 export function parseCudaBufferBytes(stderr: string): number {

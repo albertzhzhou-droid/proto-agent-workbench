@@ -3,7 +3,12 @@ import test from "node:test";
 import { deriveWorkbenchReadiness } from "../src/renderer/readiness.ts";
 
 const settings = {
-  modelRoot: "C:\\models",
+  inference: {
+    provider: "lmstudio",
+    baseUrl: "http://127.0.0.1:1234",
+    tokenEnvNames: ["LMSTUDIO_API_KEY", "LM_API_TOKEN"],
+    explicitLoadOnly: true,
+  },
   workspacePath: "C:\\workspace",
   residencyPolicy: { mode: "quick-switch", budgetBytes: 20 * 1024 ** 3, warmTtlMinutes: 30, pinnedModelIds: [] },
   modules: { profile: "core-only", enabledOptional: [] },
@@ -15,7 +20,7 @@ const integrity = {
   checkedAt: "2026-08-30T00:00:00.000Z",
   modules: [],
 };
-const runtime = { available: true, backend: "cuda", detail: "CUDA ready" };
+const runtime = { available: true, provider: "lmstudio", endpoint: "http://127.0.0.1:1234", modelCount: 1, loadedModelCount: 1, detail: "LM Studio ready" };
 const entry = {
   path: "C:\\workspace\\designs\\toggle.proto",
   relativePath: "designs/toggle.proto",
@@ -28,6 +33,7 @@ const model = {
   id: "model-1",
   name: "Local model",
   loadState: "active",
+  workbenchInstance: { id: "instance-1", ownedByWorkbench: true },
 };
 
 test("readiness becomes operational only when every real prerequisite is ready", () => {
@@ -56,7 +62,7 @@ test("a discovered but unloaded model requires explicit review and load", () => 
   assert.equal(result.operational, false);
   assert.equal(result.next.id, "model");
   assert.equal(result.next.action, "open-models");
-  assert.match(result.next.detail, /load one explicitly/i);
+  assert.match(result.next.detail, /connect or load one explicitly/i);
 });
 
 test("an active model cannot satisfy readiness for a thread bound to another model", () => {
@@ -74,7 +80,7 @@ test("an active model cannot satisfy readiness for a thread bound to another mod
 
   assert.equal(result.operational, false);
   assert.equal(result.next.id, "model");
-  assert.match(result.next.detail, /Thread model.*unloaded/i);
+  assert.match(result.next.detail, /Thread model.*not connected/i);
 });
 
 test("integrity failures block before setup actions and empty workspaces remain actionable", () => {

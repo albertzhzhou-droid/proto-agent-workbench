@@ -11,22 +11,39 @@ Electron main process ---- SQLite under %APPDATA%/Proto Workbench
         |       |
         |       +---- proto-agent MCP sidecar (structured JSON-RPC tools)
         |
-        +------------ upstream llama-server.exe on 127.0.0.1:<bounded-random>
-                              |
-                              +---- read-only GGUF weights
-                                   %USERPROFILE%\.lmstudio\models
+        +------------ LM Studio API on http://127.0.0.1:1234
+                         |                    |
+                         | native v1          +---- OpenAI-compatible SSE
+                         | discover/load/           /v1/chat/completions
+                         | unload
+                         v
+                    LM Studio-owned model catalog and instances
 ```
 
-LM Studio is not a process dependency or an integration boundary. The only shared
-resource is the GGUF file tree selected by the user.
+LM Studio is an explicit external-process trust boundary. The origin is compiled
+as the exact HTTP loopback URL `http://127.0.0.1:1234`; it cannot be replaced by
+settings, redirects, a model path, or a renderer argument. Workbench neither
+walks the model filesystem nor spawns a model server.
 
-The main process selects a random dynamic-port candidate without pre-binding it;
-the owned `llama-server.exe` binds that loopback port directly. The main process
-contacts it only after the pinned runtime's post-bind, pre-model-metadata startup
-record. Bind conflicts get at most four clean attempts. Authentication uses a
-per-launch bearer key read from a short-lived restricted file rather than a
-literal command-line argument. Readiness uses the public `/health` endpoint and
-never discloses that bearer key.
+Optional API authentication comes only from `LMSTUDIO_API_KEY`, with
+`LM_API_TOKEN` as the compatibility fallback. Credential values are resolved in
+the Electron main process on every request and are not persisted, serialized,
+logged, or exposed through IPC. Catalog and error bodies, identifiers, arrays,
+and SSE frames have explicit size and type bounds. Redirects fail closed.
+
+Native `GET /api/v1/models` is authoritative for capabilities and instance
+residency. `POST /api/v1/models/load` is always explicit and its returned
+`instance_id` must appear in a subsequent catalog synchronization. An existing
+instance can be attached only after the user selects its exact identifier. Such
+an attachment is non-owned. `POST /api/v1/models/unload` is issued only for an
+exact instance created by this Workbench process; external instances are only
+disconnected locally.
+
+LM Studio does not expose a model-file content digest in this catalog. The
+Workbench `fingerprint` is therefore a SHA-256 digest of bounded provider
+metadata (key, size, format, quantization, context, variant, and capabilities),
+not an attestation of weight bytes. The descriptor labels that source explicitly;
+review evidence must not reinterpret it as a content hash.
 
 ## Agent turn
 
@@ -53,13 +70,20 @@ the recovered counts. Startup reconciliation is idempotent: a second launch does
 not append another recovery event for an already closed run.
 
 Readiness is derived from verified module integrity, workspace indexing, runtime
-availability, and a model whose load state is active. Discovery is intentionally
-not equivalent to activation. Both the renderer and the main-process agent
-preflight enforce that distinction.
+availability, and a model connected to an exact loaded LM Studio instance.
+Discovery is intentionally not equivalent to activation. Both the renderer and
+the main-process agent preflight enforce that distinction.
 
 ## Model residency
 
-Quick switch keeps one model resident. Auto-evict can keep active and warm models
-within the configured VRAM budget, evicting unpinned warm LRU entries first and
-applying a 30-minute TTL. OOM handling evicts eligible models and retries once at
-half context with Q8 KV cache; CPU fallback and pinned eviction are never silent.
+Model load uses the documented native controls for context length, evaluation
+batch size, Flash Attention, MoE expert count, and KV-cache placement. The old
+Workbench-local GPU-layer estimator and OOM retry path are not used for LM Studio
+models because LM Studio owns allocation and engine selection.
+
+Immediately before each OpenAI-compatible chat request, Workbench re-reads
+`loaded_instances` and requires its bound identifier to remain present. It never
+sends a catalog model key as an implicit load fallback. LM Studio's global JIT
+switch is not exposed by its documented server API, so operators must disable it
+in Developer > Server Settings to eliminate the residual external check-to-use
+race; Workbench cannot claim to verify that application-level setting.

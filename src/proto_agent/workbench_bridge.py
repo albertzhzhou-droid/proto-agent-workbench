@@ -1,28 +1,36 @@
 from __future__ import annotations
 
-import argparse
 import json
+import sys
 from typing import Any
 
-from .model_catalog import scan_model_root
+
+_RETIRED = {
+    "ok": False,
+    "code": "LEGACY_WORKBENCH_SIDECAR_RETIRED",
+    "message": (
+        "This compatibility entry is permanently retired and cannot inspect or load models. "
+        "Proto Workbench uses the operator-managed LM Studio API exclusively."
+    ),
+    "replacement": {
+        "provider": "lmstudio",
+        "endpoint": "http://127.0.0.1:1234",
+        "documentation": "apps/proto-workbench/README.md",
+        "verifier": "apps/proto-workbench/scripts/verify-inference.mjs",
+    },
+}
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="proto-workbench-sidecar")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    scan_parser = subparsers.add_parser("scan-models")
-    scan_parser.add_argument("root")
-    scan_parser.add_argument("--cache")
-    args = parser.parse_args(argv)
+    """Fail closed without parsing, reading, or echoing legacy arguments."""
 
-    if args.command == "scan-models":
-        _write_json({"ok": True, "models": scan_model_root(args.root, args.cache)})
-        return 0
+    del argv
+    _write_json(_RETIRED, stream=sys.stderr)
     return 2
 
 
-def _write_json(payload: dict[str, Any]) -> None:
-    print(json.dumps(payload, separators=(",", ":"), ensure_ascii=True), flush=True)
+def _write_json(payload: dict[str, Any], *, stream: Any) -> None:
+    print(json.dumps(payload, separators=(",", ":"), ensure_ascii=True), file=stream, flush=True)
 
 
 if __name__ == "__main__":

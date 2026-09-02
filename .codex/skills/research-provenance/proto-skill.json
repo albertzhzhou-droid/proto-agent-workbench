@@ -1,0 +1,49 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "research-provenance",
+  "name": "Research Provenance",
+  "version": "1.0.0",
+  "description": "Content-addressed workflow evidence and faithful human-review boundaries for Proto research iterations.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Mapped session provenance concepts to immutable Proto workflow, review, and verification artifacts instead of conversation scraping.",
+    "upstream": [
+      {
+        "id": "research-manager",
+        "url": "https://github.com/Orchestra-Research/AI-Research-SKILLs/tree/773a52944ba4747a18bd4ae9ade53fff041adcbc/22-agent-native-research-artifact/research-manager",
+        "license": "MIT",
+        "revision": "773a52944ba4747a18bd4ae9ade53fff041adcbc",
+        "content_sha256": "f78da7627ac09a4be398ea4363fc7b8753b2dcb22bc961c5059395e33ef3ef2c"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "offline",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "capture-workflow",
+      "purpose": "Capture checks, diagnostics, inputs, and generated artifacts in one run manifest.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_workflow_run"}
+      ]
+    },
+    {
+      "id": "capture-human-review",
+      "purpose": "Create evidence cards and a human-review checklist from verified workflow evidence.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_review_packet"}
+      ]
+    },
+    {
+      "id": "verify-provenance",
+      "purpose": "Recompute each bounded digest claim declared in the supplied provenance statement before reuse.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_provenance_verify"}
+      ]
+    }
+  ]
+}

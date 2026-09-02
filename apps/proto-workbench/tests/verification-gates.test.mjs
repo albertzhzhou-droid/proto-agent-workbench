@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { dirname, join, resolve } from "node:path";
@@ -16,11 +16,26 @@ import {
 const execFileAsync = promisify(execFile);
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const cases = [
-  ["verify-inference.mjs", "REAL_MODEL_TEST_DISABLED", "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS", "YES_START_OWNED_MODEL_PROCESSES"],
-  ["verify-model-pool.mjs", "REAL_MODEL_TEST_DISABLED", "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS", "YES_START_OWNED_MODEL_PROCESSES"],
-  ["verify-agent-workflow.mjs", "REAL_MODEL_TEST_DISABLED", "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS", "YES_START_OWNED_MODEL_PROCESSES"],
-  ["verify-sidecars.mjs", "SIDECAR_TEST_DISABLED", "PROTO_AGENT_ALLOW_SIDECAR_TESTS", "YES_START_OWNED_SIDECARS"],
+const gatedCases = [
+  {
+    scriptName: "verify-inference.mjs",
+    expectedCode: "REAL_MODEL_TEST_DISABLED",
+    environmentName: "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS",
+    confirmation: "YES_LOAD_CHAT_UNLOAD_LM_STUDIO",
+    explicitInputCode: "EXPLICIT_MODEL_REQUIRED",
+  },
+  {
+    scriptName: "verify-sidecars.mjs",
+    expectedCode: "SIDECAR_TEST_DISABLED",
+    environmentName: "PROTO_AGENT_ALLOW_SIDECAR_TESTS",
+    confirmation: "YES_START_OWNED_SIDECARS",
+    explicitInputCode: "EXPLICIT_ROOTS_REQUIRED",
+  },
+];
+const retiredModelScripts = ["verify-model-pool.mjs", "verify-agent-workflow.mjs"];
+const allVerificationScripts = [
+  ...gatedCases.map(({ scriptName }) => scriptName),
+  ...retiredModelScripts,
 ];
 
 test("packaged UI minimal environment preserves NVML's Windows ProgramFiles dependency", () => {
@@ -43,7 +58,21 @@ test("packaged UI quiz gate accepts an explicit Chinese no but rejects decision 
   assert.equal(quizDecisionIsNoGo("结论：是。软件流程通过就等同于科学设计 GO。"), false);
 });
 
-for (const [scriptName, expectedCode, environmentName, confirmation] of cases) {
+test("packaged UI verification selects an exact LM Studio key and owns its full lifecycle", async () => {
+  const source = await readFile(join(appRoot, "scripts", "verify-packaged-ui.mjs"), "utf8");
+  assert.match(source, /YES_LOAD_CHAT_UNLOAD_LM_STUDIO/);
+  assert.match(source, /options\.modelKey/);
+  assert.match(source, /Load in LM Studio/);
+  assert.match(source, /Unload owned instance/);
+  assert.match(source, /ownedInstanceCreated:\s*true/);
+  assert.match(source, /ownedInstanceUnloaded:\s*true/);
+  assert.doesNotMatch(
+    source,
+    /MODEL_ROOT|modelRoot|MODEL_FILE|PROTO_WORKBENCH_TEST_MODEL_ROOT|scan-models|LlamaServerManager|llama-server|\.lmstudio[\\/]models/i,
+  );
+});
+
+for (const { scriptName, expectedCode, environmentName, confirmation, explicitInputCode } of gatedCases) {
   test(`${scriptName} fails closed without an explicit execution capability`, async () => {
     const env = gateEnvironment();
     delete env.PROTO_AGENT_ALLOW_REAL_MODEL_TESTS;
@@ -84,7 +113,7 @@ for (const [scriptName, expectedCode, environmentName, confirmation] of cases) {
     assert.equal(JSON.parse(String(error.stderr).trim()).code, expectedCode);
   });
 
-  test(`${scriptName} checks explicit roots before loading runtime dependencies`, async () => {
+  test(`${scriptName} checks explicit inputs before loading runtime dependencies`, async () => {
     const flag = `--confirm-owned-execution=${confirmation}`;
     const error = await rejectedGate(
       scriptName,
@@ -92,14 +121,52 @@ for (const [scriptName, expectedCode, environmentName, confirmation] of cases) {
       gateEnvironment({ [environmentName]: confirmation }),
     );
     assert.equal(error.code, 2);
-    assert.equal(JSON.parse(String(error.stderr).trim()).code, "EXPLICIT_ROOTS_REQUIRED");
+    assert.equal(JSON.parse(String(error.stderr).trim()).code, explicitInputCode);
+  });
+}
+
+for (const scriptName of retiredModelScripts) {
+  test(`${scriptName} is a permanent fail-closed compatibility tombstone`, async () => {
+    const error = await rejectedGate(
+      scriptName,
+      ["C:\\attacker-selected-model-root", "--confirm-owned-execution=YES_START_OWNED_MODEL_PROCESSES"],
+      gateEnvironment({ PROTO_AGENT_ALLOW_REAL_MODEL_TESTS: "YES_START_OWNED_MODEL_PROCESSES" }),
+    );
+    assert.equal(error.code, 2);
+    const payload = JSON.parse(String(error.stderr).trim());
+    assert.equal(payload.ok, false);
+    assert.equal(payload.code, "LEGACY_MODEL_VERIFIER_RETIRED");
+    assert.match(payload.replacement.usage, /verify:inference.*exact-lm-studio-model-key/i);
+    assert.equal(payload.replacement.environment, "PROTO_AGENT_ALLOW_REAL_MODEL_TESTS=YES_LOAD_CHAT_UNLOAD_LM_STUDIO");
+    assert.equal(payload.replacement.confirmation, "--confirm-owned-execution=YES_LOAD_CHAT_UNLOAD_LM_STUDIO");
   });
 }
 
 test("verification modules are import-safe and do not execute their gates", async () => {
-  for (const [scriptName] of cases) {
+  for (const scriptName of allVerificationScripts) {
     const module = await import(new URL(`../scripts/${scriptName}`, import.meta.url));
     assert.equal(typeof module.main, "function");
+  }
+});
+
+test("inference verification uses the fixed LM Studio provider and no legacy runtime or model root", async () => {
+  const source = await readFile(join(appRoot, "scripts", "verify-inference.mjs"), "utf8");
+  assert.match(source, /LmStudioProvider/);
+  assert.match(source, /YES_LOAD_CHAT_UNLOAD_LM_STUDIO/);
+  assert.match(source, /provider\.load/);
+  assert.match(source, /provider\.chat/);
+  assert.match(source, /provider\.unload/);
+  assert.doesNotMatch(source, /LlamaServerManager|ModelCatalogService|scan-models|model-root|llama-server/);
+});
+
+test("retired model verifiers and sidecar verification expose no legacy model-runtime path", async () => {
+  for (const scriptName of [...retiredModelScripts, "verify-sidecars.mjs"]) {
+    const source = await readFile(join(appRoot, "scripts", scriptName), "utf8");
+    assert.doesNotMatch(
+      source,
+      /LlamaServerManager|ModelCatalogService|scan-models|model-root|llama-server|runtime[\\/]llama\.cpp/i,
+      `${scriptName} must not retain an executable legacy model path`,
+    );
   }
 });
 

@@ -164,6 +164,16 @@ def compile_design(path: str | Path, parts_path: str | Path = DEFAULT_PARTS_PATH
                 compiled_part["license"] = part["license"]
             if part.get("resource_id"):
                 compiled_part["resource_id"] = part["resource_id"]
+            for field in (
+                "sequence_kind",
+                "review_status",
+                "safety_status",
+                "safety_flags",
+                "design_eligibility",
+                "evidence_refs",
+            ):
+                if field in part:
+                    compiled_part[field] = part[field]
             sequence = str(compiled_part["sequence"])
             if sequence:
                 compiled_part["sequence_sha256"] = hashlib.sha256(sequence.encode("ascii")).hexdigest()
@@ -178,6 +188,7 @@ def compile_design(path: str | Path, parts_path: str | Path = DEFAULT_PARTS_PATH
 
     ir = {
         "schema_version": "proto-agent.ir.v1",
+        "domain": "dna",
         "design_id": design.design_id,
         "chassis": design.chassis,
         "constructs": constructs,
@@ -185,7 +196,11 @@ def compile_design(path: str | Path, parts_path: str | Path = DEFAULT_PARTS_PATH
             {"type": constraint.type, **constraint.params}
             for constraint in design.constraints
         ],
-        "provenance": {"source": str(path)},
+        "provenance": {
+            "source": str(path),
+            **({"snapshot_id": library.get("version")} if library.get("version") else {}),
+            **({"parts_library_id": library.get("library_id")} if library.get("library_id") else {}),
+        },
     }
     return ir, diagnostics
 

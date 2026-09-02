@@ -12,15 +12,25 @@ test("workspace seed copies missing fixtures without overwriting user edits", as
   const workspace = join(root, "workspace");
   await mkdir(join(template, "parts"), { recursive: true });
   await mkdir(join(template, "workflows"), { recursive: true });
+  await mkdir(join(template, ".codex", "skills", "review", "references"), { recursive: true });
+  await mkdir(join(template, ".codex", "skills", "new-skill"), { recursive: true });
   await mkdir(join(workspace, "parts"), { recursive: true });
+  await mkdir(join(workspace, ".codex", "skills", "review"), { recursive: true });
   await writeFile(join(template, "parts", "library.json"), "template-library", "utf8");
   await writeFile(join(template, "workflows", "review.json"), "template-workflow", "utf8");
+  await writeFile(join(template, ".codex", "skills", "review", "SKILL.md"), "updated-template-skill", "utf8");
+  await writeFile(join(template, ".codex", "skills", "review", "references", "guide.md"), "new-reference", "utf8");
+  await writeFile(join(template, ".codex", "skills", "new-skill", "SKILL.md"), "new-skill", "utf8");
   await writeFile(join(workspace, "parts", "library.json"), "user-edited-library", "utf8");
+  await writeFile(join(workspace, ".codex", "skills", "review", "SKILL.md"), "user-edited-skill", "utf8");
 
   await seedWorkspace(template, workspace);
 
   assert.equal(await readFile(join(workspace, "parts", "library.json"), "utf8"), "user-edited-library");
   assert.equal(await readFile(join(workspace, "workflows", "review.json"), "utf8"), "template-workflow");
+  assert.equal(await readFile(join(workspace, ".codex", "skills", "review", "SKILL.md"), "utf8"), "user-edited-skill");
+  assert.equal(await readFile(join(workspace, ".codex", "skills", "review", "references", "guide.md"), "utf8"), "new-reference");
+  assert.equal(await readFile(join(workspace, ".codex", "skills", "new-skill", "SKILL.md"), "utf8"), "new-skill");
 });
 
 test("startup workspace activation falls back without blocking the recovery UI", async () => {

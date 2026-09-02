@@ -1,3 +1,6 @@
+import { calculateProteinMetrics } from "./protein-sequence.ts";
+import { sha256Text } from "./sha256.ts";
+
 export type DesignDirection = -1 | 0 | 1;
 export type DesignTopology = "linear" | "circular" | "unknown";
 export type DesignDomain = "dna" | "protein";
@@ -22,6 +25,24 @@ export interface PartViewModel {
   name: string | null;
   type: string;
   sequence: string;
+  /** Explicit sequence domain from governed compiler IR; null for legacy/toy IR. */
+  sequenceKind: string | null;
+  description: string | null;
+  descriptionZh: string | null;
+  /** Catalog identity declared by governed compiler IR; null for legacy/toy IR. */
+  resourceId: string | null;
+  /** Renderer-checked digest when declared; null means the legacy IR is unverified. */
+  sequenceSha256: string | null;
+  source: Record<string, string> | null;
+  license: Record<string, string> | null;
+  reviewStatus: string | null;
+  designEligibility: boolean | null;
+  safetyStatus: string | null;
+  safetyFlags: string[] | null;
+  evidenceRefs: string[] | null;
+  /** "verified" means every field in the current governed DNA compiler contract is present and internally consistent. */
+  governanceStatus: "verified" | "unverified";
+  governanceGaps: string[];
   start: number;
   end: number;
   designStart: number;
@@ -79,12 +100,12 @@ export interface ConstructViewModel {
 }
 
 export interface ProteinMetricsViewModel {
-  lengthAa?: number;
-  molecularWeightDaApprox?: number;
-  composition?: Record<string, number>;
-  hydrophobicFraction?: number;
-  chargedFraction?: number;
-  ambiguousOrSpecialFraction?: number;
+  lengthAa: number;
+  molecularWeightDaApprox: number;
+  composition: Record<string, number>;
+  hydrophobicFraction: number;
+  chargedFraction: number;
+  ambiguousOrSpecialFraction: number;
 }
 
 export interface ProteinViewModel {
@@ -97,6 +118,14 @@ export interface ProteinViewModel {
   descriptionZh: string | null;
   source: Record<string, string>;
   license: Record<string, string>;
+  reviewStatus: "DESIGN_ELIGIBLE";
+  designEligibility: true;
+  safetyStatus: "NO_FLAG";
+  safetyFlags: string[];
+  evidenceRefs: string[];
+  organism: Record<string, ConstraintValue>;
+  roleTerms: string[];
+  metadata: Record<string, ConstraintValue>;
   start: number;
   end: number;
   length: number;
@@ -135,10 +164,15 @@ export type DesignSearchField = "design" | "construct" | "part" | "annotation" |
 export interface DesignSearchHit {
   field: DesignSearchField;
   value: string;
+  /** First canonical source segment; use segments for the complete logical hit. */
   start: number;
   end: number;
   designStart: number;
   designEnd: number;
+  /** Canonical source/design spans. Use this for a hit that crosses a circular source origin. */
+  segments?: FeatureSegmentViewModel[];
+  /** Explicit presentation spans; these are never substituted for source/design coordinates. */
+  viewSegments?: Array<{ start: number; end: number; length: number }>;
   constructIndex?: number;
   partIndex?: number;
   featureIndex?: number;
@@ -198,6 +232,7 @@ const SOFTWARE_ORF_COLOR = "#4D7C0F";
 const SAFE_SEQUENCE = /^[ACGTRYSWKMBDHVN]+$/i;
 const SAFE_PROTEIN_SEQUENCE = /^[ACDEFGHIKLMNPQRSTVWYBXZJUO*-]+$/i;
 const SAFE_SHA256 = /^[a-f0-9]{64}$/i;
+const SAFE_RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9_.:@/-]{0,255}$/;
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const STOP_CODONS = new Set(["TAA", "TAG", "TGA"]);
 
@@ -288,6 +323,14 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
         constraints,
         diagnostics,
         report,
+      );
+    }
+
+    if (parsedInput.proteins !== undefined && (!Array.isArray(parsedInput.proteins) || parsedInput.proteins.length !== 0)) {
+      report(
+        "DNA_PROTEIN_DOMAIN_MIXED",
+        "$.proteins",
+        "DNA IR must not contain protein records.",
       );
     }
 
@@ -396,6 +439,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           if (id === undefined || type === undefined || rawSequence === undefined || !SAFE_SEQUENCE.test(rawSequence)) return;
 
           const sequence = rawSequence.toUpperCase();
+          const governance = normalizeDnaPartGovernance(rawPart, id, sequence, partPath, report);
           if (designOffset + sequence.length > DESIGN_VISUALIZATION_LIMITS.maxTotalSequenceCharacters) {
             report(
               "DESIGN_SEQUENCE_LIMIT_EXCEEDED",
@@ -414,6 +458,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
             name: partName,
             type,
             sequence,
+            ...governance,
             start: localStart,
             end: localEnd,
             designStart,
@@ -533,6 +578,395 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
   }
 }
 
+type DesignReport = (
+  code: string,
+  path: string,
+  message: string,
+  severity?: DesignDiagnosticSeverity,
+) => void;
+
+type DnaPartGovernance = Pick<PartViewModel,
+  | "sequenceKind"
+  | "description"
+  | "descriptionZh"
+  | "resourceId"
+  | "sequenceSha256"
+  | "source"
+  | "license"
+  | "reviewStatus"
+  | "designEligibility"
+  | "safetyStatus"
+  | "safetyFlags"
+  | "evidenceRefs"
+  | "governanceStatus"
+  | "governanceGaps"
+>;
+
+/**
+ * The DNA compiler deliberately keeps catalog governance fields optional so
+ * legacy toy IR remains readable. Absence is therefore an explicit
+ * unverified state, while every declaration that is present is checked and a
+ * malformed or contradictory claim blocks the complete IR parse.
+ */
+function normalizeDnaPartGovernance(
+  rawPart: Record<string, unknown>,
+  id: string,
+  sequence: string,
+  path: string,
+  report: DesignReport,
+): DnaPartGovernance {
+  const gaps: string[] = [];
+  const addGap = (field: string) => {
+    if (!gaps.includes(field)) gaps.push(field);
+  };
+  const sequenceKind = optionalPartText(
+    rawPart,
+    "sequence_kind",
+    `${path}.sequence_kind`,
+    DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters,
+    "PART_SEQUENCE_KIND_INVALID",
+    report,
+  );
+  if (sequenceKind === null) addGap("sequence_kind");
+  else if (sequenceKind !== "DNA") {
+    report(
+      "PART_SEQUENCE_KIND_MISMATCH",
+      `${path}.sequence_kind`,
+      "Declared DNA part sequence_kind must be DNA.",
+    );
+  }
+  const description = optionalPartText(
+    rawPart,
+    "description",
+    `${path}.description`,
+    DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters,
+    "PART_DESCRIPTION_INVALID",
+    report,
+  );
+  const descriptionZh = optionalPartText(
+    rawPart,
+    "description_zh",
+    `${path}.description_zh`,
+    DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters,
+    "PART_DESCRIPTION_INVALID",
+    report,
+  );
+
+  const resourceId = optionalPartText(
+    rawPart,
+    "resource_id",
+    `${path}.resource_id`,
+    256,
+    "PART_RESOURCE_ID_INVALID",
+    report,
+  );
+  if (resourceId === null) addGap("resource_id");
+  else if (!isSafeResourceId(resourceId)) {
+    report(
+      "PART_RESOURCE_ID_INVALID",
+      `${path}.resource_id`,
+      "Declared resource_id must be namespaced, bounded, and path-safe.",
+    );
+  } else if (resourceId !== id) {
+    report(
+      "PART_RESOURCE_ID_MISMATCH",
+      `${path}.resource_id`,
+      "Declared resource_id must match the compiler IR part id.",
+    );
+  }
+
+  const declaredSequenceSha256 = optionalPartText(
+    rawPart,
+    "sequence_sha256",
+    `${path}.sequence_sha256`,
+    64,
+    "PART_SEQUENCE_HASH_INVALID",
+    report,
+  );
+  const recomputedSequenceSha256 = sha256Text(sequence);
+  let sequenceSha256: string | null = null;
+  if (declaredSequenceSha256 === null) {
+    addGap("sequence_sha256");
+  } else if (!SAFE_SHA256.test(declaredSequenceSha256)) {
+    report(
+      "PART_SEQUENCE_HASH_INVALID",
+      `${path}.sequence_sha256`,
+      "Part sequence_sha256 must be a 64-character hexadecimal digest.",
+    );
+  } else {
+    sequenceSha256 = declaredSequenceSha256.toLowerCase();
+    if (sequenceSha256 !== recomputedSequenceSha256) {
+      report(
+        "PART_SEQUENCE_HASH_MISMATCH",
+        `${path}.sequence_sha256`,
+        "Part sequence_sha256 does not match the renderer-recomputed DNA sequence digest.",
+      );
+    }
+  }
+
+  const source = normalizeOptionalPartMap(rawPart, "source", `${path}.source`, "PART_SOURCE_INVALID", report);
+  if (source === null) {
+    addGap("source");
+  } else {
+    for (const key of ["provider", "record_id", "url", "retrieved_at", "content_sha256", "sequence_sha256"] as const) {
+      if (!hasOwn(source, key)) addGap(`source.${key}`);
+      else if (!source[key].trim()) {
+        report("PART_SOURCE_FIELD_INVALID", `${path}.source.${key}`, `Declared source.${key} must not be empty.`);
+      }
+    }
+    if (!source.revision?.trim() && !source.release?.trim()) addGap("source.revision_or_release");
+    if (source.url && !isSafePublicHttpsUrl(source.url)) {
+      report("PART_SOURCE_URL_INVALID", `${path}.source.url`, "Part source URL must be an absolute public HTTPS URL.");
+    }
+    if (source.retrieved_at && !isIsoTimestamp(source.retrieved_at)) {
+      report(
+        "PART_SOURCE_RETRIEVED_AT_INVALID",
+        `${path}.source.retrieved_at`,
+        "Part source.retrieved_at must be an ISO-8601 timestamp.",
+      );
+    }
+    if (source.content_sha256 && !SAFE_SHA256.test(source.content_sha256)) {
+      report(
+        "PART_SOURCE_CONTENT_HASH_INVALID",
+        `${path}.source.content_sha256`,
+        "Part source.content_sha256 must be a 64-character hexadecimal digest.",
+      );
+    }
+    if (source.sequence_sha256) {
+      if (!SAFE_SHA256.test(source.sequence_sha256)) {
+        report(
+          "PART_SOURCE_SEQUENCE_HASH_INVALID",
+          `${path}.source.sequence_sha256`,
+          "Part source.sequence_sha256 must be a 64-character hexadecimal digest.",
+        );
+      } else if (source.sequence_sha256.toLowerCase() !== recomputedSequenceSha256) {
+        report(
+          "PART_SOURCE_SEQUENCE_HASH_MISMATCH",
+          `${path}.source.sequence_sha256`,
+          "Part source.sequence_sha256 does not match the renderer-recomputed DNA sequence digest.",
+        );
+      }
+    }
+  }
+
+  const license = normalizeOptionalPartMap(rawPart, "license", `${path}.license`, "PART_LICENSE_INVALID", report);
+  if (license === null) {
+    addGap("license");
+  } else {
+    for (const key of ["id", "url", "attribution", "rights_notes", "redistribution_status"] as const) {
+      if (!hasOwn(license, key)) addGap(`license.${key}`);
+      else if (!license[key].trim()) {
+        report("PART_RIGHTS_FIELD_INVALID", `${path}.license.${key}`, `Declared license.${key} must not be empty.`);
+      }
+    }
+    if (license.url && !isSafePublicHttpsUrl(license.url)) {
+      report("PART_LICENSE_URL_INVALID", `${path}.license.url`, "Part license URL must be an absolute public HTTPS URL.");
+    }
+    if (license.redistribution_status && license.redistribution_status !== "REDISTRIBUTABLE") {
+      report(
+        "PART_RIGHTS_NOT_REDISTRIBUTABLE",
+        `${path}.license.redistribution_status`,
+        "Declared part rights must explicitly permit redistribution.",
+      );
+    }
+  }
+
+  const reviewStatus = optionalPartText(
+    rawPart,
+    "review_status",
+    `${path}.review_status`,
+    DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters,
+    "PART_REVIEW_STATUS_INVALID",
+    report,
+  );
+  const designEligibility = optionalPartBoolean(
+    rawPart,
+    "design_eligibility",
+    `${path}.design_eligibility`,
+    "PART_DESIGN_ELIGIBILITY_INVALID",
+    report,
+  );
+  const safetyStatus = optionalPartText(
+    rawPart,
+    "safety_status",
+    `${path}.safety_status`,
+    DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters,
+    "PART_SAFETY_STATUS_INVALID",
+    report,
+  );
+  const safetyFlags = optionalPartStringArray(
+    rawPart,
+    "safety_flags",
+    `${path}.safety_flags`,
+    "PART_SAFETY_FLAGS_INVALID",
+    report,
+  );
+  if (reviewStatus === null) addGap("review_status");
+  if (designEligibility === null) addGap("design_eligibility");
+  if (safetyStatus === null) addGap("safety_status");
+  if (safetyFlags === null) addGap("safety_flags");
+  if (reviewStatus !== null && reviewStatus !== "DESIGN_ELIGIBLE") {
+    report(
+      "PART_REVIEW_STATUS_NOT_ELIGIBLE",
+      `${path}.review_status`,
+      "Declared part review_status must be DESIGN_ELIGIBLE.",
+    );
+  }
+  if (designEligibility === false) {
+    report(
+      "PART_DESIGN_NOT_ELIGIBLE",
+      `${path}.design_eligibility`,
+      "Declared part design_eligibility must be true.",
+    );
+  }
+  if (safetyStatus !== null && safetyStatus !== "NO_FLAG") {
+    report(
+      "PART_SAFETY_STATUS_BLOCKED",
+      `${path}.safety_status`,
+      "Declared part safety_status must be NO_FLAG.",
+    );
+  }
+  if (safetyFlags !== null && safetyFlags.length > 0) {
+    report(
+      "PART_SAFETY_FLAGS_BLOCKED",
+      `${path}.safety_flags`,
+      "Declared part safety_flags must be empty for a NO_FLAG design view.",
+    );
+  }
+
+  const evidenceRefs = optionalPartStringArray(
+    rawPart,
+    "evidence_refs",
+    `${path}.evidence_refs`,
+    "PART_EVIDENCE_REFS_INVALID",
+    report,
+  );
+  if (evidenceRefs === null) addGap("evidence_refs");
+  else if (evidenceRefs.length === 0) {
+    addGap("evidence_refs");
+    if (reviewStatus === "DESIGN_ELIGIBLE" || designEligibility === true) {
+      report(
+        "PART_EVIDENCE_REFS_MISSING",
+        `${path}.evidence_refs`,
+        "A part declared design-eligible must retain at least one evidence reference.",
+      );
+    }
+  }
+  gaps.sort();
+  return {
+    sequenceKind,
+    description,
+    descriptionZh,
+    resourceId,
+    sequenceSha256,
+    source,
+    license,
+    reviewStatus,
+    designEligibility,
+    safetyStatus,
+    safetyFlags,
+    evidenceRefs,
+    governanceStatus: gaps.length === 0 ? "verified" : "unverified",
+    governanceGaps: gaps,
+  };
+}
+
+function optionalPartText(
+  owner: Record<string, unknown>,
+  key: string,
+  path: string,
+  maximum: number,
+  code: string,
+  report: DesignReport,
+): string | null {
+  if (!hasOwn(owner, key)) return null;
+  return requiredText(owner[key], path, maximum, code, report) ?? null;
+}
+
+function optionalPartBoolean(
+  owner: Record<string, unknown>,
+  key: string,
+  path: string,
+  code: string,
+  report: DesignReport,
+): boolean | null {
+  if (!hasOwn(owner, key)) return null;
+  if (typeof owner[key] !== "boolean") {
+    report(code, path, "Declared governance value must be a boolean.");
+    return null;
+  }
+  return owner[key];
+}
+
+function optionalPartStringArray(
+  owner: Record<string, unknown>,
+  key: string,
+  path: string,
+  code: string,
+  report: DesignReport,
+): string[] | null {
+  if (!hasOwn(owner, key)) return null;
+  const input = owner[key];
+  if (
+    !Array.isArray(input)
+    || input.length > DESIGN_VISUALIZATION_LIMITS.maxConstraints
+    || !input.every((item) => typeof item === "string"
+      && Boolean(item.trim())
+      && item.length <= DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters
+      && !item.includes("\0"))
+  ) {
+    report(code, path, "Declared governance list must contain bounded, non-empty strings.");
+    return null;
+  }
+  return [...input];
+}
+
+function normalizeOptionalPartMap(
+  owner: Record<string, unknown>,
+  key: string,
+  path: string,
+  code: string,
+  report: DesignReport,
+): Record<string, string> | null {
+  if (!hasOwn(owner, key)) return null;
+  const input = owner[key];
+  if (!isJsonObject(input) || Object.keys(input).length > DESIGN_VISUALIZATION_LIMITS.maxConstraintKeys) {
+    report(code, path, "Declared part governance metadata must be a bounded JSON object.");
+    return null;
+  }
+  const normalized: Record<string, string> = {};
+  for (const [entryKey, value] of Object.entries(input)) {
+    if (!entryKey || entryKey.length > 128 || UNSAFE_OBJECT_KEYS.has(entryKey)) {
+      report(code, `${path}.${entryKey}`, "Declared part governance metadata contains an invalid key.");
+      continue;
+    }
+    if (
+      typeof value !== "string"
+      || value.length > DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters
+      || value.includes("\0")
+    ) {
+      report(code, `${path}.${entryKey}`, "Declared part governance metadata values must be bounded strings.");
+      continue;
+    }
+    normalized[entryKey] = value;
+  }
+  return normalized;
+}
+
+function hasOwn(owner: object, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(owner, key);
+}
+
+function isSafeResourceId(value: string): boolean {
+  if (!value.includes(":") || !SAFE_RESOURCE_ID.test(value) || value.includes("//") || value.includes("/.")) return false;
+  return value.split("/").every((segment) => segment !== "" && segment !== "." && segment !== "..");
+}
+
+function isIsoTimestamp(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && Number.isFinite(Date.parse(value));
+}
+
 function parseProteinIr(
   input: Record<string, unknown>,
   designId: string | undefined,
@@ -543,6 +977,22 @@ function parseProteinIr(
   diagnostics: DesignDiagnostic[],
   report: (code: string, path: string, message: string, severity?: DesignDiagnosticSeverity) => void,
 ): DesignParseResult {
+  if (chassis !== undefined && chassis !== "protein_sequence") {
+    report("PROTEIN_CHASSIS_INVALID", "$.chassis", "Protein IR chassis must be protein_sequence.");
+  }
+  if (!Array.isArray(input.constructs) || input.constructs.length !== 0) {
+    report("PROTEIN_DNA_DOMAIN_MIXED", "$.constructs", "Protein IR must contain an explicit empty constructs array.");
+  }
+  if (input.review_status !== "human_review_required") {
+    report("PROTEIN_REVIEW_BOUNDARY_INVALID", "$.review_status", "Protein IR must preserve review_status=human_review_required.");
+  }
+  requiredText(
+    input.safety_boundary,
+    "$.safety_boundary",
+    DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters,
+    "PROTEIN_SAFETY_BOUNDARY_INVALID",
+    report,
+  );
   const rawProteins = input.proteins;
   if (
     !Array.isArray(rawProteins)
@@ -562,6 +1012,7 @@ function parseProteinIr(
   let offset = 0;
   rawProteins.forEach((rawProtein, proteinIndex) => {
     const proteinPath = `$.proteins[${proteinIndex}]`;
+    const diagnosticStart = diagnostics.length;
     if (!isJsonObject(rawProtein)) {
       report("PROTEIN_INVALID", proteinPath, "Protein record must be a JSON object.");
       return;
@@ -573,6 +1024,9 @@ function parseProteinIr(
       "PROTEIN_ID_INVALID",
       report,
     );
+    if (id !== undefined && !isSafeResourceId(id)) {
+      report("PROTEIN_RESOURCE_ID_INVALID", `${proteinPath}.id`, "Protein id must be a namespaced, bounded, path-safe resource ID.");
+    }
     if (id && seenIds.has(id.toLocaleLowerCase())) {
       report("PROTEIN_ID_DUPLICATE", `${proteinPath}.id`, `Duplicate protein ID: ${id}.`);
     }
@@ -586,6 +1040,9 @@ function parseProteinIr(
     );
     if (type !== undefined && type !== "protein_sequence") {
       report("PROTEIN_TYPE_INVALID", `${proteinPath}.type`, "Protein record type must be protein_sequence.");
+    }
+    if (rawProtein.sequence_kind !== "PROTEIN") {
+      report("PROTEIN_SEQUENCE_KIND_INVALID", `${proteinPath}.sequence_kind`, "Protein sequence_kind must be PROTEIN.");
     }
     const rawSequence = requiredText(
       rawProtein.sequence,
@@ -614,6 +1071,14 @@ function parseProteinIr(
     if (id === undefined || rawSequence === undefined || sequenceSha256 === undefined || !SAFE_PROTEIN_SEQUENCE.test(rawSequence)) return;
 
     const sequence = rawSequence.toUpperCase();
+    const recomputedSequenceSha256 = sha256Text(sequence);
+    if (sequenceSha256.toLowerCase() !== recomputedSequenceSha256) {
+      report(
+        "PROTEIN_SEQUENCE_HASH_MISMATCH",
+        `${proteinPath}.sequence_sha256`,
+        "Protein sequence_sha256 does not match the renderer-recomputed SHA-256 digest.",
+      );
+    }
     if (offset + sequence.length > DESIGN_VISUALIZATION_LIMITS.maxTotalProteinSequenceCharacters) {
       report(
         "PROTEIN_SEQUENCE_LIMIT_EXCEEDED",
@@ -627,19 +1092,63 @@ function parseProteinIr(
       ? null
       : requiredText(nameValue, `${proteinPath}.name`, DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters, "PROTEIN_NAME_INVALID", report) ?? null;
     const descriptionValue = rawProtein.description ?? rawProtein.description_en;
-    const description = descriptionValue === undefined || descriptionValue === null || descriptionValue === ""
-      ? null
-      : requiredText(descriptionValue, `${proteinPath}.description`, DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters, "PROTEIN_DESCRIPTION_INVALID", report) ?? null;
+    const description = requiredText(
+      descriptionValue,
+      `${proteinPath}.description`,
+      DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters,
+      "PROTEIN_DESCRIPTION_INVALID",
+      report,
+    ) ?? null;
     const descriptionZhValue = rawProtein.description_zh;
     const descriptionZh = descriptionZhValue === undefined || descriptionZhValue === null || descriptionZhValue === ""
       ? null
       : requiredText(descriptionZhValue, `${proteinPath}.description_zh`, DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters, "PROTEIN_DESCRIPTION_ZH_INVALID", report) ?? null;
-    const resourceId = rawProtein.resource_id === undefined
-      ? id
-      : requiredText(rawProtein.resource_id, `${proteinPath}.resource_id`, DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters, "PROTEIN_RESOURCE_ID_INVALID", report) ?? id;
+    const resourceId = requiredText(
+      rawProtein.resource_id,
+      `${proteinPath}.resource_id`,
+      DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters,
+      "PROTEIN_RESOURCE_ID_INVALID",
+      report,
+    );
+    if (resourceId !== undefined && !isSafeResourceId(resourceId)) {
+      report("PROTEIN_RESOURCE_ID_INVALID", `${proteinPath}.resource_id`, "Protein resource_id must be namespaced, bounded, and path-safe.");
+    } else if (id !== undefined && resourceId !== undefined && resourceId !== id) {
+      report("PROTEIN_RESOURCE_ID_MISMATCH", `${proteinPath}.resource_id`, "Protein id and resource_id must match exactly.");
+    }
     const source = normalizeProteinMap(rawProtein.source, `${proteinPath}.source`, report);
     const license = normalizeProteinMap(rawProtein.license, `${proteinPath}.license`, report);
-    const metrics = normalizeProteinMetrics(rawProtein.metrics, `${proteinPath}.metrics`, report);
+    validateProteinSource(source, recomputedSequenceSha256, `${proteinPath}.source`, report);
+    validateProteinLicense(license, `${proteinPath}.license`, report);
+    if (rawProtein.review_status !== "DESIGN_ELIGIBLE" || rawProtein.design_eligibility !== true) {
+      report(
+        "PROTEIN_DESIGN_ELIGIBILITY_INVALID",
+        proteinPath,
+        "Protein must be explicitly DESIGN_ELIGIBLE with design_eligibility=true.",
+      );
+    }
+    if (rawProtein.safety_status !== "NO_FLAG") {
+      report("PROTEIN_SAFETY_STATUS_INVALID", `${proteinPath}.safety_status`, "Protein safety_status must be NO_FLAG.");
+    }
+    const safetyFlags = requiredProteinStringArray(rawProtein.safety_flags, `${proteinPath}.safety_flags`, report, true);
+    if (safetyFlags && safetyFlags.length !== 0) {
+      report("PROTEIN_SAFETY_FLAGS_INVALID", `${proteinPath}.safety_flags`, "Protein safety_flags must be an explicit empty array.");
+    }
+    const evidenceRefs = requiredProteinStringArray(rawProtein.evidence_refs, `${proteinPath}.evidence_refs`, report, false);
+    const organism = normalizeProteinFlatMetadata(rawProtein.organism, `${proteinPath}.organism`, report);
+    if (!organism.name || typeof organism.name !== "string") {
+      report("PROTEIN_ORGANISM_INVALID", `${proteinPath}.organism.name`, "Protein organism.name is required.");
+    }
+    const roleTerms = requiredProteinStringArray(rawProtein.role_terms, `${proteinPath}.role_terms`, report, false);
+    const metadata = normalizeProteinFlatMetadata(rawProtein.metadata, `${proteinPath}.metadata`, report);
+    const metrics = normalizeProteinMetrics(rawProtein.metrics, sequence, `${proteinPath}.metrics`, report);
+    if (
+      diagnostics.slice(diagnosticStart).some((diagnostic) => diagnostic.severity === "error")
+      || metrics === undefined
+      || resourceId === undefined
+      || safetyFlags === undefined
+      || evidenceRefs === undefined
+      || roleTerms === undefined
+    ) return;
     const start = offset;
     const end = start + sequence.length;
     proteins.push({
@@ -647,11 +1156,19 @@ function parseProteinIr(
       resourceId,
       name,
       sequence,
-      sequenceSha256: sequenceSha256.toLowerCase(),
+      sequenceSha256: recomputedSequenceSha256,
       description,
       descriptionZh,
       source,
       license,
+      reviewStatus: "DESIGN_ELIGIBLE",
+      designEligibility: true,
+      safetyStatus: "NO_FLAG",
+      safetyFlags,
+      evidenceRefs,
+      organism,
+      roleTerms,
+      metadata,
       start,
       end,
       length: sequence.length,
@@ -659,6 +1176,8 @@ function parseProteinIr(
     });
     offset = end;
   });
+
+  validateProteinProvenance(input.provenance, proteins, report);
 
   if (diagnostics.some((diagnostic) => diagnostic.severity === "error")) return { ok: false, diagnostics };
   if (designId === undefined || chassis === undefined || provenanceSource === undefined || proteins.length !== rawProteins.length) {
@@ -693,9 +1212,8 @@ function normalizeProteinMap(
   path: string,
   report: (code: string, path: string, message: string, severity?: DesignDiagnosticSeverity) => void,
 ): Record<string, string> {
-  if (input === undefined) return {};
   if (!isJsonObject(input)) {
-    report("PROTEIN_METADATA_INVALID", path, "Protein source and license metadata must be JSON objects.");
+    report("PROTEIN_METADATA_INVALID", path, "Protein source and license metadata are required JSON objects.");
     return {};
   }
   const result: Record<string, string> = {};
@@ -704,8 +1222,11 @@ function normalizeProteinMap(
       report("PROTEIN_METADATA_KEY_INVALID", `${path}.${key}`, "Unsafe metadata keys are not allowed.");
       continue;
     }
-    if (typeof value !== "string") continue;
-    if (value.length > DESIGN_VISUALIZATION_LIMITS.maxPartTextCharacters) {
+    if (typeof value !== "string" || value.includes("\0")) {
+      report("PROTEIN_METADATA_VALUE_INVALID", `${path}.${key}`, "Protein metadata values must be strings without NUL characters.");
+      continue;
+    }
+    if (value.length > DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters) {
       report("PROTEIN_METADATA_VALUE_INVALID", `${path}.${key}`, "Protein metadata values exceed the visualization limit.");
       continue;
     }
@@ -714,52 +1235,291 @@ function normalizeProteinMap(
   return result;
 }
 
-function normalizeProteinMetrics(
-  input: unknown,
+function validateProteinSource(
+  source: Record<string, string>,
+  expectedSequenceDigest: string,
   path: string,
   report: (code: string, path: string, message: string, severity?: DesignDiagnosticSeverity) => void,
-): ProteinMetricsViewModel {
-  if (input === undefined) return {};
-  if (!isJsonObject(input)) {
-    report("PROTEIN_METRICS_INVALID", path, "Protein metrics must be a JSON object.");
+): void {
+  for (const key of ["provider", "record_id", "revision", "release", "url", "retrieved_at", "content_sha256", "sequence_sha256"] as const) {
+    if (!source[key]?.trim()) {
+      report("PROTEIN_SOURCE_REQUIRED_FIELD_MISSING", `${path}.${key}`, `Protein source.${key} is required.`);
+    }
+  }
+  if (source.content_sha256 && !SAFE_SHA256.test(source.content_sha256)) {
+    report(
+      "PROTEIN_SOURCE_CONTENT_HASH_INVALID",
+      `${path}.content_sha256`,
+      "Protein source.content_sha256 must be a 64-character hexadecimal digest of the upstream response.",
+    );
+  }
+  if (source.sequence_sha256) {
+    if (!SAFE_SHA256.test(source.sequence_sha256)) {
+      report(
+        "PROTEIN_SOURCE_SEQUENCE_HASH_INVALID",
+        `${path}.sequence_sha256`,
+        "Protein source.sequence_sha256 must be a 64-character hexadecimal digest.",
+      );
+    } else if (source.sequence_sha256.toLowerCase() !== expectedSequenceDigest) {
+      report(
+        "PROTEIN_SOURCE_SEQUENCE_HASH_MISMATCH",
+        `${path}.sequence_sha256`,
+        "Protein source.sequence_sha256 does not match the renderer-recomputed sequence digest.",
+      );
+    }
+  }
+  if (source.url && !isSafePublicHttpsUrl(source.url)) {
+    report("PROTEIN_SOURCE_URL_INVALID", `${path}.url`, "Protein source URL must be an absolute public HTTPS URL.");
+  }
+  if (source.retrieved_at && !isIsoTimestamp(source.retrieved_at)) {
+    report("PROTEIN_SOURCE_RETRIEVED_AT_INVALID", `${path}.retrieved_at`, "Protein source.retrieved_at must be an ISO-8601 timestamp.");
+  }
+}
+
+function validateProteinLicense(
+  license: Record<string, string>,
+  path: string,
+  report: (code: string, path: string, message: string, severity?: DesignDiagnosticSeverity) => void,
+): void {
+  for (const key of ["id", "url", "attribution", "rights_notes", "redistribution_status"] as const) {
+    if (!license[key]?.trim()) {
+      report("PROTEIN_LICENSE_REQUIRED_FIELD_MISSING", `${path}.${key}`, `Protein license.${key} is required.`);
+    }
+  }
+  if (license.redistribution_status !== "REDISTRIBUTABLE") {
+    report("PROTEIN_LICENSE_NOT_REDISTRIBUTABLE", `${path}.redistribution_status`, "Protein license must explicitly declare REDISTRIBUTABLE.");
+  }
+  if (license.url && !isSafePublicHttpsUrl(license.url)) {
+    report("PROTEIN_LICENSE_URL_INVALID", `${path}.url`, "Protein license URL must be an absolute public HTTPS URL.");
+  }
+}
+
+function requiredProteinStringArray(
+  input: unknown,
+  path: string,
+  report: DesignReport,
+  allowEmpty: boolean,
+): string[] | undefined {
+  if (
+    !Array.isArray(input)
+    || input.length > DESIGN_VISUALIZATION_LIMITS.maxConstraints
+    || (!allowEmpty && input.length === 0)
+    || !input.every((item) => typeof item === "string"
+      && Boolean(item.trim())
+      && item.length <= DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters
+      && !item.includes("\0"))
+  ) {
+    report(
+      "PROTEIN_GOVERNANCE_LIST_INVALID",
+      path,
+      `Protein governance list must be ${allowEmpty ? "an explicit bounded string array" : "a non-empty bounded string array"}.`,
+    );
+    return undefined;
+  }
+  return [...input];
+}
+
+function normalizeProteinFlatMetadata(
+  input: unknown,
+  path: string,
+  report: DesignReport,
+): Record<string, ConstraintValue> {
+  if (!isJsonObject(input) || Object.keys(input).length > DESIGN_VISUALIZATION_LIMITS.maxConstraintKeys) {
+    report("PROTEIN_GOVERNANCE_METADATA_INVALID", path, "Protein governance metadata must be a bounded flat JSON object.");
     return {};
   }
-  const result: ProteinMetricsViewModel = {};
-  const numberField = (key: string, target: keyof ProteinMetricsViewModel) => {
-    const value = input[key];
-    if (value === undefined) return;
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-      report("PROTEIN_METRIC_INVALID", `${path}.${key}`, "Protein metric must be a finite non-negative number.");
-      return;
+  const result: Record<string, ConstraintValue> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!key || key.length > 128 || UNSAFE_OBJECT_KEYS.has(key)) {
+      report("PROTEIN_GOVERNANCE_METADATA_INVALID", `${path}.${key}`, "Protein governance metadata contains an invalid key.");
+      continue;
     }
-    if (target === "lengthAa") result.lengthAa = value;
-    else if (target === "molecularWeightDaApprox") result.molecularWeightDaApprox = value;
-    else if (target === "hydrophobicFraction") result.hydrophobicFraction = value;
-    else if (target === "chargedFraction") result.chargedFraction = value;
-    else if (target === "ambiguousOrSpecialFraction") result.ambiguousOrSpecialFraction = value;
-  };
-  numberField("length_aa", "lengthAa");
-  numberField("molecular_weight_da_approx", "molecularWeightDaApprox");
-  numberField("hydrophobic_fraction", "hydrophobicFraction");
-  numberField("charged_fraction", "chargedFraction");
-  numberField("ambiguous_or_special_fraction", "ambiguousOrSpecialFraction");
-  const composition = input.composition;
-  if (composition !== undefined) {
-    if (!isJsonObject(composition)) {
-      report("PROTEIN_METRIC_INVALID", `${path}.composition`, "Protein composition must be an object.");
-    } else {
-      const normalized: Record<string, number> = {};
-      for (const [key, value] of Object.entries(composition)) {
-        if (!/^[A-Z*\-]$/.test(key) || typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
-          report("PROTEIN_METRIC_INVALID", `${path}.composition`, "Protein composition keys and counts are invalid.");
-          break;
-        }
-        normalized[key] = value;
-      }
-      if (Object.keys(normalized).length) result.composition = normalized;
+    if (
+      value !== null
+      && typeof value !== "string"
+      && typeof value !== "number"
+      && typeof value !== "boolean"
+    ) {
+      report("PROTEIN_GOVERNANCE_METADATA_INVALID", `${path}.${key}`, "Protein governance metadata values must be scalar JSON values.");
+      continue;
     }
+    if (
+      (typeof value === "string" && (value.length > DESIGN_VISUALIZATION_LIMITS.maxConstraintTextCharacters || value.includes("\0")))
+      || (typeof value === "number" && !Number.isFinite(value))
+    ) {
+      report("PROTEIN_GOVERNANCE_METADATA_INVALID", `${path}.${key}`, "Protein governance metadata contains an unsafe or unbounded value.");
+      continue;
+    }
+    result[key] = value;
   }
   return result;
+}
+
+function validateProteinProvenance(
+  input: unknown,
+  proteins: ReadonlyArray<ProteinViewModel>,
+  report: DesignReport,
+): void {
+  const path = "$.provenance";
+  if (!isJsonObject(input)) {
+    report("PROTEIN_PROVENANCE_INVALID", path, "Protein provenance must be a governed JSON object.");
+    return;
+  }
+  const snapshotId = requiredText(input.snapshot_id, `${path}.snapshot_id`, 256, "PROTEIN_PROVENANCE_INVALID", report);
+  const selectionDigest = requiredText(input.selection_digest, `${path}.selection_digest`, 64, "PROTEIN_PROVENANCE_INVALID", report);
+  const normalizedSelectionDigest = selectionDigest?.toLowerCase();
+  if (normalizedSelectionDigest !== undefined && !SAFE_SHA256.test(normalizedSelectionDigest)) {
+    report("PROTEIN_SELECTION_DIGEST_INVALID", `${path}.selection_digest`, "Protein selection_digest must be a SHA-256 digest.");
+  }
+  if (input.selection_schema_version !== "proto-agent.protein-selection.v2") {
+    report("PROTEIN_SELECTION_SCHEMA_UNSUPPORTED", `${path}.selection_schema_version`, "Protein visualization requires proto-agent.protein-selection.v2 provenance.");
+  }
+  const resourceIds = input.resource_ids;
+  if (
+    !Array.isArray(resourceIds)
+    || resourceIds.length !== proteins.length
+    || resourceIds.some((value, index) => value !== proteins[index]?.resourceId)
+  ) {
+    report("PROTEIN_PROVENANCE_RESOURCE_BINDING_INVALID", `${path}.resource_ids`, "Protein provenance resource_ids must exactly match the visible record order.");
+  }
+  const attestation = input.catalog_attestation;
+  if (!isJsonObject(attestation)) {
+    report("PROTEIN_CATALOG_ATTESTATION_INVALID", `${path}.catalog_attestation`, "Catalog-issued selection attestation is required.");
+    return;
+  }
+  if (
+    attestation.schema_version !== "proto-agent.catalog-selection-attestation.v1"
+    || attestation.issuer !== "proto-agent-materials-catalog"
+    || attestation.attestation_kind !== "catalog-issued-content-binding"
+    || attestation.signature_status !== "UNSIGNED"
+    || attestation.cryptographic_signature !== false
+    || attestation.authenticity !== "NOT_ESTABLISHED"
+    || typeof attestation.selection_digest !== "string"
+    || attestation.selection_digest.toLowerCase() !== normalizedSelectionDigest
+  ) {
+    report("PROTEIN_CATALOG_ATTESTATION_INVALID", `${path}.catalog_attestation`, "Protein catalog attestation has an unsupported or misleading trust contract.");
+  }
+  const bindingSha256 = typeof attestation.binding_sha256 === "string" ? attestation.binding_sha256.toLowerCase() : "";
+  if (!SAFE_SHA256.test(bindingSha256) || input.catalog_binding_sha256 !== bindingSha256) {
+    report("PROTEIN_CATALOG_BINDING_INVALID", `${path}.catalog_binding_sha256`, "Protein catalog binding digest is missing or inconsistent.");
+  }
+  if (input.catalog_signature_status !== "UNSIGNED" || !snapshotId) {
+    report("PROTEIN_CATALOG_TRUST_STATUS_INVALID", path, "Protein provenance must honestly retain its UNSIGNED catalog trust status and snapshot identity.");
+  }
+  const snapshot = attestation.snapshot_manifest;
+  if (
+    !isJsonObject(snapshot)
+    || snapshot.schema_version !== "proto-agent.materials.v1"
+    || snapshot.snapshot_id !== snapshotId
+    || !Number.isSafeInteger(snapshot.record_count)
+    || (snapshot.record_count as number) < 1
+    || !SAFE_SHA256.test(String(snapshot.manifest_sha256 ?? ""))
+    || !SAFE_SHA256.test(String(snapshot.catalog_sha256 ?? ""))
+    || !SAFE_SHA256.test(String(snapshot.license_catalog_sha256 ?? ""))
+  ) {
+    report("PROTEIN_CATALOG_SNAPSHOT_BINDING_INVALID", `${path}.catalog_attestation.snapshot_manifest`, "Protein catalog attestation must bind the selected snapshot and its manifest, catalog, and license digests.");
+  }
+  const recordBindings = attestation.records;
+  if (!Array.isArray(recordBindings) || recordBindings.length !== proteins.length) {
+    report("PROTEIN_CATALOG_RECORD_BINDING_INVALID", `${path}.catalog_attestation.records`, "Catalog attestation must cover every visible protein record.");
+  } else {
+    recordBindings.forEach((binding, index) => {
+      const resourceId = proteins[index]?.resourceId;
+      const promotion = isJsonObject(binding) ? binding.promotion_attestation : undefined;
+      if (
+        !isJsonObject(binding)
+        || binding.resource_id !== resourceId
+        || !SAFE_SHA256.test(String(binding.selection_record_sha256 ?? ""))
+        || !SAFE_SHA256.test(String(binding.promotion_attestation_sha256 ?? ""))
+        || !SAFE_SHA256.test(String(binding.promotion_audit_sha256 ?? ""))
+        || !isJsonObject(promotion)
+        || promotion.resource_id !== resourceId
+        || promotion.decision !== "PASS"
+        || promotion.policy_version !== "proto-agent.materials-promotion-policy.2026-09"
+      ) {
+        report("PROTEIN_CATALOG_RECORD_BINDING_INVALID", `${path}.catalog_attestation.records[${index}]`, "Catalog record binding is incomplete or does not match the visible protein.");
+      }
+    });
+  }
+}
+
+function normalizeProteinMetrics(
+  input: unknown,
+  sequence: string,
+  path: string,
+  report: (code: string, path: string, message: string, severity?: DesignDiagnosticSeverity) => void,
+): ProteinMetricsViewModel | undefined {
+  if (!isJsonObject(input)) {
+    report("PROTEIN_METRICS_INVALID", path, "Protein metrics are required and must be a JSON object.");
+    return undefined;
+  }
+  const expected = calculateProteinMetrics(sequence);
+  const numberField = (key: string, maximum?: number): number | undefined => {
+    const value = input[key];
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || (maximum !== undefined && value > maximum)) {
+      report("PROTEIN_METRIC_INVALID", `${path}.${key}`, `Protein metric must be a finite number between 0 and ${maximum ?? "the supported bound"}.`);
+      return undefined;
+    }
+    return value;
+  };
+  const lengthAa = numberField("length_aa", DESIGN_VISUALIZATION_LIMITS.maxProteinSequenceCharacters);
+  const molecularWeightDaApprox = numberField("molecular_weight_da_approx");
+  const hydrophobicFraction = numberField("hydrophobic_fraction", 1);
+  const chargedFraction = numberField("charged_fraction", 1);
+  const ambiguousOrSpecialFraction = numberField("ambiguous_or_special_fraction", 1);
+  const composition = input.composition;
+  const normalizedComposition: Record<string, number> = {};
+  if (!isJsonObject(composition)) {
+    report("PROTEIN_METRIC_INVALID", `${path}.composition`, "Protein composition is required and must be an object.");
+  } else {
+    for (const [key, value] of Object.entries(composition)) {
+      if (!/^[A-Z*\-]$/.test(key) || typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+        report("PROTEIN_METRIC_INVALID", `${path}.composition`, "Protein composition keys and counts are invalid.");
+        break;
+      }
+      normalizedComposition[key] = value;
+    }
+  }
+  const numbers = [lengthAa, molecularWeightDaApprox, hydrophobicFraction, chargedFraction, ambiguousOrSpecialFraction];
+  if (numbers.some((value) => value === undefined)) return undefined;
+  const supplied = {
+    lengthAa: lengthAa as number,
+    molecularWeightDaApprox: molecularWeightDaApprox as number,
+    composition: normalizedComposition,
+    hydrophobicFraction: hydrophobicFraction as number,
+    chargedFraction: chargedFraction as number,
+    ambiguousOrSpecialFraction: ambiguousOrSpecialFraction as number,
+  };
+  if (
+    supplied.lengthAa !== expected.lengthAa
+    || Math.abs(supplied.molecularWeightDaApprox - expected.molecularWeightDaApprox) > 0.001
+    || Math.abs(supplied.hydrophobicFraction - expected.hydrophobicFraction) > 0.000001
+    || Math.abs(supplied.chargedFraction - expected.chargedFraction) > 0.000001
+    || Math.abs(supplied.ambiguousOrSpecialFraction - expected.ambiguousOrSpecialFraction) > 0.000001
+    || JSON.stringify(Object.entries(supplied.composition).sort()) !== JSON.stringify(Object.entries(expected.composition).sort())
+  ) {
+    report("PROTEIN_METRICS_MISMATCH", path, "Protein metrics do not match values recomputed from the sequence.");
+    return undefined;
+  }
+  return expected;
+}
+
+function isSafePublicHttpsUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || !parsed.hostname) return false;
+    const hostname = parsed.hostname.toLocaleLowerCase().replace(/^\[|\]$/g, "");
+    if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".local") || hostname === "::1") return false;
+    const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)?.slice(1).map(Number);
+    if (ipv4 && ipv4.every((part) => part >= 0 && part <= 255)) {
+      const [first, second] = ipv4;
+      if (first === 0 || first === 10 || first === 127 || (first === 169 && second === 254) || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168)) return false;
+    }
+    if (hostname.startsWith("fc") || hostname.startsWith("fd") || hostname.startsWith("fe8") || hostname.startsWith("fe9") || hostname.startsWith("fea") || hostname.startsWith("feb")) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function searchDesign(design: DesignViewModel, query: string): DesignSearchHit[] {
@@ -770,8 +1530,9 @@ export function searchDesign(design: DesignViewModel, query: string): DesignSear
   const hits: DesignSearchHit[] = [];
   const hitKeys = new Set<string>();
   const add = (hit: DesignSearchHit) => {
+    const segmentKey = hit.segments?.map((segment) => `${segment.start}-${segment.end}`).join(",") ?? `${hit.start}-${hit.end}`;
     const key = hit.field === "sequence"
-      ? `sequence:${hit.constructIndex ?? "design"}:${hit.start}:${hit.end}`
+      ? `sequence:${hit.constructIndex ?? "design"}:${segmentKey}`
       : hit.field === "design"
         ? "design"
         : hit.field === "construct"
@@ -795,13 +1556,17 @@ export function searchDesign(design: DesignViewModel, query: string): DesignSear
     if (hits.length >= DESIGN_VISUALIZATION_LIMITS.maxSearchHits) return hits;
     for (let featureIndex = 0; featureIndex < construct.features.length; featureIndex += 1) {
       const feature = construct.features[featureIndex];
-      const firstSegment = feature.segments[0];
+      const canonicalSegments = (feature.sourceSegments ?? feature.segments).map(copySegment);
+      const firstSegment = canonicalSegments[0];
+      const viewSegments = feature.segments.map(({ start, end, length }) => ({ start, end, length }));
       if (!firstSegment) continue;
       const common = {
         start: firstSegment.start,
         end: firstSegment.end,
         designStart: firstSegment.designStart,
         designEnd: firstSegment.designEnd,
+        segments: canonicalSegments,
+        viewSegments,
         constructIndex,
         partIndex: feature.partIndex,
         featureIndex,
@@ -811,19 +1576,25 @@ export function searchDesign(design: DesignViewModel, query: string): DesignSear
       if (contains(feature.name)) add({ field: feature.source === "part" ? "part" : "annotation", value: feature.name as string, ...common });
       if (hits.length >= DESIGN_VISUALIZATION_LIMITS.maxSearchHits) return hits;
     }
-    for (const localStart of allSequenceMatches(construct.sequence.toLocaleLowerCase(), needle)) {
-      const localEnd = localStart + trimmed.length;
-      const featureIndex = construct.features.findIndex((feature) => feature.segments.some(
-        (segment) => segment.start <= localStart && segment.end >= localEnd,
+    for (const localStart of sequenceMatchesForConstruct(construct, needle)) {
+      const canonicalSegments = canonicalSearchSegments(construct, localStart, trimmed.length);
+      const viewSegments = viewSearchSegments(construct.length, localStart, trimmed.length);
+      const firstSegment = canonicalSegments[0];
+      if (!firstSegment || viewSegments.length === 0) continue;
+      const featureIndex = construct.features.findIndex((feature) => searchSegmentsWithinFeature(
+        canonicalSegments,
+        feature.sourceSegments ?? feature.segments,
       ));
       const feature = featureIndex >= 0 ? construct.features[featureIndex] : undefined;
       add({
         field: "sequence",
-        value: construct.sequence.slice(localStart, localEnd),
-        start: localStart,
-        end: localEnd,
-        designStart: construct.start + localStart,
-        designEnd: construct.start + localEnd,
+        value: sliceCircularView(construct.sequence, localStart, trimmed.length),
+        start: firstSegment.start,
+        end: firstSegment.end,
+        designStart: firstSegment.designStart,
+        designEnd: firstSegment.designEnd,
+        segments: canonicalSegments,
+        viewSegments,
         constructIndex,
         partIndex: feature?.partIndex,
         featureIndex: featureIndex >= 0 ? featureIndex : undefined,
@@ -1352,4 +2123,81 @@ function allSequenceMatches(sequence: string, query: string): number[] {
     start = match + 1;
   }
   return matches;
+}
+
+function sequenceMatchesForConstruct(construct: ConstructViewModel, query: string): number[] {
+  const sequence = construct.sequence.toLocaleLowerCase();
+  if (construct.topology !== "circular" || query.length > sequence.length) {
+    return allSequenceMatches(sequence, query);
+  }
+  const circularSequence = sequence + sequence.slice(0, Math.max(0, query.length - 1));
+  return allSequenceMatches(circularSequence, query).filter((start) => start < sequence.length);
+}
+
+/** Map a view-local sequence match back to immutable source/design spans. */
+function canonicalSearchSegments(
+  construct: ConstructViewModel,
+  viewStart: number,
+  matchLength: number,
+): FeatureSegmentViewModel[] {
+  if (
+    !Number.isSafeInteger(viewStart)
+    || !Number.isSafeInteger(matchLength)
+    || viewStart < 0
+    || viewStart >= construct.length
+    || matchLength < 1
+    || matchLength > construct.length
+  ) return [];
+  const sourceOrigin = construct.viewOrigin ?? 0;
+  if (!validBaseCoordinate(sourceOrigin, construct.length)) return [];
+  const sourceStart = (viewStart + sourceOrigin) % construct.length;
+  const sourceEnd = sourceStart + matchLength;
+  const spans = sourceEnd <= construct.length
+    ? [{ start: sourceStart, end: sourceEnd }]
+    : [{ start: sourceStart, end: construct.length }, { start: 0, end: sourceEnd - construct.length }];
+  return spans.map(({ start, end }) => ({
+    start,
+    end,
+    designStart: construct.start + start,
+    designEnd: construct.start + end,
+    length: end - start,
+  }));
+}
+
+function viewSearchSegments(
+  constructLength: number,
+  viewStart: number,
+  matchLength: number,
+): Array<{ start: number; end: number; length: number }> {
+  if (
+    !Number.isSafeInteger(constructLength)
+    || constructLength < 1
+    || !Number.isSafeInteger(viewStart)
+    || viewStart < 0
+    || viewStart >= constructLength
+    || !Number.isSafeInteger(matchLength)
+    || matchLength < 1
+    || matchLength > constructLength
+  ) return [];
+  const viewEnd = viewStart + matchLength;
+  const spans = viewEnd <= constructLength
+    ? [{ start: viewStart, end: viewEnd }]
+    : [{ start: viewStart, end: constructLength }, { start: 0, end: viewEnd - constructLength }];
+  return spans.map(({ start, end }) => ({ start, end, length: end - start }));
+}
+
+function searchSegmentsWithinFeature(
+  searchSegments: ReadonlyArray<FeatureSegmentViewModel>,
+  featureSegments: ReadonlyArray<FeatureSegmentViewModel>,
+): boolean {
+  return searchSegments.every((searchSegment) => featureSegments.some(
+    (featureSegment) => featureSegment.start <= searchSegment.start && featureSegment.end >= searchSegment.end,
+  ));
+}
+
+function sliceCircularView(sequence: string, start: number, length: number): string {
+  const end = start + length;
+  return end <= sequence.length
+    ? sequence.slice(start, end)
+    : sequence.slice(start) + sequence.slice(0, end - sequence.length);
 }

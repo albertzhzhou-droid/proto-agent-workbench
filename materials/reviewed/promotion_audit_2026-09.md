@@ -1,31 +1,59 @@
 # Materials promotion audit — 2026-09
 
-This audit attempted to promote records from existing source snapshots into the `DESIGN_ELIGIBLE` domain. The result follows current Proto policy: only genetic parts that have verifiable provenance and licensing, carry no hard sensitive-content flags, contain DNA sequences, and belong to the Proto DSL's `promoter`, `rbs`, `cds`, or `terminator` categories can be retrieved by the model and materialized into the legacy `parts` schema.
+The machine-readable `promotion_audit_2026-09.json` evaluates every candidate
+in three fixed rounds: (1) provenance and rights, (2) sequence, ontology, and
+safety, and (3) duplicates plus normalization, inactive-catalog, retrieval, and
+materialization round trips. Every candidate records a `PASS` or `FAIL` plus
+stable reason codes per round.
 
-## Results
+## Before and after
 
-| Source snapshot | Total | Previously design-eligible | Design-eligible after promotion | Review required | Reference only | Quarantined | Decision |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| UniProtKB/Swiss-Prot | 100,003 | 0 | 0 | 0 | 98,259 | 1,744 | Protein sequences are not parts in the current DSL; hard-flagged records remain quarantined |
-| Current Rhea release | 18,561 | 0 | 0 | 0 | 18,540 | 21 | Reaction information is for reference only and cannot masquerade as genetic parts |
-| Current BioModels public index | 2,784 | 0 | 0 | 0 | 2,754 | 30 | Computational models are for reference only and cannot be materialized into `parts` |
-| iGEM staging | 8 | 0 | 0 | 5 | 3 | 0 | Five records are `Engineered Region` entries and lack a supported `part_type` |
-| Built-in Proto templates | 3 | 0 | 0 | 0 | 3 | 0 | Software slot templates remain `REFERENCE_ONLY` |
-| Active snapshot with reviewed iGEM increment | 13 | 0 | **10** | 0 | 3 | 0 | Ten standard genetic parts added and explicitly activated |
+| State | DESIGN_ELIGIBLE | Genetic parts | Protein sequences | Active? |
+| --- | ---: | ---: | ---: | --- |
+| External active snapshot before audit | 10 | 10 | 0 | Yes; unchanged |
+| Previous checked public bundle | 13 | 10 | 3 | No |
+| New locked public snapshot/bundle | **18** | **15** | **3** | **No** |
 
-The complete large snapshots remain in the external root; records were not misreported as "directly designable" merely because they were "indexed" or had "no hard flags." `DESIGN_ELIGIBLE` means only that the record passes local software, data, licensing, and safety-policy gates; it does not establish scientific validity, orderability, experimental readiness, or regulatory approval.
+The controlled audit passed 18/18 candidates and failed 0. The five additions
+are three terminators (`BBa_B0010`, `BBa_B0012`, `BBa_B0013`) and two promoters
+(`BBa_J23101`, `BBa_J23102`). Each was freshly retrieved from its supplied iGEM
+UUID endpoint, remained `published`, matched its expected Sequence Ontology
+role and length, used the reviewed CC BY 4.0 license UUID, had no duplicate
+sequence, and passed all three rounds.
 
-## Accepted iGEM increment
+The external snapshot `public-reviewed-2026.09` was installed with 18 records
+but not activated. The SHA-256 of the existing `active.json` remained
+`0c7c49ac5217ce36302878144e5b6101434525ceb01c6f142b697082df2563ea`;
+it still points to `import-1788221961-a591490846c9`.
 
-The new records are `BBa_B0030`, `BBa_B0031`, `BBa_B0032`, and `BBa_B0033` (RBS series), and `BBa_J23100` (promoter); the previously reviewed `BBa_B0034`, `BBa_J23119`, `BBa_B0015`, `BBa_25FAVHQY`, and `BBa_25RT9PC8` remain. Every record preserves the iGEM record URL, its individual raw-response SHA-256, revision, declared license, and evidence references.
+## Evidence and reproducibility
 
-The upstream descriptions of `BBa_J23119` and `BBa_J23100` are the low-information strings `Later` and `Replace later`, respectively. Their original text is preserved in `metadata.upstream_description`, and their display descriptions explicitly state that no additional function was inferred.
+- Exact upstream bytes and the retrieval receipt are under
+  `source_responses/2026-09/`.
+- `../bundles/source-lock.json` pins both reviewed seeds, the audit, receipt,
+  and every source and license response by SHA-256.
+- `python tools/review_materials_promotion.py --check` reproduces all decisions
+  without network access; `--fetch` performs a fresh bounded refetch.
+- Round three creates a temporary, inactive snapshot and verifies every passing
+  record through the same bounded `search`, `get`, and DNA/protein
+  materialization paths used by the product. It neither mutates the active
+  pointer nor substitutes for a human activation decision.
+- Redirects, non-200 responses, unexpected identity/role/sequence, unknown
+  licenses, incomplete evidence, and failed rounds fail closed.
 
-## Why no other sources were promoted
+## Records that remain blocked
 
-- UniProt records are `protein_sequence` entries; even with a CC BY license and a complete sequence, they are not DNA parts compilable by the Proto DSL. Of these records, 1,744 remain in the physically isolated quarantine.
-- Rhea entries are `biochemical_reaction` records and BioModels entries are `computational_model` records; neither source has materializable DSL part semantics.
-- The five iGEM staging records belong to `SO:0000804 Engineered Region`. Although they have DNA and CC-BY licensing, they do not have a supported part type, still require human determination, and cannot be forcibly marked as compilable parts.
-- Templates are software design slots rather than sequences and remain `REFERENCE_ONLY` by design.
+- 98,256 UniProt reference records lack per-record controlled promotion
+  attestations and locked response/license evidence.
+- 1,795 hard-flagged records remain physically isolated (UniProt 1,744; Rhea
+  21; BioModels 30); the public quarantine bundle contains no sequences.
+- 18,540 Rhea reactions and 2,754 BioModels models remain reference-only because
+  they are not compiler-domain sequence parts.
+- Five staged iGEM `Engineered Region` records remain `REVIEW_REQUIRED` because
+  the current DSL has no unambiguous supported part type for them.
+- Three built-in software templates remain `REFERENCE_ONLY` because they are
+  slot templates, not biological sequences.
 
-Source text is treated as untrusted data and receives no prompt or instruction authority; the quarantine is excluded from ordinary full-text search and cannot be unlocked or exported through the model-facing MCP.
+`DESIGN_ELIGIBLE` means software-catalog eligibility only. It is not a wet-lab,
+orderability, biosafety, patent, clinical, regulatory, or scientific validity
+claim.

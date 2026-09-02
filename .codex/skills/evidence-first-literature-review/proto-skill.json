@@ -1,0 +1,57 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "evidence-first-literature-review",
+  "name": "Evidence-First Literature Review",
+  "version": "1.0.0",
+  "description": "Source-grounded literature search and synthesis through Proto's bounded local and capability-gated evidence interfaces.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Mapped literature discovery and identity verification to Proto MCP tools and retained explicit evidence limits.",
+    "upstream": [
+      {
+        "id": "literature-review",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "mixed-explicit",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "search-local-sources",
+      "purpose": "Search the versioned local evidence registry first.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_literature_search"}
+      ]
+    },
+    {
+      "id": "search-biomedical-literature",
+      "purpose": "Retrieve bounded biomedical publication metadata through an approved network capability.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_pubmed_search"},
+        {"kind": "mcp", "tool": "proto_europe_pmc_search"}
+      ]
+    },
+    {
+      "id": "verify-publication-identity",
+      "purpose": "Corroborate DOI and publication metadata independently.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_crossref_search"}
+      ]
+    },
+    {
+      "id": "bind-review-evidence",
+      "purpose": "Carry supported claims and evidence gaps into a human-review artifact.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_review_packet"}
+      ]
+    }
+  ]
+}

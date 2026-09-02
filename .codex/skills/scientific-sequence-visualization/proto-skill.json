@@ -1,0 +1,63 @@
+{
+  "schema_version": "proto-agent.skill-adapter.v1",
+  "id": "scientific-sequence-visualization",
+  "name": "Scientific Sequence Visualization",
+  "version": "1.0.0",
+  "description": "Production-grade sequence reading and figure QA adapted to Proto's DNA and protein artifacts.",
+  "source": {
+    "catalog": "AcademicForge",
+    "adaptation": "Applied data-fidelity, accessibility, and render-then-verify rules to canonical sequence coordinates and artifact digests.",
+    "upstream": [
+      {
+        "id": "figure-style",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-style",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "7bd8416f1abc9d520d99e5b5c2a13fb816af5ea9ef6d0a695fde42d9b2b5348d"
+      },
+      {
+        "id": "figure-composer",
+        "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-composer",
+        "license": "Apache-2.0",
+        "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+        "content_sha256": "14bc9dc9a5b1718e5ae8f672b4c7de83b080f467ec4eb2c5fa02c2b043f666ec"
+      }
+    ]
+  },
+  "policy": {
+    "risk": "low",
+    "execution": "declarative",
+    "network": "offline",
+    "human_review": true
+  },
+  "operations": [
+    {
+      "id": "read-dna-artifact",
+      "purpose": "Compile and inspect a typed DNA design artifact before rendering.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_compile"}
+      ]
+    },
+    {
+      "id": "read-protein-artifact",
+      "purpose": "Validate and compile a governed protein selection before rendering.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_protein_compile"}
+      ]
+    },
+    {
+      "id": "validate-sequence",
+      "purpose": "Run bounded sequence validation before derived display or export.",
+      "interfaces": [
+        {"kind": "mcp", "tool": "proto_validate_sequences"}
+      ]
+    },
+    {
+      "id": "render-and-verify",
+      "purpose": "Render through the bounded Workbench capability and retain human perceptual review as a separate required step.",
+      "interfaces": [
+        {"kind": "governed", "connector": "workbench-visualization", "operation": "render-and-verify"}
+      ]
+    }
+  ]
+}

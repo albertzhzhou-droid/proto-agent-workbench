@@ -1,4 +1,6 @@
-import { lstat, mkdir, realpath } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { lstat, mkdir, readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -47,32 +49,29 @@ if (
 }
 const args = invocationArgs.slice(0, -1);
 
-if (!args[0] || !args[1]) {
+if (!args[0]) {
   console.error(JSON.stringify({
     ok: false,
     code: "EXPLICIT_ROOTS_REQUIRED",
-    message: "Pass explicit model and disposable workspace roots; implicit profile scans and source-repository writes are forbidden.",
-    usage: `verify-sidecars.mjs <model-root> <disposable-workspace-root> [runtime-root] ${SIDECAR_CONFIRMATION_FLAG}`,
+    message: "Pass an explicit disposable workspace root; implicit profile access and source-repository writes are forbidden.",
+    usage: `verify-sidecars.mjs <disposable-workspace-root> [runtime-root] ${SIDECAR_CONFIRMATION_FLAG}`,
   }));
   process.exit(2);
 }
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..", "..");
-const modelRoot = requireAbsoluteArgument(args[0], "model root");
-const workspaceRoot = await assertDisposableWorkspace(args[1], [appRoot, repoRoot]);
-const runtimeRoot = args[2] ? requireAbsoluteArgument(args[2], "runtime root") : appRoot;
-const cacheDirectory = join(workspaceRoot, "build", "verification-cache");
-const cachePath = join(cacheDirectory, "sidecar-verification-catalog.json");
-await createWorkspaceDirectory(workspaceRoot, ["build", "verification-cache"]);
+const workspaceRoot = await assertDisposableWorkspace(args[0], [appRoot, repoRoot]);
+const runtimeRoot = args[1] ? requireAbsoluteArgument(args[1], "runtime root") : appRoot;
+await createWorkspaceDirectory(workspaceRoot, ["build"]);
 await revalidateDisposableWorkspace(workspaceRoot);
 
-const scannerPath = join(
+const adminCliPath = join(
   runtimeRoot,
   "runtime",
   "proto-agent",
-  "proto-workbench-sidecar",
-  "proto-workbench-sidecar.exe",
+  "proto-agent",
+  "proto-agent.exe",
 );
 const mcpPath = join(
   runtimeRoot,
@@ -81,28 +80,41 @@ const mcpPath = join(
   "proto-agent-mcp",
   "proto-agent-mcp.exe",
 );
+const sidecarsBefore = await captureSidecarTree(runtimeRoot, adminCliPath, mcpPath);
 
-const scanStartedAt = performance.now();
-const scanPayload = await runJsonOwned(
-  scannerPath,
-  ["scan-models", modelRoot, "--cache", cachePath],
+const adminCapabilities = await runJsonOwned(
+  adminCliPath,
+  ["capabilities", "--json"],
   {
     cwd: workspaceRoot,
-    timeoutMs: 120_000,
+    timeoutMs: 30_000,
     maxStdoutBytes: 4 * 1024 * 1024,
     maxStderrBytes: 128 * 1024,
   },
 );
 if (
-  !scanPayload.ok ||
-  !Array.isArray(scanPayload.models) ||
-  scanPayload.models.length === 0 ||
-  scanPayload.models.length > 10_000
+  !adminCapabilities.ok ||
+  !Array.isArray(adminCapabilities.mcp_tools) ||
+  !adminCapabilities.mcp_tools.includes("proto_materials_search") ||
+  !adminCapabilities.mcp_tools.includes("proto_skills_list") ||
+  !adminCapabilities.mcp_tools.includes("proto_skills_resolve")
 ) {
-  throw new Error("Packaged catalog sidecar did not return any models.");
+  throw new Error("Packaged admin CLI did not expose the governed materials capability set.");
 }
+const adminSkillAudit = await runJsonOwned(
+  adminCliPath,
+  ["skills", "audit"],
+  {
+    cwd: workspaceRoot,
+    timeoutMs: 30_000,
+    maxStdoutBytes: 4 * 1024 * 1024,
+    maxStderrBytes: 128 * 1024,
+  },
+);
+assertSkillAudit(adminSkillAudit);
 
 const mcp = await createMcpClient(mcpPath, workspaceRoot);
+let verificationResult;
 try {
   await mcp.request("initialize", {
     protocolVersion: "2025-06-18",
@@ -118,11 +130,43 @@ try {
     "proto_crossref_search",
     "proto_uniprot_search",
     "proto_rhea_search",
+    "proto_skills_list",
+    "proto_skills_resolve",
   ];
   const toolNames = new Set(tools.map((tool) => tool.name));
   const missingTools = requiredTools.filter((tool) => !toolNames.has(tool));
   if (missingTools.length) {
     throw new Error(`Packaged MCP sidecar is missing required tools: ${missingTools.join(", ")}`);
+  }
+  const skillListResult = await mcp.request("tools/call", {
+    name: "proto_skills_list",
+    arguments: {},
+  });
+  const skillCatalog = skillListResult?.structuredContent;
+  if (
+    !skillCatalog?.ok ||
+    skillCatalog.adapter_count !== 7 ||
+    skillCatalog.status_counts?.available !== 7 ||
+    skillCatalog.status_counts?.partial !== 0 ||
+    skillCatalog.status_counts?.unavailable !== 0 ||
+    skillCatalog.catalog_sha256 !== adminSkillAudit.catalog_sha256 ||
+    skillCatalog.connector_registry_sha256 !== adminSkillAudit.connector_registry_sha256
+  ) {
+    throw new Error("Packaged MCP Skill catalogue does not match the admin CLI's verified 7/7 catalogue.");
+  }
+  const skillResolveResult = await mcp.request("tools/call", {
+    name: "proto_skills_resolve",
+    arguments: { skill_id: "proto-science-workflow" },
+  });
+  const skillResolution = skillResolveResult?.structuredContent;
+  if (
+    !skillResolution?.ok ||
+    skillResolution.catalog_sha256 !== adminSkillAudit.catalog_sha256 ||
+    skillResolution.connector_registry_sha256 !== adminSkillAudit.connector_registry_sha256 ||
+    skillResolution.adapter?.id !== "proto-science-workflow" ||
+    skillResolution.adapter?.status !== "available"
+  ) {
+    throw new Error("Packaged MCP Skill resolution was not bound to the audited catalogue and connector hashes.");
   }
   const multiSourceFixtures = [
     ["proto_europe_pmc_search", "tests/fixtures/europe_pmc_search.json", "PMID:34181032"],
@@ -177,19 +221,147 @@ try {
   }
   await assertBuildArtifact(workspaceRoot, review.packet_path);
 
-  console.log(JSON.stringify({
+  verificationResult = {
     ok: true,
-    modelCount: scanPayload.models.length,
-    scanMilliseconds: Math.round(performance.now() - scanStartedAt),
+    adminCli: true,
     toolCount: tools.length,
+    skillAudit: {
+      available: adminSkillAudit.status_counts.available,
+      checked: adminSkillAudit.passes.local_schema_and_integrity.checked,
+      passCount: adminSkillAudit.pass_count,
+      catalogSha256: adminSkillAudit.catalog_sha256,
+      connectorRegistrySha256: adminSkillAudit.connector_registry_sha256,
+    },
+    skillTools: ["proto_skills_list", "proto_skills_resolve"],
     verifiedSources,
     protoCheck: true,
     workflowManifest: true,
     reviewPacket: true,
-  }));
+  };
 } finally {
   await mcp.close();
 }
+const sidecarsAfter = await captureSidecarTree(runtimeRoot, adminCliPath, mcpPath);
+if (
+  sidecarsAfter.catalogSha256 !== sidecarsBefore.catalogSha256 ||
+  sidecarsAfter.adminExeSha256 !== sidecarsBefore.adminExeSha256 ||
+  sidecarsAfter.mcpExeSha256 !== sidecarsBefore.mcpExeSha256 ||
+  sidecarsAfter.fileCount !== sidecarsBefore.fileCount ||
+  sidecarsAfter.totalBytes !== sidecarsBefore.totalBytes
+) {
+  throw new Error("Packaged sidecar bytes changed during verification.");
+}
+console.log(JSON.stringify({
+  ...verificationResult,
+  hashesVerified: true,
+  sidecars: sidecarsAfter,
+}));
+}
+
+function assertSkillAudit(audit) {
+  const passNames = ["local_schema_and_integrity", "vendor_neutrality", "capability_and_risk"];
+  if (
+    !audit?.ok ||
+    audit.schema_version !== "proto-agent.skill-audit.v1" ||
+    audit.pass_count !== 3 ||
+    audit.status_counts?.available !== 7 ||
+    audit.status_counts?.partial !== 0 ||
+    audit.status_counts?.unavailable !== 0 ||
+    !Array.isArray(audit.findings) ||
+    audit.findings.length !== 0 ||
+    !/^[a-f0-9]{64}$/.test(audit.catalog_sha256 ?? "") ||
+    !/^[a-f0-9]{64}$/.test(audit.connector_registry_sha256 ?? "") ||
+    passNames.some((name) => audit.passes?.[name]?.ok !== true || audit.passes?.[name]?.checked !== 7)
+  ) {
+    throw new Error("Packaged admin CLI did not pass the exact 7/7 three-pass Skill audit.");
+  }
+}
+
+async function captureSidecarTree(runtimeRoot, adminCliPath, mcpPath) {
+  const root = join(runtimeRoot, "runtime", "proto-agent");
+  const rootInfo = await lstat(root);
+  if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink() || !samePath(root, await realpath(root))) {
+    throw new Error("Packaged sidecar root must be a real directory.");
+  }
+  const topLevel = await readdir(root, { withFileTypes: true });
+  const actualNames = topLevel.map((entry) => entry.name).sort();
+  const expectedNames = ["README.md", "proto-agent", "proto-agent-mcp"].sort();
+  if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+    throw new Error("Packaged sidecar root must contain exactly two sidecars and README.md.");
+  }
+
+  const files = [];
+  let totalBytes = 0;
+  async function visit(directory) {
+    if (!samePath(directory, await realpath(directory))) {
+      throw new Error("Packaged sidecar tree contains a linked directory.");
+    }
+    const entries = await readdir(directory, { withFileTypes: true });
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const absolute = join(directory, entry.name);
+      const info = await lstat(absolute);
+      if (entry.isSymbolicLink() || info.isSymbolicLink()) {
+        throw new Error("Packaged sidecar tree contains a symbolic link.");
+      }
+      if (entry.isDirectory()) {
+        await visit(absolute);
+        continue;
+      }
+      if (!entry.isFile() || !info.isFile() || info.nlink !== 1) {
+        throw new Error("Packaged sidecar tree contains a non-regular or multiply-linked file.");
+      }
+      const contained = relative(root, await realpath(absolute));
+      if (contained === "" || contained.startsWith("..") || isAbsolute(contained)) {
+        throw new Error("Packaged sidecar file escaped its runtime root.");
+      }
+      totalBytes += info.size;
+      if (totalBytes > 2 * 1024 * 1024 * 1024) {
+        throw new Error("Packaged sidecar tree exceeded the 2 GiB verification limit.");
+      }
+      files.push({
+        path: relative(root, absolute).replaceAll("\\", "/"),
+        sizeBytes: info.size,
+        sha256: await sha256File(absolute),
+      });
+    }
+  }
+  await visit(root);
+  files.sort((left, right) => left.path.localeCompare(right.path));
+
+  const digest = createHash("sha256");
+  digest.update("proto-workbench.sidecars.v1\0");
+  for (const file of files) {
+    digest.update(file.path);
+    digest.update("\0");
+    digest.update(String(file.sizeBytes));
+    digest.update("\0");
+    digest.update(file.sha256);
+    digest.update("\n");
+  }
+  const byPath = new Map(files.map((file) => [file.path, file]));
+  const adminRelative = relative(root, adminCliPath).replaceAll("\\", "/");
+  const mcpRelative = relative(root, mcpPath).replaceAll("\\", "/");
+  if (!byPath.has(adminRelative) || !byPath.has(mcpRelative)) {
+    throw new Error("Packaged sidecar executables were not included in the verified tree.");
+  }
+  return {
+    fileCount: files.length,
+    totalBytes,
+    catalogSha256: digest.digest("hex"),
+    adminExeSha256: byPath.get(adminRelative).sha256,
+    mcpExeSha256: byPath.get(mcpRelative).sha256,
+  };
+}
+
+function sha256File(path) {
+  return new Promise((resolveHash, rejectHash) => {
+    const digest = createHash("sha256");
+    const stream = createReadStream(path);
+    stream.on("data", (chunk) => digest.update(chunk));
+    stream.on("error", rejectHash);
+    stream.on("end", () => resolveHash(digest.digest("hex")));
+  });
 }
 
 async function assertBuildArtifact(workspaceRoot, path) {

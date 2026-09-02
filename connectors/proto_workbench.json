@@ -4,6 +4,83 @@
   "description": "Local connector registry inspired by scientific AI workbenches. Entries may be local, planned, or external.",
   "connectors": [
     {
+      "id": "lm-studio",
+      "kind": "local_model_service",
+      "status": "available",
+      "purpose": "Discover, explicitly load, invoke, and ownership-safely unload local models through the single LM Studio loopback service.",
+      "base_url": "http://127.0.0.1:1234",
+      "http_routes": [
+        "GET /api/v1/models",
+        "POST /api/v1/models/load",
+        "POST /v1/chat/completions"
+      ],
+      "governed_operations": [
+        "unload-owned-model"
+      ],
+      "credential_environment": [
+        "LMSTUDIO_API_KEY",
+        "LM_API_TOKEN"
+      ],
+      "safety_notes": [
+        "The authority is fixed to IPv4 loopback; redirects and arbitrary provider URLs are rejected.",
+        "Credentials are optional environment values and are never stored in Workbench settings or logs.",
+        "Loading is explicit, chat rechecks live instance state, and Workbench unloads only instances it created and tracked.",
+        "Disable LM Studio's global Just-in-Time model loading in Developer > Server Settings; the client cannot read that global switch, and an external unload can still race the final chat request after reconciliation.",
+        "Registry availability describes implemented integration, not a live reachability or generation result."
+      ]
+    },
+    {
+      "id": "workbench-visualization",
+      "kind": "local_visualization",
+      "status": "available",
+      "purpose": "Read, search, select, render, and export validated DNA and protein sequence artifacts with production safety and accessibility checks.",
+      "governed_operations": [
+        "render-and-verify"
+      ],
+      "safety_notes": [
+        "Protein views fail closed on sequence-digest or governed-metadata errors; DNA views expose current file-digest provenance as matched, mismatched, or unverified.",
+        "Known DNA digest mismatches and invalid provenance inventories block export; an absent provenance claim remains an explicit gap rather than proof of integrity.",
+        "Coordinates remain canonical and large sequences use bounded windows or summary mode.",
+        "This operation is an internal Workbench rendering capability, not a packaged shell command or evidence that human perceptual review was completed."
+      ]
+    },
+    {
+      "id": "skill-adapters",
+      "kind": "local_policy",
+      "status": "available",
+      "purpose": "Resolve bounded vendor-neutral research Skill manifests against declared Proto interfaces without executing manifest content.",
+      "path": ".codex/skills",
+      "commands": [
+        "proto-agent skills list",
+        "proto-agent skills resolve",
+        "proto-agent skills audit"
+      ],
+      "tools": [
+        "proto_skills_list",
+        "proto_skills_resolve"
+      ],
+      "safety_notes": [
+        "Only bounded Markdown, JSON, and text content is admitted; scripts and executable content are rejected.",
+        "Resolution is capability metadata, not execution evidence or a live endpoint probe.",
+        "AcademicForge authorship and upstream licenses are retained in each adapter manifest."
+      ]
+    },
+    {
+      "id": "materials-promotion-review",
+      "kind": "local_policy",
+      "status": "available",
+      "purpose": "Run deterministic promotion audit passes and install only repository-locked passing candidates as an inactive snapshot.",
+      "commands": [
+        "proto-agent materials promotion-audit",
+        "proto-agent materials reviewed-import"
+      ],
+      "safety_notes": [
+        "The audit is read-only and reports every round and rejection reason.",
+        "Reviewed import requires locked source, audit, and evidence digests and never exposes an activation flag.",
+        "Eligibility is a local software gate and does not establish wet-lab, orderability, biosafety, or regulatory readiness."
+      ]
+    },
+    {
       "id": "proto_dsl",
       "kind": "local_tool",
       "status": "available",
@@ -134,7 +211,9 @@
         "proto_run_notebook",
         "proto_r_status",
         "proto_run_r",
-        "proto_connectors_check"
+        "proto_connectors_check",
+        "proto_skills_list",
+        "proto_skills_resolve"
       ],
       "safety_notes": [
         "Runs locally over stdio.",

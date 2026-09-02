@@ -92,9 +92,9 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
   },
   {
     id: "core.inference",
-    version: 4,
+    version: 5,
     label: "Local inference",
-    description: "Model discovery, RAM/VRAM planning, exact-context llama.cpp lifecycle, and streaming chat.",
+    description: "LM Studio catalogue discovery, explicit instance lifecycle, ownership-safe unload, and streaming chat.",
     core: true,
     resourceTier: "required",
     tools: [],

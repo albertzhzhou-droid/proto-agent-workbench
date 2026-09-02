@@ -2,6 +2,32 @@
   "schema_version": "proto-agent.workflow.v1",
   "id": "design_review",
   "description": "Local-first design review loop: check, compile, score, export, and write an audit manifest.",
+  "skill_bindings": [
+    {
+      "skill_id": "proto-science-workflow",
+      "stage": "orchestration",
+      "required": true,
+      "operations": ["inspect-connectors", "run-design-review"]
+    },
+    {
+      "skill_id": "sequence-resource-analysis",
+      "stage": "sequence-validation",
+      "required": true,
+      "operations": ["validate-dna"]
+    },
+    {
+      "skill_id": "scientific-sequence-visualization",
+      "stage": "artifact-handoff",
+      "required": true,
+      "operations": ["read-dna-artifact", "validate-sequence"]
+    },
+    {
+      "skill_id": "research-provenance",
+      "stage": "run-provenance",
+      "required": true,
+      "operations": ["capture-workflow"]
+    }
+  ],
   "steps": [
     {
       "id": "check",
