@@ -19,12 +19,15 @@ live connectors, or scientific readiness.
    ```
 
 3. Review `git status --short`, the complete staged file list, and every staged
-   file above 10 MiB. Confirm that no credential, user-specific path, material
-   snapshot, quarantine record, model catalogue, or generated QA artifact is
-   present.
+   file above 10 MiB. Confirm that no credential, user-specific path, dynamic
+   material snapshot, raw quarantine content, unreviewed model catalogue, or
+   generated QA artifact is present. The fixed public bundles are allowed only
+   after both `materials bundle-verify` profiles pass and their exact record,
+   source, status, license, size, and sequence-redaction counts are reviewed.
 4. Confirm that the sibling `..\\Proto CLI Materials` catalogue, `node_modules`,
    root `releases/`, Workbench `release*`, staged runtimes, sidecars, and local
-   databases remain ignored.
+   databases remain ignored. Only the three exact SQLite paths documented in
+   `.gitignore` may be tracked.
 5. Record skipped checks and unverified integrations without converting them
    into success claims.
 

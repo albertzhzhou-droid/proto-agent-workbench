@@ -80,7 +80,9 @@ apps/proto-workbench/qa/
 *.db
 *.db-*
 *.sqlite
+*.sqlite-*
 *.sqlite3
+*.sqlite3-*
 *.log
 *.tmp
 *.temp
@@ -88,6 +90,12 @@ apps/proto-workbench/qa/
 *.orig
 *.stackdump
 *.dmp
+
+# Only these generator-produced, audited public material databases are tracked.
+# The dynamic sibling catalog and every other local database remain ignored.
+!materials/bundles/public/public-reviewed-2026.09/catalog.sqlite
+!materials/bundles/public/public-reviewed-2026.09/quarantine.sqlite
+!materials/bundles/quarantine/public-quarantine-metadata-2026.09/quarantine.sqlite
 
 # Model weights and other large local ML artifacts
 *.gguf

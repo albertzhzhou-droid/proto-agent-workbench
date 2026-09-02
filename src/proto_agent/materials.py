@@ -807,6 +807,9 @@ class MaterialsStore:
     def activate(self, snapshot_id: str) -> dict[str, Any]:
         snapshot_id = _clean_text(snapshot_id, field="snapshot_id", limit=256)
         manifest = self.manifest(snapshot_id)
+        public_export = manifest.get("public_export") if isinstance(manifest.get("public_export"), dict) else {}
+        if manifest.get("activation_policy") == "DENY" or public_export.get("activation_policy") == "DENY" or public_export.get("profile") == "PUBLIC_QUARANTINE":
+            raise MaterialsError("SNAPSHOT_NOT_ACTIVATABLE", "Quarantine-only public bundles cannot be activated as normal materials snapshots.")
         self._verify_snapshot(snapshot_id, manifest)
         pointer = {"schema_version": MATERIALS_SCHEMA_VERSION, "active_snapshot": snapshot_id, "manifest_sha256": _sha256_file(self._snapshot_dir(snapshot_id) / "manifest.json"), "activated_at": _now()}
         _safe_write(self.active_pointer, (_json(pointer) + "\n").encode("utf-8"))
@@ -1166,12 +1169,25 @@ class MaterialsStore:
             self.activate(snapshot_id)
         return manifest
 
-    def _create_snapshot(self, records: Iterable[dict[str, Any]], snapshot_id: str, *, sources: list[dict[str, Any]], label: str) -> dict[str, Any]:
+    def _create_snapshot(
+        self,
+        records: Iterable[dict[str, Any]],
+        snapshot_id: str,
+        *,
+        sources: list[dict[str, Any]],
+        label: str,
+        created_at: str | None = None,
+        manifest_annotations: dict[str, Any] | None = None,
+        vacuum_catalogs: bool = False,
+    ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", snapshot_id):
             raise MaterialsError("INVALID_SNAPSHOT_ID", "Snapshot IDs must be path-safe.")
         final_dir = self._snapshot_dir(snapshot_id)
         if final_dir.exists():
             raise MaterialsError("SNAPSHOT_EXISTS", f"Snapshot already exists: {snapshot_id}")
+        snapshot_created_at = _clean_text(created_at or _now(), field="created_at", limit=64)
+        if not snapshot_created_at:
+            raise MaterialsError("INVALID_CREATED_AT", "Snapshot created_at must not be empty.")
         stage = self.staging / f"{snapshot_id}-{uuid4().hex}"
         _ensure_directory(stage)
         all_records: list[dict[str, Any]] = []
@@ -1214,8 +1230,8 @@ class MaterialsStore:
             },
         }) + "\n").encode("utf-8"))
         try:
-            main_blob_count = self._write_catalog(stage / "catalog.sqlite", stage, stage / "blobs", main_records)
-            quarantine_blob_count = self._write_catalog(stage / "quarantine.sqlite", stage, stage / "quarantine" / "blobs", quarantine_records)
+            main_blob_count = self._write_catalog(stage / "catalog.sqlite", stage, stage / "blobs", main_records, vacuum=vacuum_catalogs)
+            quarantine_blob_count = self._write_catalog(stage / "quarantine.sqlite", stage, stage / "quarantine" / "blobs", quarantine_records, vacuum=vacuum_catalogs)
         except Exception:
             shutil.rmtree(stage, ignore_errors=True)
             raise
@@ -1225,7 +1241,7 @@ class MaterialsStore:
             "schema_version": MATERIALS_SCHEMA_VERSION,
             "snapshot_id": snapshot_id,
             "label": label,
-            "created_at": _now(),
+            "created_at": snapshot_created_at,
             "record_count": len(all_records),
             "catalog_record_count": len(main_records),
             "quarantine_record_count": len(quarantine_records),
@@ -1239,6 +1255,12 @@ class MaterialsStore:
             "license_catalog": {"path": "licenses/catalog.json", "sha256": _sha256_file(license_catalog)},
             "notice": "Metadata and sequences are source-derived and untrusted. Software checks do not establish wet-lab readiness.",
         }
+        if manifest_annotations:
+            collisions = sorted(set(manifest).intersection(manifest_annotations))
+            if collisions:
+                shutil.rmtree(stage, ignore_errors=True)
+                raise MaterialsError("MANIFEST_ANNOTATION_COLLISION", f"Manifest annotations cannot replace core fields: {', '.join(collisions)}")
+            manifest.update(manifest_annotations)
         _safe_write(stage / "manifest.json", (_json(manifest) + "\n").encode("utf-8"))
         license_lines = ["# Data source notices", "", f"Snapshot: `{snapshot_id}`", ""]
         for provider, count in sorted(source_counts.items()):
@@ -1251,7 +1273,7 @@ class MaterialsStore:
             "catalog_sha256": catalog_sha256,
             "quarantine_catalog_sha256": quarantine_catalog_sha256,
             "sources": sources,
-            "created_at": _now(),
+            "created_at": snapshot_created_at,
         }
         _safe_write(stage / "provenance.json", (_json(provenance) + "\n").encode("utf-8"))
         _ensure_directory(final_dir.parent)
@@ -1259,7 +1281,7 @@ class MaterialsStore:
         return {**manifest, "manifest_sha256": _sha256_file(final_dir / "manifest.json"), "snapshot_path": str(final_dir)}
 
     @staticmethod
-    def _write_catalog(database: Path, stage: Path, blob_root: Path, records: list[dict[str, Any]]) -> int:
+    def _write_catalog(database: Path, stage: Path, blob_root: Path, records: list[dict[str, Any]], *, vacuum: bool = False) -> int:
         """Write an immutable SQLite/FTS catalog and return the unique blob count."""
 
         conn = sqlite3.connect(database)
@@ -1310,8 +1332,11 @@ class MaterialsStore:
                     blob = blob_root / digest[:2] / f"{digest}.txt.gz"
                     if not blob.exists():
                         _ensure_directory(blob.parent)
-                        with gzip.open(blob, "wt", encoding="ascii", compresslevel=6) as handle:
-                            handle.write(record["sequence"])
+                        # A zero gzip mtime keeps public snapshots reproducible
+                        # without embedding the exporting machine's clock.
+                        with blob.open("wb") as raw_handle:
+                            with gzip.GzipFile(filename="", fileobj=raw_handle, mode="wb", compresslevel=6, mtime=0) as handle:
+                                handle.write(record["sequence"].encode("ascii"))
                         blob_count += 1
                     sequence_path = str(blob.relative_to(stage)).replace("\\", "/")
                 organism_name = str(record["organism"].get("name", ""))
@@ -1325,6 +1350,10 @@ class MaterialsStore:
                 fts_text = " ".join([record["resource_id"], record["name"], *record["aliases"], record["description_en"], record["description_zh"], organism_name, *record["role_terms"], record["source"]["provider"], record["source"]["record_id"], *record["tags"]])
                 conn.execute("INSERT INTO resources_fts(resource_id, text) VALUES (?, ?)", (record["resource_id"], fts_text))
             conn.commit()
+            if vacuum:
+                # Public snapshot exports must not retain deleted/free SQLite
+                # pages that could contain data outside the current allowlist.
+                conn.execute("VACUUM")
         finally:
             conn.close()
         return blob_count
@@ -1368,10 +1397,16 @@ class MaterialsStore:
         memory and applies the same hard size bound as import/sync.
         """
 
+        rows = list(conn.execute("SELECT resource_id, sequence_sha256, sequence_path FROM resources WHERE sequence_sha256 != ''"))
+        # Git does not preserve empty directories. A catalog with no referenced
+        # sequence objects therefore needs no object root; any non-empty set of
+        # references still requires the full physical-root safety checks below.
+        if not rows:
+            return
         expected_root = directory / (Path("quarantine") / "blobs" if quarantine else Path("blobs"))
         if expected_root.is_symlink() or not expected_root.is_dir():
             raise MaterialsError("SNAPSHOT_INTEGRITY_FAILED", "Snapshot sequence object root is missing or unsafe.")
-        for row in conn.execute("SELECT resource_id, sequence_sha256, sequence_path FROM resources WHERE sequence_sha256 != ''"):
+        for row in rows:
             resource_id, digest, relative_path = str(row[0]), str(row[1]), str(row[2] or "")
             if not re.fullmatch(r"[a-f0-9]{64}", digest):
                 raise MaterialsError("SNAPSHOT_INTEGRITY_FAILED", f"Invalid sequence hash for {resource_id}.")

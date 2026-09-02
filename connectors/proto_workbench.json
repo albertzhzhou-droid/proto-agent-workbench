@@ -44,6 +44,8 @@
       "environment_override": "PROTO_AGENT_MATERIALS_ROOT",
       "commands": [
         "proto-agent materials status",
+        "proto-agent materials bundle-verify",
+        "proto-agent materials bundle-install-public",
         "proto-agent materials search",
         "proto-agent materials get",
         "proto-agent materials facets",
@@ -64,7 +66,10 @@
         "proto_materials_materialize_proteins"
       ],
       "safety_notes": [
-        "The external root is outside the workspace and is never copied into the repository or installer.",
+        "The dynamic external root remains outside the workspace and is never copied into the repository or installer; only fixed, generator-produced public bundles may be tracked.",
+        "The public catalog bundle installs inactive after checksum, SQLite, rights, and privacy verification; activation requires a separate explicit human action.",
+        "The public quarantine bundle is metadata-only, contains no sequence objects, denies activation, and is never exposed through the public installer or MCP.",
+        "Default bundle discovery is for source checkouts; packaged users must provide a separately reviewed bundle path.",
         "MCP can read only DESIGN_ELIGIBLE summaries and selected eligible sequences; quarantine is physically separate and admin-only.",
         "Synchronization writes a staging snapshot and requires an explicit human activate/rollback action.",
         "Design eligibility is a local data/license policy gate, not a claim of orderability, experimental safety, or regulatory compliance."

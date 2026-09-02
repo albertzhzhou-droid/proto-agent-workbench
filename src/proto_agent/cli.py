@@ -15,6 +15,7 @@ from .connectors import DEFAULT_CONNECTORS_PATH, connector_summary
 from .exporters import export_ir, load_ir
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
 from .materials import MAX_RESULT_LIMIT, MaterialsStore
+from .materials_bundle import default_bundle_path, install_public_bundle, verify_materials_bundle
 from .models import Diagnostic
 from .notebook import DEFAULT_NOTEBOOK_OUT_DIR, run_notebook
 from .optimization import optimize_design
@@ -117,6 +118,12 @@ def main(argv: list[str] | None = None) -> int:
     materials_status.add_argument("--json", action="store_true", dest="as_json")
     materials_init = materials_subparsers.add_parser("init", help="Create the small built-in seed snapshot.")
     materials_init.add_argument("--no-activate", action="store_true")
+    materials_bundle_verify = materials_subparsers.add_parser("bundle-verify", help="Verify a checked-in public materials or quarantine metadata bundle.")
+    materials_bundle_verify.add_argument("path", nargs="?")
+    materials_bundle_verify.add_argument("--profile", choices=["PUBLIC_CATALOG", "PUBLIC_QUARANTINE"], default="PUBLIC_CATALOG")
+    materials_bundle_install = materials_subparsers.add_parser("bundle-install-public", help="Install the verified public catalog into the external materials root.")
+    materials_bundle_install.add_argument("--bundle")
+    materials_bundle_install.add_argument("--activate", action="store_true", help="Explicitly activate the installed catalog after verification.")
     materials_search = materials_subparsers.add_parser("search", help="Search the active materials catalog.")
     materials_search.add_argument("query", nargs="?", default="")
     materials_search.add_argument("--kind")
@@ -586,8 +593,15 @@ def _parts_search(query: str, chassis: str | None, parts_path: str) -> int:
 
 
 def _materials(args: argparse.Namespace) -> int:
-    store = MaterialsStore(root=args.materials_root)
     command = args.materials_command
+    if command == "bundle-verify":
+        bundle_path = Path(args.path).resolve() if args.path else default_bundle_path(args.profile)
+        _print_json(verify_materials_bundle(bundle_path, expected_profile=args.profile))
+        return 0
+    store = MaterialsStore(root=args.materials_root)
+    if command == "bundle-install-public":
+        _print_json(install_public_bundle(store, args.bundle, activate=args.activate))
+        return 0
     if command == "status":
         _print_json(store.status())
         return 0

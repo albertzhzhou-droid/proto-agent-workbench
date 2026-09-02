@@ -13,7 +13,18 @@ Set `PROTO_AGENT_MATERIALS_ROOT` to use a different absolute location. The
 default is a sibling of the checked-out workspace, so no username or drive is
 embedded in the repository.
 
-The repository and installer contain only three software-layer design templates; large dynamic snapshots are neither committed to Git nor copied into the installer. A snapshot can be activated manually with `activate` only after downloading, normalization, hashing, license checks, and safety routing have all completed in `staging`. `active.json` is replaced atomically, so a failed synchronization does not change the currently verified snapshot; `rollback` only switches to an existing snapshot that has passed integrity verification.
+Large dynamic snapshots are neither committed to Git nor copied into the installer. The source repository does contain two narrowly scoped, generator-produced public bundles under `materials/bundles/`: an installable 13-record reviewed catalog and a non-installable 1,795-record quarantine metadata index. Neither bundle includes `active.json`, overlays, staging state, absolute paths, operator identity, logs, or cache data. The quarantine bundle additionally omits every sequence and sequence object; it retains only the original public length/hash as explicitly redacted-source metadata.
+
+The public catalog is verified before installation and remains inactive unless a human explicitly passes `--activate`. The quarantine bundle declares `activation_policy: DENY`, is rejected by the public installer, is stored outside the normal snapshot tree in the repository, and is not an MCP/model data source.
+
+```powershell
+proto-agent materials bundle-verify --profile PUBLIC_CATALOG
+proto-agent materials bundle-verify --profile PUBLIC_QUARANTINE
+proto-agent materials bundle-install-public
+proto-agent materials bundle-install-public --activate  # optional human decision
+```
+
+For normal synchronized data, a snapshot can be activated manually only after downloading, normalization, hashing, license checks, and safety routing have completed in `staging`. `active.json` is replaced atomically, so a failed synchronization does not change the currently verified snapshot; `rollback` only switches to an existing snapshot that has passed integrity verification.
 
 ## Records and statuses
 

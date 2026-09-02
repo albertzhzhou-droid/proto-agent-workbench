@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/proto-agent/schemas/materials_bundle.schema.json",
+  "title": "Proto Agent public materials bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "export_schema_version",
+    "bundle_id",
+    "profile",
+    "activation_policy",
+    "default_model_visibility",
+    "record_count",
+    "status_counts",
+    "source_counts",
+    "license_counts",
+    "files"
+  ],
+  "properties": {
+    "schema_version": {"const": "proto-agent.materials-bundle.v1"},
+    "export_schema_version": {"const": "proto-agent.public-materials-export.v1"},
+    "bundle_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "profile": {"enum": ["PUBLIC_CATALOG", "PUBLIC_QUARANTINE"]},
+    "activation_policy": {"enum": ["EXPLICIT_HUMAN_ONLY", "DENY"]},
+    "default_model_visibility": {"type": "boolean"},
+    "record_count": {"type": "integer", "minimum": 0},
+    "status_counts": {"$ref": "#/$defs/counts"},
+    "source_counts": {"$ref": "#/$defs/counts"},
+    "license_counts": {"$ref": "#/$defs/counts"},
+    "files": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^(?!/)(?!.*(?:^|/)[.][.](?:/|$))(?!.*\\\\).+$"},
+      "additionalProperties": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+    }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"profile": {"const": "PUBLIC_QUARANTINE"}}},
+      "then": {
+        "properties": {
+          "activation_policy": {"const": "DENY"},
+          "default_model_visibility": {"const": false}
+        }
+      }
+    }
+  ]
+}

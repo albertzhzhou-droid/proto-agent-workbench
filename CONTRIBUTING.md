@@ -47,13 +47,19 @@ regulatory approval, clinical use, or experimental readiness.
 
 - Keep changes focused and explain the trust boundary they affect.
 - Include the exact validation commands and results.
-- Do not commit model weights, material snapshots, quarantine data, runtime
-  binaries, installers, caches, databases, logs, or local QA captures.
+- Do not commit model weights, dynamic material snapshots, raw quarantine data,
+  runtime binaries, installers, caches, databases, logs, or local QA captures.
+  The only database exception is a deterministic bundle under
+  `materials/bundles/` produced by `tools/export_public_materials.py`; it must
+  pass bundle verification, rights checks, privacy scanning, and the fixed-size
+  review gate before inclusion.
 - Keep fixture/cache validation distinct from live connector verification.
 - Report suspected vulnerabilities through the private process in
   [`SECURITY.md`](SECURITY.md), not a public issue.
 
 ## Licensing
 
-The project is licensed under the [MIT License](LICENSE). By submitting a
-contribution, you agree that it may be distributed under that license.
+The project software is licensed under the [MIT License](LICENSE). By
+submitting a software contribution, you agree that it may be distributed under
+that license. Third-party biological records retain their per-record licenses;
+MIT does not relicense data in `materials/bundles/`.

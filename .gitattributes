@@ -10,6 +10,8 @@
 *.png binary
 *.woff binary
 *.woff2 binary
+*.sqlite binary
+*.gz binary
 
 # These byte-pinned fixtures intentionally preserve their upstream EOF shape.
 apps/proto-workbench/runtime/trust/sigstore-public-good/trusted_root.json text eol=lf whitespace=-blank-at-eof

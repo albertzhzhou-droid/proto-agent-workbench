@@ -1,8 +1,9 @@
 # Proto Agent Toolchain
 
 > Experimental `0.1.x` software. The Python CLI (`0.1.0`) and Windows
-> Workbench (`0.1.2`) are versioned independently. All bundled biological
-> records are development fixtures, and every scientific result remains
+> Workbench (`0.1.2`) are versioned independently. The legacy parts library is
+> a development fixture; the small public materials bundles retain upstream
+> provenance and per-record rights. Every scientific result remains
 > human-review-required.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the reconstructed version history,
@@ -22,7 +23,19 @@ The current implementation is intentionally conservative: it uses a tiny Proto-l
 
 ## Biological Materials Catalogue
 
-The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`; only a small seed of software-only templates is shipped with the repository/installer. Initialise and inspect it with `proto-agent materials init`, `materials status`, and `materials search`. Source synchronisation always creates an inactive staging snapshot; human activation and rollback are explicit. The active catalogue has a normal SQLite/FTS index plus a physically separate quarantine database and content-addressed compressed sequence objects. Model-facing MCP tools expose only bounded `DESIGN_ELIGIBLE` summaries and eligible materialization; they never expose quarantine or perform sync/activation. See [`docs/materials_library.md`](docs/materials_library.md) for the schema, rights boundaries, import formats, and source policy.
+The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`. Large synchronized snapshots and local state stay outside Git, but `materials/bundles/` contains a small, deterministic public distribution: 10 reviewed iGEM DNA parts and 3 reviewed UniProt protein records, plus a physically separate metadata-only quarantine index. The 1,795 quarantine rows retain public source, license, original length/hash, and isolation reasons, while all quarantine sequence objects and personal or machine-local fields are omitted.
+
+Verify both profiles before use. Installing the public catalog does not activate it; activation remains a separate human decision. The quarantine profile has `activation_policy: DENY`, is not accepted by the public installer, and is never enumerated by model-facing MCP tools.
+
+```powershell
+proto-agent materials bundle-verify --profile PUBLIC_CATALOG
+proto-agent materials bundle-verify --profile PUBLIC_QUARANTINE
+proto-agent materials bundle-install-public
+# Optional explicit human action after reviewing the installed snapshot:
+proto-agent materials bundle-install-public --activate
+```
+
+Source synchronization still creates inactive staging snapshots, and the active external catalogue still uses SQLite/FTS, content-addressed sequence objects, manual activation/rollback, and a separate admin-only quarantine. See [`docs/materials_library.md`](docs/materials_library.md) and [`materials/bundles/README.md`](materials/bundles/README.md) for schema, provenance, rights, sanitization, and regeneration details.
 
 The workbench layer is inspired by public descriptions of Claude Science-style scientific workflows: consolidate fragmented tools, keep execution local, declare connectors explicitly, and preserve an auditable run ledger. See `docs/claude_science_patterns.md`.
 
@@ -149,7 +162,7 @@ See `docs/security_architecture.md` for the trust boundaries and `docs/security_
 
 ## Safety Boundary
 
-This repository can validate software structure and produce development artifacts. It does not certify wet-lab readiness, orderability, biosafety, or regulatory compliance. All current sequences are toy fixtures.
+This repository can validate software structure and produce development artifacts. It does not certify wet-lab readiness, orderability, biosafety, or regulatory compliance. Legacy `parts/` sequences are toy fixtures; source-derived records in the public materials bundle are included for auditable software use and are not experimental-readiness claims.
 
 ## Contributing
 
@@ -158,4 +171,6 @@ generated-file policy, and safety boundaries.
 
 ## License
 
-This project is open source under the [MIT License](LICENSE).
+Project software is open source under the [MIT License](LICENSE). Third-party
+materials data retains the per-record CC BY 4.0 or CC0 1.0 terms recorded in
+each bundle; MIT does not relicense that data.
