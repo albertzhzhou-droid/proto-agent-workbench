@@ -6,8 +6,9 @@ live connectors, or scientific readiness.
 
 ## Source publication
 
-1. Select a project license and update `LICENSE`, `pyproject.toml`,
-   `apps/proto-workbench/package.json`, and the README consistently.
+1. Confirm that the MIT license is present and consistently declared in
+   `LICENSE`, `pyproject.toml`, `apps/proto-workbench/package.json`, and the
+   README.
 2. Run the Python and Workbench baselines:
 
    ```powershell

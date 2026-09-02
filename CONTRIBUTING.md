@@ -55,6 +55,5 @@ regulatory approval, clinical use, or experimental readiness.
 
 ## Licensing
 
-No project license has been selected yet. Contributions cannot be accepted
-under an open-source grant until the repository owner selects and publishes a
-license and contribution terms.
+The project is licensed under the [MIT License](LICENSE). By submitting a
+contribution, you agree that it may be distributed under that license.

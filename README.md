@@ -158,6 +158,4 @@ generated-file policy, and safety boundaries.
 
 ## License
 
-No project license has been selected yet. Until a `LICENSE` file is added,
-public visibility does not grant permission to copy, modify, or redistribute
-this code.
+This project is open source under the [MIT License](LICENSE).

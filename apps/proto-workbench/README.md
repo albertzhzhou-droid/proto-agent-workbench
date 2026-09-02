@@ -81,3 +81,8 @@ and requires its explicit confirmation controls; it is not part of CI.
 
 The packaged app is designed to run without Python, Node, LM Studio processes, or
 network access once those runtime inputs are staged.
+
+## License
+
+Proto Workbench is open source under the repository's
+[MIT License](../../LICENSE).
