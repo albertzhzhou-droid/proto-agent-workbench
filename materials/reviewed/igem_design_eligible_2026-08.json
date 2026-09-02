@@ -1,0 +1,547 @@
+{
+  "schema_version": "proto-agent.materials.reviewed.v1",
+  "reviewed_at": "2026-09-01T00:12:00Z",
+  "reviewer": "human",
+  "notice": "Small, open-license, software-only eligibility seed. Chassis labels are local compatibility annotations because the upstream iGEM chassis fields were empty. This file is not a wet-lab protocol or a readiness claim.",
+  "records": [
+    {
+      "resource_id": "igem:3c51179f-e370-4738-84b7-91773f750175",
+      "kind": "genetic_part",
+      "name": "BBa_B0034",
+      "aliases": ["RBS (Elowitz 1999) -- defines RBS efficiency"],
+      "description_en": "RBS based on Elowitz repressilator.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Ribosome Entry Site"],
+      "part_type": "rbs",
+      "sequence": "AAAGAGGAGAAA",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "3c51179f-e370-4738-84b7-91773f750175",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/3c51179f-e370-4738-84b7-91773f750175",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "30e3cfb76814203c7d8ab852d5a107c0cc8a972849bf54f0993e8bb65add1b21"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/3c51179f-e370-4738-84b7-91773f750175",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000139",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-08-31T23:40:21Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+      "kind": "genetic_part",
+      "name": "BBa_J23119",
+      "aliases": ["constitutive promoter family member"],
+      "description_en": "The iGEM Registry record BBa_J23119 provides a DNA promoter sequence. The upstream description field is \"Later\"; no additional functional claim is inferred here.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Promoter"],
+      "part_type": "promoter",
+      "sequence": "TTGACAGCTAGCTCAGTCCTAGGTATAATGCTAGC",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+        "revision": "2021-09-08T20:23:15.000Z",
+        "release": "2021-09-08T20:23:15.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "006a244a18ef0bb354018bc33000cf399771807b7dc5f36337d8c2ca066d76eb"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/f2171f1c-73c5-49ed-a466-b3a2c9ad9132",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000167",
+        "registry_status": "published",
+        "upstream_description": "Later",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-08-31T23:40:21Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+      "kind": "genetic_part",
+      "name": "BBa_B0015",
+      "aliases": ["double terminator (B0010-B0012)"],
+      "description_en": "Double terminator consisting of BBa_B0010 and BBa_B0012",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Terminator"],
+      "part_type": "terminator",
+      "sequence": "CCAGGCATCAAATAAAACGAAAGGCTCAGTCGAAAGACTGGGCCTTTCGTTTTATCTGTTGTTTGTCGGTGAACGCTCTCTACTAGAGTCACACTGGCTCACCTTCGGGTGGGCCTTTCTGCGTTTATA",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "6dd0b1f3b8f990e012a4eb9d42b535f6c1091ccf8f3b22acbf46663bceadc174"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/a0ebeeab-3947-440e-9cf1-f0a47bbc4c33",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000141",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-08-31T23:40:21Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:54457b65-1485-4665-92e4-b549d19c4ebe",
+      "kind": "genetic_part",
+      "name": "BBa_25FAVHQY",
+      "aliases": ["EMSfp506"],
+      "description_en": "Optimized mNeonGreen to resist EMS. It is a basic (constitutively fluorescent) green/yellow fluorescent protein published in 2013, derived from Branchiostoma lanceolatum. It is reported to be a very rapidly-maturing monomer with moderate acid sensitivity.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["CDS"],
+      "part_type": "cds",
+      "sequence": "ATGGTTTCTAAAGGTGAAGAAGATAATATGGCTTCTTTACCAGCTACTCATGAATTACATATTTTTGGTTCTATTAATGGTGTTGATTTTGATATGGTTGGTCAAGGTACTGGTAATCCAAATGATGGTTATGAAGAATTAAATTTAAAATCTACTAAAGGTGATTTACAATTTTCTCCATGGATTTTAGTTCCACATATTGGTTATGGTTTTCATCAATATTTACCATATCCAGATGGTATGTCTCCATTTCAAGCTGCTATGGTTGATGGTTCTGGTTATCAAGTTCATAGAACTATGCAATTTGAAGATGGTGCTTCTTTAACTGTTAATTATAGATATACTTATGAAGGTTCTCATATTAAAGGTGAAGCTCAAGTTAAAGGTACTGGTTTTCCAGCTGATGGTCCAGTTATGACTAATTCTTTAACTGCTGCTGATTGGTGTAGATCTAAAAAAACTTATCCAAATGATAAAACTATTATTTCTACTTTTAAATGGTCTTATACTACTGGTAATGGTAAAAGATATAGATCTACTGCTAGAACTACTTATACTTTTGCTAAACCAATGGCTGCTAATTATTTAAAAAATCAACCAATGTATGTTTTTAGAAAAACTGAATTAAAACATTCTAAAACTGAATTAAATTTTAAAGAATGGCAAAAAGCTTTTACTGATGTTATGGGTATGGATGAATTATATAAAGGTTCTTGA",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "54457b65-1485-4665-92e4-b549d19c4ebe",
+        "revision": "2025-10-03T11:56:51.079Z",
+        "release": "2025-10-03T11:56:51.079Z",
+        "url": "https://api.registry.igem.org/v1/parts/54457b65-1485-4665-92e4-b549d19c4ebe",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "491603f4a1c9e5ce5f9884a9b45db37ce1008afb7d970607535f6d050dd74fdb"
+      },
+      "license": {
+        "id": "cc0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared CC0 dedication permits redistribution and reuse. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/54457b65-1485-4665-92e4-b549d19c4ebe",
+        "https://api.registry.igem.org/v1/licenses/5b2a6fd4-f5fa-4626-a37f-35f1ea89eec7"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000316",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-08-31T23:40:21Z",
+          "basis": ["published iGEM record", "declared per-record CC0 license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+      "kind": "genetic_part",
+      "name": "BBa_25RT9PC8",
+      "aliases": ["The ECF16-cognate promoter P16"],
+      "description_en": "The cognate promoter P<sub>16 </sub>for the ECF16 sigma factor contains its specific binding site. Upon binding, the ECF16 sigma factor recruits the E. coli RNA polymerase to initiate transcription of the downstream gene. In our project, P<sub>16</sub> is placed upstream of the GFP reporter gene (BBa_K2717024), serving as the regulatory element that integrates upstream input signals and activates transcription only when the intact ECF16 sigma factor is present, thereby validating the AND-gate logic function.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Promoter"],
+      "part_type": "promoter",
+      "sequence": "CTTGGATGAAAAGAAACCCACCGACGGTGTAACCCTGGCGGCCGATGCAACGAACTAACT",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+        "revision": "2025-09-30T07:50:13.578Z",
+        "release": "2025-09-30T07:50:13.578Z",
+        "url": "https://api.registry.igem.org/v1/parts/09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "6cda02132a971f1575eeac0ddd9e8e61569d4e9f55932c9489c3a11a64198a68"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/09c8558f-f976-4d04-bd8c-cfd7d8d2d7e2",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000167",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-08-31T23:40:21Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:3e30ad4f-5360-49f7-bda4-60929b0f2971",
+      "kind": "genetic_part",
+      "name": "BBa_B0030",
+      "aliases": ["RBS.1 (strong) -- modified from R. Weiss"],
+      "description_en": "Strong RBS based on Ron Weiss thesis. Strength is considered relative to BBa_B0031, BBa_B0032, and BBa_B0033.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Ribosome Entry Site"],
+      "part_type": "rbs",
+      "sequence": "ATTAAAGAGGAGAAA",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "3e30ad4f-5360-49f7-bda4-60929b0f2971",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/3e30ad4f-5360-49f7-bda4-60929b0f2971",
+        "retrieved_at": "2026-09-01T00:12:00Z",
+        "content_sha256": "972e17ccb4ec7af5c6cc01991c6ede564ca5f1a74da6efb6941b07421c3991b3"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/3e30ad4f-5360-49f7-bda4-60929b0f2971",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000139",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-09-01T00:12:00Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+      "kind": "genetic_part",
+      "name": "BBa_B0031",
+      "aliases": ["RBS.2 (weak) -- derivative of BBa_0030"],
+      "description_en": "Medium RBS based on Ron Weiss thesis. Strength is considered relative to BBa_B0030, BBa_B0032, and BBa_B0033.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Ribosome Entry Site"],
+      "part_type": "rbs",
+      "sequence": "TCACACAGGAAACC",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+        "retrieved_at": "2026-09-01T00:12:00Z",
+        "content_sha256": "873d50ca903da6b474ed1c826ab9bc06012427cb89fc9f96a596e3133f7f8d76"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/a7a86504-1527-423b-8d1d-0c6fda1aacf9",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000139",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-09-01T00:12:00Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:dd29b240-f03a-42ce-8612-6d562f74308e",
+      "kind": "genetic_part",
+      "name": "BBa_B0032",
+      "aliases": ["RBS.3 (medium) -- derivative of BBa_0030"],
+      "description_en": "Weak1 RBS based on Ron Weiss thesis. Strength is considered relative to BBa_B0030, BBa_B0031, and BBa_B0033.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Ribosome Entry Site"],
+      "part_type": "rbs",
+      "sequence": "TCACACAGGAAAG",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "dd29b240-f03a-42ce-8612-6d562f74308e",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/dd29b240-f03a-42ce-8612-6d562f74308e",
+        "retrieved_at": "2026-09-01T00:12:00Z",
+        "content_sha256": "cbcfa1630a1bea19a5eeaf06492cde6262a4407be5d5ada833d65782be640b03"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/dd29b240-f03a-42ce-8612-6d562f74308e",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000139",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-09-01T00:12:00Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:843d0552-bcc1-4539-a678-7b3dae4c9849",
+      "kind": "genetic_part",
+      "name": "BBa_B0033",
+      "aliases": ["RBS.4 (weaker) -- derivative of BBa_0030"],
+      "description_en": "Weaker RBS based on Ron Weiss thesis. Strength is considered relative to BBa_B0030, BBa_B0031, and BBa_B0032.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Ribosome Entry Site"],
+      "part_type": "rbs",
+      "sequence": "TCACACAGGAC",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "843d0552-bcc1-4539-a678-7b3dae4c9849",
+        "revision": "2021-09-08T20:22:43.000Z",
+        "release": "2021-09-08T20:22:43.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/843d0552-bcc1-4539-a678-7b3dae4c9849",
+        "retrieved_at": "2026-09-01T00:12:00Z",
+        "content_sha256": "dce8d31eab8a7ad380244949844617a935e8e0e5f045c778948c47703facc65c"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/843d0552-bcc1-4539-a678-7b3dae4c9849",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000139",
+        "registry_status": "published",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-09-01T00:12:00Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "igem:9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+      "kind": "genetic_part",
+      "name": "BBa_J23100",
+      "aliases": ["constitutive promoter family member"],
+      "description_en": "The iGEM Registry record BBa_J23100 provides a DNA promoter sequence. The upstream description field is \"Replace later\"; no additional functional claim is inferred here.",
+      "chassis": ["ecoli_k12"],
+      "role_terms": ["Promoter"],
+      "part_type": "promoter",
+      "sequence": "TTGACGGCTAGCTCAGTCCTAGGTACAGTGCTAGC",
+      "sequence_kind": "DNA",
+      "source": {
+        "provider": "iGEM Registry",
+        "record_id": "9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+        "revision": "2021-09-08T20:23:14.000Z",
+        "release": "2021-09-08T20:23:14.000Z",
+        "url": "https://api.registry.igem.org/v1/parts/9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+        "retrieved_at": "2026-09-01T00:12:00Z",
+        "content_sha256": "50ffbe7cf84ad2ebccf051780af2cc94ffa881a6a587de396882e2deb8871cae"
+      },
+      "license": {
+        "id": "cc-by-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+        "attribution": "iGEM Registry contributor",
+        "rights_notes": "The declared Creative Commons Attribution license permits redistribution with attribution. Chassis is a local software compatibility annotation; upstream chassis fields were empty.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://api.registry.igem.org/v1/parts/9b3b1fbd-1557-49a5-964a-7f8b491c9101",
+        "https://api.registry.igem.org/v1/licenses/d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "design_eligibility": true,
+      "metadata": {
+        "role_accession": "SO:0000167",
+        "registry_status": "published",
+        "upstream_description": "Replace later",
+        "chassis_basis": "human_review_software_annotation",
+        "review": {
+          "decision": "accept",
+          "reviewer": "human",
+          "reviewed_at": "2026-09-01T00:12:00Z",
+          "basis": ["published iGEM record", "declared per-record CC-BY license", "DNA alphabet and source hash verified", "no hard safety flag", "supported Proto DSL part type"]
+        }
+      }
+    },
+    {
+      "resource_id": "proto:template/expression-cassette",
+      "kind": "design_template",
+      "name": "Expression cassette",
+      "aliases": ["表达盒模板"],
+      "description_en": "Software-only Proto design template with ordered slots: promoter, rbs, cds, terminator.",
+      "description_zh": "仅用于软件设计的 Proto 模板，槽位顺序：promoter、rbs、cds、terminator。",
+      "tags": ["template", "software-only", "human-review-required"],
+      "source": {
+        "provider": "Proto Agent",
+        "record_id": "proto:template/expression-cassette",
+        "revision": "seed-1",
+        "release": "2026.08",
+        "url": "https://github.com/openai/proto-agent",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "3ab6d13ca4781edcb0c5a37a20957c8431b4fedc1dd4885850a3dfa01a424d78"
+      },
+      "license": {
+        "id": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Proto Agent seed templates",
+        "rights_notes": "Software-only design template; no experimental protocol.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://github.com/openai/proto-agent"],
+      "review_status": "REFERENCE_ONLY",
+      "design_eligibility": false,
+      "metadata": {"slots": ["promoter", "rbs", "cds", "terminator"], "template_language": "proto-agent-dsl"}
+    },
+    {
+      "resource_id": "proto:template/dual-expression",
+      "kind": "design_template",
+      "name": "Dual expression cassette",
+      "aliases": ["双表达盒模板"],
+      "description_en": "Software-only Proto design template with ordered slots: promoter, rbs, cds, terminator, promoter, rbs, cds, terminator.",
+      "description_zh": "仅用于软件设计的 Proto 模板，槽位顺序：promoter、rbs、cds、terminator、promoter、rbs、cds、terminator。",
+      "tags": ["template", "software-only", "human-review-required"],
+      "source": {
+        "provider": "Proto Agent",
+        "record_id": "proto:template/dual-expression",
+        "revision": "seed-1",
+        "release": "2026.08",
+        "url": "https://github.com/openai/proto-agent",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "3ab6d13ca4781edcb0c5a37a20957c8431b4fedc1dd4885850a3dfa01a424d78"
+      },
+      "license": {
+        "id": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Proto Agent seed templates",
+        "rights_notes": "Software-only design template; no experimental protocol.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://github.com/openai/proto-agent"],
+      "review_status": "REFERENCE_ONLY",
+      "design_eligibility": false,
+      "metadata": {"slots": ["promoter", "rbs", "cds", "terminator", "promoter", "rbs", "cds", "terminator"], "template_language": "proto-agent-dsl"}
+    },
+    {
+      "resource_id": "proto:template/circular-module",
+      "kind": "design_template",
+      "name": "Circular construct module",
+      "aliases": ["环状构建模块模板"],
+      "description_en": "Software-only Proto design template with ordered slots: promoter, rbs, cds, terminator.",
+      "description_zh": "仅用于软件设计的 Proto 模板，槽位顺序：promoter、rbs、cds、terminator。",
+      "tags": ["template", "software-only", "human-review-required"],
+      "source": {
+        "provider": "Proto Agent",
+        "record_id": "proto:template/circular-module",
+        "revision": "seed-1",
+        "release": "2026.08",
+        "url": "https://github.com/openai/proto-agent",
+        "retrieved_at": "2026-08-31T23:40:21Z",
+        "content_sha256": "3ab6d13ca4781edcb0c5a37a20957c8431b4fedc1dd4885850a3dfa01a424d78"
+      },
+      "license": {
+        "id": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Proto Agent seed templates",
+        "rights_notes": "Software-only design template; no experimental protocol.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://github.com/openai/proto-agent"],
+      "review_status": "REFERENCE_ONLY",
+      "design_eligibility": false,
+      "metadata": {"slots": ["promoter", "rbs", "cds", "terminator"], "template_language": "proto-agent-dsl"}
+    }
+  ]
+}

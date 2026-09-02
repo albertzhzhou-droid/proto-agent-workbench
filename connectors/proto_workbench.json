@@ -1,0 +1,446 @@
+{
+  "schema_version": "proto-agent.connectors.v1",
+  "workbench": "proto-agent-local",
+  "description": "Local connector registry inspired by scientific AI workbenches. Entries may be local, planned, or external.",
+  "connectors": [
+    {
+      "id": "proto_dsl",
+      "kind": "local_tool",
+      "status": "available",
+      "purpose": "Parse, check, compile, export, and score Proto-like design files.",
+      "commands": [
+        "proto-agent check",
+        "proto-agent compile",
+        "proto-agent protein validate",
+        "proto-agent protein compile",
+        "proto-agent sequence validate",
+        "proto-agent export",
+        "proto-agent score"
+      ],
+      "safety_notes": [
+        "Runs locally.",
+        "Current DSL and exporters are development fixtures."
+      ]
+    },
+    {
+      "id": "parts_library",
+      "kind": "local_data",
+      "status": "available",
+      "purpose": "Provide reviewed or fixture part IDs for Codex/GPT design edits.",
+      "path": "parts/ecoli_k12_library.json",
+      "commands": [
+        "proto-agent parts search"
+      ],
+      "safety_notes": [
+        "Current library is a toy fixture and must be replaced before real biological design."
+      ]
+    },
+    {
+      "id": "materials_catalog",
+      "kind": "local_data",
+      "status": "local_configuration_required",
+      "purpose": "Provide a versioned, external biological materials catalogue with bilingual descriptions, source/license evidence, content-addressed sequences, and a physically isolated quarantine store.",
+      "external_root": "<workspace-parent>\\Proto CLI Materials",
+      "environment_override": "PROTO_AGENT_MATERIALS_ROOT",
+      "commands": [
+        "proto-agent materials status",
+        "proto-agent materials search",
+        "proto-agent materials get",
+        "proto-agent materials facets",
+        "proto-agent materials materialize",
+        "proto-agent materials materialize-proteins",
+        "proto-agent materials render-template",
+        "proto-agent materials import",
+        "proto-agent materials sync",
+        "proto-agent materials diff",
+        "proto-agent materials activate",
+        "proto-agent materials rollback"
+      ],
+      "tools": [
+        "proto_materials_search",
+        "proto_materials_get",
+        "proto_materials_facets",
+        "proto_materials_materialize",
+        "proto_materials_materialize_proteins"
+      ],
+      "safety_notes": [
+        "The external root is outside the workspace and is never copied into the repository or installer.",
+        "MCP can read only DESIGN_ELIGIBLE summaries and selected eligible sequences; quarantine is physically separate and admin-only.",
+        "Synchronization writes a staging snapshot and requires an explicit human activate/rollback action.",
+        "Design eligibility is a local data/license policy gate, not a claim of orderability, experimental safety, or regulatory compliance."
+      ]
+    },
+    {
+      "id": "ncbi_reference",
+      "kind": "conditional_reference",
+      "status": "available",
+      "purpose": "Retain NCBI accession.version references and third-party rights notices without placing unreviewed sequence data in the redistributable seed.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/home/about/policies/",
+      "safety_notes": [
+        "NCBI does not grant submitter or third-party rights; records remain conditional and reference-only until reviewed.",
+        "The accession.version form is required for stable provenance."
+      ]
+    },
+    {
+      "id": "addgene_link_only",
+      "kind": "link_only",
+      "status": "available",
+      "purpose": "Expose Addgene source links without downloading, mirroring, or packaging content by default.",
+      "documentation": "https://www.addgene.org/terms-of-use/",
+      "safety_notes": [
+        "No Addgene sequence or plasmid data is fetched by the default materials synchronizer.",
+        "A user-provided approved credential and explicit compatible license are required before any future connector can read content."
+      ]
+    },
+    {
+      "id": "mcp_server",
+      "kind": "agent_connector",
+      "status": "available",
+      "purpose": "Expose Proto Agent capabilities to MCP-compatible hosts such as Claude Code, Claude Desktop, Codex-like agents, and ChatGPT Apps.",
+      "commands": [
+        "proto-agent mcp",
+        "proto-agent-mcp"
+      ],
+      "tools": [
+        "proto_check",
+        "proto_compile",
+        "proto_export",
+        "proto_validate_sbol",
+        "proto_score",
+        "proto_validate_sequences",
+        "proto_optimize_sequences",
+        "proto_search_parts",
+        "proto_protein_compile",
+        "proto_materials_search",
+        "proto_materials_get",
+        "proto_materials_facets",
+        "proto_materials_materialize",
+        "proto_materials_materialize_proteins",
+        "proto_workflow_run",
+        "proto_review_packet",
+        "proto_provenance_verify",
+        "proto_literature_search",
+        "proto_pubmed_search",
+        "proto_europe_pmc_search",
+        "proto_crossref_search",
+        "proto_uniprot_search",
+        "proto_rhea_search",
+        "proto_run_analysis",
+        "proto_run_notebook",
+        "proto_r_status",
+        "proto_run_r",
+        "proto_connectors_check"
+      ],
+      "safety_notes": [
+        "Runs locally over stdio.",
+        "Every file argument is resolved beneath the declared workspace/build/cache roots with strict schema and byte limits.",
+        "Execution tools are disabled unless a digest-pinned OCI sandbox is configured; MCP cannot opt into unsafe host execution.",
+        "Live network tools require an explicit sidecar startup capability and otherwise use bounded cache or fixtures.",
+        "Tool outputs preserve structured diagnostics and human-review gating."
+      ]
+    },
+    {
+      "id": "review_packet",
+      "kind": "review_artifact",
+      "status": "available",
+      "purpose": "Turn workflow manifests into evidence cards, human-review checklists, and communication-ready review packets.",
+      "commands": [
+        "proto-agent review run"
+      ],
+      "tools": [
+        "proto_review_packet"
+      ],
+      "safety_notes": [
+        "Review packets improve communication and auditability.",
+        "Workflow provenance is verified before evidence is consumed, and each review packet receives its own digest statement.",
+        "They do not certify wet-lab readiness, orderability, biosafety, or regulatory compliance."
+      ]
+    },
+    {
+      "id": "provenance",
+      "kind": "audit_artifact",
+      "status": "available",
+      "purpose": "Create, verify, and compare bounded SHA-256 provenance statements for workflow manifests and review packets.",
+      "commands": [
+        "proto-agent provenance create",
+        "proto-agent provenance verify",
+        "proto-agent provenance compare"
+      ],
+      "safety_notes": [
+        "Only single-link regular files inside workspace/build roots are accepted; symlink, junction, reparse, hardlink, duplicate, and self-reference claims are rejected.",
+        "Statements are content-addressed but unsigned and therefore do not establish publisher identity."
+      ]
+    },
+    {
+      "id": "offline_security_stress",
+      "kind": "security_verification",
+      "status": "local_configuration_required",
+      "purpose": "Exercise JSON, path, schema-envelope, and Proto parser boundaries with a pinned, checksummed corpus.",
+      "commands": [
+        "proto-agent security stress --corpus-dir <reviewed-corpus-path>"
+      ],
+      "safety_notes": [
+        "A source checkout defaults to tests/security_corpus; wheels and packaged workspaces must be given an explicit reviewed corpus path because that corpus is not bundled.",
+        "Runs in-process and offline with case, time, input, memory-observation, temporary-output, environment-restoration, and report-size checks.",
+        "Starts no child process and makes no network request, but cooperative timing is not an operating-system sandbox or hard preemption guarantee."
+      ]
+    },
+    {
+      "id": "sigstore_offline_verifier",
+      "kind": "local_verification",
+      "status": "available",
+      "purpose": "Import content-addressed Signature Evidence packs and verify Sigstore v0.3 artifact binding, cryptographic signatures, trusted time, pinned trust roots, and exact Trust Policy authorities without network access.",
+      "artifacts": [
+        "build/signature-evidence/se_<content-address>/decision-bundle.json",
+        "build/signature-evidence/se_<content-address>/trust-policy.json",
+        "build/signature-evidence/se_<content-address>/signature.sigstore.json",
+        "build/signature-evidence/se_<content-address>/SHA256SUMS.txt"
+      ],
+      "safety_notes": [
+        "Verification uses a reviewed, digest-pinned Sigstore Public Good trusted-root snapshot and never performs a network fallback.",
+        "The connector cannot sign, generate keys, activate trust, authorize an effect, or rotate the pinned root.",
+        "A public-key signature without independently verifiable signed time remains incomplete even when its cryptographic signature is valid."
+      ]
+    },
+    {
+      "id": "tuf_trust_root_lifecycle",
+      "kind": "local_verification",
+      "status": "available",
+      "purpose": "Import immutable seven-file TUF candidate packs and review sequential root rotation, dual signing thresholds, role expiry, rollback protection, target binding, and Sigstore trusted-root structure entirely offline.",
+      "artifacts": [
+        "build/trust-root-candidates/tr_<content-address>/root.json",
+        "build/trust-root-candidates/tr_<content-address>/timestamp.json",
+        "build/trust-root-candidates/tr_<content-address>/snapshot.json",
+        "build/trust-root-candidates/tr_<content-address>/targets.json",
+        "build/trust-root-candidates/tr_<content-address>/trusted_root.json",
+        "build/trust-root-candidates/tr_<content-address>/SOURCE.json",
+        "build/trust-root-candidates/tr_<content-address>/SHA256SUMS.txt"
+      ],
+      "safety_notes": [
+        "Verification starts from a bundled digest-pinned root and checkpoint; it never performs a network refresh or trusts candidate metadata before both applicable root thresholds pass.",
+        "Version, expiry, length, SHA-256, delegated signatures, and rollback checks fail closed and remain separate from change classification.",
+        "The connector cannot download metadata, sign a root, generate keys, replace the pinned anchor, activate trust, suppress a failed check, or authorize an effect."
+      ]
+    },
+    {
+      "id": "transparency_log_witness",
+      "kind": "local_verification",
+      "status": "available",
+      "purpose": "Import immutable six-file transparency witness packs and verify C2SP signed checkpoints, configured witness quorum, RFC 6962 inclusion and consistency proofs, rollback protection, and split-view evidence entirely offline.",
+      "artifacts": [
+        "build/transparency-witness/tw_<content-address>/anchor-checkpoint.note",
+        "build/transparency-witness/tw_<content-address>/checkpoint.note",
+        "build/transparency-witness/tw_<content-address>/inclusion.json",
+        "build/transparency-witness/tw_<content-address>/consistency.json",
+        "build/transparency-witness/tw_<content-address>/SOURCE.json",
+        "build/transparency-witness/tw_<content-address>/SHA256SUMS.txt"
+      ],
+      "safety_notes": [
+        "The Rekor v2 log key is cross-checked against the installed Sigstore TrustedRoot; witness keys, quorum, and the starting checkpoint are release-pinned in an offline review policy.",
+        "Unknown signatures are ignored, while a configured matching key with an invalid signature, a future witness timestamp, a rollback, an equal-size different root, or an invalid Merkle proof fails closed.",
+        "The connector cannot fetch a checkpoint, contact a log or witness, submit an entry, sign or cosign a note, replace policy, advance witness state, suppress a finding, or authorize an effect."
+      ]
+    },
+    {
+      "id": "literature_seed",
+      "kind": "local_data",
+      "status": "available",
+      "purpose": "Provide local, auditable source notes for workbench design rationale and future PubMed expansion.",
+      "path": "literature/seed_sources.json",
+      "commands": [
+        "proto-agent literature search"
+      ],
+      "tools": [
+        "proto_literature_search"
+      ],
+      "safety_notes": [
+        "This is a seed source registry, not a full literature review.",
+        "Scientific claims still require source verification."
+      ]
+    },
+    {
+      "id": "pubmed",
+      "kind": "literature",
+      "status": "available",
+      "purpose": "Search PubMed through NCBI E-utilities with local cache and structured metadata output.",
+      "commands": [
+        "proto-agent literature pubmed"
+      ],
+      "tools": [
+        "proto_pubmed_search"
+      ],
+      "safety_notes": [
+        "Network access is required for uncached live queries.",
+        "Cached and fixture modes are available for reproducible local runs.",
+        "Scientific claims still require source verification."
+      ]
+    },
+    {
+      "id": "europe_pmc",
+      "kind": "literature",
+      "status": "available",
+      "purpose": "Search broader life-science literature metadata, including articles, preprints, patents, and database links, through Europe PMC.",
+      "tools": [
+        "proto_europe_pmc_search"
+      ],
+      "documentation": "https://europepmc.org/RestfulWebService",
+      "safety_notes": [
+        "Network access is individually approved and cached for reproducibility.",
+        "Returned metadata is evidence input and does not establish experimental validity."
+      ]
+    },
+    {
+      "id": "crossref",
+      "kind": "bibliographic_metadata",
+      "status": "available",
+      "purpose": "Resolve and corroborate DOI-level publication metadata through Crossref.",
+      "tools": [
+        "proto_crossref_search"
+      ],
+      "documentation": "https://api.crossref.org/swagger-ui/index.html",
+      "safety_notes": [
+        "Network access is individually approved and cached for reproducibility.",
+        "A DOI record confirms bibliographic identity, not scientific support for a claim."
+      ]
+    },
+    {
+      "id": "uniprot",
+      "kind": "protein_function",
+      "status": "available",
+      "purpose": "Search reviewed UniProtKB protein and catalytic-function metadata without returning biological sequences.",
+      "tools": [
+        "proto_uniprot_search"
+      ],
+      "documentation": "https://www.uniprot.org/help/api",
+      "safety_notes": [
+        "Network access is individually approved and cached for reproducibility.",
+        "The connector returns identifiers and annotations, not sequences or wet-lab instructions."
+      ]
+    },
+    {
+      "id": "rhea",
+      "kind": "reaction_pathway",
+      "status": "available",
+      "purpose": "Search curated biochemical reactions and cross-references through the Rhea REST API.",
+      "tools": [
+        "proto_rhea_search"
+      ],
+      "documentation": "https://www.rhea-db.org/help/rest-api",
+      "safety_notes": [
+        "Network access is individually approved and cached for reproducibility.",
+        "Reaction records support software review but do not establish chassis feasibility."
+      ]
+    },
+    {
+      "id": "python_analysis",
+      "kind": "analysis_runtime",
+      "status": "sandbox_required",
+      "purpose": "Run workspace-local Python analysis scripts through a configured execution broker with captured output, artifacts, and a manifest.",
+      "path": "analyses",
+      "commands": [
+        "proto-agent analysis run"
+      ],
+      "tools": [
+        "proto_run_analysis"
+      ],
+      "safety_notes": [
+        "Only Python scripts inside the workspace are accepted.",
+        "Execution is denied by default; normal operation requires a digest-pinned OCI image with no network and resource limits.",
+        "Unsafe host execution is available only through an explicit CLI flag and is not a sandbox.",
+        "Runs are captured under build/analysis by default.",
+        "This is a bounded analysis runner, not a full Jupyter server."
+      ]
+    },
+    {
+      "id": "jupyter",
+      "kind": "analysis_runtime",
+      "status": "sandbox_required",
+      "purpose": "Run bounded Python cells from workspace-local .ipynb notebooks through a configured execution broker.",
+      "path": "notebooks",
+      "commands": [
+        "proto-agent notebook run"
+      ],
+      "tools": [
+        "proto_run_notebook"
+      ],
+      "safety_notes": [
+        "Lightweight runner only; does not start a full Jupyter server.",
+        "Only notebooks inside the workspace are accepted.",
+        "Execution is denied by default and requires a digest-pinned OCI sandbox for normal operation.",
+        "Runs are captured under build/notebooks by default."
+      ]
+    },
+    {
+      "id": "r_runtime",
+      "kind": "analysis_runtime",
+      "status": "sandbox_required",
+      "purpose": "Report R capability and run workspace-local R scripts through a configured execution broker.",
+      "path": "analyses/r",
+      "commands": [
+        "proto-agent r status",
+        "proto-agent r run"
+      ],
+      "tools": [
+        "proto_r_status",
+        "proto_run_r"
+      ],
+      "safety_notes": [
+        "Adapter is available even when Rscript is not installed; status reports runtime availability.",
+        "Only R scripts inside the workspace are accepted.",
+        "R execution is denied by default and requires a configured digest-pinned OCI sandbox for normal operation.",
+        "Runs are captured under build/r by default."
+      ]
+    },
+    {
+      "id": "sbol_stack",
+      "kind": "exchange_format",
+      "status": "available",
+      "purpose": "Export validated designs to a minimal SBOL3 Turtle profile and run local structural checks.",
+      "commands": [
+        "proto-agent export --format sbol",
+        "proto-agent sbol validate"
+      ],
+      "tools": [
+        "proto_export",
+        "proto_validate_sbol"
+      ],
+      "safety_notes": [
+        "Runs locally without pySBOL3/SBOL-utilities.",
+        "Use pySBOL3/SBOL-utilities for full standards conformance before interoperability claims."
+      ]
+    },
+    {
+      "id": "sequence_validator",
+      "kind": "sequence_validator",
+      "status": "available",
+      "purpose": "Validate assembled construct sequences against local GC-content and restriction-site constraints.",
+      "commands": [
+        "proto-agent sequence validate"
+      ],
+      "tools": [
+        "proto_validate_sequences"
+      ],
+      "safety_notes": [
+        "Runs locally and uses a small built-in recognition-site table.",
+        "This is a deterministic validation layer, not a full DNA Chisel optimizer."
+      ]
+    },
+    {
+      "id": "dna_chisel",
+      "kind": "sequence_optimizer",
+      "status": "available",
+      "purpose": "Expose a DNA Chisel-style sequence optimization adapter with local reviewable suggestions and optional DNA Chisel backend detection.",
+      "commands": [
+        "proto-agent sequence optimize"
+      ],
+      "tools": [
+        "proto_optimize_sequences"
+      ],
+      "safety_notes": [
+        "Does not automatically rewrite biological sequences.",
+        "Uses local suggestions unless DNA Chisel is installed.",
+        "Optimization results require human review and policy-aware screening."
+      ]
+    }
+  ]
+}

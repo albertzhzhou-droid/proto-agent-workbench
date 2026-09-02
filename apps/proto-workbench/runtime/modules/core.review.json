@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.review",
+  "version": 1,
+  "core": true,
+  "label": "Evidence review",
+  "resourceTier": "required",
+  "tools": [
+    "proto_literature_search",
+    "proto_review_packet"
+  ]
+}

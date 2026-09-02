@@ -1,0 +1,107 @@
+{
+  "schema_version": "proto-agent.materials-import.v1",
+  "records": [
+    {
+      "resource_id": "uniprot:P42212",
+      "kind": "protein_sequence",
+      "name": "GFP_AEQVI",
+      "aliases": ["Aequorea victoria GFP", "green fluorescent protein"],
+      "description_en": "Green fluorescent protein sequence from Aequorea victoria, retained as a reviewed reporter-protein reference for software-level design composition.",
+      "description_zh": "来自维多利亚水母的绿色荧光蛋白序列；作为已审查的报告蛋白参考，用于软件层设计组合。",
+      "organism": {"tax_id": 6100, "name": "Aequorea victoria (Water jellyfish) (Mesonema victoria)", "strain": ""},
+      "role_terms": ["fluorescent protein", "reporter protein", "visualization"],
+      "sequence_kind": "PROTEIN",
+      "sequence": "MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK",
+      "sequence_sha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "P42212",
+        "revision": "entry",
+        "release": "2026_02",
+        "url": "https://www.uniprot.org/uniprotkb/P42212/entry",
+        "retrieved_at": "2026-08-31T20:07:02Z",
+        "content_sha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt disclaims third-party patent or other rights.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://www.uniprot.org/uniprotkb/P42212/entry"],
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "design_eligibility": true,
+      "metadata": {"eligibility_basis": "manual software-catalog review 2026-08; source remains immutable", "entry_length": 238}
+    },
+    {
+      "resource_id": "uniprot:Q9U6Y8",
+      "kind": "protein_sequence",
+      "name": "RFP_DISSP",
+      "aliases": ["DsRed", "drFP583", "red fluorescent protein"],
+      "description_en": "Red fluorescent protein drFP583 (DsRed) sequence from Discosoma sp., retained as a reviewed reporter-protein reference for software-level design composition.",
+      "description_zh": "来自海葵属 Discosoma 的红色荧光蛋白 drFP583（DsRed）序列；作为已审查的报告蛋白参考，用于软件层设计组合。",
+      "organism": {"tax_id": 86600, "name": "Discosoma sp. (Sea anemone)", "strain": ""},
+      "role_terms": ["fluorescent protein", "reporter protein", "visualization"],
+      "sequence_kind": "PROTEIN",
+      "sequence": "MRSSKNVIKEFMRFKVRMEGTVNGHEFEIEGEGEGRPYEGHNTVKLKVTKGGPLPFAWDILSPQFQYGSKVYVKHPADIPDYKKLSFPEGFKWERVMNFEDGGVVTVTQDSSLQDGCFIYKVKFIGVNFPSDGPVMQKKTMGWEASTERLYPRDGVLKGEIHKALKLKDGGHYLVEFKSIYMAKKPVQLPGYYYVDSKLDITSHNEDYTIVEQYERTEGRHHLFL",
+      "sequence_sha256": "016abb252860c3952220cc3698048f23bc7983664b322b933a62df0b328e0301",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "Q9U6Y8",
+        "revision": "entry",
+        "release": "2026_02",
+        "url": "https://www.uniprot.org/uniprotkb/Q9U6Y8/entry",
+        "retrieved_at": "2026-08-31T20:09:52Z",
+        "content_sha256": "016abb252860c3952220cc3698048f23bc7983664b322b933a62df0b328e0301"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt disclaims third-party patent or other rights.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://www.uniprot.org/uniprotkb/Q9U6Y8/entry"],
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "design_eligibility": true,
+      "metadata": {"eligibility_basis": "manual software-catalog review 2026-08; source remains immutable", "entry_length": 225}
+    },
+    {
+      "resource_id": "uniprot:Q9U6Y4",
+      "kind": "protein_sequence",
+      "name": "GFPL2_ZOASP",
+      "aliases": ["zFP538", "FP538", "green fluorescent chromoprotein"],
+      "description_en": "GFP-like fluorescent chromoprotein FP538 (zFP538) sequence from Zoanthus sp., retained as a reviewed reporter-protein reference for software-level design composition.",
+      "description_zh": "来自 Zoanthus 属的 GFP 类荧光色素蛋白 FP538（zFP538）序列；作为已审查的报告蛋白参考，用于软件层设计组合。",
+      "organism": {"tax_id": 105402, "name": "Zoanthus sp. (Green polyp)", "strain": ""},
+      "role_terms": ["fluorescent protein", "reporter protein", "visualization"],
+      "sequence_kind": "PROTEIN",
+      "sequence": "MAHSKHGLKEEMTMKYHMEGCVNGHKFVITGEGIGYPFKGKQTINLCVIEGGPLPFSEDILSAGFKYGDRIFTEYPQDIVDYFKNSCPAGYTWGRSFLFEDGAVCICNVDITVSVKENCIYHKSIFNGMNFPADGPVMKKMTTNWEASCEKIMPVPKQGILKGDVSMYLLLKDGGRYRCQFDTVYKAKSVPSKMPEWHFIQHKLLREDRSDAKNQKWQLTEHAIAFPSALA",
+      "sequence_sha256": "6de05b2c8ad5084018adf2cce4447ed8946d74a895446dd2a4ab8ff614c1ed49",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "Q9U6Y4",
+        "revision": "entry",
+        "release": "2026_02",
+        "url": "https://www.uniprot.org/uniprotkb/Q9U6Y4/entry",
+        "retrieved_at": "2026-08-31T20:09:30Z",
+        "content_sha256": "6de05b2c8ad5084018adf2cce4447ed8946d74a895446dd2a4ab8ff614c1ed49"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt disclaims third-party patent or other rights.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": ["https://www.uniprot.org/uniprotkb/Q9U6Y4/entry"],
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "design_eligibility": true,
+      "metadata": {"eligibility_basis": "manual software-catalog review 2026-08; source remains immutable", "entry_length": 231}
+    }
+  ]
+}

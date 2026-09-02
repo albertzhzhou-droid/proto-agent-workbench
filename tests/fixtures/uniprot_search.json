@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "entryType": "UniProtKB reviewed (Swiss-Prot)",
+      "primaryAccession": "P00001",
+      "uniProtkbId": "FIXTURE_ECOLI",
+      "proteinDescription": {
+        "recommendedName": {
+          "fullName": {"value": "Fixture hydroxylation enzyme"}
+        }
+      },
+      "genes": [
+        {"geneName": {"value": "fixtureA"}, "synonyms": [{"value": "fixtureB"}]}
+      ],
+      "organism": {"scientificName": "Escherichia coli"},
+      "comments": [
+        {
+          "commentType": "FUNCTION",
+          "texts": [{"value": "Fixture function annotation."}]
+        },
+        {
+          "commentType": "CATALYTIC ACTIVITY",
+          "reaction": {
+            "name": "fixture substrate = fixture product",
+            "reactionCrossReferences": [{"database": "Rhea", "id": "RHEA:12345"}]
+          }
+        }
+      ]
+    }
+  ]
+}

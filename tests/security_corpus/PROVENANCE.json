@@ -1,0 +1,104 @@
+{
+  "schema_version": "proto-agent.security-corpus-provenance.v1",
+  "sources": [
+    {
+      "id": "blns",
+      "name": "Big List of Naughty Strings",
+      "repository_url": "https://github.com/minimaxir/big-list-of-naughty-strings",
+      "commit": "db33ec7b1d5d9616a88c76394b7d0897bd0b97eb",
+      "source_url": "https://raw.githubusercontent.com/minimaxir/big-list-of-naughty-strings/db33ec7b1d5d9616a88c76394b7d0897bd0b97eb/blns.json",
+      "source_bytes": 27708,
+      "source_sha256": "c08b3856095b8d0cc6e9c581a49f66550b35dbb247f7c758ff8db6c581f84e5f",
+      "license": "MIT",
+      "license_file": "LICENSE-BLNS.txt",
+      "selection_rule": "Select 16 exact decoded entries by upstream array index to cover empty and escaped strings, C0 and terminal controls, BOM, non-ASCII and emoji, bidirectional controls, shell/XML/format-shaped inert data, traversal, and Windows device names. Store index-value records using deterministic ASCII-escaped JSON; no entry is executed or interpreted as markup.",
+      "selected_upstream_indices": [0, 17, 93, 97, 99, 150, 173, 177, 442, 452, 456, 462, 468, 472, 506, 508]
+    },
+    {
+      "id": "json-test-suite",
+      "name": "JSONTestSuite",
+      "repository_url": "https://github.com/nst/JSONTestSuite",
+      "commit": "1ef36fa01286573e846ac449e8683f8833c5b26a",
+      "archive_url": "https://codeload.github.com/nst/JSONTestSuite/zip/1ef36fa01286573e846ac449e8683f8833c5b26a",
+      "archive_sha256": "5b205e1f9533123411e794f1f052cf50df8e723a855f629a07f777f472af53d8",
+      "raw_url_template": "https://raw.githubusercontent.com/nst/JSONTestSuite/1ef36fa01286573e846ac449e8683f8833c5b26a/test_parsing/{filename}",
+      "license": "MIT",
+      "license_file": "LICENSE-JSONTestSuite.txt",
+      "selection_rule": "Copy nine fixtures byte-for-byte: four required-valid cases for whitespace/nesting, duplicate keys, escaped NUL, and surrogate pairs; four required-invalid cases for a leading plus, trailing comma, invalid Unicode escape, and incomplete structure; and one implementation-defined huge exponent case. Every selected fixture is at most 137 bytes."
+    }
+  ],
+  "files": [
+    {
+      "path": "blns_subset.json",
+      "source": "blns",
+      "bytes": 1551,
+      "sha256": "4ba0382744ea65c6b7a0a662a4665e036bb1b63a4301f1f9db3ff4bc0e749c71"
+    },
+    {
+      "path": "json_tests/i_number_huge_exp.json",
+      "source": "json-test-suite",
+      "bytes": 137,
+      "sha256": "ed12f6d094097176142c8f51a29d62cf952d5ab2644cdec71f31a1c0480e69ca"
+    },
+    {
+      "path": "json_tests/n_number_+1.json",
+      "source": "json-test-suite",
+      "bytes": 4,
+      "sha256": "d83017afc0b63eef28670ae0c39391f0fabe91f299126160029a13713fca361e"
+    },
+    {
+      "path": "json_tests/n_object_trailing_comma.json",
+      "source": "json-test-suite",
+      "bytes": 9,
+      "sha256": "60e04bc71fcc4c57abeef95a9604a96aa60f833881a2f028d27bd4f03e176603"
+    },
+    {
+      "path": "json_tests/n_string_invalid_unicode_escape.json",
+      "source": "json-test-suite",
+      "bytes": 10,
+      "sha256": "2b6de004085a3dae0ea9b31230c1d9ce7bc92722914eee188d45eeda803c398a"
+    },
+    {
+      "path": "json_tests/n_structure_lone-open-bracket.json",
+      "source": "json-test-suite",
+      "bytes": 1,
+      "sha256": "245843abef9e72e7efac30138a994bf6301e7e1d7d7042a33d42e863d2638811"
+    },
+    {
+      "path": "json_tests/y_array_arraysWithSpaces.json",
+      "source": "json-test-suite",
+      "bytes": 7,
+      "sha256": "03514ff57dd2364cc63b23ff011cc97cdc0aee89e31f39b538c45efa4a1f093b"
+    },
+    {
+      "path": "json_tests/y_object_duplicated_key.json",
+      "source": "json-test-suite",
+      "bytes": 17,
+      "sha256": "94766ff02436ccd9bceddab5ed15bd3df3d5d6cee3ca0a34c9ad1fd1a9bed523"
+    },
+    {
+      "path": "json_tests/y_string_null_escape.json",
+      "source": "json-test-suite",
+      "bytes": 10,
+      "sha256": "e8d092a2abe0afaefae429a5cf3715c71efa25daf1ecb041d8926e5a75e1c12c"
+    },
+    {
+      "path": "json_tests/y_string_surrogates_U+1D11E_MUSICAL_SYMBOL_G_CLEF.json",
+      "source": "json-test-suite",
+      "bytes": 16,
+      "sha256": "fe59c5b3de3b68f7c7fb803299e2bcf5b280a45c2fca2ab2cb2391d8024e3dea"
+    },
+    {
+      "path": "LICENSE-BLNS.txt",
+      "source": "blns",
+      "bytes": 1104,
+      "sha256": "896442072855d0ce49deb25778423c224f37538f708d224068905159229cd8be"
+    },
+    {
+      "path": "LICENSE-JSONTestSuite.txt",
+      "source": "json-test-suite",
+      "bytes": 1092,
+      "sha256": "4b59f90278ae8d3057a0b56b7037a5720a879931495604f03acd1698d3324be4"
+    }
+  ]
+}

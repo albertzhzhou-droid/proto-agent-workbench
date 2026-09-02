@@ -1,0 +1,18 @@
+{
+  "message": {
+    "items": [
+      {
+        "DOI": "10.1000/example-crossref",
+        "title": ["Fixture L-DOPA pathway metadata"],
+        "author": [
+          {"given": "Ada", "family": "Example"}
+        ],
+        "published": {"date-parts": [[2024, 5, 2]]},
+        "container-title": ["Fixture Proceedings"],
+        "URL": "https://doi.org/10.1000/example-crossref",
+        "type": "journal-article",
+        "score": 87.5
+      }
+    ]
+  }
+}

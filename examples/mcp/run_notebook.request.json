@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_run_notebook",
+    "arguments": {
+      "path": "notebooks/design_summary.ipynb",
+      "timeout": 60
+    }
+  }
+}

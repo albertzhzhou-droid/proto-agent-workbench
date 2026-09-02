@@ -1,0 +1,42 @@
+{
+  "chassis": "ecoli_k12",
+  "notice": "Toy development fixture. Replace with a reviewed parts library before any real design work.",
+  "parts": [
+    {
+      "id": "pLac",
+      "type": "promoter",
+      "name": "Mock lac-regulated promoter",
+      "sequence": "TTGACATATAAT"
+    },
+    {
+      "id": "pTet",
+      "type": "promoter",
+      "name": "Mock tet-regulated promoter",
+      "sequence": "TTGACAAGCTTATAAT"
+    },
+    {
+      "id": "B0034",
+      "type": "rbs",
+      "name": "Mock ribosome binding site",
+      "sequence": "AAAGAGGAGAAA"
+    },
+    {
+      "id": "tetR",
+      "type": "cds",
+      "name": "Mock TetR coding placeholder",
+      "sequence": "ATGGCTGCTGCTTAA"
+    },
+    {
+      "id": "gfp_mock",
+      "type": "cds",
+      "name": "Mock GFP coding placeholder",
+      "sequence": "ATGAAAGCTGCTTAA"
+    },
+    {
+      "id": "B0015",
+      "type": "terminator",
+      "name": "Mock double terminator",
+      "sequence": "CCGCTTAAAGCGG"
+    }
+  ]
+}

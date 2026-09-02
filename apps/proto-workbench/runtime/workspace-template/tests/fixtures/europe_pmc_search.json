@@ -1,0 +1,21 @@
+{
+  "resultList": {
+    "result": [
+      {
+        "source": "MED",
+        "id": "34181032",
+        "pmid": "34181032",
+        "pmcid": "PMC9000001",
+        "doi": "10.1000/example-epmc",
+        "title": "Selection of a tyrosine hydroxylation enzyme in Escherichia coli",
+        "authorString": "Example A, Example B",
+        "journalTitle": "Fixture Journal",
+        "firstPublicationDate": "2021-01-01",
+        "isOpenAccess": "Y",
+        "pubTypeList": {
+          "pubType": ["research article"]
+        }
+      }
+    ]
+  }
+}

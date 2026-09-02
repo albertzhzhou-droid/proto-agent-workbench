@@ -1,0 +1,11 @@
+{
+  "schema": "proto-workbench.sigstore-root-source.v1",
+  "source": "https://github.com/sigstore/root-signing/blob/e3399e7e6f2c3f4039aa2464f95f7d8fcf57910c/targets/trusted_root.json",
+  "upstreamCommit": "e3399e7e6f2c3f4039aa2464f95f7d8fcf57910c",
+  "upstreamSha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66",
+  "pinnedSha256": "a040678bbcc3e3f708a107e3955308bcb4fd31d58860dde6317ea18416af9d36",
+  "normalization": "A single trailing LF was added to the upstream JSON bytes.",
+  "reviewedAt": "2026-08-31T20:25:23-04:00",
+  "updatePolicy": "manual-reviewed-replacement",
+  "networkVerification": "No network access is performed when verifying evidence."
+}

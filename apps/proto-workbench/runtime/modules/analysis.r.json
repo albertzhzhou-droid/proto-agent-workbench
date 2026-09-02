@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "analysis.r",
+  "version": 1,
+  "core": false,
+  "label": "R analysis",
+  "resourceTier": "standard",
+  "tools": [
+    "proto_r_status",
+    "proto_run_r"
+  ]
+}

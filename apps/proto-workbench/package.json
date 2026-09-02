@@ -1,0 +1,171 @@
+{
+  "name": "proto-workbench",
+  "productName": "Proto Workbench",
+  "version": "0.1.2",
+  "description": "Independent local AI workbench for auditable Proto design workflows.",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11.19.0 <12"
+  },
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "vite --configLoader runner",
+    "dev:desktop": "electron-vite dev",
+    "build": "vite build --configLoader runner",
+    "build:desktop": "electron-vite build && node --experimental-strip-types scripts/generate-module-manifest.mjs",
+    "preview": "vite preview --configLoader runner",
+    "build:icon": "node scripts/build-app-icon.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "verify:offline": "node scripts/verify-offline.mjs",
+    "verify:sidecars": "node scripts/verify-sidecars.mjs",
+    "verify:inference": "node --experimental-strip-types scripts/verify-inference.mjs",
+    "package:win": "pnpm build:icon && pnpm build:desktop && electron-builder --win nsis portable",
+    "rebuild:native": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@sigstore/bundle": "5.0.0",
+    "@sigstore/protobuf-specs": "0.5.2",
+    "@sigstore/verify": "4.1.2",
+    "@tufjs/canonical-json": "2.0.0",
+    "@tufjs/models": "5.0.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "ajv": "^8.20.0",
+    "cgview": "1.8.2",
+    "diff": "^9.0.0",
+    "lucide-react": "^1.31.0",
+    "monaco-editor": "^0.56.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "seqviz": "3.10.24",
+    "svgcanvas": "2.6.0",
+    "vite": "7.3.6",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "brace-expansion@<1.1.18": "1.1.18",
+    "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
+    "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
+    "dompurify": "3.4.13",
+    "fast-uri@^3.0.0": "3.1.5",
+    "js-yaml@^4.0.0": "4.3.1",
+    "nanoid@^3.0.0": "3.3.18",
+    "postcss@^8.0.0": "8.5.26",
+    "tar@^7.0.0": "7.5.22",
+    "undici@^6.0.0": "6.28.0"
+  },
+  "build": {
+    "appId": "org.protoworkbench.desktop",
+    "productName": "Proto Workbench",
+    "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "node_modules/cgview/LICENSE",
+        "to": "licenses/CGView-LICENSE.txt"
+      },
+      {
+        "from": "node_modules/svgcanvas/LICENSE",
+        "to": "licenses/SVGCanvas-LICENSE.txt"
+      },
+      {
+        "from": "licenses/Sigstore-Apache-2.0.txt",
+        "to": "licenses/Sigstore-Apache-2.0.txt"
+      },
+      {
+        "from": "licenses/TUF-JS-MIT.txt",
+        "to": "licenses/TUF-JS-MIT.txt"
+      },
+      {
+        "from": "runtime/llama.cpp",
+        "to": "runtime/llama.cpp",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "runtime/proto-agent",
+        "to": "runtime/proto-agent",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "runtime/workspace-template",
+        "to": "runtime/workspace-template",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "runtime/modules",
+        "to": "runtime/modules",
+        "filter": [
+          "**/*.json"
+        ]
+      },
+      {
+        "from": "runtime/trust",
+        "to": "runtime/trust",
+        "filter": [
+          "**/*.json"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "artifactName": "${productName}-${version}-${arch}-setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-portable.${ext}"
+    }
+  }
+}

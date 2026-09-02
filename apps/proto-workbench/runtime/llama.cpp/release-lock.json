@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/ggml-org/llama.cpp",
+  "releaseTag": "b9970",
+  "selectedAt": "2026-07-12T12:17:02Z",
+  "assets": {
+    "cpu": {
+      "name": "llama-b9970-bin-win-cpu-x64.zip",
+      "sha256": "157066dcdc227c126762274b49eb00697059f549990db94f26e34b4ad21cc9a8"
+    },
+    "cuda": {
+      "name": "llama-b9970-bin-win-cuda-13.3-x64.zip",
+      "sha256": "918cdb6f746c5fff3c9c78f7b6b458be76f55aa5df3f6c866c53ba23f4fba6d5"
+    },
+    "cudaRuntime": {
+      "name": "cudart-llama-bin-win-cuda-13.3-x64.zip",
+      "sha256": "1462a050eb4c684921ba51dcc4cc488a036674c3e73e9945ee705b854808d03e"
+    }
+  }
+}

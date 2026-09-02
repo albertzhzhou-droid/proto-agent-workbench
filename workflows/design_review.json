@@ -1,0 +1,51 @@
+{
+  "schema_version": "proto-agent.workflow.v1",
+  "id": "design_review",
+  "description": "Local-first design review loop: check, compile, score, export, and write an audit manifest.",
+  "steps": [
+    {
+      "id": "check",
+      "tool": "proto-agent check",
+      "required": true
+    },
+    {
+      "id": "compile",
+      "tool": "proto-agent compile",
+      "required": true
+    },
+    {
+      "id": "sequence_validate",
+      "tool": "proto-agent sequence validate",
+      "required": true
+    },
+    {
+      "id": "score",
+      "tool": "proto-agent score",
+      "required": true
+    },
+    {
+      "id": "export_sbol",
+      "tool": "proto-agent export --format sbol",
+      "required": false
+    },
+    {
+      "id": "sbol_validate",
+      "tool": "proto-agent sbol validate",
+      "required": true
+    },
+    {
+      "id": "export_genbank",
+      "tool": "proto-agent export --format genbank",
+      "required": false
+    },
+    {
+      "id": "export_fasta",
+      "tool": "proto-agent export --format fasta",
+      "required": false
+    }
+  ],
+  "review_gate": {
+    "status": "human_review_required",
+    "message": "Software validation passed only if ok=true. Wet-lab readiness is never implied."
+  }
+}

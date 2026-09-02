@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_validate_sequences",
+    "arguments": {
+      "path": "designs/toggle_switch.proto"
+    }
+  }
+}

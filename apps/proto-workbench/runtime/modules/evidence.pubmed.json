@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "evidence.pubmed",
+  "version": 1,
+  "core": false,
+  "label": "PubMed",
+  "resourceTier": "light",
+  "tools": [
+    "proto_pubmed_search"
+  ]
+}

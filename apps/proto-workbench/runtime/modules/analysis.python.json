@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "analysis.python",
+  "version": 1,
+  "core": false,
+  "label": "Python analysis",
+  "resourceTier": "standard",
+  "tools": [
+    "proto_run_analysis"
+  ]
+}

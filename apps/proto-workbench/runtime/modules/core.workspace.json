@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.workspace",
+  "version": 1,
+  "core": true,
+  "label": "Workspace isolation",
+  "resourceTier": "required",
+  "tools": [
+    "workspace_propose_patch",
+    "workspace_read",
+    "workspace_search"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_review_packet",
+    "arguments": {
+      "path": "designs/toggle_switch.proto",
+      "literature_query": "synthetic biology design automation"
+    }
+  }
+}

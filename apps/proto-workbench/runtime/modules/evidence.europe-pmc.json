@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "evidence.europe-pmc",
+  "version": 1,
+  "core": false,
+  "label": "Europe PMC",
+  "resourceTier": "light",
+  "tools": [
+    "proto_europe_pmc_search"
+  ]
+}

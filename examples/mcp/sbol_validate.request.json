@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_validate_sbol",
+    "arguments": {
+      "path": "build/test-toggle.sbol.ttl"
+    }
+  }
+}

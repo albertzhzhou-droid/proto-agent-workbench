@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_check",
+    "arguments": {
+      "path": "designs/toggle_switch.proto"
+    }
+  }
+}

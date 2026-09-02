@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "evidence.crossref",
+  "version": 1,
+  "core": false,
+  "label": "Crossref",
+  "resourceTier": "light",
+  "tools": [
+    "proto_crossref_search"
+  ]
+}

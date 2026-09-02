@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "evidence.uniprot",
+  "version": 1,
+  "core": false,
+  "label": "UniProtKB",
+  "resourceTier": "light",
+  "tools": [
+    "proto_uniprot_search"
+  ]
+}

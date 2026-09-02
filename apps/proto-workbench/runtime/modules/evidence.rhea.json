@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "evidence.rhea",
+  "version": 1,
+  "core": false,
+  "label": "Rhea",
+  "resourceTier": "light",
+  "tools": [
+    "proto_rhea_search"
+  ]
+}

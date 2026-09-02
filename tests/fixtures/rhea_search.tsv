@@ -1,0 +1,2 @@
+Reaction identifier	Equation	ChEBI identifier	EC number	PubMed	Cross-reference (EcoCyc)	Cross-reference (MetaCyc)	Cross-reference (KEGG)
+RHEA:12345	fixture substrate = fixture product	CHEBI:111; CHEBI:222	EC:1.2.3.4	34181032	ECOCYC:FIXTURE	METACYC:FIXTURE	R00001

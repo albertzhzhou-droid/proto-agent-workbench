@@ -1,0 +1,14 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_pubmed_search",
+    "arguments": {
+      "query": "synthetic biology design automation",
+      "retmax": 1,
+      "offline": true,
+      "fixture": "tests/fixtures/pubmed_esummary.json"
+    }
+  }
+}

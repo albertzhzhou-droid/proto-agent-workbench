@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.validation",
+  "version": 1,
+  "core": true,
+  "label": "Proto validation",
+  "resourceTier": "required",
+  "tools": [
+    "proto_check",
+    "proto_compile",
+    "proto_export",
+    "proto_materials_facets",
+    "proto_materials_get",
+    "proto_materials_materialize",
+    "proto_materials_search",
+    "proto_optimize_sequences",
+    "proto_provenance_verify",
+    "proto_score",
+    "proto_search_parts",
+    "proto_validate_sbol",
+    "proto_validate_sequences",
+    "proto_workflow_run"
+  ]
+}

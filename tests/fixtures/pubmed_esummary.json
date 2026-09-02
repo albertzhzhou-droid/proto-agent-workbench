@@ -1,0 +1,26 @@
+{
+  "search": {
+    "esearchresult": {
+      "idlist": ["12345678"]
+    }
+  },
+  "summary": {
+    "result": {
+      "uids": ["12345678"],
+      "12345678": {
+        "uid": "12345678",
+        "title": "Synthetic biology design automation with machine-readable constraints.",
+        "source": "J Synth Bio Fixtures",
+        "pubdate": "2026",
+        "authors": [
+          {"name": "Ada Example"},
+          {"name": "Lin Researcher"}
+        ],
+        "articleids": [
+          {"idtype": "pubmed", "value": "12345678"},
+          {"idtype": "doi", "value": "10.0000/fixture.12345678"}
+        ]
+      }
+    }
+  }
+}

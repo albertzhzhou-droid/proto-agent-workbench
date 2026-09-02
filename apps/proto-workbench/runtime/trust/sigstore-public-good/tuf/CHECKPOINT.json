@@ -1,0 +1,19 @@
+{
+  "schema": "proto-workbench.sigstore-tuf-checkpoint.v1",
+  "source": "https://github.com/sigstore/root-signing/tree/e3399e7e6f2c3f4039aa2464f95f7d8fcf57910c",
+  "upstreamCommit": "e3399e7e6f2c3f4039aa2464f95f7d8fcf57910c",
+  "reviewedAt": "2026-08-31T20:25:23-04:00",
+  "root": {
+    "version": 15,
+    "sha256": "bc232178369634dc10c4d34df3ef64fa2ae642d5dc2c019335a1c22ba700319b",
+    "upstreamSha256": "73747011d0857ada15479a16c4cae0f3ed03aac698b523b97e1de314ac9d9ca8",
+    "threshold": 3,
+    "expires": "2026-11-20T13:58:18Z"
+  },
+  "timestampVersion": 771,
+  "snapshotVersion": 165,
+  "targetsVersion": 14,
+  "trustedRootUpstreamSha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66",
+  "trustedRootPinnedSha256": "a040678bbcc3e3f708a107e3955308bcb4fd31d58860dde6317ea18416af9d36",
+  "updatePolicy": "offline-review-only"
+}

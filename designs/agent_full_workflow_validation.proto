@@ -1,0 +1,16 @@
+design agent_full_workflow_validation chassis ecoli_k12
+
+construct repressor_a_unit:
+  promoter pLac
+  rbs B0034
+  cds tetR
+  terminator B0015
+
+construct reporter_unit:
+  promoter pTet
+  rbs B0034
+  cds gfp_mock
+  terminator B0015
+
+constraint avoid_restriction_site enzyme=BsaI
+constraint gc_content min=0.35 max=0.65

@@ -1,0 +1,100 @@
+# Operating-system and editor state
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local agent/application configuration
+.agents/
+.codex/
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pfx
+*.p12
+
+# Python
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Node, pnpm, Vite, and Electron
+node_modules/
+.pnpm-store/
+.npm-cache/
+.cache/
+.vite/
+out/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.nyc_output/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+
+# Desktop build and packaging outputs
+apps/proto-workbench/release*/
+/releases/
+apps/proto-workbench/NVIDIA Corporation/
+apps/proto-workbench/.venv-sidecar/
+apps/proto-workbench/.dev-server.*.log
+
+# Downloaded/staged runtimes. Keep the manifests and README files beside them.
+apps/proto-workbench/runtime/llama.cpp/cpu/
+apps/proto-workbench/runtime/llama.cpp/cuda/
+apps/proto-workbench/runtime/llama.cpp/.staging-*/
+apps/proto-workbench/runtime/llama.cpp/.backup-*/
+apps/proto-workbench/runtime/proto-agent/proto-agent/
+apps/proto-workbench/runtime/proto-agent/proto-agent-mcp/
+apps/proto-workbench/runtime/proto-agent/proto-workbench-sidecar/
+
+# Local QA captures and generated review notes
+apps/proto-workbench/qa/
+/design-qa.md
+/apps/proto-workbench/design-qa.md
+/analyses/*.md
+
+# Local databases, logs, temporary files, and crash artifacts
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.stackdump
+*.dmp
+
+# Model weights and other large local ML artifacts
+*.gguf
+*.safetensors
+*.onnx
+*.pt
+*.pth
+
+# External biological catalogue data must remain outside source control
+Proto CLI Materials/

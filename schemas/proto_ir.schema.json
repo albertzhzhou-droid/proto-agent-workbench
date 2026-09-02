@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proto Agent IR",
+  "type": "object",
+  "required": ["schema_version", "design_id", "chassis", "constructs", "constraints", "provenance"],
+  "properties": {
+    "schema_version": {"const": "proto-agent.ir.v1"},
+    "design_id": {"type": "string"},
+    "chassis": {"type": "string"},
+    "domain": {"type": "string", "enum": ["dna", "protein"]},
+    "proteins": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "sequence", "sequence_sha256"],
+        "properties": {
+          "id": {"type": "string"},
+          "resource_id": {"type": "string"},
+          "type": {"const": "protein_sequence"},
+          "name": {"type": "string"},
+          "sequence": {"type": "string", "minLength": 1, "pattern": "^[ACDEFGHIKLMNPQRSTVWYBXZJUO*-]+$"},
+          "sequence_kind": {"const": "PROTEIN"},
+          "sequence_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "description": {"type": "string"},
+          "description_zh": {"type": "string"},
+          "source": {"type": "object"},
+          "license": {"type": "object"},
+          "metrics": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "constructs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "topology", "parts"],
+        "properties": {
+          "name": {"type": "string"},
+          "topology": {"type": "string", "enum": ["linear", "circular", "unknown"]},
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "id"],
+              "properties": {
+                "type": {"type": "string"},
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "sequence": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": {"type": "string"}
+      }
+    }
+  }
+}

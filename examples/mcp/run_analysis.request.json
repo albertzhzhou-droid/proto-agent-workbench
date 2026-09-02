@@ -1,0 +1,13 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_run_analysis",
+    "arguments": {
+      "script": "analyses/summarize_design.py",
+      "args": ["designs/toggle_switch.proto"],
+      "timeout": 30
+    }
+  }
+}

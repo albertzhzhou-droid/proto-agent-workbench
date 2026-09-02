@@ -1,0 +1,51 @@
+{
+  "schema_version": "proto-agent.literature.v1",
+  "notice": "Seed source registry for local workbench development. Verify every source before using it in scientific claims.",
+  "sources": [
+    {
+      "id": "ncbi-eutilities-help",
+      "title": "Entrez Programming Utilities Help",
+      "source": "National Center for Biotechnology Information",
+      "date": "2026-03-04",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+      "tags": ["pubmed", "ncbi", "e-utilities", "esearch", "esummary"],
+      "summary": "Official NCBI documentation for E-utilities, the structured interface used by the PubMed connector."
+    },
+    {
+      "id": "techradar-claude-science-2026",
+      "title": "Anthropic launches AI workbench for scientists using Claude",
+      "source": "TechRadar",
+      "date": "2026-07-04",
+      "url": "https://www.techradar.com/pro/anthropic-launches-ai-workbench-for-scientists-using-claude",
+      "tags": ["claude-science", "workbench", "local-infrastructure", "auditability", "jupyter", "pubmed", "r"],
+      "summary": "Public coverage describing Claude Science as a beta workbench for life sciences and scientific computing, with workflow consolidation, local infrastructure, and auditability."
+    },
+    {
+      "id": "toi-claude-science-2026",
+      "title": "Anthropic launches Claude Science AI research workbench for scientific research",
+      "source": "Times of India",
+      "date": "2026-07-01",
+      "url": "https://timesofindia.indiatimes.com/technology/tech-news/anthropic-launches-claude-science-ai-research-workbench-for-scientific-research/articleshow/132115850.cms",
+      "tags": ["claude-science", "scientific-computing", "life-sciences"],
+      "summary": "Public coverage of Claude Science as a specialized research workbench for complex data analysis and scientific workflows."
+    },
+    {
+      "id": "verge-claude-research-workspace-2025",
+      "title": "Anthropic launches research tool and Google Workspace integration",
+      "source": "The Verge",
+      "date": "2025-04-15",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/648595/anthropic-claude-research-google-workplace",
+      "tags": ["research", "connectors", "workspace", "citations"],
+      "summary": "Coverage of Claude Research and Workspace integration, useful as product-level evidence for connector and citation-oriented workflows."
+    },
+    {
+      "id": "verge-mcp-2024",
+      "title": "Anthropic launches tool to connect AI systems directly to datasets",
+      "source": "The Verge",
+      "date": "2024-11-25",
+      "url": "https://www.theverge.com/2024/11/25/24305774/anthropic-model-context-protocol-data-sources",
+      "tags": ["mcp", "connectors", "data-sources", "agent-tools"],
+      "summary": "Coverage of MCP as a standard for connecting AI systems to tools, datasets, and external context."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "proto-workbench.transparency-witness-policy.v1",
+  "name": "Rekor v2 offline witness review policy",
+  "origin": "log2025-1.rekor.sigstore.dev",
+  "log": {
+    "name": "log2025-1.rekor.sigstore.dev",
+    "publicKey": "t8rlp1knGwjfbcXAYPYAkn0XiLz1x8O4t0YkEhie244="
+  },
+  "witnesses": [
+    {
+      "name": "witness.stagemole.eu",
+      "publicKey": "SpIbfK71iuZwzcEe9BhPHAWPe5JZqRB6lp9p+lSqSW8="
+    },
+    {
+      "name": "staging.witness.transparency.goog/ring-any-bells",
+      "publicKey": "bklOktzcUm3DOCHVS/5B6XP2p44fZt9aNLWzSz7Liss="
+    }
+  ],
+  "quorum": 2,
+  "maxFutureSkewSeconds": 300,
+  "trustedRootSha256": "a040678bbcc3e3f708a107e3955308bcb4fd31d58860dde6317ea18416af9d36",
+  "checkpoint": {
+    "envelope": "log2025-1.rekor.sigstore.dev\n91610831\nHrd6ULSLixNGejXGuYEESDe5TykvlYq5ACLI+VsdVMg=\n\n— log2025-1.rekor.sigstore.dev zxGZFWtHL6AHcw2ZnxJRryycuihSbSVD6OsuhtxAQ4792giLSBmkMFBpTJ4uaCQ2cdZw0wxrRMm+2sODH/P/z8adnQk=\n— witness.stagemole.eu Z/euoAAAAABqlzxgXZAoaGk2QXl/2fumsbRgNi2sEVsXfsGCr01eK9glHADViiKzkh+n06Xclv2O0lLoKjcVKUfGZrwmzpy9CApgAg==\n— witness.navigli.sunlight.geomys.org o+AP4gAAAABqlzxgxPDEIeqOeFwxgiGnA108hhZwKpDj6f/FdCcM39whRswVd3CnXBWta5PZB9V6SJLdtocD+U3kdenGL3M13Hz0Cw==\n— staging.witness.transparency.goog/ring-any-bells LhqNyQAAAABqlzxg4pIQ8pZJG6NwrtAbH3oA7sYGX7z4sXwEXoM/q694EDo65QFNqJDip5Fe1yHMKdNOcvKxn6zS8USvX019lbtYBg==\n",
+    "envelopeSha256": "a7b2667dc7b82f337e8b812401f744b6b057aacefa3062eeb3866d012a1564e7",
+    "bodySha256": "9ad268597f331f72d3bcc5eb0a2849e34a6f38b31ebd8020b6d5daeee463a176",
+    "retrievedAt": "2026-09-01T20:58:08.000Z",
+    "source": "https://log2025-1.rekor.sigstore.dev/checkpoint"
+  }
+}

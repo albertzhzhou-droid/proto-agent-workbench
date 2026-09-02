@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.governance",
+  "version": 3,
+  "core": true,
+  "label": "Governance and run ledger",
+  "resourceTier": "required",
+  "tools": [
+    "proto_connectors_check"
+  ]
+}

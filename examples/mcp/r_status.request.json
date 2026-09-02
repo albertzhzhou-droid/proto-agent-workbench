@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": {
+    "name": "proto_r_status",
+    "arguments": {}
+  }
+}

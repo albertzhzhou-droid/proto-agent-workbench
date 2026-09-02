@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "media.vision",
+  "version": 1,
+  "core": false,
+  "label": "Vision attachments",
+  "resourceTier": "standard",
+  "tools": []
+}

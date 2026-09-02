@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proto Agent Diagnostics",
+  "type": "object",
+  "required": ["ok", "diagnostics", "artifacts"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "file", "line", "code", "message"],
+        "properties": {
+          "severity": {"enum": ["error", "warning", "info"]},
+          "file": {"type": "string"},
+          "line": {"type": "integer", "minimum": 0},
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "suggestion": {"type": "string"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

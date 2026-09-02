@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proto-agent.local/schema/materials.v1.json",
+  "title": "Proto Agent biological material record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resource_id", "kind", "name", "description_en", "description_zh", "source", "license", "review_status", "safety_status", "design_eligibility"],
+  "properties": {
+    "resource_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:@/-]{0,255}$", "not": {"pattern": "(^|/)(\\.|\\.\\.)(/|$)"}},
+    "kind": {"type": "string", "minLength": 1, "maxLength": 128},
+    "name": {"type": "string", "minLength": 1, "maxLength": 512},
+    "aliases": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "tags": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "description_en": {"type": "string", "maxLength": 4000},
+    "description_zh": {"type": "string", "maxLength": 4000},
+    "organism": {"type": "object", "additionalProperties": false, "properties": {"tax_id": {"type": ["integer", "null"]}, "name": {"type": "string", "maxLength": 512}, "strain": {"type": "string", "maxLength": 512}}},
+    "chassis": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "role_terms": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "part_type": {"type": "string", "enum": ["", "promoter", "rbs", "cds", "terminator"]},
+    "sequence_kind": {"type": "string", "enum": ["", "DNA", "RNA", "PROTEIN"]},
+    "sequence": {"type": "string", "maxLength": 10000000},
+    "sequence_length": {"type": "integer", "minimum": 0, "maximum": 10000000},
+    "sequence_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "record_id", "url", "content_sha256"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1, "maxLength": 256},
+        "record_id": {"type": "string", "minLength": 1, "maxLength": 512},
+        "revision": {"type": "string", "maxLength": 256},
+        "release": {"type": "string", "maxLength": 256},
+        "url": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "retrieved_at": {"type": "string", "maxLength": 64},
+        "content_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "anyOf": [{"required": ["revision"]}, {"required": ["release"]}]
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "redistribution_status"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "url": {"type": "string", "maxLength": 2048},
+        "attribution": {"type": "string", "maxLength": 1024},
+        "rights_notes": {"type": "string", "maxLength": 2048},
+        "redistribution_status": {"type": "string", "enum": ["REDISTRIBUTABLE", "CONDITIONAL", "LINK_ONLY"]}
+      }
+    },
+    "evidence_refs": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "review_status": {"type": "string", "enum": ["DESIGN_ELIGIBLE", "REVIEW_REQUIRED", "REFERENCE_ONLY", "QUARANTINED"]},
+    "safety_status": {"type": "string", "enum": ["NO_FLAG", "HARD_FLAG"]},
+    "safety_flags": {"type": "array", "items": {"type": "string", "maxLength": 256}, "maxItems": 128},
+    "design_eligibility": {"type": "boolean"},
+    "metadata": {"type": "object"}
+  }
+}

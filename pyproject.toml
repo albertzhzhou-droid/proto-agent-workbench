@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proto-agent"
+version = "0.1.0"
+description = "Local-first CLI for auditable Proto-like synthetic-biology design workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["synthetic-biology", "scientific-workflows", "local-first", "mcp", "provenance"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "certifi>=2024.0.0",
+]
+
+[project.optional-dependencies]
+workbench = [
+  "gguf>=0.17.1",
+  "pyinstaller>=6.16",
+]
+
+[project.scripts]
+proto-agent = "proto_agent.cli:main"
+proto-agent-mcp = "proto_agent.mcp_server:main"
+proto-workbench-sidecar = "proto_agent.workbench_bridge:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+exclude-newer = "2026-08-17T21:44:19Z"

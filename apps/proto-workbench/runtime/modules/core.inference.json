@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.inference",
+  "version": 4,
+  "core": true,
+  "label": "Local inference",
+  "resourceTier": "required",
+  "tools": []
+}

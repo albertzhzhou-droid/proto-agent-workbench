@@ -1,0 +1,66 @@
+[
+  {
+    "upstream_index": 0,
+    "value": ""
+  },
+  {
+    "upstream_index": 17,
+    "value": "\\"
+  },
+  {
+    "upstream_index": 93,
+    "value": "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f\u007f"
+  },
+  {
+    "upstream_index": 97,
+    "value": "\ufeff"
+  },
+  {
+    "upstream_index": 99,
+    "value": "\u03a9\u2248\u00e7\u221a\u222b\u02dc\u00b5\u2264\u2265\u00f7"
+  },
+  {
+    "upstream_index": 150,
+    "value": "\ud83d\ude0d"
+  },
+  {
+    "upstream_index": 173,
+    "value": "\u202a\u202atest\u202a"
+  },
+  {
+    "upstream_index": 177,
+    "value": "\u2066test\u2067"
+  },
+  {
+    "upstream_index": 442,
+    "value": "/dev/null; touch /tmp/blns.fail ; echo"
+  },
+  {
+    "upstream_index": 452,
+    "value": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [ <!ELEMENT foo ANY ><!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]><foo>&xxe;</foo>"
+  },
+  {
+    "upstream_index": 456,
+    "value": "%s%s%s%s%s"
+  },
+  {
+    "upstream_index": 462,
+    "value": "../../../../../../../../../../../etc/passwd%00"
+  },
+  {
+    "upstream_index": 468,
+    "value": "CON"
+  },
+  {
+    "upstream_index": 472,
+    "value": "NUL"
+  },
+  {
+    "upstream_index": 506,
+    "value": "Roses are \u001b[0;31mred\u001b[0m, violets are \u001b[0;34mblue. Hope you enjoy terminal hue"
+  },
+  {
+    "upstream_index": 508,
+    "value": "The quic\b\b\b\b\b\bk brown fo\u0007\u0007\u0007\u0007\u0007\u0007\u0007\u0007\u0007\u0007\u0007x... [Beeeep]"
+  }
+]

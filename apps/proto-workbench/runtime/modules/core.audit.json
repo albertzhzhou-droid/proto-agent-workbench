@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "core.audit",
+  "version": 1,
+  "core": true,
+  "label": "Audit core",
+  "resourceTier": "required",
+  "tools": []
+}
