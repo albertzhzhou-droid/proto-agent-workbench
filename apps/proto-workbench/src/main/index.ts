@@ -31,7 +31,12 @@ import { importTrustRootCandidate, scanTrustRootCandidates } from "./services/tr
 import { importTransparencyWitnessPack, scanTransparencyWitnessPacks } from "./services/transparency-log-witness.ts";
 import { exportVerifiedMap, validatedMapCaptureScale, type DecodedMapEvidence } from "./services/map-export.ts";
 import { validateSelectedAttachments, type AttachmentGrant } from "./services/attachment-validation.ts";
-import { packagedMaterialsCliPath, resolveMaterialsRootPath } from "./services/materials-admin.ts";
+import {
+  packagedMaterialsCliPath,
+  resolveMaterialsRootPath,
+  validateMaterializedPartsArtifact,
+  validateMaterializedPartsResult,
+} from "./services/materials-admin.ts";
 import { minimalChildEnvironment } from "./services/process-security.ts";
 import { activateStartupWorkspace, seedWorkspace } from "./services/workspace-bootstrap.ts";
 import {
@@ -47,6 +52,7 @@ import type {
   MissionPreflight,
   MissionPreflightRequest,
   MaterialsActivationEvidence,
+  MaterialsMaterializeRequest,
   MaterialsReviewInput,
   MapExportRequest,
   DecisionBundleExportRequest,
@@ -576,6 +582,12 @@ function registerIpc(): void {
     mcpClient.call("proto_materials_get", { resource_id: resourceId, include_sequence: Boolean(includeSequence) }),
   );
   handlePrivileged(IPC.materialsFacets, () => mcpClient.call("proto_materials_facets", {}));
+  handlePrivileged(IPC.materialsMaterialize, async (_event, input: MaterialsMaterializeRequest) => {
+    const result = await mcpClient.call("proto_materials_materialize", { ...input });
+    const validated = validateMaterializedPartsResult(result, input);
+    const artifact = await workspaceFiles.read(validated.parts_path);
+    return validateMaterializedPartsArtifact(artifact, input, validated);
+  });
   handlePrivileged(IPC.materialsActivate, (_event, snapshotId: string, evidence: MaterialsActivationEvidence) => runMaterialsCli([
     "materials", "activate", snapshotId,
     `--operator=${evidence.operator}`,

@@ -1,10 +1,15 @@
 import hashlib
 import json
+import multiprocessing
 import os
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import proto_agent.materials as materials_module
 from proto_agent.materials import (
     MaterialsError,
     MaterialsStore,
@@ -15,6 +20,7 @@ from proto_agent.materials import (
     promotion_record_digest,
 )
 from proto_agent.mcp_server import McpServer
+from proto_agent.parts import search_parts
 
 
 def material_record(resource_id="fixture:promoter/pLac", **overrides):
@@ -73,6 +79,12 @@ def promotion_attestations(*records):
     return result
 
 
+def _activate_snapshot_subprocess(workspace: str, root: str, snapshot_id: str, started: str, done: str) -> None:
+    Path(started).write_text("started", encoding="utf-8")
+    MaterialsStore(workspace=workspace, root=root).activate(snapshot_id)
+    Path(done).write_text("done", encoding="utf-8")
+
+
 class MaterialsStoreTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="proto-materials-")
@@ -122,6 +134,214 @@ class MaterialsStoreTests(unittest.TestCase):
         )
         draft = (self.workspace / rendered["output"]).read_text(encoding="utf-8")
         self.assertTrue(draft.startswith("design materialized_template chassis ecoli_k12"))
+
+    def test_materialize_parts_is_canonical_and_rejects_duplicate_ids(self):
+        first = material_record("fixture:promoter/z-last", name="Z fixture")
+        second = material_record("fixture:promoter/a-first", name="A fixture")
+        manifest = self.store._create_snapshot(
+            [first, second],
+            "canonical-selection",
+            sources=[{"provider": "fixture"}],
+            label="test",
+            promotion_attestations=promotion_attestations(first, second),
+        )
+        forward = self.store.materialize_parts(
+            [first["resource_id"], second["resource_id"]],
+            "ecoli_k12",
+            output="build/materials/forward.json",
+            snapshot_id=manifest["snapshot_id"],
+        )
+        reverse = self.store.materialize_parts(
+            [second["resource_id"], first["resource_id"]],
+            "ecoli_k12",
+            output="build/materials/reverse.json",
+            snapshot_id=manifest["snapshot_id"],
+        )
+        forward_path = self.workspace / forward["parts_path"]
+        reverse_path = self.workspace / reverse["parts_path"]
+        payload = json.loads(forward_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(forward["selection_digest"], reverse["selection_digest"])
+        self.assertEqual(forward_path.read_bytes(), reverse_path.read_bytes())
+        self.assertEqual(
+            [part["id"] for part in payload["parts"]],
+            [second["resource_id"], first["resource_id"]],
+        )
+
+        with self.assertRaises(MaterialsError) as ctx:
+            self.store.materialize_parts(
+                [first["resource_id"], first["resource_id"]],
+                "ecoli_k12",
+                snapshot_id=manifest["snapshot_id"],
+            )
+        self.assertEqual(ctx.exception.code, "DUPLICATE_RESOURCE_ID")
+
+    def test_materialized_part_limit_matches_the_downstream_json_budget(self):
+        records = []
+        for index in range(50):
+            resource_id = f"fixture:part/{index:02d}"
+            suffix = "".join("ACGT"[(index >> shift) & 3] for shift in range(0, 6, 2))
+            sequence = f"ATGC{suffix}ATGC"
+            sequence_sha256 = hashlib.sha256(sequence.encode("ascii")).hexdigest()
+            record = material_record(resource_id, name=f"Part {index:02d}")
+            record["sequence"] = sequence
+            record["sequence_sha256"] = sequence_sha256
+            record["source"] = {
+                **record["source"],
+                "record_id": resource_id,
+                "sequence_sha256": sequence_sha256,
+            }
+            records.append(record)
+        manifest = self.store._create_snapshot(
+            records,
+            "bounded-selection",
+            sources=[{"provider": "fixture"}],
+            label="test",
+            promotion_attestations=promotion_attestations(*records),
+        )
+        materialized = self.store.materialize_parts(
+            [record["resource_id"] for record in records],
+            "ecoli_k12",
+            snapshot_id=manifest["snapshot_id"],
+        )
+        parts_path = self.workspace / materialized["parts_path"]
+        self.assertEqual(materialized["part_count"], 50)
+        self.assertEqual(len(search_parts("", "ecoli_k12", parts_path)), 50)
+
+        with self.assertRaises(MaterialsError) as ctx:
+            self.store.materialize_parts(
+                [f"fixture:part/{index:02d}" for index in range(51)],
+                "ecoli_k12",
+                snapshot_id=manifest["snapshot_id"],
+            )
+        self.assertEqual(ctx.exception.code, "INVALID_SELECTION")
+        self.assertIn("remains consumable", str(ctx.exception))
+
+    def test_materialized_parts_are_strictly_parsed_before_publish(self):
+        sequence = "A" * 65_537
+        sequence_sha256 = hashlib.sha256(sequence.encode("ascii")).hexdigest()
+        record = material_record(
+            "fixture:part/strict-parser-rejection",
+            sequence=sequence,
+            sequence_sha256=sequence_sha256,
+        )
+        record["source"] = {
+            **record["source"],
+            "record_id": record["resource_id"],
+            "sequence_sha256": sequence_sha256,
+        }
+        manifest = self.store._create_snapshot(
+            [record],
+            "strict-parser-rejection",
+            sources=[{"provider": "fixture"}],
+            label="test",
+            promotion_attestations=promotion_attestations(record),
+        )
+        target = self.workspace / "build" / "materials" / "strict-rejected.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"existing-output-must-survive")
+
+        with self.assertRaises(MaterialsError) as ctx:
+            self.store.materialize_parts(
+                [record["resource_id"]],
+                "ecoli_k12",
+                output="build/materials/strict-rejected.json",
+                snapshot_id=manifest["snapshot_id"],
+            )
+
+        self.assertEqual(ctx.exception.code, "MATERIALIZED_PARTS_INVALID")
+        self.assertIn("parts search, check, and compile", str(ctx.exception))
+        self.assertEqual(target.read_bytes(), b"existing-output-must-survive")
+        self.assertEqual(list(target.parent.glob(".strict-rejected.json.materials-*.tmp")), [])
+
+    def test_active_switch_waits_until_materialized_parts_are_published(self):
+        selected_record = material_record("fixture:part/active-selection")
+        replacement_record = material_record("fixture:part/replacement")
+        selected_manifest = self.store._create_snapshot(
+            [selected_record],
+            "active-selection",
+            sources=[{"provider": "fixture"}],
+            label="selected",
+            promotion_attestations=promotion_attestations(selected_record),
+        )
+        replacement_manifest = self.store._create_snapshot(
+            [replacement_record],
+            "replacement-selection",
+            sources=[{"provider": "fixture"}],
+            label="replacement",
+            promotion_attestations=promotion_attestations(replacement_record),
+        )
+        self.store.activate(selected_manifest["snapshot_id"])
+        writer_entered = threading.Event()
+        writer_release = threading.Event()
+        materialize_results: list[dict] = []
+        errors: list[BaseException] = []
+        original_write = materials_module._safe_write_validated_parts
+        activation_started = Path(self.temp.name) / "activation-started"
+        activation_done = Path(self.temp.name) / "activation-done"
+
+        def paused_write(*args, **kwargs):
+            writer_entered.set()
+            if not writer_release.wait(5):
+                raise AssertionError("Timed out waiting to release the staged parts writer.")
+            return original_write(*args, **kwargs)
+
+        def materialize() -> None:
+            try:
+                materialize_results.append(
+                    self.store.materialize_parts(
+                        [selected_record["resource_id"]],
+                        "ecoli_k12",
+                        output="build/materials/active-selection.json",
+                        snapshot_id=selected_manifest["snapshot_id"],
+                        auto_initialize=False,
+                        require_active=True,
+                    )
+                )
+            except BaseException as exc:  # pragma: no cover - asserted below
+                errors.append(exc)
+
+        materialize_thread = threading.Thread(target=materialize, daemon=True)
+        activation_process = multiprocessing.get_context("spawn").Process(
+            target=_activate_snapshot_subprocess,
+            args=(
+                str(self.workspace),
+                str(self.root),
+                replacement_manifest["snapshot_id"],
+                str(activation_started),
+                str(activation_done),
+            ),
+            daemon=True,
+        )
+        with patch.object(materials_module, "_safe_write_validated_parts", side_effect=paused_write):
+            materialize_thread.start()
+            try:
+                self.assertTrue(writer_entered.wait(5))
+                activation_process.start()
+                deadline = time.monotonic() + 5
+                while not activation_started.is_file() and activation_process.is_alive() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(activation_started.is_file())
+                time.sleep(0.2)
+                self.assertTrue(activation_process.is_alive())
+                self.assertFalse(activation_done.exists())
+            finally:
+                writer_release.set()
+            materialize_thread.join(10)
+            activation_process.join(10)
+
+        self.assertFalse(materialize_thread.is_alive())
+        if activation_process.is_alive():
+            activation_process.terminate()
+            activation_process.join(5)
+        self.assertEqual(activation_process.exitcode, 0)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(materialize_results), 1)
+        materialized = materialize_results[0]
+        self.assertEqual(materialized["snapshot_id"], selected_manifest["snapshot_id"])
+        payload = search_parts("", "ecoli_k12", self.workspace / materialized["parts_path"])
+        self.assertEqual([part["id"] for part in payload], [selected_record["resource_id"]])
+        self.assertEqual(self.store.status()["active_snapshot"], replacement_manifest["snapshot_id"])
 
     def test_schema_and_sequence_boundaries_fail_closed(self):
         with self.assertRaises(MaterialsError):

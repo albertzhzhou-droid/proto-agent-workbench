@@ -9,11 +9,13 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable
+from types import MappingProxyType
+from typing import Any, Iterable, Mapping, NamedTuple
 from urllib.parse import urlsplit
 
 from .materials import (
     DNA_ALPHABET,
+    MAX_MATERIALIZED_PARTS,
     PART_TYPES,
     PROMOTION_AUDIT_SCHEMA_VERSION,
     PROMOTION_POLICY_VERSION,
@@ -31,6 +33,15 @@ from .materials import (
 
 _SHA256 = re.compile(r"^[a-f0-9]{64}$")
 _MAX_AUDIT_CANDIDATES = 1000
+_MAX_UNIQUENESS_SCOPE_CANDIDATES = 10_000
+
+
+class PromotionUniquenessIndex(NamedTuple):
+    candidate_count: int
+    id_counts: Mapping[str, int]
+    sequence_counts: Mapping[str, int]
+
+
 _ROLE_BY_PART_TYPE = {
     "promoter": "SO:0000167",
     "rbs": "SO:0000139",
@@ -216,11 +227,37 @@ def _sequence_digest(record: dict[str, Any]) -> str:
     return hashlib.sha256(sequence.encode("ascii")).hexdigest() if sequence else ""
 
 
+def build_promotion_uniqueness_index(
+    records: Iterable[dict[str, Any]],
+) -> PromotionUniquenessIndex:
+    """Build one bounded, reusable duplicate index for batched audits."""
+
+    id_counts: Counter[str] = Counter()
+    sequence_counts: Counter[str] = Counter()
+    candidate_count = 0
+    for record in records:
+        candidate_count += 1
+        if candidate_count > _MAX_UNIQUENESS_SCOPE_CANDIDATES:
+            raise ValueError(
+                "Promotion audit uniqueness scopes are limited to "
+                f"{_MAX_UNIQUENESS_SCOPE_CANDIDATES} candidates."
+            )
+        id_counts[_text(record.get("resource_id", record.get("id"))).casefold()] += 1
+        sequence_sha256 = _sequence_digest(record)
+        if sequence_sha256:
+            sequence_counts[sequence_sha256] += 1
+    return PromotionUniquenessIndex(
+        candidate_count,
+        MappingProxyType(dict(id_counts)),
+        MappingProxyType(dict(sequence_counts)),
+    )
+
+
 def _roundtrip_gate_errors(
     candidates: list[dict[str, Any]],
     first_rounds: list[list[dict[str, Any]]],
-    id_counts: Counter[str],
-    sequence_counts: Counter[str],
+    id_counts: Mapping[str, int],
+    sequence_counts: Mapping[str, int],
     *,
     generated_at: str,
 ) -> list[list[str]]:
@@ -306,6 +343,7 @@ def _roundtrip_gate_errors(
         except (MaterialsError, KeyError, TypeError, ValueError):
             search_failed = True
 
+        materializable_indices: list[int] = []
         for index in eligible_indices:
             record = candidates[index]
             resource_id = _text(record.get("resource_id", record.get("id")))
@@ -329,21 +367,84 @@ def _roundtrip_gate_errors(
             except (MaterialsError, KeyError, TypeError, ValueError):
                 errors[index].append("CATALOG_ELIGIBILITY_ROUNDTRIP_FAILED")
                 continue
+            materializable_indices.append(index)
 
+        genetic_part_indices = [
+            index
+            for index in materializable_indices
+            if _text(candidates[index].get("kind")).lower() == "genetic_part"
+        ]
+
+        def materialize_genetic_batch(
+            batch_indices: list[int],
+            *,
+            output: str,
+        ) -> tuple[list[str], dict[str, dict[str, Any]]]:
+            batch_ids = [
+                _text(candidates[index].get("resource_id", candidates[index].get("id")))
+                for index in batch_indices
+            ]
+            materialized = store.materialize_parts(
+                batch_ids,
+                "ecoli_k12",
+                output=output,
+                snapshot_id=snapshot_id,
+                auto_initialize=False,
+            )
+            payload = json.loads((workspace / materialized["parts_path"]).read_text(encoding="utf-8"))
+            items = payload["parts"]
+            expected_ids = sorted(batch_ids, key=lambda value: (value.casefold(), value))
+            actual_ids = [item.get("resource_id", item.get("id")) for item in items]
+            if (
+                materialized["part_count"] != len(batch_ids)
+                or len(items) != len(batch_ids)
+                or actual_ids != expected_ids
+            ):
+                raise ValueError("materialized selection changed during round trip")
+            return batch_ids, {item.get("resource_id", item.get("id")): item for item in items}
+
+        for offset in range(0, len(genetic_part_indices), MAX_MATERIALIZED_PARTS):
+            batch_indices = genetic_part_indices[offset:offset + MAX_MATERIALIZED_PARTS]
+            batch_number = offset // MAX_MATERIALIZED_PARTS
+            try:
+                batch_ids, actual_by_id = materialize_genetic_batch(
+                    batch_indices,
+                    output=f"build/promotion-audit/parts-{batch_number}/parts.json",
+                )
+                for index, resource_id in zip(batch_indices, batch_ids, strict=True):
+                    if actual_by_id[resource_id].get("sequence_sha256") != _sequence_digest(candidates[index]):
+                        errors[index].append("MATERIALIZATION_ROUNDTRIP_FAILED")
+            except (MaterialsError, OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+                # Preserve per-candidate evidence when one member breaks an
+                # otherwise valid batch. The fast path remains one call per 50
+                # records; this compatibility path matches the former
+                # one-record-at-a-time audit semantics.
+                for fallback_number, index in enumerate(batch_indices):
+                    try:
+                        fallback_ids, fallback_by_id = materialize_genetic_batch(
+                            [index],
+                            output=(
+                                "build/promotion-audit/"
+                                f"parts-{batch_number}-fallback-{fallback_number}/parts.json"
+                            ),
+                        )
+                        resource_id = fallback_ids[0]
+                        if (
+                            fallback_by_id[resource_id].get("sequence_sha256")
+                            != _sequence_digest(candidates[index])
+                        ):
+                            raise ValueError("materialized sequence changed during round trip")
+                    except (MaterialsError, OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+                        errors[index].append("MATERIALIZATION_ROUNDTRIP_FAILED")
+
+        for index in materializable_indices:
+            record = candidates[index]
+            if _text(record.get("kind")).lower() == "genetic_part":
+                continue
+            resource_id = _text(record.get("resource_id", record.get("id")))
             try:
                 output = f"build/promotion-audit/{index}"
-                if _text(record.get("kind")).lower() == "genetic_part":
-                    materialized = store.materialize_parts(
-                        [resource_id],
-                        "ecoli_k12",
-                        output=f"{output}/parts.json",
-                        snapshot_id=snapshot_id,
-                        auto_initialize=False,
-                    )
-                    payload = json.loads((workspace / materialized["parts_path"]).read_text(encoding="utf-8"))
-                    items = payload["parts"]
-                    count = materialized["part_count"]
-                else:
+                if _text(record.get("kind")).lower() != "genetic_part":
                     materialized = store.materialize_proteins(
                         [resource_id],
                         design_id=f"promotion-audit-{index}",
@@ -370,8 +471,8 @@ def _roundtrip_gate_errors(
 def _round_three(
     record: dict[str, Any],
     first_rounds: list[dict[str, Any]],
-    id_counts: Counter[str],
-    sequence_counts: Counter[str],
+    id_counts: Mapping[str, int],
+    sequence_counts: Mapping[str, int],
     gate_errors: list[str],
 ) -> dict[str, Any]:
     errors: list[str] = []
@@ -402,18 +503,33 @@ def audit_promotion_candidates(
     *,
     generated_at: str,
     source_evidence: dict[str, dict[str, Any]] | None = None,
+    uniqueness_scope: Iterable[dict[str, Any]] | None = None,
+    uniqueness_index: PromotionUniquenessIndex | None = None,
 ) -> dict[str, Any]:
-    """Run three deterministic, fail-closed review rounds per candidate."""
+    """Run three deterministic, fail-closed review rounds per candidate.
+
+    ``uniqueness_scope`` lets a bounded batch retain duplicate checks against
+    its complete parent review set. ``uniqueness_index`` is the reusable form
+    for callers running multiple batches. Neither adds candidates to the
+    report or to the round-trip materialization workload.
+    """
 
     candidates = [dict(record) for record in records]
     if len(candidates) > _MAX_AUDIT_CANDIDATES:
         raise ValueError(f"Promotion audits are limited to {_MAX_AUDIT_CANDIDATES} candidates per run.")
-    id_counts: Counter[str] = Counter(_text(record.get("resource_id", record.get("id"))).casefold() for record in candidates)
-    sequence_counts: Counter[str] = Counter(
-        hashlib.sha256("".join(_text(record.get("sequence")).upper().split()).encode("ascii")).hexdigest()
-        for record in candidates
-        if _text(record.get("sequence"))
-    )
+    if uniqueness_scope is not None and uniqueness_index is not None:
+        raise ValueError("Provide uniqueness_scope or uniqueness_index, not both.")
+    if uniqueness_index is None:
+        uniqueness_index = build_promotion_uniqueness_index(
+            candidates if uniqueness_scope is None else uniqueness_scope
+        )
+    if uniqueness_index.candidate_count > _MAX_UNIQUENESS_SCOPE_CANDIDATES:
+        raise ValueError(
+            "Promotion audit uniqueness scopes are limited to "
+            f"{_MAX_UNIQUENESS_SCOPE_CANDIDATES} candidates."
+        )
+    id_counts = uniqueness_index.id_counts
+    sequence_counts = uniqueness_index.sequence_counts
     first_rounds: list[list[dict[str, Any]]] = []
     for record in candidates:
         resource_id = _text(record.get("resource_id", record.get("id")))

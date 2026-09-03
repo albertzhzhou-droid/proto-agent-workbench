@@ -8,7 +8,7 @@ license URL, attribution, rights notes, and redistribution status.
   Consortium is retained. UniProt notes that patents or other third-party rights
   can still apply.
 - iGEM Registry records: the declared license is evaluated per record. This
-  bundle contains fourteen CC BY 4.0 records and one CC0 1.0 record.
+  bundle contains 1,039 CC BY 4.0 records and 7 CC0 1.0 records.
 
 
 Public availability and a redistribution flag are not claims of scientific

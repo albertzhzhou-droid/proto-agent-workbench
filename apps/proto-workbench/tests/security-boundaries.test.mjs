@@ -81,6 +81,31 @@ test("privileged IPC requires the exact main webContents, top frame, URL, and bo
     validateIpcArguments(IPC.materialsRollback, ["public-reviewed-2026.09", activationEvidence]),
     ["public-reviewed-2026.09", activationEvidence],
   );
+  const materializeSelection = {
+    resource_ids: ["igem:first", "igem:second"],
+    chassis: "ecoli_k12",
+    snapshot: "public-reviewed-2026.09",
+  };
+  assert.deepEqual(
+    validateIpcArguments(IPC.materialsMaterialize, [materializeSelection]),
+    [materializeSelection],
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsMaterialize, [{ ...materializeSelection, resource_ids: [] }]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsMaterialize, [{ ...materializeSelection, resource_ids: ["igem:first", "IGEM:FIRST"] }]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsMaterialize, [{ ...materializeSelection, resource_ids: Array.from({ length: 51 }, (_, index) => `igem:${index}`) }]),
+    /Invalid arguments/,
+  );
+  assert.throws(
+    () => validateIpcArguments(IPC.materialsMaterialize, [{ ...materializeSelection, snapshot: "../staging" }]),
+    /Invalid arguments/,
+  );
   assert.throws(
     () => validateIpcArguments(IPC.materialsActivate, ["public-reviewed-2026.09"]),
     /Invalid arguments/,

@@ -4,6 +4,7 @@ import {
   Boxes,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Circle,
   CircleAlert,
@@ -35,7 +36,9 @@ import type {
   FileCheckpoint,
   MaterialSummary,
   MaterialsFacets,
+  MaterialsMaterializeResult,
   MaterialsReviewInput,
+  MaterialsSearchResult,
   MaterialsStatus,
   ModelDescriptor,
   ModelLoadOptions,
@@ -57,6 +60,11 @@ import {
   type WorkbenchModuleDescriptor,
 } from "../shared/modules.ts";
 import { workbenchApi } from "./mock-api.ts";
+import {
+  MAX_MATERIALS_DESIGN_SELECTION,
+  createMaterialsDesignSelection,
+  createMaterialsMaterializeRequest,
+} from "./materials-design-selection.ts";
 import { deriveWorkbenchReadiness, type ReadinessAction } from "./readiness.ts";
 import { type AppView, useWorkbenchStore } from "./store.ts";
 
@@ -543,11 +551,39 @@ function SourcesPage() {
   );
 }
 
+const MATERIALS_PAGE_LIMIT = 50;
+
+function materialSelectionBlocker(
+  item: MaterialSummary,
+  selectedParts: MaterialSummary[],
+  selectionSnapshot: string | undefined,
+  resultSnapshot: string | undefined,
+): string | undefined {
+  if (!resultSnapshot) return "Run a snapshot-bound search before selecting parts.";
+  if (selectionSnapshot && selectionSnapshot !== resultSnapshot) return "This result belongs to a different snapshot.";
+  if (selectedParts.some((selected) => selected.resource_id.toLocaleLowerCase() === item.resource_id.toLocaleLowerCase())) return "Already selected.";
+  try {
+    createMaterialsDesignSelection(selectionSnapshot ?? resultSnapshot, [...selectedParts, item]);
+  } catch (cause) {
+    return cause instanceof Error ? cause.message : "This material cannot enter the DNA selection.";
+  }
+  return undefined;
+}
+
 function MaterialsPage() {
+  const openFile = useWorkbenchStore((state) => state.openFile);
   const [status, setStatus] = useState<MaterialsStatus>();
   const [facets, setFacets] = useState<MaterialsFacets>();
-  const [matches, setMatches] = useState<MaterialSummary[]>([]);
+  const [searchResult, setSearchResult] = useState<MaterialsSearchResult>();
+  const [searchSnapshot, setSearchSnapshot] = useState<string>();
+  const [searchCursor, setSearchCursor] = useState<string>();
+  const [previousSearchCursors, setPreviousSearchCursors] = useState<Array<string | undefined>>([]);
   const [selected, setSelected] = useState<MaterialSummary>();
+  const [selectedParts, setSelectedParts] = useState<MaterialSummary[]>([]);
+  const [selectionSnapshot, setSelectionSnapshot] = useState<string>();
+  const [selectedChassis, setSelectedChassis] = useState("");
+  const [materialization, setMaterialization] = useState<MaterialsMaterializeResult>();
+  const [materializing, setMaterializing] = useState(false);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
   const [source, setSource] = useState("");
@@ -567,6 +603,56 @@ function MaterialsPage() {
   const [reviewDescriptionZh, setReviewDescriptionZh] = useState("");
   const [reviewer, setReviewer] = useState("human");
 
+  const matches = searchResult?.matches ?? [];
+  const designSelection = useMemo(() => {
+    if (!selectionSnapshot || selectedParts.length === 0) return undefined;
+    try {
+      return createMaterialsDesignSelection(selectionSnapshot, selectedParts);
+    } catch {
+      return undefined;
+    }
+  }, [selectedParts, selectionSnapshot]);
+  const commonChassis = designSelection?.commonChassis ?? [];
+
+  const clearPartSelection = () => {
+    setSelectedParts([]);
+    setSelectionSnapshot(undefined);
+    setSelectedChassis("");
+    setMaterialization(undefined);
+  };
+
+  const resetSearchContext = () => {
+    setSearchResult(undefined);
+    setSearchSnapshot(undefined);
+    setSearchCursor(undefined);
+    setPreviousSearchCursors([]);
+    setSelected(undefined);
+  };
+
+  const commitSearchPage = (
+    nextSearch: MaterialsSearchResult,
+    cursor: string | undefined,
+    previousCursors: Array<string | undefined>,
+  ) => {
+    if (selectionSnapshot && selectionSnapshot !== nextSearch.snapshot_id) clearPartSelection();
+    setSearchResult(nextSearch);
+    setSearchSnapshot(nextSearch.snapshot_id);
+    setSearchCursor(cursor);
+    setPreviousSearchCursors(previousCursors);
+    setSelected((current) => current
+      ? nextSearch.matches.find((item) => item.resource_id === current.resource_id)
+      : undefined);
+  };
+
+  const searchInput = (cursor?: string, snapshot?: string) => ({
+    query: query.trim() || undefined,
+    kind: kind.trim() || undefined,
+    source: source.trim() || undefined,
+    limit: MATERIALS_PAGE_LIMIT,
+    cursor,
+    snapshot,
+  });
+
   const refresh = async () => {
     setBusy(true);
     setError(undefined);
@@ -575,17 +661,13 @@ function MaterialsPage() {
       const [nextStatus, nextFacets, nextSearch] = await Promise.all([
         api.materials.status(),
         api.materials.facets(),
-        api.materials.search({ query, kind: kind || undefined, source: source || undefined, limit: 50 }),
+        api.materials.search(searchInput()),
       ]);
       setStatus(nextStatus);
       setFacets(nextFacets);
-      setMatches(nextSearch.matches);
+      commitSearchPage(nextSearch, undefined, []);
       setDiffLeft((current) => current || nextStatus.active_snapshot || nextStatus.snapshots[0]?.snapshot_id || "");
       setDiffRight((current) => current || nextStatus.snapshots[0]?.snapshot_id || nextStatus.active_snapshot || "");
-      if (selected) {
-        const current = nextSearch.matches.find((item) => item.resource_id === selected.resource_id);
-        if (current) setSelected(current);
-      }
     } catch (cause) {
       setError(String(cause).replace(/^Error:\s*/i, ""));
     } finally {
@@ -599,13 +681,83 @@ function MaterialsPage() {
     setBusy(true);
     setError(undefined);
     try {
-      const result = await workbenchApi().materials.search({ query, kind: kind || undefined, source: source || undefined, limit: 50 });
-      setMatches(result.matches);
-      setSelected(undefined);
+      const result = await workbenchApi().materials.search(searchInput());
+      commitSearchPage(result, undefined, []);
     } catch (cause) {
       setError(String(cause).replace(/^Error:\s*/i, ""));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const moveSearchPage = async (direction: "previous" | "next") => {
+    if (!searchResult || !searchSnapshot) return;
+    const movingBack = direction === "previous";
+    if (movingBack && previousSearchCursors.length === 0) return;
+    const requestedCursor = movingBack
+      ? previousSearchCursors[previousSearchCursors.length - 1]
+      : searchResult.next_cursor;
+    if (!movingBack && !requestedCursor) return;
+    const nextHistory = movingBack
+      ? previousSearchCursors.slice(0, -1)
+      : [...previousSearchCursors, searchCursor];
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await workbenchApi().materials.search(searchInput(requestedCursor, searchSnapshot));
+      if (result.snapshot_id !== searchSnapshot) throw new Error("The materials snapshot changed during pagination. Run a new search.");
+      commitSearchPage(result, requestedCursor, nextHistory);
+    } catch (cause) {
+      setError(String(cause).replace(/^Error:\s*/i, ""));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addPart = (item: MaterialSummary) => {
+    const blocker = materialSelectionBlocker(item, selectedParts, selectionSnapshot, searchResult?.snapshot_id);
+    if (blocker) {
+      setError(blocker);
+      return;
+    }
+    const nextSelection = createMaterialsDesignSelection(selectionSnapshot ?? searchResult!.snapshot_id, [...selectedParts, item]);
+    const nextChassis = nextSelection.commonChassis;
+    setSelectedParts([...nextSelection.materials]);
+    setSelectionSnapshot(nextSelection.snapshotId);
+    setSelectedChassis((current) => nextChassis.includes(current) ? current : nextChassis[0] ?? "");
+    setMaterialization(undefined);
+    setError(undefined);
+  };
+
+  const removePart = (resourceId: string) => {
+    const nextParts = selectedParts.filter((item) => item.resource_id !== resourceId);
+    const nextSelection = nextParts.length > 0 && selectionSnapshot
+      ? createMaterialsDesignSelection(selectionSnapshot, nextParts)
+      : undefined;
+    const nextChassis = nextSelection?.commonChassis ?? [];
+    setSelectedParts(nextParts);
+    setSelectionSnapshot((current) => nextParts.length > 0 ? current : undefined);
+    setSelectedChassis((current) => nextChassis.includes(current) ? current : nextChassis[0] ?? "");
+    setMaterialization(undefined);
+  };
+
+  const materializeSelection = async () => {
+    if (!designSelection || !commonChassis.includes(selectedChassis)) return;
+    setMaterializing(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      const request = createMaterialsMaterializeRequest(designSelection, selectedChassis);
+      const result = await workbenchApi().materials.materialize(request);
+      if (result.snapshot_id !== request.snapshot || result.part_count !== request.resource_ids.length) {
+        throw new Error("The materialized selection did not match the snapshot-bound request.");
+      }
+      setMaterialization(result);
+    } catch (cause) {
+      setMaterialization(undefined);
+      setError(String(cause).replace(/^Error:\s*/i, ""));
+    } finally {
+      setMaterializing(false);
     }
   };
 
@@ -655,14 +807,19 @@ function MaterialsPage() {
   const snapshots = status?.snapshots ?? [];
   const activeSummary = status?.snapshots.find((item) => item.snapshot_id === active);
   const statusCounts = activeSummary?.status_counts ?? {};
+  const pageStart = searchResult && searchResult.returned_count > 0
+    ? previousSearchCursors.length * MATERIALS_PAGE_LIMIT + 1
+    : 0;
+  const pageEnd = pageStart > 0 ? pageStart + (searchResult?.returned_count ?? 0) - 1 : 0;
   const activationEvidence = {
     operator: activationOperator.trim(),
     approval_reference: activationApprovalReference.trim(),
   };
   const activationEvidenceComplete = Boolean(activationEvidence.operator && activationEvidence.approval_reference);
+  const operationBusy = busy || materializing;
   return (
     <div className="operational-page materials-page">
-      <PageHeader icon={Database} title="Materials" subtitle="External, versioned biological materials with evidence, rights, and safety gates." actions={<button className="secondary-button" type="button" disabled={busy} onClick={() => void refresh()}><RefreshCw className={busy ? "spin" : undefined} size={14} />Refresh</button>} />
+      <PageHeader icon={Database} title="Materials" subtitle="External, versioned biological materials with evidence, rights, and safety gates." actions={<button className="secondary-button" type="button" disabled={operationBusy} onClick={() => void refresh()}><RefreshCw className={operationBusy ? "spin" : undefined} size={14} />Refresh</button>} />
       <div className="materials-boundary-banner"><ShieldCheck size={16} /><div><strong>Model visibility is fail-closed</strong><span>Search and MCP expose only DESIGN_ELIGIBLE summaries. Quarantine is physically isolated, never model-readable, and does not become eligible through this UI.</span></div></div>
       {error && <div className="model-load-error" role="alert"><CircleAlert size={14} /><span>{error}</span></div>}
       {notice && <div className="materials-notice" role="status"><CheckCircle2 size={14} /><span>{notice}</span></div>}
@@ -671,30 +828,60 @@ function MaterialsPage() {
         {(["DESIGN_ELIGIBLE", "REVIEW_REQUIRED", "REFERENCE_ONLY", "QUARANTINED"] as const).map((state) => <div className={`materials-status-card is-${state.toLocaleLowerCase()}`} key={state}><span>{state.replaceAll("_", " ")}</span><strong>{(statusCounts[state] ?? 0).toLocaleString()}</strong><small>{state === "DESIGN_ELIGIBLE" ? "Eligible for model search" : state === "QUARANTINED" ? "Admin-only isolated store" : "Indexed, not model-selectable"}</small></div>)}
       </section>
       <section className="source-search-band materials-search-band">
-        <Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void runSearch(); }} placeholder="Search eligible materials by name, organism, role, or source" aria-label="Search eligible materials" /><input className="materials-filter-field" value={kind} onChange={(event) => setKind(event.target.value)} placeholder="kind" aria-label="Filter by material kind" /><input className="materials-filter-field" value={source} onChange={(event) => setSource(event.target.value)} placeholder="source" aria-label="Filter by source" /><button className="primary-button" type="button" disabled={busy} onClick={() => void runSearch()}>{busy ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}Search</button></section>
+        <Search size={16} /><input value={query} disabled={operationBusy} onChange={(event) => { setQuery(event.target.value); resetSearchContext(); }} onKeyDown={(event) => { if (event.key === "Enter") void runSearch(); }} placeholder="Search eligible materials by name, organism, role, or source" aria-label="Search eligible materials" /><input className="materials-filter-field" value={kind} disabled={operationBusy} onChange={(event) => { setKind(event.target.value); resetSearchContext(); }} placeholder="kind" aria-label="Filter by material kind" /><input className="materials-filter-field" value={source} disabled={operationBusy} onChange={(event) => { setSource(event.target.value); resetSearchContext(); }} placeholder="source" aria-label="Filter by source" /><button className="primary-button" type="button" disabled={operationBusy} onClick={() => void runSearch()}>{operationBusy ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}Search</button></section>
       <div className="materials-content-grid">
-        <section className="page-section materials-results-section"><div className="section-heading"><div><h2>Design-eligible materials</h2><p>{matches.length} bounded summaries · full sequences stay out of search responses</p></div></div><div className="data-list materials-result-list">{matches.length === 0 && <EmptyState icon={Database} title="No eligible materials found" detail="The seed contains software templates only. Activate a reviewed source snapshot or import a record for review." />}{matches.map((item) => <button className={`data-row materials-result-row ${selected?.resource_id === item.resource_id ? "is-selected" : ""}`} type="button" key={item.resource_id} onClick={() => setSelected(item)}><Database size={14} /><span className="data-row-copy"><strong>{item.name}</strong><span>{item.resource_id} · {item.kind} · {item.sequence_kind || "no sequence"} {item.sequence_length ? `· ${item.sequence_length.toLocaleString()} bp/aa` : ""}</span></span><span className="materials-result-source">{String(item.source.provider ?? "unknown")}</span></button>)}</div></section>
-        <section className="page-section materials-detail-section"><div className="section-heading"><div><h2>Record detail</h2><p>Source and rights stay attached to every material.</p></div></div>{selected ? <div className="materials-detail"><span className="eyebrow">{selected.review_status}</span><h3>{selected.name}</h3><code>{selected.resource_id}</code><p>{selected.description_en}</p><p className="materials-description-zh">{selected.description_zh}</p><dl><dt>Kind</dt><dd>{selected.kind}</dd><dt>Organism</dt><dd>{String(selected.organism.name ?? "—")}</dd><dt>Sequence</dt><dd>{selected.sequence_kind || "—"} · {selected.sequence_length.toLocaleString()} · {shortHash(selected.sequence_sha256)}</dd><dt>Source</dt><dd>{String(selected.source.provider ?? "—")} · {String(selected.source.release ?? selected.source.revision ?? "—")}</dd><dt>License</dt><dd>{String(selected.license.id ?? "—")} · {String(selected.license.redistribution_status ?? "—")}</dd><dt>Safety</dt><dd>{selected.safety_status}{selected.safety_flags.length ? ` · ${selected.safety_flags.join(", ")}` : ""}</dd></dl><a className="inline-link" href={String(selected.source.url ?? "#")} target="_blank" rel="noreferrer">Open source record <ExternalLink size={12} /></a></div> : <EmptyState icon={FileSearch} title="Select a material" detail="Choose a result to inspect bilingual descriptions, sequence hash, rights, source, and safety metadata." />}</section>
+        <section className="page-section materials-results-section">
+          <div className="section-heading materials-results-heading">
+            <div><h2>Design-eligible materials</h2><p>{searchResult ? `${searchResult.returned_count.toLocaleString()} shown / ${searchResult.match_count.toLocaleString()} total${pageStart ? ` · records ${pageStart.toLocaleString()}–${pageEnd.toLocaleString()}` : ""}` : "Run a search to bind the active snapshot"} · full sequences stay out of search responses</p></div>
+            {searchResult && <div className="materials-pagination" aria-label="Materials result pages"><button className="secondary-button compact-command" type="button" disabled={operationBusy || previousSearchCursors.length === 0} onClick={() => void moveSearchPage("previous")}><ChevronLeft size={13} />Previous</button><span>Page {previousSearchCursors.length + 1}</span><button className="secondary-button compact-command" type="button" disabled={operationBusy || !searchResult.next_cursor} onClick={() => void moveSearchPage("next")}>Next<ChevronRight size={13} /></button></div>}
+          </div>
+          <div className="data-list materials-result-list">
+            {!searchResult && <EmptyState icon={Search} title="Search context changed" detail="Run Search to start again from page one and bind the current active snapshot." />}
+            {searchResult && matches.length === 0 && <EmptyState icon={Database} title="No eligible materials found" detail="Try a different query or filter, or activate a reviewed source snapshot." />}
+            {matches.map((item) => {
+              const blocker = materialSelectionBlocker(item, selectedParts, selectionSnapshot, searchResult?.snapshot_id);
+              const alreadySelected = selectedParts.some((candidate) => candidate.resource_id === item.resource_id);
+              return <div className={`data-row materials-result-row ${selected?.resource_id === item.resource_id ? "is-selected" : ""}`} key={item.resource_id}><button className="materials-result-main" type="button" disabled={operationBusy} onClick={() => setSelected(item)}><Database size={14} /><span className="data-row-copy"><strong>{item.name}</strong><span>{item.resource_id} · {item.kind} · {item.sequence_kind || "no sequence"} {item.sequence_length ? `· ${item.sequence_length.toLocaleString()} bp/aa` : ""}</span></span><span className="materials-result-source">{String(item.source.provider ?? "unknown")}</span></button><button className="secondary-button compact-command materials-add-button" type="button" disabled={operationBusy || Boolean(blocker)} title={blocker ?? `Add ${item.name} to the selection`} aria-label={blocker ?? `Add ${item.name} to the selection`} onClick={() => addPart(item)}>{alreadySelected ? "Added" : "Add"}</button></div>;
+            })}
+          </div>
+        </section>
+        <section className="page-section materials-detail-section"><div className="section-heading"><div><h2>Record detail</h2><p>Source and rights stay attached to every material.</p></div></div>{selected ? <div className="materials-detail"><span className="eyebrow">{selected.review_status}</span><h3>{selected.name}</h3><code>{selected.resource_id}</code><p>{selected.description_en}</p><p className="materials-description-zh">{selected.description_zh}</p><dl><dt>Kind</dt><dd>{selected.kind}</dd><dt>Part type</dt><dd>{selected.part_type || "—"}</dd><dt>Organism</dt><dd>{String(selected.organism.name ?? "—")}</dd><dt>Chassis</dt><dd>{selected.chassis.join(", ") || "—"}</dd><dt>Sequence</dt><dd>{selected.sequence_kind || "—"} · {selected.sequence_length.toLocaleString()} · {shortHash(selected.sequence_sha256)}</dd><dt>Source</dt><dd>{String(selected.source.provider ?? "—")} · {String(selected.source.release ?? selected.source.revision ?? "—")}</dd><dt>License</dt><dd>{String(selected.license.id ?? "—")} · {String(selected.license.redistribution_status ?? "—")}</dd><dt>Safety</dt><dd>{selected.safety_status}{selected.safety_flags.length ? ` · ${selected.safety_flags.join(", ")}` : ""}</dd></dl><a className="inline-link" href={String(selected.source.url ?? "#")} target="_blank" rel="noreferrer">Open source record <ExternalLink size={12} /></a></div> : <EmptyState icon={FileSearch} title="Select a material" detail="Choose a result to inspect bilingual descriptions, sequence hash, rights, source, and safety metadata." />}</section>
       </div>
+      <section className="page-section materials-selection-section">
+        <div className="section-heading"><div><h2>DNA part selection</h2><p>{selectedParts.length} / {MAX_MATERIALS_DESIGN_SELECTION} selected · one snapshot · one shared chassis</p></div><button className="secondary-button compact-command" type="button" disabled={selectedParts.length === 0 || operationBusy} onClick={clearPartSelection}>Clear selection</button></div>
+        <div className="materials-selection-layout">
+          <div className="materials-selection-list">
+            {selectedParts.length === 0 && <EmptyState icon={Database} title="No parts selected" detail="Add governed genetic parts from the results above. Only DESIGN_ELIGIBLE, NO_FLAG DNA parts can enter this basket." />}
+            {selectedParts.map((item) => <div className="materials-selection-row" key={item.resource_id}><span><strong>{item.name}</strong><small>{item.resource_id} · {item.part_type} · {item.sequence_length.toLocaleString()} bp</small></span><button className="secondary-button compact-command" type="button" disabled={operationBusy} onClick={() => removePart(item.resource_id)}>Remove</button></div>)}
+          </div>
+          <div className="materials-materialize-panel">
+            <span className="eyebrow">Snapshot-bound materialization</span>
+            <label htmlFor="materials-chassis"><span>Shared chassis</span><select id="materials-chassis" value={selectedChassis} disabled={commonChassis.length === 0 || operationBusy} onChange={(event) => { setSelectedChassis(event.target.value); setMaterialization(undefined); }}><option value="">Choose chassis</option>{commonChassis.map((chassis) => <option value={chassis} key={chassis}>{chassis}</option>)}</select></label>
+            <small>{selectionSnapshot ? `Pinned snapshot: ${selectionSnapshot}` : "Select at least one eligible part to pin its snapshot."}</small>
+            <button className="primary-button" type="button" disabled={operationBusy || selectedParts.length === 0 || !selectionSnapshot || !commonChassis.includes(selectedChassis)} onClick={() => void materializeSelection()}>{materializing ? <LoaderCircle className="spin" size={14} /> : <Save size={14} />}{materializing ? "Materializing…" : "Materialize selection"}</button>
+            {materialization && <div className="materials-selection-ready" role="status"><strong><CheckCircle2 size={14} />Selection ready</strong><span>{materialization.part_count.toLocaleString()} parts · snapshot {materialization.snapshot_id}</span><code title={materialization.parts_path}>{materialization.parts_path}</code><button className="secondary-button compact-command" type="button" onClick={() => void openFile(materialization.parts_path)}>Open parts snapshot</button><span>Digest</span><code title={materialization.selection_digest}>{materialization.selection_digest}</code><p>Next: create or update a .proto design against this parts snapshot, review and apply the proposed change, then run check and compile. This selection is not a compiled design.</p></div>}
+          </div>
+        </div>
+      </section>
       <section className="page-section materials-admin-section">
         <div className="section-heading"><div><h2>Snapshot administration</h2><p>Sync creates an inactive staging snapshot; activation and rollback require operator-supplied approval evidence.</p></div></div>
         <div className="materials-admin-controls">
-          <select value={syncSource} onChange={(event) => setSyncSource(event.target.value as typeof syncSource)} aria-label="Source to sync"><option value="uniprot">UniProtKB/Swiss-Prot</option><option value="igem">iGEM Registry</option><option value="rhea">Rhea</option><option value="biomodels">BioModels</option></select>
-          <input className="number-field" type="number" min={1} max={2_000_000} value={syncLimit} onChange={(event) => setSyncLimit(Number(event.target.value))} aria-label="Maximum records" />
-          <button className="secondary-button" type="button" disabled={busy} onClick={() => void runAdminAction(() => workbenchApi().materials.sync(syncSource, syncLimit), `Created an inactive ${syncSource} staging snapshot. Review its diff before activation.`)}><RefreshCw size={14} />Sync to staging</button>
-          <button className="secondary-button" type="button" disabled={busy} onClick={() => void workbenchApi().materials.importFile().then((result) => { if (result) { setNotice("Imported a review-required staging snapshot."); void refresh(); } })}><FolderOpen size={14} />Import local file</button>
+          <select value={syncSource} disabled={operationBusy} onChange={(event) => setSyncSource(event.target.value as typeof syncSource)} aria-label="Source to sync"><option value="uniprot">UniProtKB/Swiss-Prot</option><option value="igem">iGEM Registry</option><option value="rhea">Rhea</option><option value="biomodels">BioModels</option></select>
+          <input className="number-field" type="number" min={1} max={2_000_000} value={syncLimit} disabled={operationBusy} onChange={(event) => setSyncLimit(Number(event.target.value))} aria-label="Maximum records" />
+          <button className="secondary-button" type="button" disabled={operationBusy} onClick={() => void runAdminAction(() => workbenchApi().materials.sync(syncSource, syncLimit), `Created an inactive ${syncSource} staging snapshot. Review its diff before activation.`)}><RefreshCw size={14} />Sync to staging</button>
+          <button className="secondary-button" type="button" disabled={operationBusy} onClick={() => void workbenchApi().materials.importFile().then((result) => { if (result) { setNotice("Imported a review-required staging snapshot."); void refresh(); } })}><FolderOpen size={14} />Import local file</button>
         </div>
-        <div className="materials-diff-controls"><span className="eyebrow">Diff preview</span><select value={diffLeft} onChange={(event) => setDiffLeft(event.target.value)} aria-label="Left snapshot"><option value="">Left snapshot</option>{snapshots.map((snapshot) => <option key={`left-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><span aria-hidden="true">→</span><select value={diffRight} onChange={(event) => setDiffRight(event.target.value)} aria-label="Right snapshot"><option value="">Right snapshot</option>{snapshots.map((snapshot) => <option key={`right-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><button className="secondary-button compact-command" type="button" disabled={busy || !diffLeft || !diffRight} onClick={() => void runDiff()}><FileSearch size={13} />Compare</button>{diff && <span className="materials-diff-summary">+{String(diff.added_count ?? 0)} · −{String(diff.removed_count ?? 0)} · Δ{String(diff.changed_count ?? 0)}</span>}</div>
+        <div className="materials-diff-controls"><span className="eyebrow">Diff preview</span><select value={diffLeft} disabled={operationBusy} onChange={(event) => setDiffLeft(event.target.value)} aria-label="Left snapshot"><option value="">Left snapshot</option>{snapshots.map((snapshot) => <option key={`left-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><span aria-hidden="true">→</span><select value={diffRight} disabled={operationBusy} onChange={(event) => setDiffRight(event.target.value)} aria-label="Right snapshot"><option value="">Right snapshot</option>{snapshots.map((snapshot) => <option key={`right-${snapshot.snapshot_id}`} value={snapshot.snapshot_id}>{snapshot.snapshot_id}</option>)}</select><button className="secondary-button compact-command" type="button" disabled={operationBusy || !diffLeft || !diffRight} onClick={() => void runDiff()}><FileSearch size={13} />Compare</button>{diff && <span className="materials-diff-summary">+{String(diff.added_count ?? 0)} · −{String(diff.removed_count ?? 0)} · Δ{String(diff.changed_count ?? 0)}</span>}</div>
         <div className="materials-activation-evidence">
           <span className="eyebrow">Activation evidence</span>
-          <input value={activationOperator} maxLength={128} onChange={(event) => setActivationOperator(event.target.value)} placeholder="operator label" aria-label="Activation operator label" />
-          <input value={activationApprovalReference} maxLength={512} onChange={(event) => setActivationApprovalReference(event.target.value)} placeholder="approval or change-record reference" aria-label="Activation approval reference" />
+          <input value={activationOperator} maxLength={128} disabled={operationBusy} onChange={(event) => setActivationOperator(event.target.value)} placeholder="operator label" aria-label="Activation operator label" />
+          <input value={activationApprovalReference} maxLength={512} disabled={operationBusy} onChange={(event) => setActivationApprovalReference(event.target.value)} placeholder="approval or change-record reference" aria-label="Activation approval reference" />
           <small>The operator label is self-declared and is not authenticated by Proto Workbench. Both fields are written to the local active pointer.</small>
         </div>
-        <div className="materials-snapshot-list">{snapshots.map((snapshot) => <div className={`data-row ${snapshot.active ? "is-selected" : ""}`} key={snapshot.snapshot_id}><Database size={14} /><span className="data-row-copy"><strong>{snapshot.snapshot_id}</strong><span>{snapshot.record_count.toLocaleString()} records · {Object.entries(snapshot.status_counts).map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`).join(" · ")}</span></span>{snapshot.active ? <span className="module-status is-verified">Active</span> : <button className="secondary-button compact-command" type="button" disabled={busy || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.activate(snapshot.snapshot_id, activationEvidence), `Activated ${snapshot.snapshot_id} with the supplied approval reference; operator identity remains self-declared.`)}>Activate</button>}</div>)}</div>
-        <div className="materials-rollback-row"><input value={snapshotInput} maxLength={128} onChange={(event) => setSnapshotInput(event.target.value)} placeholder="snapshot id for rollback" aria-label="Snapshot id for rollback" /><button className="secondary-button" type="button" disabled={busy || !snapshotInput.trim() || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.rollback(snapshotInput.trim(), activationEvidence), `Rolled back to ${snapshotInput.trim()} with the supplied approval reference; operator identity remains self-declared.`)}><RotateCcw size={14} />Rollback</button></div>
+        <div className="materials-snapshot-list">{snapshots.map((snapshot) => <div className={`data-row ${snapshot.active ? "is-selected" : ""}`} key={snapshot.snapshot_id}><Database size={14} /><span className="data-row-copy"><strong>{snapshot.snapshot_id}</strong><span>{snapshot.record_count.toLocaleString()} records · {Object.entries(snapshot.status_counts).map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`).join(" · ")}</span></span>{snapshot.active ? <span className="module-status is-verified">Active</span> : <button className="secondary-button compact-command" type="button" disabled={operationBusy || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.activate(snapshot.snapshot_id, activationEvidence), `Activated ${snapshot.snapshot_id} with the supplied approval reference; operator identity remains self-declared.`)}>Activate</button>}</div>)}</div>
+        <div className="materials-rollback-row"><input value={snapshotInput} maxLength={128} disabled={operationBusy} onChange={(event) => setSnapshotInput(event.target.value)} placeholder="snapshot id for rollback" aria-label="Snapshot id for rollback" /><button className="secondary-button" type="button" disabled={operationBusy || !snapshotInput.trim() || !activationEvidenceComplete} onClick={() => void runAdminAction(() => workbenchApi().materials.rollback(snapshotInput.trim(), activationEvidence), `Rolled back to ${snapshotInput.trim()} with the supplied approval reference; operator identity remains self-declared.`)}><RotateCcw size={14} />Rollback</button></div>
       </section>
-      <section className="page-section materials-review-section"><div className="section-heading"><div><h2>Description review overlay</h2><p>Record a bilingual description decision without mutating source facts, safety, rights, or eligibility.</p></div></div><div className="materials-review-controls"><input value={reviewResourceId} onChange={(event) => setReviewResourceId(event.target.value)} placeholder="resource id (namespace:record)" aria-label="Resource id for review" /><input value={reviewer} onChange={(event) => setReviewer(event.target.value)} placeholder="reviewer" aria-label="Reviewer" /><textarea value={reviewDescriptionEn} onChange={(event) => setReviewDescriptionEn(event.target.value)} placeholder="English description draft" aria-label="English description draft" /><textarea value={reviewDescriptionZh} onChange={(event) => setReviewDescriptionZh(event.target.value)} placeholder="中文描述草稿" aria-label="中文描述草稿" /><div className="materials-review-buttons"><button className="secondary-button" type="button" disabled={busy} onClick={() => void runReview("hold")}>Hold</button><button className="secondary-button" type="button" disabled={busy} onClick={() => void runReview("reject")}>Reject</button><button className="primary-button" type="button" disabled={busy} onClick={() => void runReview("accept")}><Check size={14} />Accept text</button></div></div>{(status?.overlays?.length ?? 0) > 0 && <div className="materials-overlay-history"><span className="eyebrow">Audit history</span>{status?.overlays?.map((overlay) => <div className="materials-overlay-row" key={String(overlay.overlay_id)}><strong>{String(overlay.decision ?? "unknown")}</strong><span>{String(overlay.resource_id ?? "")} · {String(overlay.reviewer ?? "human")} · {String(overlay.created_at ?? "")}</span></div>)}</div>}</section>
+      <section className="page-section materials-review-section"><div className="section-heading"><div><h2>Description review overlay</h2><p>Record a bilingual description decision without mutating source facts, safety, rights, or eligibility.</p></div></div><div className="materials-review-controls"><input value={reviewResourceId} disabled={operationBusy} onChange={(event) => setReviewResourceId(event.target.value)} placeholder="resource id (namespace:record)" aria-label="Resource id for review" /><input value={reviewer} disabled={operationBusy} onChange={(event) => setReviewer(event.target.value)} placeholder="reviewer" aria-label="Reviewer" /><textarea value={reviewDescriptionEn} disabled={operationBusy} onChange={(event) => setReviewDescriptionEn(event.target.value)} placeholder="English description draft" aria-label="English description draft" /><textarea value={reviewDescriptionZh} disabled={operationBusy} onChange={(event) => setReviewDescriptionZh(event.target.value)} placeholder="中文描述草稿" aria-label="中文描述草稿" /><div className="materials-review-buttons"><button className="secondary-button" type="button" disabled={operationBusy} onClick={() => void runReview("hold")}>Hold</button><button className="secondary-button" type="button" disabled={operationBusy} onClick={() => void runReview("reject")}>Reject</button><button className="primary-button" type="button" disabled={operationBusy} onClick={() => void runReview("accept")}><Check size={14} />Accept text</button></div></div>{(status?.overlays?.length ?? 0) > 0 && <div className="materials-overlay-history"><span className="eyebrow">Audit history</span>{status?.overlays?.map((overlay) => <div className="materials-overlay-row" key={String(overlay.overlay_id)}><strong>{String(overlay.decision ?? "unknown")}</strong><span>{String(overlay.resource_id ?? "")} · {String(overlay.reviewer ?? "human")} · {String(overlay.created_at ?? "")}</span></div>)}</div>}</section>
       {facets && <p className="materials-facet-note">Eligible facets · kinds: {Object.entries(facets.kinds).map(([key, value]) => `${key} ${value}`).join(" · ") || "none"} · sources: {Object.entries(facets.sources).map(([key, value]) => `${key} ${value}`).join(" · ") || "none"}</p>}
     </div>
   );

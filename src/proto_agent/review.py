@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,14 @@ from typing import Any
 from .evidence import build_evidence_cards, write_evidence_cards
 from .json_validation import JsonValidationError, strict_json_loads
 from .literature import DEFAULT_LITERATURE_PATH
+from .materials import (
+    MATERIALS_SCHEMA_VERSION,
+    MAX_MATERIALIZED_PARTS,
+    PARTS_SCHEMA_VERSION,
+    PART_TYPES,
+    MaterialsStore,
+    default_materials_root,
+)
 from .parts import DEFAULT_PARTS_PATH
 from .provenance import ProvenanceError, create_provenance, verify_provenance
 from .workflow import DEFAULT_WORKFLOW_PATH, resolve_workflow_skills, run_design_review
@@ -64,10 +73,14 @@ def build_review_packet(
         "workflow": workflow_source.relative_to(paths.workspace).as_posix(),
     }
     _validate_manifest(manifest, expected_inputs=expected_inputs)
-    _verify_current_workflow_skill_bindings(
+    verified_inputs = _verify_current_workflow_skill_bindings(
         manifest,
         {"design": design_source, "parts": parts_source, "workflow": workflow_source},
         paths,
+    )
+    governed_parts_library = _is_governed_materialized_parts_library(
+        verified_inputs["parts"],
+        workspace=paths.workspace,
     )
     workflow_code = 0 if manifest["ok"] else 1
 
@@ -128,7 +141,11 @@ def build_review_packet(
             workspace=paths.workspace,
         ),
         "review_gates": _review_gates(manifest, evidence_payload),
-        "next_actions": _next_actions(manifest, evidence_payload),
+        "next_actions": _next_actions(
+            manifest,
+            evidence_payload,
+            governed_parts_library=governed_parts_library,
+        ),
         "safety_boundary": (
             "Software validation only; this review packet does not certify wet-lab readiness, "
             "orderability, biosafety, or regulatory compliance."
@@ -290,7 +307,7 @@ def _verify_current_workflow_skill_bindings(
     manifest: dict[str, Any],
     input_sources: dict[str, Path],
     paths: WorkspacePaths,
-) -> None:
+) -> dict[str, bytes]:
     """Verify consumed snapshots, then re-resolve rather than trust self-described bindings."""
 
     current_payloads: dict[str, bytes] = {}
@@ -339,9 +356,199 @@ def _verify_current_workflow_skill_bindings(
         raise ProvenanceError("workflow Skill compatibility evidence does not match current governed resolution")
     if manifest["skill_bindings"] != expected_bindings:
         raise ProvenanceError("workflow Skill bindings do not match current governed resolution")
+    return current_payloads
 
 
-def _next_actions(manifest: dict[str, Any], evidence_payload: dict[str, Any]) -> list[str]:
+def _is_governed_materialized_parts_library(payload: bytes, *, workspace: Path) -> bool:
+    """Recognize a materialized library only when its locked catalog still verifies."""
+
+    try:
+        library = strict_json_loads(payload.decode("utf-8"), max_bytes=MAX_JSON_FILE_BYTES)
+    except (UnicodeDecodeError, JsonValidationError):
+        return False
+    if (
+        not isinstance(library, dict)
+        or set(library) != {"schema_version", "library_id", "version", "chassis", "notice", "parts"}
+        or library.get("schema_version") != PARTS_SCHEMA_VERSION
+    ):
+        return False
+
+    snapshot_id = library.get("version")
+    chassis = library.get("chassis")
+    library_id = library.get("library_id")
+    notice = library.get("notice")
+    parts = library.get("parts")
+    if (
+        not isinstance(snapshot_id, str)
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", snapshot_id) is None
+        or not isinstance(chassis, str)
+        or not 1 <= len(chassis) <= 256
+        or not isinstance(library_id, str)
+        or not re.fullmatch(r"selection:[0-9a-f]{64}", library_id)
+        or notice
+        != "Materialized from an auditable external catalog. Human review required; not a wet-lab readiness claim."
+        or not isinstance(parts, list)
+        or not 1 <= len(parts) <= MAX_MATERIALIZED_PARTS
+    ):
+        return False
+
+    resource_ids: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        if not isinstance(part, dict):
+            return False
+        resource_id = part.get("resource_id")
+        sequence = part.get("sequence")
+        sequence_sha256 = part.get("sequence_sha256")
+        source = part.get("source")
+        license_info = part.get("license")
+        evidence_refs = part.get("evidence_refs")
+        if (
+            not isinstance(resource_id, str)
+            or not 1 <= len(resource_id) <= 256
+            or ":" not in resource_id
+            or part.get("id") != resource_id
+            or part.get("type") not in PART_TYPES
+            or part.get("sequence_kind") != "DNA"
+            or not isinstance(sequence, str)
+            or not sequence
+            or not isinstance(sequence_sha256, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", sequence_sha256)
+            or not isinstance(source, dict)
+            or not isinstance(license_info, dict)
+            or not isinstance(evidence_refs, list)
+            or not evidence_refs
+            or not all(isinstance(ref, str) and ref for ref in evidence_refs)
+            or part.get("review_status") != "DESIGN_ELIGIBLE"
+            or part.get("safety_status") != "NO_FLAG"
+            or part.get("safety_flags") != []
+            or part.get("design_eligibility") is not True
+        ):
+            return False
+        canonical_id = resource_id.casefold()
+        if canonical_id in seen:
+            return False
+        seen.add(canonical_id)
+        resource_ids.append(resource_id)
+        try:
+            sequence_bytes = sequence.encode("ascii")
+        except UnicodeEncodeError:
+            return False
+        if hashlib.sha256(sequence_bytes).hexdigest() != sequence_sha256:
+            return False
+        if not all(isinstance(source.get(field), str) and source[field] for field in ("provider", "record_id", "url")):
+            return False
+        if source.get("sequence_sha256") != sequence_sha256:
+            return False
+        if not isinstance(source.get("content_sha256"), str) or not re.fullmatch(
+            r"[0-9a-f]{64}", source["content_sha256"]
+        ):
+            return False
+        if not all(
+            isinstance(license_info.get(field), str) and license_info[field]
+            for field in ("id", "url", "attribution", "rights_notes")
+        ) or license_info.get("redistribution_status") != "REDISTRIBUTABLE":
+            return False
+
+    canonical_ids = sorted(resource_ids, key=lambda value: (value.casefold(), value))
+    if resource_ids != canonical_ids:
+        return False
+    receipt = json.dumps(
+        {"snapshot_id": snapshot_id, "chassis": chassis, "ids": canonical_ids},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    if library_id != f"selection:{hashlib.sha256(receipt).hexdigest()}":
+        return False
+    return _matches_locked_materials_snapshot(library, workspace=workspace)
+
+
+def _matches_locked_materials_snapshot(library: dict[str, Any], *, workspace: Path) -> bool:
+    """Bind a self-contained selection to the separately stored, verified catalog."""
+
+    snapshot_id = str(library["version"])
+    materials_root = default_materials_root(workspace)
+    snapshot_dir = materials_root / "snapshots" / snapshot_id
+    if (
+        not materials_root.is_dir()
+        or materials_root.is_symlink()
+        or not snapshot_dir.is_dir()
+        or snapshot_dir.is_symlink()
+    ):
+        return False
+
+    try:
+        store = MaterialsStore(workspace=workspace, root=materials_root)
+        manifest = store.manifest(snapshot_id)
+        if (
+            manifest.get("schema_version") != MATERIALS_SCHEMA_VERSION
+            or manifest.get("snapshot_id") != snapshot_id
+        ):
+            return False
+        store._verify_snapshot(snapshot_id, manifest)
+        attestations, audit_summary = store._snapshot_promotion_attestations(snapshot_id, manifest)
+        if not attestations and audit_summary.get("attestation_resolution") != "catalog-issued-normalized-record-binding":
+            return False
+
+        chassis = str(library["chassis"])
+        parts = library["parts"]
+        for part in parts:
+            resource_id = str(part["resource_id"])
+            if attestations and resource_id not in attestations:
+                return False
+            resource = store.get(
+                resource_id,
+                include_sequence=True,
+                snapshot_id=snapshot_id,
+                auto_initialize=False,
+            )["resource"]
+            if (
+                resource.get("kind") != "genetic_part"
+                or resource.get("part_type") not in PART_TYPES
+                or chassis not in resource.get("chassis", [])
+                or resource.get("review_status") != "DESIGN_ELIGIBLE"
+                or resource.get("safety_status") != "NO_FLAG"
+                or resource.get("safety_flags") != []
+                or resource.get("design_eligibility") is not True
+            ):
+                return False
+            expected = {
+                "id": resource["resource_id"],
+                "type": resource["part_type"],
+                "name": resource["name"],
+                "description": resource["description_en"],
+                "description_zh": resource["description_zh"],
+                "sequence": resource["sequence"],
+                "sequence_kind": resource["sequence_kind"],
+                "sequence_sha256": resource["sequence_sha256"],
+                "source": resource["source"],
+                "license": resource["license"],
+                "resource_id": resource["resource_id"],
+                "review_status": resource["review_status"],
+                "safety_status": resource["safety_status"],
+                "safety_flags": resource["safety_flags"],
+                "design_eligibility": resource["design_eligibility"],
+                "evidence_refs": resource["evidence_refs"],
+            }
+            if part != expected:
+                return False
+
+        final_manifest = store.manifest(snapshot_id)
+        if final_manifest != manifest:
+            return False
+        store._verify_snapshot(snapshot_id, final_manifest)
+        return True
+    except (OSError, sqlite3.Error, ValueError):
+        return False
+
+
+def _next_actions(
+    manifest: dict[str, Any],
+    evidence_payload: dict[str, Any],
+    *,
+    governed_parts_library: bool,
+) -> list[str]:
     actions = []
     if manifest["skill_compatibility"]["status"] == "needs_review":
         actions.append(
@@ -353,7 +560,8 @@ def _next_actions(manifest: dict[str, Any], evidence_payload: dict[str, Any]) ->
     actions.append("Review human-review evidence cards before using outputs in any scientific decision.")
     if manifest.get("artifacts"):
         actions.append("Inspect generated exchange artifacts for interoperability expectations.")
-    actions.append("Replace toy fixture libraries with reviewed source libraries before real biological design.")
+    if not governed_parts_library:
+        actions.append("Replace toy fixture libraries with reviewed source libraries before real biological design.")
     return actions
 
 

@@ -1,9 +1,115 @@
 {
   "schema_version": "proto-agent.materials.reviewed.v1",
-  "reviewed_at": "2026-09-02T03:02:18Z",
+  "reviewed_at": "2026-09-03T00:50:33Z",
   "reviewer": "controlled-three-round-audit",
   "notice": "Reviewed reporter-protein references for the software compiler domain only. Activation remains an explicit human action.",
   "records": [
+    {
+      "resource_id": "uniprot:P03023",
+      "kind": "protein_sequence",
+      "name": "LACI_ECOLI",
+      "aliases": [
+        "lactose operon repressor",
+        "LacI"
+      ],
+      "description_en": "Lactose operon repressor sequence from Escherichia coli K-12, retained as a reviewed regulator-protein reference for software-level design composition.",
+      "description_zh": "来自大肠杆菌 K-12 的乳糖操纵子阻遏蛋白序列；作为已审查的调控蛋白参考，用于软件层设计组合。",
+      "organism": {
+        "tax_id": 83333,
+        "name": "Escherichia coli (strain K12)",
+        "strain": ""
+      },
+      "role_terms": [
+        "transcription regulator",
+        "repressor protein",
+        "gene regulation"
+      ],
+      "sequence_kind": "PROTEIN",
+      "sequence": "MKPVTLYDVAEYAGVSYQTVSRVVNQASHVSAKTREKVEAAMAELNYIPNRVAQQLAGKQSLLIGVATSSLALHAPSQIVAAIKSRADQLGASVVVSMVERSGVEACKAAVHNLLAQRVSGLIINYPLDDQDAIAVEAACTNVPALFLDVSDQTPINSIIFSHEDGTRLGVEHLVALGHQQIALLAGPLSSVSARLRLAGWHKYLTRNQIQPIAEREGDWSAMSGFQQTMQMLNEGIVPTAMLVANDQMALGAMRAITESGLRVGADISVVGYDDTEDSSCYIPPLTTIKQDFRLLGQTSVDRLLQLSQGQAVKGNQLLPVSLVKRKTTLAPNTQTASPRALADSLMQLARQVSRLESGQ",
+      "sequence_sha256": "ac83dff630587d7c8852f0cac03bffbc646ad7447791bf7c6b00506c18567cd6",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "P03023",
+        "revision": "entry-version-215;sequence-version-3",
+        "release": "2026_03",
+        "url": "https://rest.uniprot.org/uniprotkb/P03023.json",
+        "retrieved_at": "2026-09-02T21:56:41Z",
+        "content_sha256": "b5b10ec845338ef95b11c6b485e4b534be8a051c91e9b75b2e6e20fa74b8fbff",
+        "sequence_sha256": "ac83dff630587d7c8852f0cac03bffbc646ad7447791bf7c6b00506c18567cd6"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt applies CC BY 4.0 to copyrightable database content and notes that patent or other third-party rights may still apply.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://rest.uniprot.org/uniprotkb/P03023.json",
+        "https://www.uniprot.org/help/license"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "design_eligibility": true,
+      "metadata": {
+        "reviewed_record": true,
+        "entry_length": 360,
+        "eligibility_basis": "controlled software-catalog review 2026-09; exact accession and sequence digest locked"
+      }
+    },
+    {
+      "resource_id": "uniprot:P04483",
+      "kind": "protein_sequence",
+      "name": "TETR2_ECOLX",
+      "aliases": [
+        "tetracycline repressor protein class B",
+        "TetR"
+      ],
+      "description_en": "Tetracycline repressor protein class B sequence from transposon Tn10, retained as a reviewed regulator-protein reference for software-level design composition.",
+      "description_zh": "来自 Tn10 转座子的 B 类四环素阻遏蛋白序列；作为已审查的调控蛋白参考，用于软件层设计组合。",
+      "organism": {
+        "tax_id": 562,
+        "name": "Escherichia coli",
+        "strain": ""
+      },
+      "role_terms": [
+        "transcription regulator",
+        "repressor protein",
+        "gene regulation"
+      ],
+      "sequence_kind": "PROTEIN",
+      "sequence": "MSRLDKSKVINSALELLNEVGIEGLTTRKLAQKLGVEQPTLYWHVKNKRALLDALAIEMLDRHHTHFCPLEGESWQDFLRNNAKSFRCALLSHRDGAKVHLGTRPTEKQYETLENQLAFLCQQGFSLENALYALSAVGHFTLGCVLEDQEHQVAKEERETPTTDSMPPLLRQAIELFDHQGAEPAFLFGLELIICGLEKQLKCESGS",
+      "sequence_sha256": "f7b1270da09788357f4070397b3f32dfa3b28c6b09f3684aa7cd537a8043b75f",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "P04483",
+        "revision": "entry-version-164;sequence-version-1",
+        "release": "2026_03",
+        "url": "https://rest.uniprot.org/uniprotkb/P04483.json",
+        "retrieved_at": "2026-09-02T21:56:48Z",
+        "content_sha256": "d526f04623e72eaf7db4e74cab9c4948c97346ad64abc0f536f8211a42c24d1c",
+        "sequence_sha256": "f7b1270da09788357f4070397b3f32dfa3b28c6b09f3684aa7cd537a8043b75f"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt applies CC BY 4.0 to copyrightable database content and notes that patent or other third-party rights may still apply.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "evidence_refs": [
+        "https://rest.uniprot.org/uniprotkb/P04483.json",
+        "https://www.uniprot.org/help/license"
+      ],
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "design_eligibility": true,
+      "metadata": {
+        "reviewed_record": true,
+        "entry_length": 207,
+        "eligibility_basis": "controlled software-catalog review 2026-09; exact accession and sequence digest locked"
+      }
+    },
     {
       "resource_id": "uniprot:P42212",
       "kind": "protein_sequence",
@@ -30,11 +136,11 @@
       "source": {
         "provider": "UniProtKB/Swiss-Prot",
         "record_id": "P42212",
-        "revision": "entry-version-194;sequence-version-1",
-        "release": "2026_02",
+        "revision": "entry-version-195;sequence-version-1",
+        "release": "2026_03",
         "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
-        "retrieved_at": "2026-09-02T03:02:17Z",
-        "content_sha256": "aad567abb00545381f83daaa8ba940a253427b797e8a6a5ec917547a11db1803",
+        "retrieved_at": "2026-09-02T21:56:49Z",
+        "content_sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
         "sequence_sha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403"
       },
       "license": {
@@ -84,11 +190,11 @@
       "source": {
         "provider": "UniProtKB/Swiss-Prot",
         "record_id": "Q9U6Y4",
-        "revision": "entry-version-67;sequence-version-1",
-        "release": "2026_02",
+        "revision": "entry-version-68;sequence-version-1",
+        "release": "2026_03",
         "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y4.json",
-        "retrieved_at": "2026-09-02T03:02:16Z",
-        "content_sha256": "65c811cd09354a76cf1c732fd569698b4ae38c5f122ff272fde4f71f60cd7255",
+        "retrieved_at": "2026-09-02T21:56:49Z",
+        "content_sha256": "a678b787c3d2968ccaec1b843e1fbd0151ee59ffea2ba11b1480d4c0e937b91b",
         "sequence_sha256": "6de05b2c8ad5084018adf2cce4447ed8946d74a895446dd2a4ab8ff614c1ed49"
       },
       "license": {
@@ -138,11 +244,11 @@
       "source": {
         "provider": "UniProtKB/Swiss-Prot",
         "record_id": "Q9U6Y8",
-        "revision": "entry-version-85;sequence-version-1",
-        "release": "2026_02",
+        "revision": "entry-version-86;sequence-version-1",
+        "release": "2026_03",
         "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y8.json",
-        "retrieved_at": "2026-09-02T03:02:18Z",
-        "content_sha256": "bb2a2f3e75121d915262621ecd9dcbd154de751dbd158bec83485407db717dde",
+        "retrieved_at": "2026-09-02T21:56:49Z",
+        "content_sha256": "83d6d4d4e7bdbd6d5c69a12776ce4c525db4847739e946716964c371df9d1d79",
         "sequence_sha256": "016abb252860c3952220cc3698048f23bc7983664b322b933a62df0b328e0301"
       },
       "license": {

@@ -63,6 +63,17 @@ const MATERIALS_ACTIVATION_EVIDENCE = z.object({
   approval_reference: z.string().trim().min(1).max(512).regex(/^[^\x00-\x1f\x7f\u0085\u2028\u2029]+$/u),
 }).strict();
 const MATERIALS_RESOURCE_ID = z.string().min(1).max(256).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*:[^\\/\\\\]+(?:[\\/\\\\][^\\/\\\\]+)*$/);
+const MATERIALS_CHASSIS = z.string().trim().min(1).max(256).regex(/^[^\x00-\x1f\x7f\u0085\u2028\u2029]+$/u);
+const MATERIALS_MATERIALIZE = z.object({
+  resource_ids: z.array(MATERIALS_RESOURCE_ID).min(1).max(50),
+  chassis: MATERIALS_CHASSIS,
+  snapshot: MATERIALS_SNAPSHOT_ID,
+}).strict().superRefine((value, context) => {
+  const normalized = value.resource_ids.map((resourceId) => resourceId.toLocaleLowerCase());
+  if (new Set(normalized).size !== normalized.length) {
+    context.addIssue({ code: "custom", message: "Material selections must not contain duplicate resource IDs." });
+  }
+});
 const MATERIALS_REVIEW = z.object({
   resource_id: MATERIALS_RESOURCE_ID,
   decision: z.enum(["accept", "reject", "hold"]),
@@ -215,6 +226,7 @@ const schemas: Record<string, z.ZodType<unknown[]>> = {
   [IPC.materialsSearch]: z.tuple([MATERIALS_SEARCH]),
   [IPC.materialsGet]: z.tuple([MATERIALS_RESOURCE_ID, z.boolean()]),
   [IPC.materialsFacets]: noArguments,
+  [IPC.materialsMaterialize]: z.tuple([MATERIALS_MATERIALIZE]),
   [IPC.materialsActivate]: z.tuple([MATERIALS_SNAPSHOT_ID, MATERIALS_ACTIVATION_EVIDENCE]),
   [IPC.materialsRollback]: z.tuple([MATERIALS_SNAPSHOT_ID, MATERIALS_ACTIVATION_EVIDENCE]),
   [IPC.materialsSync]: z.tuple([z.enum(["uniprot", "igem", "rhea", "biomodels"]), z.number().int().min(1).max(2_000_000)]),

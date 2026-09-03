@@ -29,6 +29,7 @@ import type {
   OperatorAttentionItem,
   OperatorCockpitProjection,
   MaterialsFacets,
+  MaterialsMaterializeRequest,
   MaterialsReviewInput,
   MaterialsStatus,
   PatchOperation,
@@ -1767,6 +1768,7 @@ const mockWorkbench: WorkbenchApi = {
     async facets(): Promise<MaterialsFacets> {
       return { ok: true, snapshot_id: "seed-2026.08", kinds: {}, statuses: { DESIGN_ELIGIBLE: 0 }, safety: { NO_FLAG: 0 }, sources: {}, licenses: {} };
     },
+    async materialize(_input: MaterialsMaterializeRequest) { throw new Error("Materials materialization is unavailable in preview mode; use the desktop app."); },
     async activate() { throw new Error("Snapshot administration is unavailable in preview mode."); },
     async rollback() { throw new Error("Snapshot administration is unavailable in preview mode."); },
     async sync() { throw new Error("Materials sync is unavailable in preview mode; use the desktop app."); },

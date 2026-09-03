@@ -292,7 +292,7 @@ def _write_jsonl(path: Path, values: Iterable[dict[str, Any]]) -> None:
     path.write_text(payload, encoding="utf-8", newline="\n")
 
 
-def _data_license_notice(*, quarantine: bool) -> str:
+def _data_license_notice(*, quarantine: bool, records: list[dict[str, Any]]) -> str:
     scope = "metadata-only quarantine index" if quarantine else "reviewed public catalog"
     common = f"""# Third-party data notices
 
@@ -310,9 +310,16 @@ license URL, attribution, rights notes, and redistribution status.
   the source metadata are omitted from the public bundle.
 """
     else:
-        source_lines = """- iGEM Registry records: the declared license is evaluated per record. This
-  bundle contains fourteen CC BY 4.0 records and one CC0 1.0 record.
-"""
+        igem_licenses = Counter(
+            str(record.get("license", {}).get("id") or "")
+            for record in records
+            if str(record.get("source", {}).get("provider") or "") == "iGEM Registry"
+        )
+        source_lines = (
+            "- iGEM Registry records: the declared license is evaluated per record. This\n"
+            f"  bundle contains {igem_licenses['CC-BY-4.0']:,} CC BY 4.0 records and "
+            f"{igem_licenses['CC0-1.0']:,} CC0 1.0 records.\n"
+        )
     if quarantine:
         boundary = """
 
@@ -362,10 +369,21 @@ def _finalize_bundle(directory: Path, *, profile: str, bundle_id: str, records: 
     (directory / "SHA256SUMS").write_text("".join(f"{digest}  {path}\n" for path, digest in sums.items()), encoding="ascii", newline="\n")
 
 
-def _public_sources() -> list[dict[str, Any]]:
+def _public_sources(lock: dict[str, Any], public_records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _provider_count(provider: str) -> int:
+        return sum(int(item["selected_record_count"]) for item in lock["eligible_inputs"] if str(item["provider"]) == provider)
+
+    uniprot_release = next(
+        (
+            str(record.get("source", {}).get("release") or "")
+            for record in public_records
+            if str(record.get("source", {}).get("provider")) == "UniProtKB/Swiss-Prot"
+        ),
+        "",
+    )
     return [
-        {"provider": "iGEM Registry", "record_count": 15, "release": "per-record revisions", "license_policy": "per-record declared CC-BY-4.0 or CC0-1.0"},
-        {"provider": "UniProtKB/Swiss-Prot", "record_count": 3, "release": "2026_02", "license": "CC-BY-4.0"},
+        {"provider": "iGEM Registry", "record_count": _provider_count("iGEM Registry"), "release": "per-record revisions", "license_policy": "per-record declared CC-BY-4.0 or CC0-1.0"},
+        {"provider": "UniProtKB/Swiss-Prot", "record_count": _provider_count("UniProtKB/Swiss-Prot"), "release": uniprot_release, "license": "CC-BY-4.0"},
     ]
 
 
@@ -430,7 +448,8 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
 
     public_records.sort(key=lambda item: (str(item["resource_id"]).casefold(), str(item["resource_id"])))
     quarantine_records.sort(key=lambda item: (str(item["resource_id"]).casefold(), str(item["resource_id"])))
-    if len(public_records) != 18 or len(quarantine_records) != 1795:
+    expected_public = sum(int(item["selected_record_count"]) for item in lock["eligible_inputs"])
+    if len(public_records) != expected_public or len(quarantine_records) != 1795:
         raise ValueError("Public export count invariant failed")
     ids = [str(item["resource_id"]).casefold() for item in [*public_records, *quarantine_records]]
     if len(ids) != len(set(ids)):
@@ -447,7 +466,7 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
         public_manifest = store._create_snapshot(
             public_records,
             PUBLIC_BUNDLE_ID,
-            sources=_public_sources(),
+            sources=_public_sources(lock, public_records),
             label="Reviewed public materials catalog",
             created_at=created_at,
             manifest_annotations={
@@ -477,7 +496,11 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
         _write_json(public_target / "provenance.json", public_provenance)
         public_summaries = _normalized_summaries(public_records, quarantine=False, promotion_attestations=promotion_attestations)
         _write_jsonl(public_target / "records.jsonl", public_summaries)
-        (public_target / "LICENSES.md").write_text(_data_license_notice(quarantine=False), encoding="utf-8", newline="\n")
+        (public_target / "LICENSES.md").write_text(
+            _data_license_notice(quarantine=False, records=public_records),
+            encoding="utf-8",
+            newline="\n",
+        )
 
         quarantine_manifest = store._create_snapshot(
             quarantine_records,
@@ -536,7 +559,11 @@ def build(repo: Path, external_root: Path, output_root: Path) -> tuple[Path, Pat
                 "sources": _quarantine_sources(lock),
             },
         )
-        (quarantine_target / "LICENSES.md").write_text(_data_license_notice(quarantine=True), encoding="utf-8", newline="\n")
+        (quarantine_target / "LICENSES.md").write_text(
+            _data_license_notice(quarantine=True, records=quarantine_records),
+            encoding="utf-8",
+            newline="\n",
+        )
 
     _finalize_bundle(public_target, profile="PUBLIC_CATALOG", bundle_id=PUBLIC_BUNDLE_ID, records=_normalized_summaries(public_records, quarantine=False, promotion_attestations=promotion_attestations), activation_policy="EXPLICIT_HUMAN_ONLY", model_visibility=True)
     _finalize_bundle(quarantine_target, profile="PUBLIC_QUARANTINE", bundle_id=QUARANTINE_BUNDLE_ID, records=_normalized_summaries(quarantine_records, quarantine=True), activation_policy="DENY", model_visibility=False)

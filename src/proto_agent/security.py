@@ -12,7 +12,10 @@ from typing import Any, Iterable
 
 MAX_PATH_CHARS = 512
 MAX_TEXT_FILE_BYTES = 2 * 1024 * 1024
-MAX_JSON_FILE_BYTES = 2 * 1024 * 1024
+# Bounded workspace JSON reads.  The reviewed materials seeds legitimately
+# reach a few MB (1000+ sequence records), so this cap stays generous but
+# finite; unbounded reads remain rejected everywhere.
+MAX_JSON_FILE_BYTES = 8 * 1024 * 1024
 MAX_NOTEBOOK_FILE_BYTES = 4 * 1024 * 1024
 MAX_FIXTURE_FILE_BYTES = 2 * 1024 * 1024
 MAX_CA_FILE_BYTES = 1024 * 1024

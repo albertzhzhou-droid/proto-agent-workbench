@@ -16,6 +16,7 @@ import json
 import re
 import ssl
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -27,7 +28,10 @@ from typing import Any
 import certifi
 
 from proto_agent.materials import PROTEIN_ALPHABET, canonical_license_id
-from proto_agent.materials_promotion import audit_promotion_candidates
+from proto_agent.materials_promotion import (
+    audit_promotion_candidates,
+    build_promotion_uniqueness_index,
+)
 
 
 RECEIPT_SCHEMA = "proto-agent.materials-source-receipt.v1"
@@ -38,11 +42,16 @@ IGEM_SEED_PATH = "materials/reviewed/igem_design_eligible_2026-09.json"
 PROTEIN_SEED_PATH = "materials/reviewed/protein_design_eligible_2026-09.json"
 AUDIT_PATH = "materials/reviewed/promotion_audit_2026-09.json"
 SOURCE_LOCK_PATH = "materials/bundles/source-lock.json"
+EXPANSION_MANIFEST_PATH = "materials/reviewed/igem_expansion_2026-09.json"
+EXPANSION_STATE_PATH = "materials/reviewed/igem_expansion_state_2026-09.jsonl"
 IGEM_LICENSE_API = "https://api.registry.igem.org/v1/licenses/"
 UNIPROT_LICENSE_API = "https://rest.uniprot.org/help/license"
 UNIPROT_LICENSE_PAGE = "https://www.uniprot.org/help/license"
 MAX_RESPONSE_BYTES = 2_000_000
 USER_AGENT = "Proto-Agent-Materials-Audit/2026.09 (+software-catalog-review)"
+# The registry allows roughly 100 requests per 10 minutes; a single-worker
+# plan with this spacing stays inside every documented window.
+FETCH_INTERVAL_SECONDS = 6.2
 
 
 IGEM_PARTS: tuple[dict[str, Any], ...] = (
@@ -61,6 +70,21 @@ IGEM_PARTS: tuple[dict[str, Any], ...] = (
     {"uuid": "64596782-8ede-4c91-9b8b-fb281f7c9bc6", "name": "BBa_B0013", "part_type": "terminator", "role": "SO:0000141", "length": 47, "revision_date": "2021-09-08"},
     {"uuid": "ee82e626-e0dd-434a-8c06-41a4120e6d9a", "name": "BBa_J23101", "part_type": "promoter", "role": "SO:0000167", "length": 35, "revision_date": "2021-09-08"},
     {"uuid": "960d257b-aa5b-4852-873c-2257858df041", "name": "BBa_J23102", "part_type": "promoter", "role": "SO:0000167", "length": 35, "revision_date": "2021-09-08"},
+    # 2026-09 expansion batch: classic regulated promoters, Anderson family
+    # members, reporter CDS parts, and regulator CDS parts. Lengths and roles
+    # were resolved from the public registry search API; sequences and
+    # licenses are still verified from the fetched part records.
+    {"uuid": "30443c81-da86-462a-8bde-9a2d5e598c60", "name": "BBa_R0010", "part_type": "promoter", "role": "SO:0000167", "length": 200},
+    {"uuid": "1dd0eaaa-2bdf-4fd0-bde2-5df0f1135a28", "name": "BBa_R0051", "part_type": "promoter", "role": "SO:0000167", "length": 49},
+    {"uuid": "b2668bec-4d06-475d-bf9c-15dcf76dc6d9", "name": "BBa_J23106", "part_type": "promoter", "role": "SO:0000167", "length": 35},
+    {"uuid": "243d44a0-2c39-4052-8a59-b8283b7ccf45", "name": "BBa_J23115", "part_type": "promoter", "role": "SO:0000167", "length": 35},
+    {"uuid": "5a586d6d-ede9-4784-b3ac-6974feca51ff", "name": "BBa_J23118", "part_type": "promoter", "role": "SO:0000167", "length": 35},
+    {"uuid": "839dbacc-1089-4119-be94-b6d3767dc373", "name": "BBa_E0040", "part_type": "cds", "role": "SO:0000316", "length": 720},
+    {"uuid": "2cd0919a-749d-41a7-a08f-d0f90957d6a6", "name": "BBa_E1010", "part_type": "cds", "role": "SO:0000316", "length": 706},
+    {"uuid": "42ad9eeb-720c-4f76-a3bb-2761314801a9", "name": "BBa_E0020", "part_type": "cds", "role": "SO:0000316", "length": 723},
+    {"uuid": "0751a71a-bb93-44e6-b735-55214aebf7f4", "name": "BBa_E0030", "part_type": "cds", "role": "SO:0000316", "length": 723},
+    {"uuid": "f2301f64-588e-4843-b0cf-d1530bb54db8", "name": "BBa_C0062", "part_type": "cds", "role": "SO:0000316", "length": 781},
+    {"uuid": "c642ace1-fedf-457b-ba95-22a94ce129a7", "name": "BBa_C0012", "part_type": "cds", "role": "SO:0000316", "length": 1153},
 )
 
 UNIPROT_RECORDS: tuple[dict[str, Any], ...] = (
@@ -84,6 +108,24 @@ UNIPROT_RECORDS: tuple[dict[str, Any], ...] = (
         "aliases": ["zFP538", "FP538", "green fluorescent chromoprotein"],
         "description_en": "GFP-like fluorescent chromoprotein FP538 sequence from Zoanthus sp., retained as a reviewed reporter-protein reference for software-level design composition.",
         "description_zh": "来自 Zoanthus 属的 GFP 类荧光色素蛋白 FP538 序列；作为已审查的报告蛋白参考，用于软件层设计组合。",
+    },
+    # 2026-09 expansion batch: reviewed regulator-protein references that pair
+    # with the regulated promoters added to the iGEM seed.
+    {
+        "accession": "P03023", "entry_id": "LACI_ECOLI", "tax_id": 83333, "length": 360,
+        "sha256": "ac83dff630587d7c8852f0cac03bffbc646ad7447791bf7c6b00506c18567cd6",
+        "aliases": ["lactose operon repressor", "LacI"],
+        "role_terms": ["transcription regulator", "repressor protein", "gene regulation"],
+        "description_en": "Lactose operon repressor sequence from Escherichia coli K-12, retained as a reviewed regulator-protein reference for software-level design composition.",
+        "description_zh": "来自大肠杆菌 K-12 的乳糖操纵子阻遏蛋白序列；作为已审查的调控蛋白参考，用于软件层设计组合。",
+    },
+    {
+        "accession": "P04483", "entry_id": "TETR2_ECOLX", "tax_id": 562, "length": 207,
+        "sha256": "f7b1270da09788357f4070397b3f32dfa3b28c6b09f3684aa7cd537a8043b75f",
+        "aliases": ["tetracycline repressor protein class B", "TetR"],
+        "role_terms": ["transcription regulator", "repressor protein", "gene regulation"],
+        "description_en": "Tetracycline repressor protein class B sequence from transposon Tn10, retained as a reviewed regulator-protein reference for software-level design composition.",
+        "description_zh": "来自 Tn10 转座子的 B 类四环素阻遏蛋白序列；作为已审查的调控蛋白参考，用于软件层设计组合。",
     },
 )
 
@@ -136,7 +178,38 @@ def _read_json_bytes(value: bytes, *, label: str) -> dict[str, Any]:
     return payload
 
 
+_FETCH_STATE = {"last": 0.0}
+_FETCH_LOCK = threading.Lock()
+
+
+def _FETCH_THROTTLE() -> None:  # noqa: N802 - keep the call-site spelling simple
+    with _FETCH_LOCK:
+        elapsed = time.monotonic() - _FETCH_STATE["last"]
+        if elapsed < FETCH_INTERVAL_SECONDS:
+            time.sleep(FETCH_INTERVAL_SECONDS - elapsed)
+        _FETCH_STATE["last"] = time.monotonic()
+
+
+def _load_expansion_parts(repo: Path) -> tuple[dict[str, Any], ...]:
+    """Load the crawled expansion selection manifest when it has been emitted."""
+
+    path = repo / EXPANSION_MANIFEST_PATH
+    if not path.is_file():
+        return ()
+    payload = _read_json_bytes(path.read_bytes(), label=EXPANSION_MANIFEST_PATH)
+    if payload.get("schema_version") != "proto-agent.materials.igem-expansion.v1":
+        raise ValueError("Unsupported iGEM expansion manifest schema")
+    parts = payload.get("parts")
+    if not isinstance(parts, list):
+        raise ValueError("iGEM expansion manifest has no parts array")
+    for item in parts:
+        if not isinstance(item, dict) or not all(item.get(key) for key in ("uuid", "name", "part_type", "role", "length")):
+            raise ValueError(f"iGEM expansion manifest entry is invalid: {item}")
+    return tuple(parts)
+
+
 def _fetch_one(item: dict[str, str]) -> tuple[dict[str, Any], bytes]:
+    _FETCH_THROTTLE()
     request = urllib.request.Request(item["url"], headers={"Accept": item["accept"], "User-Agent": USER_AGENT})
     context = ssl.create_default_context(cafile=certifi.where())
     for attempt in range(4):
@@ -175,9 +248,9 @@ def _fetch_one(item: dict[str, str]) -> tuple[dict[str, Any], bytes]:
     return receipt, body
 
 
-def _fetch_plan() -> list[dict[str, str]]:
+def _fetch_plan(repo: Path) -> list[dict[str, str]]:
     plan: list[dict[str, str]] = []
-    for item in IGEM_PARTS:
+    for item in (*IGEM_PARTS, *_load_expansion_parts(repo)):
         uuid = item["uuid"]
         plan.append({
             "path": f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json",
@@ -206,9 +279,9 @@ def _fetch_plan() -> list[dict[str, str]]:
 
 
 def fetch(repo: Path) -> None:
-    plan = _fetch_plan()
+    plan = _fetch_plan(repo)
     results: dict[str, tuple[dict[str, Any], bytes]] = {}
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="materials-audit") as pool:
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="materials-audit") as pool:
         futures = {pool.submit(_fetch_one, item): item for item in plan}
         for future in as_completed(futures):
             item = futures[future]
@@ -252,10 +325,10 @@ def _load_receipt(repo: Path) -> tuple[dict[str, Any], dict[str, dict[str, Any]]
         body = evidence_path.read_bytes()
         if len(body) != int(item.get("byte_count", -1)) or _sha256_bytes(body) != str(item.get("sha256") or ""):
             raise ValueError(f"Evidence response does not match its receipt: {relative}")
-        if str(item.get("url") or "") not in {entry["url"] for entry in _fetch_plan()}:
+        if str(item.get("url") or "") not in {entry["url"] for entry in _fetch_plan(repo)}:
             raise ValueError(f"Receipt URL is not in the reviewed fetch plan: {item.get('url')}")
         responses[relative] = item
-    expected = {item["path"] for item in _fetch_plan()}
+    expected = {item["path"] for item in _fetch_plan(repo)}
     if set(responses) != expected:
         raise ValueError("Receipt response set does not match the reviewed fetch plan")
     return receipt, responses
@@ -283,7 +356,7 @@ def _source_evidence(record_receipt: dict[str, Any], license_receipt: dict[str, 
 def _igem_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
     records: list[dict[str, Any]] = []
     evidence: dict[str, dict[str, Any]] = {}
-    for expected in IGEM_PARTS:
+    for expected in (*IGEM_PARTS, *_load_expansion_parts(repo)):
         uuid = expected["uuid"]
         relative = f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json"
         payload, receipt = _response(repo, responses, relative)
@@ -324,6 +397,12 @@ def _igem_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[lis
             raise ValueError(f"iGEM license response invariant failed: {license_uuid}")
         resource_id = f"igem:{uuid}"
         role_label = ROLE_LABELS[expected["role"]]
+        chassis_basis = str(expected.get("chassis_basis") or "controlled_review_software_annotation")
+        chassis_note = (
+            "Upstream chassis metadata lists Escherichia coli among the designed-for organisms."
+            if chassis_basis == "upstream_designed_for_ecoli"
+            else "Chassis is a local software compatibility annotation because upstream chassis fields are empty."
+        )
         record = {
             "resource_id": resource_id,
             "kind": "genetic_part",
@@ -355,7 +434,7 @@ def _igem_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[lis
                     "The declared Creative Commons Attribution license permits redistribution with attribution. "
                     if license_id == "CC-BY-4.0"
                     else "The declared CC0 dedication permits redistribution and reuse. "
-                ) + "Chassis is a local software compatibility annotation because upstream chassis fields are empty.",
+                ) + chassis_note,
                 "redistribution_status": "REDISTRIBUTABLE",
             },
             "evidence_refs": [receipt["url"], license_receipt["url"]],
@@ -365,7 +444,7 @@ def _igem_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[lis
             "metadata": {
                 "registry_status": "published",
                 "role_accession": expected["role"],
-                "chassis_basis": "controlled_review_software_annotation",
+                "chassis_basis": chassis_basis,
             },
         }
         records.append(record)
@@ -427,7 +506,7 @@ def _uniprot_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[
                 "name": str(organism.get("scientificName") or ""),
                 "strain": "",
             },
-            "role_terms": ["fluorescent protein", "reporter protein", "visualization"],
+            "role_terms": expected.get("role_terms") or ["fluorescent protein", "reporter protein", "visualization"],
             "sequence_kind": "PROTEIN",
             "sequence": sequence,
             "sequence_sha256": sequence_sha256,
@@ -468,18 +547,55 @@ def _uniprot_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[
     return records, evidence
 
 
+def _batched_audit(
+    records: list[dict[str, Any]],
+    *,
+    generated_at: str,
+    source_evidence: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Run the three-round audit in candidate batches and merge the reports.
+
+    ``audit_promotion_candidates`` intentionally caps a single run at 1000
+    candidates.  Each record is audited exactly once, inside one batch; the
+    merged report keeps the audit schema and lists every candidate decision.
+    """
+
+    batch_size = 1000
+    batches = [records[index:index + batch_size] for index in range(0, len(records), batch_size)] or [[]]
+    uniqueness_index = build_promotion_uniqueness_index(records)
+    reports = [
+        audit_promotion_candidates(
+            batch,
+            generated_at=generated_at,
+            source_evidence=source_evidence,
+            uniqueness_index=uniqueness_index,
+        )
+        for batch in batches
+    ]
+    merged = dict(reports[0])
+    merged["candidate_count"] = sum(report["candidate_count"] for report in reports)
+    merged["pass_count"] = sum(report["pass_count"] for report in reports)
+    merged["fail_count"] = sum(report["fail_count"] for report in reports)
+    merged["candidates"] = sorted(
+        (candidate for report in reports for candidate in report["candidates"]),
+        key=lambda item: item["resource_id"].casefold(),
+    )
+    return merged
+
+
 def _build_outputs(repo: Path) -> dict[str, bytes]:
     receipt, responses = _load_receipt(repo)
     igem_records, igem_evidence = _igem_records(repo, responses)
     protein_records, protein_evidence = _uniprot_records(repo, responses)
     evidence = {**igem_evidence, **protein_evidence}
     generated_at = str(receipt["completed_at"])
-    audit = audit_promotion_candidates(
+    audit = _batched_audit(
         [*igem_records, *protein_records],
         generated_at=generated_at,
         source_evidence=evidence,
     )
-    if audit["candidate_count"] != 18 or audit["pass_count"] != 18 or audit["fail_count"] != 0:
+    expected_pass = len(igem_records) + len(protein_records)
+    if audit["candidate_count"] != expected_pass or audit["pass_count"] != expected_pass or audit["fail_count"] != 0:
         failed = [item["resource_id"] for item in audit["candidates"] if item["decision"] != "PASS"]
         raise ValueError(f"Promotion audit failed closed; no reviewed seed was advanced: {failed}")
     igem_seed = {
@@ -522,13 +638,13 @@ def _build_outputs(repo: Path) -> dict[str, bytes]:
             {
                 "path": IGEM_SEED_PATH,
                 "sha256": _sha256_bytes(initial[IGEM_SEED_PATH]),
-                "selected_record_count": 15,
+                "selected_record_count": len(igem_records),
                 "provider": "iGEM Registry",
             },
             {
                 "path": PROTEIN_SEED_PATH,
                 "sha256": _sha256_bytes(initial[PROTEIN_SEED_PATH]),
-                "selected_record_count": 3,
+                "selected_record_count": len(protein_records),
                 "provider": "UniProtKB/Swiss-Prot",
             },
         ],
@@ -542,6 +658,13 @@ def _build_outputs(repo: Path) -> dict[str, bytes]:
             "fail_count": audit["fail_count"],
         },
         "source_evidence": evidence_entries,
+        "evidence_publication_policy": {
+            "public_repository_content": "RECEIPT_AND_DIGEST_LEDGER_ONLY",
+            "raw_response_bytes": "LOCAL_GITIGNORED_REVIEW_INPUTS",
+            "resumable_crawl_state": "LOCAL_GITIGNORED_OPERATIONAL_STATE",
+            "rebuild_requirement": "Matching raw evidence bytes must be supplied locally at the repository-relative ledger paths.",
+            "model_visibility": False,
+        },
         "quarantine_inputs": old_lock.get("quarantine_inputs", []),
         "activation_policy": "EXPLICIT_HUMAN_ONLY",
         "active_pointer_mutated": False,
@@ -564,10 +687,83 @@ def check_outputs(repo: Path) -> None:
         raise ValueError(f"Reviewed materials outputs are stale or missing: {mismatches}")
 
 
+def _crawl_receipt(repo: Path) -> None:
+    """Merge crawler evidence into the retrieval receipt without network access.
+
+    Keeps every existing receipt entry whose evidence file still matches its
+    locked digest, then appends one entry per accepted expansion part from the
+    crawler state file.  The merged receipt must cover the full fetch plan
+    (seed parts, expansion parts, licenses, UniProt entries) or the build
+    fails closed.
+    """
+
+    receipt_path = repo / RECEIPT_PATH
+    existing = _read_json_bytes(receipt_path.read_bytes(), label=RECEIPT_PATH)
+    if existing.get("schema_version") != RECEIPT_SCHEMA or not isinstance(existing.get("responses"), list):
+        raise ValueError("Existing retrieval receipt is missing or unsupported")
+    kept: dict[str, dict[str, Any]] = {}
+    for item in existing["responses"]:
+        if not isinstance(item, dict):
+            raise ValueError("Existing receipt entry is invalid")
+        relative = _safe_relative(str(item.get("path") or ""))
+        body = (repo / relative).read_bytes()
+        if len(body) != int(item.get("byte_count", -1)) or _sha256_bytes(body) != str(item.get("sha256") or ""):
+            raise ValueError(f"Existing receipt evidence no longer matches: {relative}")
+        kept[relative] = item
+    state_path = repo / EXPANSION_STATE_PATH
+    if not state_path.is_file():
+        raise ValueError("Crawler state file is missing")
+    state_entries: dict[str, dict[str, Any]] = {}
+    for line in state_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            entry = json.loads(line)
+            state_entries[str(entry.get("uuid") or "")] = entry
+    manifest_uuids = {str(item["uuid"]) for item in _load_expansion_parts(repo)}
+    appended: dict[str, dict[str, Any]] = {}
+    for uuid, entry in state_entries.items():
+        if entry.get("decision") != "accepted" or uuid not in manifest_uuids:
+            continue
+        relative = f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json"
+        if relative in kept:
+            continue
+        body = (repo / _safe_relative(relative)).read_bytes()
+        if _sha256_bytes(body) != str(entry.get("content_sha256") or "") or len(body) != int(entry.get("byte_count", -1)):
+            raise ValueError(f"Crawler evidence does not match its state entry: {relative}")
+        appended[relative] = {
+            "path": relative,
+            "url": str(entry.get("url") or f"https://api.registry.igem.org/v1/parts/{uuid}"),
+            "retrieved_at": str(entry.get("retrieved_at") or ""),
+            "sha256": str(entry.get("content_sha256") or ""),
+            "byte_count": int(entry.get("byte_count", -1)),
+            "content_type": str(entry.get("content_type") or "application/json"),
+            "response_headers": {},
+        }
+    merged = {**kept, **appended}
+    plan_paths = {item["path"] for item in _fetch_plan(repo)}
+    missing = sorted(plan_paths - set(merged))
+    if missing:
+        raise ValueError(f"Crawler evidence is incomplete for the reviewed fetch plan ({len(missing)} missing, first: {missing[0] if missing else ''})")
+    extra = sorted(set(merged) - plan_paths)
+    if extra:
+        raise ValueError(f"Receipt contains responses outside the reviewed fetch plan: {extra[:3]}")
+    receipt = {
+        "schema_version": RECEIPT_SCHEMA,
+        "completed_at": _now(),
+        "transport": (
+            "HTTPS GET with certificate validation via certifi; redirects and non-200 responses rejected. "
+            "iGEM expansion responses were captured by tools/crawl_igem_parts.py under the same transport policy."
+        ),
+        "responses": [merged[relative] for relative in sorted(plan_paths)],
+    }
+    receipt_path.write_bytes(_json_bytes(receipt))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--fetch", action="store_true", help="Fetch fresh official evidence, then rebuild reviewed outputs.")
+    mode.add_argument("--from-crawl", action="store_true", help="Merge crawler evidence into the receipt, then rebuild reviewed outputs without refetching.")
     mode.add_argument("--from-evidence", action="store_true", help="Rebuild reviewed outputs from locked local evidence without network access.")
     mode.add_argument("--check", action="store_true", help="Verify checked-in outputs against locked local evidence without writing.")
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
@@ -577,6 +773,9 @@ def main() -> int:
         if args.fetch:
             fetch(repo)
             write_outputs(repo)
+        elif args.from_crawl:
+            _crawl_receipt(repo)
+            write_outputs(repo)
         elif args.from_evidence:
             write_outputs(repo)
         else:
@@ -584,7 +783,8 @@ def main() -> int:
     except Exception as exc:
         print(f"materials promotion review failed: {exc}", file=sys.stderr)
         return 1
-    print("materials promotion review passed: 18/18 candidates; reviewed outputs remain inactive")
+    total = len(IGEM_PARTS) + len(_load_expansion_parts(repo)) + len(UNIPROT_RECORDS)
+    print(f"materials promotion review passed: {total}/{total} candidates; this command did not activate a snapshot")
     return 0
 
 

@@ -2296,9 +2296,15 @@ button:disabled {
 .materials-content-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(300px, .7fr); border-bottom: 1px solid var(--line); }
 .materials-results-section, .materials-detail-section { min-width: 0; border-bottom: 0; }
 .materials-detail-section { border-left: 1px solid var(--line); }
-.materials-result-row { width: 100%; border: 0; border-bottom: 1px solid #edf0ee; background: transparent; text-align: left; cursor: pointer; }
+.materials-results-heading > div:first-child { min-width: 0; }
+.materials-pagination { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; }
+.materials-pagination span { min-width: 46px; color: var(--text-soft); font-size: 8px; text-align: center; white-space: nowrap; }
+.materials-result-row { width: 100%; padding: 0; border: 0; border-bottom: 1px solid #edf0ee; background: transparent; text-align: left; }
 .materials-result-row:hover, .materials-result-row.is-selected { background: var(--surface-selected); }
 .materials-result-row.is-selected { box-shadow: inset 3px 0 var(--teal); }
+.materials-result-main { min-width: 0; display: flex; flex: 1; align-items: center; gap: 10px; align-self: stretch; padding: 7px 8px 7px 22px; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.materials-result-main > svg { flex: 0 0 auto; color: #62706b; }
+.materials-add-button { flex: 0 0 auto; min-width: 48px; margin-right: 12px; }
 .materials-result-source { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; }
 .materials-detail { padding: 16px 22px 22px; }
 .materials-detail h3 { margin: 5px 0 3px; color: #2f3936; font-size: 14px; }
@@ -2308,6 +2314,23 @@ button:disabled {
 .materials-detail dl { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 7px 10px; margin: 15px 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 9px; }
 .materials-detail dt { color: var(--text-faint); font-weight: 700; text-transform: uppercase; }
 .materials-detail dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #4e5d56; }
+.materials-selection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .55fr); }
+.materials-selection-list { min-height: 148px; max-height: 320px; overflow-y: auto; border-right: 1px solid var(--line); }
+.materials-selection-row { min-height: 45px; display: flex; align-items: center; gap: 12px; padding: 7px 22px; border-bottom: 1px solid #edf0ee; }
+.materials-selection-row:last-child { border-bottom: 0; }
+.materials-selection-row > span { min-width: 0; display: block; flex: 1; }
+.materials-selection-row strong, .materials-selection-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.materials-selection-row strong { margin-bottom: 3px; color: #2f3936; font-size: 10px; }
+.materials-selection-row small { color: var(--text-soft); font-size: 8px; }
+.materials-materialize-panel { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 16px 22px 20px; background: #fbfcfc; }
+.materials-materialize-panel label { display: grid; gap: 5px; color: #45534e; font-size: 9px; font-weight: 650; }
+.materials-materialize-panel select { width: 100%; height: 30px; padding: 0 9px; color: #44524d; border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; font-size: 9px; }
+.materials-materialize-panel > small { color: var(--text-faint); font-size: 8px; line-height: 1.4; overflow-wrap: anywhere; }
+.materials-materialize-panel > .primary-button { justify-self: start; }
+.materials-selection-ready { min-width: 0; display: grid; gap: 6px; padding: 10px; color: #315947; border: 1px solid #b9d9c8; border-radius: 5px; background: #f3faf6; font-size: 8px; }
+.materials-selection-ready strong { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+.materials-selection-ready code { color: var(--teal-dark); overflow-wrap: anywhere; white-space: normal; }
+.materials-selection-ready p { margin: 3px 0 0; color: #4f6259; line-height: 1.5; }
 .materials-admin-section { padding-bottom: 18px; }
 .materials-admin-controls, .materials-rollback-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 22px 12px; }
 .materials-admin-controls select, .materials-rollback-row input, .materials-activation-evidence input { height: 30px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: #44524d; font-size: 9px; }
@@ -2336,6 +2359,14 @@ button:disabled {
   .materials-status-grid { grid-template-columns: repeat(3, minmax(130px, 1fr)); }
   .materials-content-grid { grid-template-columns: 1fr; }
   .materials-detail-section { border-top: 1px solid var(--line); border-left: 0; }
+  .materials-selection-layout { grid-template-columns: 1fr; }
+  .materials-selection-list { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
+@media (max-width: 700px) {
+  .materials-results-heading { align-items: flex-start; flex-direction: column; }
+  .materials-pagination { width: 100%; justify-content: space-between; }
+  .materials-result-source { display: none; }
 }
 
 .reviews-page-layout {

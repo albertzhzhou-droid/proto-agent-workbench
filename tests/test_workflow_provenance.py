@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
+from proto_agent.materials import (
+    MaterialsStore,
+    PROMOTION_POLICY_VERSION,
+    PROMOTION_ROUND_IDS,
+    promotion_record_digest,
+)
 from proto_agent.provenance import ProvenanceError, create_provenance, verify_provenance
 from proto_agent import review as review_module
 from proto_agent.review import build_review_packet
@@ -16,6 +23,71 @@ from proto_agent.workflow import run_design_review
 
 
 ROOT = Path(__file__).resolve().parents[1]
+TOY_LIBRARY_ACTION = "Replace toy fixture libraries with reviewed source libraries before real biological design."
+
+
+def _governed_part_record(resource_id: str, part_type: str, sequence: str) -> dict[str, object]:
+    sequence_sha256 = hashlib.sha256(sequence.encode("ascii")).hexdigest()
+    record_id = resource_id.split(":", 1)[1]
+    role_terms = {
+        "promoter": ["Promoter"],
+        "rbs": ["Ribosome Entry Site"],
+        "cds": ["CDS"],
+        "terminator": ["Terminator"],
+    }[part_type]
+    return {
+        "resource_id": resource_id,
+        "kind": "genetic_part",
+        "name": f"Governed {part_type}",
+        "description_en": f"Governed software-only {part_type} review record.",
+        "chassis": ["ecoli_k12"],
+        "role_terms": role_terms,
+        "part_type": part_type,
+        "sequence": sequence,
+        "sequence_sha256": sequence_sha256,
+        "sequence_kind": "DNA",
+        "source": {
+            "provider": "iGEM Registry",
+            "record_id": record_id,
+            "revision": "2026-09",
+            "release": "2026-09",
+            "url": f"https://api.registry.igem.org/v1/parts/{record_id}",
+            "retrieved_at": "2026-09-03T00:00:00Z",
+            "content_sha256": hashlib.sha256(f"source:{resource_id}".encode("utf-8")).hexdigest(),
+            "sequence_sha256": sequence_sha256,
+        },
+        "license": {
+            "id": "CC-BY-4.0",
+            "url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+            "attribution": "iGEM Registry review fixture",
+            "rights_notes": "Redistributable review-test record with retained source attribution.",
+            "redistribution_status": "REDISTRIBUTABLE",
+        },
+        "evidence_refs": [
+            f"https://api.registry.igem.org/v1/parts/{record_id}",
+            "https://creativecommons.org/licenses/by/4.0/legalcode",
+        ],
+        "review_status": "DESIGN_ELIGIBLE",
+        "safety_status": "NO_FLAG",
+        "design_eligibility": True,
+        "metadata": {"registry_status": "published"},
+    }
+
+
+def _promotion_attestations(records: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    return {
+        str(record["resource_id"]): {
+            "policy_version": PROMOTION_POLICY_VERSION,
+            "resource_id": record["resource_id"],
+            "record_sha256": promotion_record_digest(record),
+            "decision": "PASS",
+            "rounds": [
+                {"round_id": round_id, "status": "PASS", "reason_codes": ["TEST_FIXTURE_REVIEWED"]}
+                for round_id in PROMOTION_ROUND_IDS
+            ],
+        }
+        for record in records
+    }
 
 
 class WorkflowProvenanceTests(unittest.TestCase):
@@ -305,6 +377,7 @@ class WorkflowProvenanceTests(unittest.TestCase):
         self.assertEqual(review_code, 0)
         self.assertEqual(packet["connector_registry_sha256"], manifest["connector_registry_sha256"])
         self.assertIn(packet["markdown_path"], packet["artifacts"])
+        self.assertIn(TOY_LIBRARY_ACTION, packet["next_actions"])
         self.assertNotIn(str(self.workspace), json.dumps(packet))
         result = verify_provenance(
             self.workspace / packet["provenance_path"],
@@ -312,6 +385,115 @@ class WorkflowProvenanceTests(unittest.TestCase):
             build_root="build",
         )
         self.assertTrue(result["ok"], result["mismatches"])
+
+    def test_review_does_not_label_governed_materialized_parts_as_toy(self) -> None:
+        records = [
+            _governed_part_record("igem:review-promoter", "promoter", "TTGACATATAAT"),
+            _governed_part_record("igem:review-rbs", "rbs", "AAAGAGGAGAAA"),
+            _governed_part_record("igem:review-cds", "cds", "ATGGCTGCTGCTTAA"),
+            _governed_part_record("igem:review-terminator", "terminator", "CCGCTTAAAGCGG"),
+        ]
+        materials_root = tempfile.TemporaryDirectory(prefix="proto-governed-materials-")
+        self.addCleanup(materials_root.cleanup)
+        store = MaterialsStore(workspace=self.workspace, root=materials_root.name)
+        snapshot = store._create_snapshot(
+            records,
+            "reviewed-fixture-snapshot",
+            sources=[{"provider": "iGEM Registry", "release": "2026-09"}],
+            label="review test",
+            promotion_attestations=_promotion_attestations(records),
+        )
+        materialized = store.materialize_parts(
+            [str(record["resource_id"]) for record in records],
+            "ecoli_k12",
+            snapshot_id=snapshot["snapshot_id"],
+        )
+
+        design_path = self.workspace / "designs" / "governed_review.proto"
+        design_path.write_text(
+            "\n".join(
+                (
+                    "design governed_review chassis ecoli_k12",
+                    "",
+                    "construct governed_module:",
+                    "  promoter igem:review-promoter",
+                    "  rbs igem:review-rbs",
+                    "  cds igem:review-cds",
+                    "  terminator igem:review-terminator",
+                    "",
+                )
+            ),
+            encoding="utf-8",
+        )
+        parts_path = Path(materialized["parts_path"])
+        manifest, workflow_code = run_design_review(
+            design_path.relative_to(self.workspace),
+            parts_path=parts_path,
+            workspace_root=self.workspace,
+        )
+        self.assertEqual(workflow_code, 0)
+
+        with mock.patch.dict(os.environ, {"PROTO_AGENT_MATERIALS_ROOT": materials_root.name}):
+            packet, review_code = build_review_packet(
+                design_path.relative_to(self.workspace),
+                parts_path=parts_path,
+                manifest_path=Path(manifest["manifest_path"]),
+                workspace_root=self.workspace,
+            )
+
+        self.assertEqual(review_code, 0)
+        self.assertNotIn(TOY_LIBRARY_ACTION, packet["next_actions"])
+        self.assertIn(
+            "Review human-review evidence cards before using outputs in any scientific decision.",
+            packet["next_actions"],
+        )
+
+        parts_source = self.workspace / parts_path
+        library = json.loads(parts_source.read_text(encoding="utf-8"))
+        tampered = json.loads(json.dumps(library))
+        tampered["parts"][0]["source"]["content_sha256"] = "0" * 64
+        tampered_bytes = json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        forged_snapshot = json.loads(json.dumps(library))
+        forged_snapshot["version"] = "attacker-selected-snapshot"
+        selection_receipt = json.dumps(
+            {
+                "snapshot_id": forged_snapshot["version"],
+                "chassis": forged_snapshot["chassis"],
+                "ids": [part["resource_id"] for part in forged_snapshot["parts"]],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        forged_snapshot["library_id"] = f"selection:{hashlib.sha256(selection_receipt).hexdigest()}"
+        forged_snapshot_bytes = json.dumps(
+            forged_snapshot,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        with mock.patch.dict(os.environ, {"PROTO_AGENT_MATERIALS_ROOT": materials_root.name}):
+            self.assertFalse(
+                review_module._is_governed_materialized_parts_library(
+                    tampered_bytes,
+                    workspace=self.workspace,
+                )
+            )
+            self.assertFalse(
+                review_module._is_governed_materialized_parts_library(
+                    forged_snapshot_bytes,
+                    workspace=self.workspace,
+                )
+            )
+        with mock.patch.dict(
+            os.environ,
+            {"PROTO_AGENT_MATERIALS_ROOT": str(self.workspace / "missing-materials-root")},
+        ):
+            self.assertFalse(
+                review_module._is_governed_materialized_parts_library(
+                    parts_source.read_bytes(),
+                    workspace=self.workspace,
+                )
+            )
 
     def test_review_rejects_connector_registry_changed_after_workflow(self) -> None:
         manifest, code = run_design_review(

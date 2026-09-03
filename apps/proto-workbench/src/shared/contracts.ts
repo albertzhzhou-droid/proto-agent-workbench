@@ -1507,6 +1507,21 @@ export interface MaterialsSearchResult {
   next_cursor?: string;
 }
 
+export interface MaterialsMaterializeRequest {
+  resource_ids: string[];
+  chassis: string;
+  /** Reproducibility assertion; must remain the active snapshot. */
+  snapshot: string;
+}
+
+export interface MaterialsMaterializeResult {
+  ok: true;
+  snapshot_id: string;
+  selection_digest: string;
+  parts_path: string;
+  part_count: number;
+}
+
 export interface MaterialsFacets {
   ok: boolean;
   snapshot_id: string;
@@ -1844,6 +1859,7 @@ export interface WorkbenchApi {
     search(input: MaterialsSearchRequest): Promise<MaterialsSearchResult>;
     get(resourceId: string, includeSequence?: boolean): Promise<{ ok: boolean; snapshot_id: string; resource: MaterialSummary }>;
     facets(): Promise<MaterialsFacets>;
+    materialize(input: MaterialsMaterializeRequest): Promise<MaterialsMaterializeResult>;
     activate(snapshotId: string, evidence: MaterialsActivationEvidence): Promise<Record<string, unknown>>;
     rollback(snapshotId: string, evidence: MaterialsActivationEvidence): Promise<Record<string, unknown>>;
     sync(source: "uniprot" | "igem" | "rhea" | "biomodels", maxRecords: number): Promise<Record<string, unknown>>;

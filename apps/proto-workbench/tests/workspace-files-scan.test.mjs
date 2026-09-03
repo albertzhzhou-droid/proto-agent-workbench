@@ -114,6 +114,46 @@ test("root build scan keeps the real IR, manifest, provenance, and review contra
   ]);
 });
 
+test("workspace startup scan skips Materials-managed bulk trees while retaining reviewable material files and IR", async (context) => {
+  const root = await temporaryWorkspace(context, "proto-workspace-materials-corpus-");
+  const retainedFiles = new Map([
+    ["build/runs/reviewed/design.ir.json", '{}'],
+    ["materials/README.md", "# Materials"],
+    ["materials/seed.json", '{}'],
+    ["materials/bundles/README.md", "# Bundles"],
+    ["materials/bundles/source-lock.json", '{}'],
+    ["materials/reviewed/igem_design_eligible_2026-09.json", '[]'],
+  ]);
+  for (const [relativePath, content] of retainedFiles) {
+    const target = join(root, ...relativePath.split("/"));
+    await mkdir(join(target, ".."), { recursive: true });
+    await writeFile(target, content, "utf8");
+  }
+
+  const blobRoot = join(root, "materials", "bundles", "public", "public-reviewed-2026.09", "blobs");
+  await Promise.all(
+    Array.from({ length: 256 }, (_, index) => {
+      const bucket = index.toString(16).padStart(2, "0");
+      return mkdir(join(blobRoot, bucket), { recursive: true });
+    }),
+  );
+  await writeFile(join(blobRoot, "ff", "must-not-index.json"), "{}", "utf8");
+
+  const responseRoot = join(root, "materials", "reviewed", "source_responses", "2026-09", "igem", "parts");
+  await mkdir(responseRoot, { recursive: true });
+  await Promise.all(
+    Array.from({ length: 1_051 }, (_, index) => writeFile(
+      join(responseRoot, `part-${index.toString().padStart(4, "0")}.json`),
+      "{}",
+      "utf8",
+    )),
+  );
+
+  const workspace = new WorkspaceFiles(root, { savePatch() {} });
+  const entries = normalizedEntries(await workspace.list());
+  assert.deepEqual(entries, [...retainedFiles.keys()].sort());
+});
+
 test("workspace startup scan keeps its fail-closed directory budget for reviewable trees", async (context) => {
   const root = await temporaryWorkspace(context, "proto-workspace-budget-");
   const sourceRoot = join(root, "source");

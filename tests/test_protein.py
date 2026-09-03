@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
+import proto_agent.materials as materials_module
 from proto_agent.materials import (
     MaterialsError,
     MaterialsStore,
@@ -13,6 +18,7 @@ from proto_agent.materials import (
     PROMOTION_ROUND_IDS,
     promotion_record_digest,
 )
+from proto_agent.mcp_server import McpServer
 from proto_agent.protein import PROTEIN_SELECTION_SCHEMA_VERSION, compile_protein_selection, protein_metrics
 from proto_agent.exporters import export_ir
 
@@ -76,6 +82,12 @@ def promotion_attestations(record: dict) -> dict[str, dict]:
     }
 
 
+def _activate_snapshot_subprocess(workspace: str, root: str, snapshot_id: str, started: str, done: str) -> None:
+    Path(started).write_text("started", encoding="utf-8")
+    MaterialsStore(workspace=workspace, root=root).activate(snapshot_id)
+    Path(done).write_text("done", encoding="utf-8")
+
+
 class ProteinCompilationTests(unittest.TestCase):
     def test_metrics_are_bounded_and_deterministic(self) -> None:
         metrics = protein_metrics(SEQUENCE)
@@ -116,6 +128,158 @@ class ProteinCompilationTests(unittest.TestCase):
             self.assertEqual(ir["proteins"][0]["sequence_sha256"], SEQUENCE_HASH)
             self.assertEqual(ir["constructs"], [])
             self.assertEqual(ir["provenance"]["catalog_signature_status"], "UNSIGNED")
+
+    def test_active_switch_waits_until_materialized_proteins_are_published(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="proto-protein-active-lock-") as temp:
+            root = Path(temp) / "Proto CLI Materials"
+            workspace = Path(temp) / "workspace"
+            workspace.mkdir()
+            store = MaterialsStore(workspace=workspace, root=root)
+            selected_record = protein_record("uniprot:fixture-selected")
+            replacement_record = protein_record("uniprot:fixture-replacement")
+            selected_manifest = store._create_snapshot(
+                [selected_record],
+                "protein-selected",
+                sources=[{"provider": "fixture"}],
+                label="selected",
+                promotion_attestations=promotion_attestations(selected_record),
+            )
+            replacement_manifest = store._create_snapshot(
+                [replacement_record],
+                "protein-replacement",
+                sources=[{"provider": "fixture"}],
+                label="replacement",
+                promotion_attestations=promotion_attestations(replacement_record),
+            )
+            store.activate(selected_manifest["snapshot_id"])
+            writer_entered = threading.Event()
+            writer_release = threading.Event()
+            materialize_results: list[dict] = []
+            errors: list[BaseException] = []
+            original_write = materials_module._safe_write
+            activation_started = Path(temp) / "activation-started"
+            activation_done = Path(temp) / "activation-done"
+
+            def paused_write(*args, **kwargs):
+                writer_entered.set()
+                if not writer_release.wait(5):
+                    raise AssertionError("Timed out waiting to release the staged protein writer.")
+                return original_write(*args, **kwargs)
+
+            def materialize() -> None:
+                try:
+                    materialize_results.append(
+                        store.materialize_proteins(
+                            [selected_record["resource_id"]],
+                            output="build/materials/active-protein.json",
+                            snapshot_id=selected_manifest["snapshot_id"],
+                            auto_initialize=False,
+                            require_active=True,
+                        )
+                    )
+                except BaseException as exc:  # pragma: no cover - asserted below
+                    errors.append(exc)
+
+            materialize_thread = threading.Thread(target=materialize, daemon=True)
+            activation_process = multiprocessing.get_context("spawn").Process(
+                target=_activate_snapshot_subprocess,
+                args=(
+                    str(workspace),
+                    str(root),
+                    replacement_manifest["snapshot_id"],
+                    str(activation_started),
+                    str(activation_done),
+                ),
+                daemon=True,
+            )
+            with patch.object(materials_module, "_safe_write", side_effect=paused_write):
+                materialize_thread.start()
+                try:
+                    self.assertTrue(writer_entered.wait(5))
+                    activation_process.start()
+                    deadline = time.monotonic() + 5
+                    while not activation_started.is_file() and activation_process.is_alive() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertTrue(activation_started.is_file())
+                    time.sleep(0.2)
+                    self.assertTrue(activation_process.is_alive())
+                    self.assertFalse(activation_done.exists())
+                finally:
+                    writer_release.set()
+                materialize_thread.join(10)
+                activation_process.join(10)
+
+            self.assertFalse(materialize_thread.is_alive())
+            if activation_process.is_alive():
+                activation_process.terminate()
+                activation_process.join(5)
+            self.assertEqual(activation_process.exitcode, 0)
+            self.assertEqual(errors, [])
+            self.assertEqual(len(materialize_results), 1)
+            materialized = materialize_results[0]
+            payload = json.loads((workspace / materialized["proteins_path"]).read_text(encoding="utf-8"))
+            self.assertEqual(payload["snapshot_id"], selected_manifest["snapshot_id"])
+            self.assertEqual(store.status()["active_snapshot"], replacement_manifest["snapshot_id"])
+
+    def test_mcp_protein_materialization_requires_the_active_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="proto-protein-mcp-active-") as temp:
+            workspace = Path(temp) / "workspace"
+            workspace.mkdir()
+            server = McpServer(workspace_root=workspace)
+            store = Mock()
+            store.materialize_proteins.return_value = {"ok": True}
+            with patch.object(server, "_active_materials_store", return_value=(store, "active-fixture")):
+                result = server._tool_materials_materialize_proteins(
+                    {"resource_ids": ["uniprot:fixture-GFP"], "design_id": "fixture"}
+                )
+            self.assertEqual(result, {"ok": True})
+            store.materialize_proteins.assert_called_once_with(
+                ["uniprot:fixture-GFP"],
+                design_id="fixture",
+                output=None,
+                snapshot_id="active-fixture",
+                auto_initialize=False,
+                require_active=True,
+            )
+
+    def test_stale_active_protein_snapshot_is_rejected_before_publication(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="proto-protein-stale-active-") as temp:
+            root = Path(temp) / "Proto CLI Materials"
+            workspace = Path(temp) / "workspace"
+            workspace.mkdir()
+            store = MaterialsStore(workspace=workspace, root=root)
+            selected_record = protein_record("uniprot:fixture-stale")
+            replacement_record = protein_record("uniprot:fixture-current")
+            selected_manifest = store._create_snapshot(
+                [selected_record],
+                "protein-stale",
+                sources=[{"provider": "fixture"}],
+                label="stale",
+                promotion_attestations=promotion_attestations(selected_record),
+            )
+            replacement_manifest = store._create_snapshot(
+                [replacement_record],
+                "protein-current",
+                sources=[{"provider": "fixture"}],
+                label="current",
+                promotion_attestations=promotion_attestations(replacement_record),
+            )
+            store.activate(selected_manifest["snapshot_id"])
+            captured_active_snapshot = selected_manifest["snapshot_id"]
+            store.activate(replacement_manifest["snapshot_id"])
+            target = workspace / "build" / "materials" / "stale-protein.json"
+
+            with self.assertRaises(MaterialsError) as ctx:
+                store.materialize_proteins(
+                    [selected_record["resource_id"]],
+                    output="build/materials/stale-protein.json",
+                    snapshot_id=captured_active_snapshot,
+                    auto_initialize=False,
+                    require_active=True,
+                )
+
+            self.assertEqual(ctx.exception.code, "MATERIALS_SNAPSHOT_NOT_ACTIVE")
+            self.assertFalse(target.exists())
 
     def test_compile_rejects_non_eligible_selection(self) -> None:
         with tempfile.TemporaryDirectory(prefix="proto-protein-invalid-") as temp:

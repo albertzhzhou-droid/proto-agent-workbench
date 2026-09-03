@@ -21,7 +21,7 @@
     "build:icon": "node scripts/build-app-icon.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "verify:visualization": "node --experimental-strip-types --test tests/sha256.test.mjs tests/protein-sequence.test.mjs tests/design-visualization.test.mjs tests/map-export.test.mjs tests/map-export-service.test.mjs tests/designs-safety-contract.test.mjs tests/cgview-adapter.test.mjs tests/security-boundaries.test.mjs tests/visualization-envelope.test.mjs",
+    "verify:visualization": "node --experimental-strip-types --test tests/sha256.test.mjs tests/protein-sequence.test.mjs tests/design-visualization.test.mjs tests/igem-materials-visualization-corpus.test.mjs tests/map-export.test.mjs tests/map-export-service.test.mjs tests/designs-safety-contract.test.mjs tests/cgview-adapter.test.mjs tests/security-boundaries.test.mjs tests/visualization-envelope.test.mjs",
     "sync:workspace-template": "node scripts/sync-workspace-template.mjs --write",
     "verify:workspace-template": "node scripts/sync-workspace-template.mjs --check",
     "verify:offline": "node scripts/verify-offline.mjs",

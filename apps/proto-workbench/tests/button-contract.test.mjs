@@ -125,6 +125,7 @@ test("materials activation and rollback require operator-supplied evidence in th
   assert.match(pages, /aria-label="Activation operator label"/);
   assert.match(pages, /aria-label="Activation approval reference"/);
   assert.match(pages, /operator label is self-declared and is not authenticated by Proto Workbench/);
-  assert.match(pages, /disabled=\{busy \|\| !activationEvidenceComplete\}[\s\S]*?materials\.activate\(snapshot\.snapshot_id, activationEvidence\)/);
-  assert.match(pages, /disabled=\{busy \|\| !snapshotInput\.trim\(\) \|\| !activationEvidenceComplete\}[\s\S]*?materials\.rollback\(snapshotInput\.trim\(\), activationEvidence\)/);
+  assert.match(pages, /const operationBusy = busy \|\| materializing/);
+  assert.match(pages, /disabled=\{operationBusy \|\| !activationEvidenceComplete\}[\s\S]*?materials\.activate\(snapshot\.snapshot_id, activationEvidence\)/);
+  assert.match(pages, /disabled=\{operationBusy \|\| !snapshotInput\.trim\(\) \|\| !activationEvidenceComplete\}[\s\S]*?materials\.rollback\(snapshotInput\.trim\(\), activationEvidence\)/);
 });
