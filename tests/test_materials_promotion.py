@@ -4,8 +4,12 @@ import hashlib
 import unittest
 from unittest.mock import patch
 
-from proto_agent.materials import MaterialsError, PROMOTION_ROUND_IDS
-from proto_agent.materials_promotion import audit_promotion_candidates
+from proto_agent.materials import MaterialsError, MaterialsStore, PROMOTION_ROUND_IDS
+from proto_agent.materials_promotion import (
+    audit_promotion_candidates,
+    build_promotion_uniqueness_index,
+)
+from tools import review_materials_promotion as review_materials_tool
 
 
 def candidate(resource_id: str = "fixture:promoter/a", sequence: str = "TTGACATATAAT") -> dict:
@@ -111,6 +115,56 @@ class MaterialsPromotionAuditTests(unittest.TestCase):
         for decision in report["candidates"]:
             self.assertIn("DUPLICATE_SEQUENCE", decision["rounds"][2]["reason_codes"])
 
+    def test_batched_candidate_uses_complete_uniqueness_scope(self) -> None:
+        first = candidate("fixture:promoter/a")
+        duplicate_outside_batch = candidate("fixture:promoter/b")
+        report = audit_promotion_candidates(
+            [first],
+            generated_at="2026-09-01T00:00:00Z",
+            uniqueness_scope=[first, duplicate_outside_batch],
+        )
+
+        self.assertEqual(report["pass_count"], 0)
+        self.assertIn("DUPLICATE_SEQUENCE", report["candidates"][0]["rounds"][2]["reason_codes"])
+
+    def test_review_tool_reuses_complete_uniqueness_index_for_every_audit_batch(self) -> None:
+        records = [candidate(f"fixture:promoter/{index}", sequence=f"A{index}") for index in range(1001)]
+
+        def fake_audit(batch, **kwargs):
+            return {
+                "schema_version": "fixture",
+                "candidate_count": len(batch),
+                "pass_count": len(batch),
+                "fail_count": 0,
+                "candidates": [
+                    {"resource_id": record["resource_id"], "decision": "PASS"}
+                    for record in batch
+                ],
+            }
+
+        with patch.object(review_materials_tool, "audit_promotion_candidates", side_effect=fake_audit) as audit:
+            report = review_materials_tool._batched_audit(
+                records,
+                generated_at="2026-09-01T00:00:00Z",
+                source_evidence={},
+            )
+
+        self.assertEqual(report["candidate_count"], 1001)
+        self.assertEqual([len(call.args[0]) for call in audit.call_args_list], [1000, 1])
+        indexes = [call.kwargs["uniqueness_index"] for call in audit.call_args_list]
+        self.assertTrue(all(index is indexes[0] for index in indexes))
+        self.assertEqual(indexes[0].candidate_count, 1001)
+
+    def test_uniqueness_index_scope_is_bounded(self) -> None:
+        with self.assertRaisesRegex(ValueError, "limited to 10000"):
+            build_promotion_uniqueness_index(candidate() for _ in range(10_001))
+
+    def test_uniqueness_index_counts_are_read_only(self) -> None:
+        index = build_promotion_uniqueness_index([candidate()])
+
+        with self.assertRaises(TypeError):
+            index.id_counts["fixture:promoter/a"] = 0  # type: ignore[index]
+
     def test_report_is_deterministic_for_locked_inputs(self) -> None:
         first = audit_promotion_candidates([candidate()], generated_at="2026-09-01T00:00:00Z")
         second = audit_promotion_candidates([candidate()], generated_at="2026-09-01T00:00:00Z")
@@ -125,6 +179,58 @@ class MaterialsPromotionAuditTests(unittest.TestCase):
         decision = report["candidates"][0]
         self.assertEqual(decision["decision"], "FAIL")
         self.assertIn("MATERIALIZATION_ROUNDTRIP_FAILED", decision["rounds"][2]["reason_codes"])
+
+    def test_roundtrip_materializes_parts_in_downstream_safe_batches(self) -> None:
+        records = [
+            candidate(f"fixture:promoter/{index}", sequence=("A" * (index + 1)) + "C")
+            for index in range(51)
+        ]
+        observed_batch_sizes: list[int] = []
+        original = MaterialsStore.materialize_parts
+
+        def tracked_materialize(store, resource_ids, *args, **kwargs):
+            observed_batch_sizes.append(len(resource_ids))
+            return original(store, resource_ids, *args, **kwargs)
+
+        with patch.object(MaterialsStore, "materialize_parts", autospec=True, side_effect=tracked_materialize):
+            report = audit_promotion_candidates(records, generated_at="2026-09-01T00:00:00Z")
+
+        self.assertEqual(report["pass_count"], 51)
+        self.assertEqual(observed_batch_sizes, [50, 1])
+
+    def test_batch_materialization_failure_is_attributed_per_candidate(self) -> None:
+        passing_id = "fixture:promoter/passing"
+        failing_id = "fixture:promoter/failing"
+        records = [
+            candidate(passing_id, sequence="AAC"),
+            candidate(failing_id, sequence="AAG"),
+        ]
+        original = MaterialsStore.materialize_parts
+
+        def fail_only_selected_candidate(store, resource_ids, *args, **kwargs):
+            if failing_id in resource_ids:
+                raise MaterialsError("TEST_FAILURE", "forced materialization failure")
+            return original(store, resource_ids, *args, **kwargs)
+
+        with patch.object(
+            MaterialsStore,
+            "materialize_parts",
+            autospec=True,
+            side_effect=fail_only_selected_candidate,
+        ):
+            report = audit_promotion_candidates(records, generated_at="2026-09-01T00:00:00Z")
+
+        decisions = {item["resource_id"]: item for item in report["candidates"]}
+        self.assertEqual(decisions[passing_id]["decision"], "PASS")
+        self.assertEqual(decisions[failing_id]["decision"], "FAIL")
+        self.assertNotIn(
+            "MATERIALIZATION_ROUNDTRIP_FAILED",
+            decisions[passing_id]["rounds"][2]["reason_codes"],
+        )
+        self.assertIn(
+            "MATERIALIZATION_ROUNDTRIP_FAILED",
+            decisions[failing_id]["rounds"][2]["reason_codes"],
+        )
 
     def test_roundtrip_never_activates_the_ephemeral_snapshot(self) -> None:
         with patch(

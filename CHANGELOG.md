@@ -11,6 +11,86 @@ Version boundary: the current Python CLI version is `0.1.0`, and the current
 Windows Workbench version is `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
 
+## 2026-09-02 — Materials catalogue expansion past 1,000 designable parts
+
+- Added `tools/crawl_igem_parts.py`, a rate-limit-polite, resumable crawler
+  over the official iGEM Registry API (`api.registry.igem.org`) that selects
+  `published` DNA parts under the reviewed CC BY 4.0 / CC0 1.0 licenses for
+  the four compiler-supported part types, restricted to records created
+  before 2026-01-01 (the 2025 season and earlier, including the classic
+  pre-2019 collections), with per-record identity, topology, sequence,
+  safety-text, chassis, duplicate-sequence, and season gates.
+- Expanded `tools/review_materials_promotion.py` with a manifest-driven
+  expansion path (`--from-crawl`): the reviewed iGEM seed grew from 26 to
+  1,046 DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators); the
+  three-round promotion audit runs in candidate batches of 1,000 and merges
+  the reports; all 1,051 candidates (1,046 parts + 5 UniProt proteins) pass.
+- Verified the five REVIEW_REQUIRED 2026-team RNA records staged by the
+  initial sync: all carry the unsupported `SO:0000804` role, so they remain
+  REVIEW_REQUIRED under current ontology policy
+  (`materials/reviewed/igem_review_required_verification_2026-09.json`).
+- Quarantine review outcome: the 1,795 quarantined rows (1,744 UniProt,
+  21 Rhea, 30 BioModels) are all safety hard-flag isolations (toxin,
+  drug-resistance, and related terms) and correctly remain quarantined; no
+  genetic part is quarantined.
+- Raised the bounded workspace JSON read limit from 2 MiB to 8 MiB so the
+  enlarged reviewed seeds remain importable through the locked
+  reviewed-import path.
+- Rebuilt the public distribution bundles: `public-reviewed-2026.09` now
+  carries 1,051 DESIGN_ELIGIBLE records (1,044 CC BY 4.0, 7 CC0 1.0); the
+  1,795-row quarantine metadata index is unchanged. Snapshots install
+  inactive; activation stays an explicit human action.
+- Established a Git publication boundary for the expansion: raw upstream
+  response bodies and resumable crawler state remain local and ignored because
+  they can contain contributor identities. The repository carries only the
+  sanitized receipt/digest ledger, reviewed records, audits, and generated
+  public bundles.
+- Closed a cross-batch uniqueness gap: each bounded promotion batch now checks
+  duplicate resource IDs and sequence digests against the complete candidate
+  population, including duplicates split across the 1,000-record boundary.
+- Kept promotion round-trip auditing scalable with one bounded, read-only
+  uniqueness index and a 50-part materialization fast path. If a batch fails,
+  the audit falls back to isolated single-record checks so failures remain
+  attributed to the exact candidate without weakening the fail-closed gate.
+- Made parts materialization canonical and fail-closed for repeated IDs. The
+  same logical selection now has one digest and byte-identical JSON regardless
+  of caller order.
+- Added snapshot-bound pagination and a governed DNA-part selection basket to
+  the Workbench Materials page. Users can browse the complete catalogue, add
+  up to 50 eligible parts with a common chassis, materialize the selection,
+  and open the resulting parts snapshot without implying that it is already a
+  compiled design.
+- Added a strict Workbench materialization IPC contract and response binding.
+  The main process independently recomputes the selection digest, then reads
+  and verifies the canonical parts artifact, exact ordered IDs, sequence
+  hashes, snapshot, chassis, eligibility, safety, and rights before the
+  renderer receives the result.
+- Aligned Python CLI, MCP, and Workbench materialization at a maximum of 50
+  parts per selection. Every candidate artifact is staged and consumed by the
+  same bounded strict parser used by parts search, check, and compile before it
+  is atomically published; the full 1,046-part catalogue remains searchable
+  and can be selected in 21 bounded batches.
+- Serialized active-bound materialization with snapshot activation and rollback
+  through a shared cross-process lock, with active-pointer verification before
+  reads and immediately before publication. Workbench also mutually excludes
+  those operations while materialization is in progress. Protein
+  materialization now holds the same active-snapshot boundary.
+- Hardened governed review and ingestion boundaries: review packets revalidate
+  the configured MaterialsStore snapshot and promotion evidence, while the
+  iGEM crawler rejects link/reparse-point targets and only checkpoints evidence
+  after durable write-and-hash verification.
+- Added an exhaustive Workbench corpus gate over all 1,046 iGEM parts. It
+  verifies compressed blob and source hashes, governed IR parsing, canonical
+  coordinates, interactive rendering, search, and stable role colours.
+- Kept Workbench startup scanning bounded by excluding Materials-managed blob
+  buckets and captured source responses from the general workspace inventory;
+  reviewable seed, policy, and generated IR files remain discoverable.
+- Verification after the final fixes passed Python 211/211 (four platform
+  symlink cases skipped), Workbench 490/490, the 72/72 visualization gate,
+  TypeScript, and the offline guard. A governed four-role iGEM design also
+  completed check, compile, workflow, review, synchronized CGView/SeqViz
+  interaction, and an SVG export independently reopened by isolated Chromium.
+
 ## 2026-09-01 — Current retained build: Workbench 0.1.2 / Product Stage 16
 
 Local release-attachment record (the `releases/` directory is excluded from

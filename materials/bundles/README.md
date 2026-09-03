@@ -8,7 +8,7 @@ not copies of the local sibling `Proto CLI Materials` root.
 
 | Profile | Path | Records | Sequence content | Runtime policy |
 | --- | --- | ---: | --- | --- |
-| `PUBLIC_CATALOG` | `public/public-reviewed-2026.09/` | 18 | 15 reviewed iGEM DNA parts and 3 reviewed UniProt proteins in content-addressed gzip objects | Installable after verification; inactive by default; explicit human activation only |
+| `PUBLIC_CATALOG` | `public/public-reviewed-2026.09/` | 1,051 | 1,046 reviewed iGEM DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators) and 5 reviewed UniProt proteins in content-addressed gzip objects | Installable after verification; inactive by default; explicit human activation only |
 | `PUBLIC_QUARANTINE` | `quarantine/public-quarantine-metadata-2026.09/` | 1,795 | None | Activation denied; not installable; never model/MCP-visible |
 
 The quarantine index contains 1,744 UniProt, 21 Rhea, and 30 BioModels rows.
@@ -23,7 +23,7 @@ The repository's MIT license applies to project software, not third-party
 records. Every row retains its source URL, license URL, attribution, rights
 notes, and redistribution status.
 
-- Public catalog: 17 CC BY 4.0 rows and 1 CC0 1.0 row.
+- Public catalog: 1,044 CC BY 4.0 rows and 7 CC0 1.0 rows.
 - Quarantine metadata: 1,765 CC BY 4.0 rows and 30 CC0 1.0 rows.
 - UniProt's CC BY 4.0 notice also warns that patents or other third-party rights
   may apply. Public redistribution is not a scientific-use or freedom-to-
@@ -64,12 +64,21 @@ There is intentionally no quarantine install command.
 
 ## Rebuild
 
-`source-lock.json` pins the reviewed JSON files, three-round audit, source and
-license responses, retrieval receipt, and the three source quarantine SQLite
-digests without recording local snapshot paths. With the matching
-read-only external source root available:
+`source-lock.json` publishes a path-free-machine-state digest ledger for the
+reviewed JSON files, three-round audit, source and license responses, retrieval
+receipt, and the three source quarantine SQLite digests. Raw response bodies
+and resumable crawler state remain local, Git-ignored review inputs because
+upstream payloads can contain contributor identity. A maintainer rebuild
+therefore requires matching local evidence bytes at the repository-relative
+ledger paths plus the matching read-only external source root. Verifying and
+installing the checked bundles does not require those private rebuild inputs.
 
 ```powershell
+# Optional: refresh the crawled iGEM expansion evidence (rate-limit polite,
+# resumable; selects published CC BY/CC0 parts created before 2026-01-01,
+# i.e. the 2025 season and earlier, including the classic collections):
+python tools\crawl_igem_parts.py --run
+python tools\review_materials_promotion.py --from-crawl
 python tools\review_materials_promotion.py --check
 python tools\export_public_materials.py
 ```

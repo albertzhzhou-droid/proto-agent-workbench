@@ -21,7 +21,7 @@ from .notebook import DEFAULT_NOTEBOOK_OUT_DIR, run_notebook
 from .optimization import optimize_design
 from .parser import parse_design
 from .parts import DEFAULT_PARTS_PATH, search_parts
-from .materials import MaterialsError, MaterialsStore, MAX_MCP_RESULT_LIMIT
+from .materials import MaterialsError, MaterialsStore, MAX_MATERIALIZED_PARTS, MAX_MCP_RESULT_LIMIT
 from .protein import compile_protein_selection
 from .provenance import verify_provenance
 from .r_runtime import DEFAULT_R_OUT_DIR, r_status, run_r_script
@@ -269,7 +269,7 @@ TOOLS: list[dict[str, Any]] = [
             "type": "object",
             "required": ["resource_ids", "chassis"],
             "properties": {
-                "resource_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+                "resource_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_MATERIALIZED_PARTS},
                 "chassis": {"type": "string"},
                 "out": {"type": "string"},
                 "snapshot": {"type": "string", "description": "Optional reproducibility assertion; it must equal the currently active snapshot."},
@@ -981,8 +981,8 @@ class McpServer:
 
     def _tool_materials_materialize(self, arguments: dict[str, Any]) -> dict[str, Any]:
         resource_ids = arguments.get("resource_ids")
-        if not isinstance(resource_ids, list) or not resource_ids or len(resource_ids) > 50 or not all(isinstance(item, str) for item in resource_ids):
-            raise MaterialsError("INVALID_SELECTION", "MCP materialization accepts 1-50 resource IDs.")
+        if not isinstance(resource_ids, list) or not resource_ids or len(resource_ids) > MAX_MATERIALIZED_PARTS or not all(isinstance(item, str) for item in resource_ids):
+            raise MaterialsError("INVALID_SELECTION", f"MCP materialization accepts 1-{MAX_MATERIALIZED_PARTS} resource IDs.")
         store, active_snapshot = self._active_materials_store(arguments)
         return store.materialize_parts(
             list(resource_ids),
@@ -990,6 +990,7 @@ class McpServer:
             output=arguments.get("out"),
             snapshot_id=active_snapshot,
             auto_initialize=False,
+            require_active=True,
         )
 
     def _tool_materials_materialize_proteins(self, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -1003,6 +1004,7 @@ class McpServer:
             output=arguments.get("out"),
             snapshot_id=active_snapshot,
             auto_initialize=False,
+            require_active=True,
         )
 
     def _tool_workflow_run(self, arguments: dict[str, Any]) -> dict[str, Any]:

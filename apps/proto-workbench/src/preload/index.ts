@@ -8,6 +8,7 @@ import type {
   DecisionBundleRequest,
   GlobalEvidenceSearchRequest,
   MaterialsActivationEvidence,
+  MaterialsMaterializeRequest,
   ModelDescriptor,
   ModelLoadOptions,
   MaterialsSearchRequest,
@@ -181,6 +182,11 @@ const api: WorkbenchApi = {
     },
     get: (resourceId: string, includeSequence = false) => invoke(IPC.materialsGet, boundedString(resourceId, "resourceId", 256), Boolean(includeSequence)),
     facets: () => invoke(IPC.materialsFacets),
+    materialize: (input: MaterialsMaterializeRequest) => invoke(IPC.materialsMaterialize, {
+      resource_ids: input.resource_ids.map((resourceId) => boundedString(resourceId, "resourceId", 256)),
+      chassis: boundedString(input.chassis, "chassis", 256),
+      snapshot: boundedString(input.snapshot, "snapshot", 128),
+    }),
     activate: (snapshotId: string, evidence: MaterialsActivationEvidence) => invoke(
       IPC.materialsActivate,
       boundedString(snapshotId, "snapshotId", 128),

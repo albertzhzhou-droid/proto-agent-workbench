@@ -1,0 +1,97 @@
+{
+  "schema_version": "proto-agent.materials.igem-review-required-verification.v1",
+  "generated_at": "2026-09-02T22:36:06Z",
+  "subject": "REVIEW_REQUIRED iGEM records staged by the initial 2026-09 sync snapshot",
+  "parts": [
+    {
+      "uuid": "286252f0-8b8c-4a76-b69b-cc486a7653a7",
+      "name": "BBa_26YWQGYL",
+      "status": "published",
+      "role_accession": "SO:0000804",
+      "role_label": "Engineered Region",
+      "topology": "SO:0000987",
+      "license_uuid": "d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+      "sequence_length": 74,
+      "sequence_present": true,
+      "chassis_designed_for": [
+        "Escherichia coli BL21"
+      ],
+      "retrieved_at": "2026-09-02T22:36:07Z",
+      "url": "https://api.registry.igem.org/v1/parts/286252f0-8b8c-4a76-b69b-cc486a7653a7",
+      "content_sha256": "89c8377db8fa4176f3597ac8c72fff71f7dbeda7a46bcd7dcaee245f391d3e8a",
+      "promotion_outlook": "NOT_PROMOTABLE_ROLE_UNSUPPORTED (SO:0000804)"
+    },
+    {
+      "uuid": "fffc69c6-d65a-4fd5-8f14-f8410d0b2b14",
+      "name": "BBa_26DHXN88",
+      "status": "published",
+      "role_accession": "SO:0000804",
+      "role_label": "Engineered Region",
+      "topology": "SO:0000987",
+      "license_uuid": "d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+      "sequence_length": 96,
+      "sequence_present": true,
+      "chassis_designed_for": [
+        "Escherichia coli BL21"
+      ],
+      "retrieved_at": "2026-09-02T22:36:13Z",
+      "url": "https://api.registry.igem.org/v1/parts/fffc69c6-d65a-4fd5-8f14-f8410d0b2b14",
+      "content_sha256": "0b263d0eeba9f6b3fbc16311b871798cc686063a4f0fcbdaf9b7f15c12630d7f",
+      "promotion_outlook": "NOT_PROMOTABLE_ROLE_UNSUPPORTED (SO:0000804)"
+    },
+    {
+      "uuid": "73143dae-df61-4fd3-b4cb-224ca65fa5a9",
+      "name": "BBa_269PG11Q",
+      "status": "published",
+      "role_accession": "SO:0000804",
+      "role_label": "Engineered Region",
+      "topology": "SO:0000987",
+      "license_uuid": "d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+      "sequence_length": 50,
+      "sequence_present": true,
+      "chassis_designed_for": [
+        "Escherichia coli BL21"
+      ],
+      "retrieved_at": "2026-09-02T22:36:19Z",
+      "url": "https://api.registry.igem.org/v1/parts/73143dae-df61-4fd3-b4cb-224ca65fa5a9",
+      "content_sha256": "c55dd7c7ef94c48ab90ee154785be740e468f2393f25a21489f185f4cf8ca292",
+      "promotion_outlook": "NOT_PROMOTABLE_ROLE_UNSUPPORTED (SO:0000804)"
+    },
+    {
+      "uuid": "3305e58c-59e2-4aab-9790-1f037cf5d4a5",
+      "name": "BBa_26B87YBZ",
+      "status": "published",
+      "role_accession": "SO:0000804",
+      "role_label": "Engineered Region",
+      "topology": "SO:0000987",
+      "license_uuid": "d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+      "sequence_length": 25,
+      "sequence_present": true,
+      "chassis_designed_for": [
+        "Escherichia coli BL21"
+      ],
+      "retrieved_at": "2026-09-02T22:36:25Z",
+      "url": "https://api.registry.igem.org/v1/parts/3305e58c-59e2-4aab-9790-1f037cf5d4a5",
+      "content_sha256": "038f7e07739bd2921b00d95ec396f7315f3668d4bbf1113dc86dc0affc35791f",
+      "promotion_outlook": "NOT_PROMOTABLE_ROLE_UNSUPPORTED (SO:0000804)"
+    },
+    {
+      "uuid": "6ab08401-8df7-4017-be4f-75dfb6bf5961",
+      "name": "BBa_267NS4O7",
+      "status": "published",
+      "role_accession": "SO:0000804",
+      "role_label": "Engineered Region",
+      "topology": "SO:0000987",
+      "license_uuid": "d6c69ca7-8be4-4bc0-b4a8-d3ae1d428aa6",
+      "sequence_length": 26,
+      "sequence_present": true,
+      "chassis_designed_for": [
+        "Escherichia coli BL21"
+      ],
+      "retrieved_at": "2026-09-02T22:36:31Z",
+      "url": "https://api.registry.igem.org/v1/parts/6ab08401-8df7-4017-be4f-75dfb6bf5961",
+      "content_sha256": "2bf8c59b3ef46cfd4cba6423a435485b77a2db804f1e8285924e04c2470408bb",
+      "promotion_outlook": "NOT_PROMOTABLE_ROLE_UNSUPPORTED (SO:0000804)"
+    }
+  ]
+}

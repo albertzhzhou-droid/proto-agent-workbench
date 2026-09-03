@@ -24,9 +24,11 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from threading import Lock
+from typing import Any, Callable, Iterable, Iterator
 from uuid import uuid4
 
 from .protein_integrity import (
@@ -59,6 +61,7 @@ DEFAULT_MATERIALS_DIRECTORY_NAME = "Proto CLI Materials"
 DEFAULT_SNAPSHOT_ID = "seed-2026.08"
 MAX_RESULT_LIMIT = 200
 MAX_MCP_RESULT_LIMIT = 50
+MAX_MATERIALIZED_PARTS = 50
 MAX_QUERY_CHARS = 512
 MAX_RESOURCE_ID_CHARS = 256
 MAX_DESCRIPTION_CHARS = 4000
@@ -79,6 +82,9 @@ HARD_SAFETY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}")
+
+_PROCESS_LOCKS_GUARD = Lock()
+_PROCESS_LOCKS: dict[str, Lock] = {}
 
 # Design eligibility is deliberately narrower than catalog ingestion.  Unknown
 # or conditional rights may still be indexed as REFERENCE_ONLY, but only a
@@ -280,6 +286,73 @@ def _ensure_directory(path: Path) -> Path:
     return path.resolve(strict=True)
 
 
+@contextmanager
+def _exclusive_materials_lock(path: Path, *, timeout_seconds: float = 15.0) -> Iterator[None]:
+    """Serialize active-pointer decisions across threads and processes.
+
+    The persistent one-byte lock file is intentionally kept under the external
+    materials root.  A process-local lock closes the platform-dependent gap
+    where two handles owned by one process may otherwise share an advisory
+    lock, while ``msvcrt``/``fcntl`` provides the cross-process boundary.
+    """
+
+    parent = _ensure_directory(path.parent)
+    lock_path = parent / path.name
+    if lock_path.exists() and lock_path.is_symlink():
+        raise MaterialsError("REPARSE_POINT_NOT_ALLOWED", f"Reparse points are not allowed: {lock_path}")
+    lock_key = str(lock_path.resolve(strict=False)).casefold() if os.name == "nt" else str(lock_path.resolve(strict=False))
+    with _PROCESS_LOCKS_GUARD:
+        process_lock = _PROCESS_LOCKS.setdefault(lock_key, Lock())
+    if not process_lock.acquire(timeout=timeout_seconds):
+        raise MaterialsError("MATERIALS_LOCK_TIMEOUT", "Timed out waiting for the materials activation lock.")
+
+    handle = None
+    locked = False
+    try:
+        handle = lock_path.open("a+b")
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+            os.fsync(handle.fileno())
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            try:
+                handle.seek(0)
+                if os.name == "nt":
+                    import msvcrt
+
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                locked = True
+                break
+            except (OSError, BlockingIOError):
+                if time.monotonic() >= deadline:
+                    raise MaterialsError("MATERIALS_LOCK_TIMEOUT", "Timed out waiting for the materials activation lock.")
+                time.sleep(0.01)
+        yield
+    finally:
+        if handle is not None:
+            if locked:
+                try:
+                    handle.seek(0)
+                    if os.name == "nt":
+                        import msvcrt
+
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                except OSError:
+                    pass
+            handle.close()
+        process_lock.release()
+
+
 def _safe_write(path: Path, payload: bytes) -> None:
     parent = _ensure_directory(path.parent)
     if path.exists() and path.is_symlink():
@@ -290,6 +363,44 @@ def _safe_write(path: Path, payload: bytes) -> None:
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _safe_write_validated_parts(
+    path: Path,
+    payload: dict[str, Any],
+    *,
+    before_publish: Callable[[], None],
+) -> None:
+    """Strict-parse a staged parts library before atomically publishing it."""
+
+    parent = _ensure_directory(path.parent)
+    if path.exists() and path.is_symlink():
+        raise MaterialsError("REPARSE_POINT_NOT_ALLOWED", f"Reparse points are not writable: {path}")
+    temporary = parent / f".{path.name}.materials-{uuid4().hex}.tmp"
+    encoded = (_json(payload) + "\n").encode("utf-8")
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            # This is the exact bounded/strict loader used by parts search,
+            # check, and compile.  Validate the complete staged artifact and
+            # ensure decoding did not alter the deterministic payload.
+            from .parts import load_parts
+
+            parsed = load_parts(temporary)
+        except (SecurityBoundaryError, ValueError) as exc:
+            raise MaterialsError(
+                "MATERIALIZED_PARTS_INVALID",
+                f"Materialized parts are not consumable by parts search, check, and compile: {exc}",
+            ) from exc
+        if parsed != payload:
+            raise MaterialsError("MATERIALIZED_PARTS_INVALID", "Strict parts parsing changed the materialized payload.")
+        before_publish()
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -1126,18 +1237,71 @@ class MaterialsStore:
         finally:
             conn.close()
 
-    def materialize_parts(self, resource_ids: list[str], chassis: str, *, output: str | Path | None = None, snapshot_id: str | None = None, auto_initialize: bool = True) -> dict[str, Any]:
-        if not resource_ids or len(resource_ids) > 1000:
-            raise MaterialsError("INVALID_SELECTION", "Select between 1 and 1000 resources.")
+    def materialize_parts(
+        self,
+        resource_ids: list[str],
+        chassis: str,
+        *,
+        output: str | Path | None = None,
+        snapshot_id: str | None = None,
+        auto_initialize: bool = True,
+        require_active: bool = False,
+    ) -> dict[str, Any]:
+        if not resource_ids or len(resource_ids) > MAX_MATERIALIZED_PARTS:
+            raise MaterialsError(
+                "INVALID_SELECTION",
+                f"Select between 1 and {MAX_MATERIALIZED_PARTS} resources so the parts library remains consumable by check, compile, and parts search.",
+            )
+        canonical_ids: list[str] = []
+        seen: set[str] = set()
+        for value in resource_ids:
+            resource_id = _validated_resource_id(value)
+            canonical_id = resource_id.casefold()
+            if canonical_id in seen:
+                raise MaterialsError("DUPLICATE_RESOURCE_ID", f"Duplicate part resource ID: {resource_id}")
+            seen.add(canonical_id)
+            canonical_ids.append(resource_id)
+        canonical_ids.sort(key=lambda value: (value.casefold(), value))
         chassis = _clean_text(chassis, field="chassis", limit=256)
-        snapshot_id = snapshot_id or self._active_id()
-        if not snapshot_id:
+        bind_to_active = require_active or snapshot_id is None
+        resolved_snapshot = snapshot_id or self._active_id()
+        if not resolved_snapshot:
             if not auto_initialize:
                 raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
             self.initialize_seed()
-            snapshot_id = self._active_id()
+            resolved_snapshot = self._active_id()
+        if not resolved_snapshot:
+            raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
+
+        if bind_to_active:
+            with _exclusive_materials_lock(self.root / ".active.lock"):
+                return self._materialize_parts_verified(
+                    canonical_ids,
+                    chassis,
+                    resolved_snapshot,
+                    output=output,
+                    require_active=True,
+                )
+        return self._materialize_parts_verified(
+            canonical_ids,
+            chassis,
+            resolved_snapshot,
+            output=output,
+            require_active=False,
+        )
+
+    def _materialize_parts_verified(
+        self,
+        canonical_ids: list[str],
+        chassis: str,
+        snapshot_id: str,
+        *,
+        output: str | Path | None,
+        require_active: bool,
+    ) -> dict[str, Any]:
+        self._verify_materialization_snapshot(snapshot_id, require_active=require_active, initial=True, verify_contents=True)
         selected: list[dict[str, Any]] = []
-        for resource_id in resource_ids:
+        for resource_id in canonical_ids:
             resource = self.get(resource_id, include_sequence=True, snapshot_id=snapshot_id, auto_initialize=False)["resource"]
             if resource["kind"] != "genetic_part" or resource["part_type"] not in PART_TYPES:
                 raise MaterialsError("NOT_COMPILABLE_PART", f"Resource is not a supported Proto part: {resource_id}")
@@ -1145,8 +1309,13 @@ class MaterialsStore:
                 raise MaterialsError("PART_NOT_ELIGIBLE", f"Resource is not design-eligible: {resource_id}")
             if chassis not in resource.get("chassis", []):
                 raise MaterialsError("CHASSIS_MISMATCH", f"Resource {resource_id} is not declared for chassis {chassis}.")
+            sequence = resource.get("sequence")
+            sequence_sha256 = resource.get("sequence_sha256")
+            if not isinstance(sequence, str) or not isinstance(sequence_sha256, str) or _sha256_bytes(sequence.encode("ascii")) != sequence_sha256:
+                raise MaterialsError("SNAPSHOT_INTEGRITY_FAILED", f"Selected sequence object hash mismatch for {resource_id}.")
             selected.append(resource)
-        canonical = _json({"snapshot_id": snapshot_id, "chassis": chassis, "ids": sorted(resource_ids)}).encode("utf-8")
+        self._verify_materialization_snapshot(snapshot_id, require_active=require_active, initial=False, verify_contents=False)
+        canonical = _json({"snapshot_id": snapshot_id, "chassis": chassis, "ids": canonical_ids}).encode("utf-8")
         digest = _sha256_bytes(canonical)
         paths = WorkspacePaths.create(self.workspace)
         target = paths.build_file(output or f"build/materials/selections/{digest}/parts.json", extensions={".json"})
@@ -1178,8 +1347,34 @@ class MaterialsStore:
                 for item in selected
             ],
         }
-        _safe_write(target, (_json(payload) + "\n").encode("utf-8"))
+        _safe_write_validated_parts(
+            target,
+            payload,
+            before_publish=lambda: self._verify_materialization_snapshot(
+                snapshot_id,
+                require_active=require_active,
+                initial=False,
+                verify_contents=True,
+            ),
+        )
         return {"ok": True, "snapshot_id": snapshot_id, "selection_digest": digest, "parts_path": str(target.relative_to(paths.workspace)).replace("\\", "/"), "part_count": len(selected)}
+
+    def _verify_materialization_snapshot(
+        self,
+        snapshot_id: str,
+        *,
+        require_active: bool,
+        initial: bool,
+        verify_contents: bool,
+    ) -> None:
+        if require_active and self._active_id() != snapshot_id:
+            code = "MATERIALS_SNAPSHOT_NOT_ACTIVE" if initial else "ACTIVE_POINTER_CHANGED"
+            raise MaterialsError(code, "The selected materials snapshot is no longer active; no materialized selection was published.")
+        manifest = self.manifest(snapshot_id)
+        if verify_contents:
+            self._verify_snapshot(snapshot_id, manifest)
+        if require_active and self._active_id() != snapshot_id:
+            raise MaterialsError("ACTIVE_POINTER_CHANGED", "The active materials snapshot changed during materialization; no materialized selection was published.")
 
     def materialize_proteins(
         self,
@@ -1189,19 +1384,50 @@ class MaterialsStore:
         output: str | Path | None = None,
         snapshot_id: str | None = None,
         auto_initialize: bool = True,
+        require_active: bool = False,
     ) -> dict[str, Any]:
         """Materialize eligible proteins with a self-contained catalogue receipt."""
 
         if not resource_ids or len(resource_ids) > 256:
             raise MaterialsError("INVALID_SELECTION", "Select between 1 and 256 protein resources.")
-        snapshot_id = snapshot_id or self._active_id()
-        if not snapshot_id:
+        bind_to_active = require_active or snapshot_id is None
+        resolved_snapshot = snapshot_id or self._active_id()
+        if not resolved_snapshot:
             if not auto_initialize:
                 raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
             self.initialize_seed()
-            snapshot_id = self._active_id()
+            resolved_snapshot = self._active_id()
+        if not resolved_snapshot:
+            raise MaterialsError("NO_ACTIVE_SNAPSHOT", "No materials snapshot is active.")
+
+        if bind_to_active:
+            with _exclusive_materials_lock(self.root / ".active.lock"):
+                return self._materialize_proteins_verified(
+                    resource_ids,
+                    design_id=design_id,
+                    output=output,
+                    snapshot_id=resolved_snapshot,
+                    require_active=True,
+                )
+        return self._materialize_proteins_verified(
+            resource_ids,
+            design_id=design_id,
+            output=output,
+            snapshot_id=resolved_snapshot,
+            require_active=False,
+        )
+
+    def _materialize_proteins_verified(
+        self,
+        resource_ids: list[str],
+        *,
+        design_id: str | None,
+        output: str | Path | None,
+        snapshot_id: str,
+        require_active: bool,
+    ) -> dict[str, Any]:
+        self._verify_materialization_snapshot(snapshot_id, require_active=require_active, initial=True, verify_contents=True)
         manifest = self.manifest(snapshot_id)
-        self._verify_snapshot(snapshot_id, manifest)
         attestations, audit_summary = self._snapshot_promotion_attestations(snapshot_id, manifest)
         selected: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -1329,6 +1555,7 @@ class MaterialsStore:
         payload["notice"] = "Materialized from a manifest-bound catalogue audit. Protein compilation is software-only; human scientific review remains required. The catalogue receipt is content-addressed but UNSIGNED."
         paths = WorkspacePaths.create(self.workspace)
         target = paths.build_file(output or f"build/materials/selections/{digest}/proteins.json", extensions={".json"})
+        self._verify_materialization_snapshot(snapshot_id, require_active=require_active, initial=False, verify_contents=True)
         _safe_write(target, (_json(payload) + "\n").encode("utf-8"))
         return {
             "ok": True,
@@ -1391,6 +1618,22 @@ class MaterialsStore:
         )
 
     def _switch_active(
+        self,
+        snapshot_id: str,
+        *,
+        action: str,
+        operator: str | None,
+        approval_reference: str | None,
+    ) -> dict[str, Any]:
+        with _exclusive_materials_lock(self.root / ".active.lock"):
+            return self._switch_active_locked(
+                snapshot_id,
+                action=action,
+                operator=operator,
+                approval_reference=approval_reference,
+            )
+
+    def _switch_active_locked(
         self,
         snapshot_id: str,
         *,

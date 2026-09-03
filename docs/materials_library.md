@@ -13,7 +13,7 @@ Set `PROTO_AGENT_MATERIALS_ROOT` to use a different absolute location. The
 default is a sibling of the checked-out workspace, so no username or drive is
 embedded in the repository.
 
-Large dynamic snapshots are neither committed to Git nor copied into the installer. The source repository does contain two narrowly scoped, generator-produced public bundles under `materials/bundles/`: an installable 18-record reviewed catalog and a non-installable 1,795-record quarantine metadata index. Neither bundle includes `active.json`, overlays, staging state, absolute paths, operator identity, logs, or cache data. The quarantine bundle additionally omits every sequence and sequence object; it retains only the original public length/hash as explicitly redacted-source metadata.
+Large dynamic snapshots are neither committed to Git nor copied into the installer. The source repository does contain two narrowly scoped, generator-produced public bundles under `materials/bundles/`: an installable 1,051-record reviewed catalog (1,046 iGEM DNA parts and 5 UniProt proteins) and a non-installable 1,795-record quarantine metadata index. Neither bundle includes `active.json`, overlays, staging state, absolute paths, operator identity, logs, or cache data. The quarantine bundle additionally omits every sequence and sequence object; it retains only the original public length/hash as explicitly redacted-source metadata.
 
 The public catalog is verified before installation and remains inactive unless a human explicitly passes `--activate`. The quarantine bundle declares `activation_policy: DENY`, is rejected by the public installer, is stored outside the normal snapshot tree in the repository, and is not an MCP/model data source.
 
@@ -118,7 +118,7 @@ defers a description, the decision is written to versioned JSON under `overlays/
 root; this operation does not change licensing, safety status, or `DESIGN_ELIGIBLE`:
 
 ```text
-proto-agent materials review fixture:promoter/pLac --decision accept --reviewer alice `
+proto-agent materials review fixture:promoter/pLac --decision accept --reviewer "<reviewer-label>" `
   --description-en "Reviewed software fixture promoter." --description-zh "已审核的软件启动子占位资源。"
 ```
 

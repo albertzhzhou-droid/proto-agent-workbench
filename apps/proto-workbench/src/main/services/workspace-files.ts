@@ -442,6 +442,13 @@ function isIgnoredScanDirectory(root: string, parent: string, name: string, pare
   if (IGNORED_DIRECTORIES.has(normalized)) return true;
   if (IGNORED_DIRECTORY_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return true;
   const parentFromRoot = relative(root, parent).replaceAll("\\", "/").toLocaleLowerCase();
+  // Material snapshots and captured upstream responses are governed through
+  // the bounded Materials API, not the general-purpose workspace inventory.
+  // Keep the small policy/seed/README files at materials/, materials/bundles/,
+  // and materials/reviewed/ visible while avoiding traversal of content-
+  // addressed blob buckets and high-cardinality source-response corpora.
+  if (parentFromRoot === "materials/bundles") return true;
+  if (parentFromRoot === "materials/reviewed" && normalized === "source_responses") return true;
   // Packaged runtimes and retained visual QA belong to the workbench
   // application, not to the user's reviewable workspace inventory. Keeping
   // this path-specific avoids hiding a legitimate top-level runtime/ or qa/.

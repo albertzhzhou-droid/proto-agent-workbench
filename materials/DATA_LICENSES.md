@@ -16,8 +16,8 @@ The checked public bundles use these source policies:
   quarantine export retains model metadata only and removes personal
   contributor fields.
 - **iGEM Registry** — the declared license is evaluated per record using its
-  public license endpoint. The checked public catalog has fourteen CC BY 4.0
-  iGEM rows and one CC0 1.0 iGEM row.
+  public license endpoint. The checked public catalog has 1,039 CC BY 4.0
+  iGEM rows and 7 CC0 1.0 iGEM rows.
 
 `REDISTRIBUTABLE` is a data-packaging gate, not a scientific, patent,
 freedom-to-operate, orderability, wet-lab, biosafety, clinical, or regulatory

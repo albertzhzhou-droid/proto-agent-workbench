@@ -3,57 +3,71 @@
 The machine-readable `promotion_audit_2026-09.json` evaluates every candidate
 in three fixed rounds: (1) provenance and rights, (2) sequence, ontology, and
 safety, and (3) duplicates plus normalization, inactive-catalog, retrieval, and
-materialization round trips. Every candidate records a `PASS` or `FAIL` plus
+materialization round trips. Every candidate records a `PASS` or `FAIL` with
 stable reason codes per round.
 
-## Before and after
+## Verified catalogue state
 
-| State | DESIGN_ELIGIBLE | Genetic parts | Protein sequences | Active? |
-| --- | ---: | ---: | ---: | --- |
-| External active snapshot before audit | 10 | 10 | 0 | Yes; unchanged |
-| Previous checked public bundle | 13 | 10 | 3 | No |
-| New locked public snapshot/bundle | **18** | **15** | **3** | **No** |
+| Population | Count | Status |
+| --- | ---: | --- |
+| iGEM Registry DNA parts | **1,046** | `DESIGN_ELIGIBLE` |
+| UniProt protein references | **5** | `DESIGN_ELIGIBLE` |
+| Complete reviewed public bundle | **1,051** | `DESIGN_ELIGIBLE` |
+| Staged iGEM Engineered Region records | **5** | `REVIEW_REQUIRED` |
+| Metadata-only quarantine records | **1,795** | isolated; model visibility denied |
 
-The controlled audit passed 18/18 candidates and failed 0. The five additions
-are three terminators (`BBa_B0010`, `BBa_B0012`, `BBa_B0013`) and two promoters
-(`BBa_J23101`, `BBa_J23102`). Each was freshly retrieved from its supplied iGEM
-UUID endpoint, remained `published`, matched its expected Sequence Ontology
-role and length, used the reviewed CC BY 4.0 license UUID, had no duplicate
-sequence, and passed all three rounds.
+The controlled audit passes 1,051/1,051 candidates and fails 0. The iGEM
+population contains 230 promoters, 265 ribosome entry sites, 287 CDSs, and 264
+terminators. Every included DNA sequence has a unique resource ID and sequence
+digest, contains only unambiguous DNA bases, and is between 10 and 4,946 bases
+long. The public bundle declares 1,044 records under CC BY 4.0 and seven under
+CC0 1.0.
 
-The external snapshot `public-reviewed-2026.09` was installed with 18 records
-but not activated. The SHA-256 of the existing `active.json` remained
-`0c7c49ac5217ce36302878144e5b6101434525ceb01c6f142b697082df2563ea`;
-it still points to `import-1788221961-a591490846c9`.
+At the time of verification, the external catalogue's existing active pointer
+selected `public-reviewed-2026.09`. Verification did not activate or replace a
+snapshot; activation remains an explicit human action and is not itself proof
+of scientific validity.
 
-## Evidence and reproducibility
+## Visualization and reproducibility gates
 
-- Exact upstream bytes and the retrieval receipt are under
+- Exact upstream response bytes and the retrieval receipt are retained under
   `source_responses/2026-09/`.
-- `../bundles/source-lock.json` pins both reviewed seeds, the audit, receipt,
-  and every source and license response by SHA-256.
-- `python tools/review_materials_promotion.py --check` reproduces all decisions
-  without network access; `--fetch` performs a fresh bounded refetch.
-- Round three creates a temporary, inactive snapshot and verifies every passing
-  record through the same bounded `search`, `get`, and DNA/protein
-  materialization paths used by the product. It neither mutates the active
-  pointer nor substitutes for a human activation decision.
-- Redirects, non-200 responses, unexpected identity/role/sequence, unknown
-  licenses, incomplete evidence, and failed rounds fail closed.
+- `../bundles/source-lock.json` pins the reviewed seeds, audit, receipt, and
+  every captured response by SHA-256.
+- `python tools/review_materials_promotion.py --check` reproduces the complete
+  1,051-candidate audit without network access.
+- `proto-agent materials bundle-verify <bundle> --profile <profile>` verifies
+  the public catalogue and metadata-only quarantine bundle manifests, hashes,
+  SQLite catalogue, JSONL index, and compressed sequence blobs.
+- Workbench's `igem-materials-visualization-corpus.test.mjs` decompresses and
+  hashes every one of the 1,046 iGEM sequences, builds governed DNA IR, parses
+  it through the production visualization adapter, and checks coordinates,
+  search, interactivity, and stable role colours.
+- A four-role materialized selection also passes the real `.proto` validation,
+  compilation, workflow, and review-packet path. Scientific human review
+  remains required.
+- The general workspace scanner excludes Materials-managed blob buckets and
+  captured source-response trees, preventing the enlarged catalogue from
+  exhausting its fail-closed directory budget while retaining reviewable
+  policy, seed, and IR files.
+
+The materialization path canonicalizes selected IDs and rejects duplicates, so
+the same logical selection has one stable digest and byte-identical output.
+Promotion batches use the entire review population as their uniqueness scope,
+so a duplicate split across the 1,000-record batch boundary still fails closed.
 
 ## Records that remain blocked
 
-- 98,256 UniProt reference records lack per-record controlled promotion
-  attestations and locked response/license evidence.
-- 1,795 hard-flagged records remain physically isolated (UniProt 1,744; Rhea
-  21; BioModels 30); the public quarantine bundle contains no sequences.
-- 18,540 Rhea reactions and 2,754 BioModels models remain reference-only because
-  they are not compiler-domain sequence parts.
-- Five staged iGEM `Engineered Region` records remain `REVIEW_REQUIRED` because
-  the current DSL has no unambiguous supported part type for them.
-- Three built-in software templates remain `REFERENCE_ONLY` because they are
-  slot templates, not biological sequences.
+- Five staged iGEM `Engineered Region` records use the unsupported
+  `SO:0000804` role. They remain `REVIEW_REQUIRED` and are not compiler-visible.
+- The 1,795 quarantine rows (UniProt 1,744; Rhea 21; BioModels 30) remain
+  physically isolated. The public quarantine bundle is metadata-only and
+  contains no sequences.
+- Rhea reactions and BioModels models remain reference-only because they are
+  not compiler-domain sequence parts.
+- Built-in software templates remain `REFERENCE_ONLY` because they are slot
+  templates rather than biological sequences.
 
-`DESIGN_ELIGIBLE` means software-catalog eligibility only. It is not a wet-lab,
-orderability, biosafety, patent, clinical, regulatory, or scientific validity
-claim.
+`DESIGN_ELIGIBLE` means software-catalogue eligibility only. It is not a
+wet-lab, orderability, biosafety, patent, clinical, regulatory, or scientific
+validity claim.

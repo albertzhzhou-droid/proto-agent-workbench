@@ -32,6 +32,7 @@ export const IPC = {
   materialsSearch: "materials:search",
   materialsGet: "materials:get",
   materialsFacets: "materials:facets",
+  materialsMaterialize: "materials:materialize",
   materialsActivate: "materials:activate",
   materialsRollback: "materials:rollback",
   materialsSync: "materials:sync",
