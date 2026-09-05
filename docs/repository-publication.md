@@ -32,6 +32,8 @@ visible contents and PNG metadata were checked before inclusion. Local evidence
 paths, user profiles, process identities and raw model output are excluded from
 the public summary. See [upgrade verification](upgrade-verification.md).
 
-Candidate installers remain local build artifacts. The source push does not
-publish a GitHub Release, upload unsigned binaries, or establish installation,
-upgrade, uninstallation or Windows reputation acceptance.
+Installer binaries remain excluded from Git history. A separately authorized
+[v0.2.0-rc.1 prerelease](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1)
+distributes the exact validated unsigned Portable and Setup as Release assets,
+with SHA-256 checksums and a path-free evidence summary. Distribution does not
+establish installation, upgrade, uninstallation or Windows reputation acceptance.
