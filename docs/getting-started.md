@@ -9,7 +9,7 @@ Download the Windows x64 **Portable** or **Setup** from the
 Use `SHA256SUMS.txt` from the same release to check the file:
 
 ```powershell
-Get-FileHash '.\Proto Workbench-0.2.0-rc.1-x64-portable.exe' -Algorithm SHA256
+Get-FileHash '.\Proto.Workbench-0.2.0-rc.1-x64-portable.exe' -Algorithm SHA256
 ```
 
 The preview is unsigned. The actual Portable and exact extracted installer
