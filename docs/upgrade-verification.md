@@ -73,6 +73,13 @@ structure and restart probes have separate inputs and are excluded from this sco
 
 ## Remaining work and limits
 
+The hosted Windows [CI run on the showcase branch](https://github.com/albertzhzhou-droid/proto-agent-workbench/actions/runs/33983114423)
+failed after publication preparation. Inspected logs include temporary-path
+canonicalization/provenance failures, security-corpus byte/checksum mismatches,
+and owned-process directory rejection. These remain unresolved; the recorded
+local results above do not establish a passing clean-checkout CI gate. CI repair
+must preserve path safety and corpus integrity checks.
+
 Candidates are **unsigned**. No disposable Windows environment was available for
 installation, upgrade or uninstallation; extracted-payload checks do not cover
 registry or shortcuts. Windows reputation and SmartScreen acceptance are untested.
