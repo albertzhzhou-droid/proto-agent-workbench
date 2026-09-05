@@ -76,7 +76,10 @@ structure and restart probes have separate inputs and are excluded from this sco
 Candidates are **unsigned**. No disposable Windows environment was available for
 installation, upgrade or uninstallation; extracted-payload checks do not cover
 registry or shortcuts. Windows reputation and SmartScreen acceptance are untested.
-No GitHub Release or candidate binary upload accompanies this source push.
+The original source push did not include binaries. A subsequent, separately
+authorized [preview release](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1)
+distributes the same validated EXEs with SHA-256 checksums. No rebuild or extra
+model acceptance run is implied by that distribution.
 
 Further work includes all twelve model task families, additional live-model
 faults, final packaged-model validation, more tolerant semantic report-format

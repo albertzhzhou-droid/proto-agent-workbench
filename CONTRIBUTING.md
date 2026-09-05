@@ -1,6 +1,7 @@
 # Contributing
 
-Proto Agent Toolchain is experimental `0.1.x` software. Contributions should
+Proto Workbench is experimental research software; desktop and CLI versions
+are tracked independently. Contributions should
 preserve its local-first, fail-closed, and human-review-required boundaries.
 
 ## Development setup
@@ -39,7 +40,8 @@ For end-to-end evidence, use `proto-agent workflow run <file>` followed by
 `proto-agent review run <file>`. Generated artifacts belong under `build/` and
 must not be committed.
 
-Bundled parts and sequences are software-development fixtures. Contributions
+Legacy `parts/` sequences are software-development fixtures. Reviewed public
+materials retain their source and license evidence. Contributions
 must not add wet-lab execution instructions or imply orderability, biosafety,
 regulatory approval, clinical use, or experimental readiness.
 
