@@ -19,7 +19,7 @@ from proto_agent.materials import (
     promotion_record_digest,
 )
 from proto_agent.mcp_server import McpServer
-from proto_agent.protein import PROTEIN_SELECTION_SCHEMA_VERSION, compile_protein_selection, protein_metrics
+from proto_agent.protein import PROTEIN_SELECTION_SCHEMA_VERSION, compile_protein_selection, protein_metrics, legacy_protein_metrics, protein_metrics_match
 from proto_agent.exporters import export_ir
 
 
@@ -89,6 +89,25 @@ def _activate_snapshot_subprocess(workspace: str, root: str, snapshot_id: str, s
 
 
 class ProteinCompilationTests(unittest.TestCase):
+    def test_mass_matches_independent_biopython_reference(self) -> None:
+        for sequence, mass in [("A", 89.093), ("AA", 160.171), ("AGC", 249.287), ("U", 168.053), ("O", 255.313)]:
+            with self.subTest(sequence=sequence):
+                self.assertEqual(protein_metrics(sequence)["molecular_weight_da_approx"], mass)
+        for residue in "XBZJ*-":
+            self.assertIsNone(protein_metrics("AG" + residue)["molecular_weight_da_approx"])
+            self.assertEqual(protein_metrics("AG" + residue)["mass_status"], "unavailable")
+
+    def test_legacy_metric_binding_remains_verifiable(self) -> None:
+        old = legacy_protein_metrics("AGC")
+        self.assertEqual(old["molecular_weight_da_approx"], 195.24)
+        self.assertTrue(protein_metrics_match("AGC", old))
+        self.assertTrue(protein_metrics_match("AGC", protein_metrics("AGC")))
+        old["molecular_weight_da_approx"] = 249.287
+        self.assertFalse(protein_metrics_match("AGC", old))
+        versioned = protein_metrics("AGC")
+        versioned["algorithm"] = "unknown"
+        self.assertFalse(protein_metrics_match("AGC", versioned))
+
     def test_metrics_are_bounded_and_deterministic(self) -> None:
         metrics = protein_metrics(SEQUENCE)
         self.assertEqual(metrics["length_aa"], len(SEQUENCE))

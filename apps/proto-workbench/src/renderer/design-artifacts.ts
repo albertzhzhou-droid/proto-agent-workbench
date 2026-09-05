@@ -10,6 +10,9 @@ export interface DesignRunProvenance {
   runId: string;
   createdAt?: string;
   sourcePath?: string;
+  partsPath?: string;
+  sourceSha256?: string;
+  partsSha256?: string;
   reviewStatus: string;
   ok: boolean;
   summary?: string;
@@ -95,6 +98,7 @@ export function parseDesignRunManifest(value: unknown, manifestPath: string): Pa
   }
 
   const inputs = isRecord(value.inputs) ? value.inputs : undefined;
+  const digests = isRecord(value.input_digests) ? value.input_digests : undefined;
   const reviewStatus = typeof value.review_status === "string" && value.review_status.trim()
     ? value.review_status
     : "not-declared";
@@ -105,6 +109,9 @@ export function parseDesignRunManifest(value: unknown, manifestPath: string): Pa
       runId: value.run_id,
       createdAt: typeof value.created_at === "string" ? value.created_at : undefined,
       sourcePath: typeof inputs?.design === "string" ? inputs.design : undefined,
+      partsPath: typeof inputs?.parts === "string" ? inputs.parts : undefined,
+      sourceSha256: isRecord(digests?.design) && isSha256(digests.design.sha256) ? digests.design.sha256 : undefined,
+      partsSha256: isRecord(digests?.parts) && isSha256(digests.parts.sha256) ? digests.parts.sha256 : undefined,
       reviewStatus,
       ok: value.ok === true,
       summary: typeof value.summary === "string" ? value.summary : undefined,

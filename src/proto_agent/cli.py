@@ -12,6 +12,7 @@ from typing import Any
 
 from .analysis import DEFAULT_ANALYSIS_OUT_DIR, run_python_analysis
 from .compiler import compile_design, validate_design
+from .design_edits import prepare_design_edit
 from .connectors import DEFAULT_CONNECTORS_PATH, connector_summary
 from .exporters import export_ir, load_ir
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
@@ -29,7 +30,7 @@ from .notebook import DEFAULT_NOTEBOOK_OUT_DIR, run_notebook
 from .optimization import optimize_design
 from .parser import parse_design
 from .parts import DEFAULT_PARTS_PATH, search_parts
-from .protein import compile_protein_selection
+from .protein import compile_protein_selection, validate_protein_selection
 from .provenance import compare_provenance, create_provenance, verify_provenance
 from .r_runtime import DEFAULT_R_OUT_DIR, r_status, run_r_script
 from .review import DEFAULT_REVIEW_OUT_DIR, build_review_packet
@@ -52,6 +53,7 @@ from .security import (
     SecurityBoundaryError,
     WorkspacePaths,
     public_workspace_payload,
+    read_bytes_bounded,
     read_json_bounded,
     write_text_bounded,
 )
@@ -80,6 +82,15 @@ def main(argv: list[str] | None = None) -> int:
     compile_parser = subparsers.add_parser("compile", help="Compile a design file to JSON IR.")
     compile_parser.add_argument("path")
     compile_parser.add_argument("--out", required=True)
+
+    design_parser = subparsers.add_parser("design", help="Preview typed, source-bound DNA design edits.")
+    design_subparsers = design_parser.add_subparsers(dest="design_command", required=True)
+    design_edit = design_subparsers.add_parser("edit", help="Print a checked source candidate and diff without writing files.")
+    design_edit.add_argument("path")
+    design_edit.add_argument("--commands", required=True, help="Workspace JSON file containing the typed command array.")
+    design_edit.add_argument("--parts", dest="parts_override", help="Materialized parts snapshot for validation.")
+    design_edit.add_argument("--expected-source-sha256")
+    design_edit.add_argument("--expected-parts-sha256")
 
     protein_parser = subparsers.add_parser("protein", help="Protein sequence design-domain commands.")
     protein_subparsers = protein_parser.add_subparsers(dest="protein_command", required=True)
@@ -378,6 +389,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return _check(args.path, args.parts, args.as_json)
     if args.command == "compile":
         return _compile(args.path, args.parts, args.out)
+    if args.command == "design" and args.design_command == "edit":
+        return _design_edit(args)
     if args.command == "protein" and args.protein_command == "compile":
         return _protein_compile(args.path, args.out)
     if args.command == "protein" and args.protein_command == "validate":
@@ -531,15 +544,29 @@ def _protein_compile(path: str, out: str) -> int:
 def _protein_validate(path: str, as_json: bool) -> int:
     paths = WorkspacePaths.create()
     selection_path = paths.workspace_file(path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
-    ir, diagnostics = compile_protein_selection(selection_path)
+    ok, diagnostics = validate_protein_selection(selection_path)
     payload = public_workspace_payload(
-        _diagnostics_payload(ir is not None and not any(item.severity == "error" for item in diagnostics), diagnostics, []),
+        _diagnostics_payload(ok, diagnostics, []),
         paths.workspace,
     )
     if as_json:
         _print_json(payload)
     else:
         _print_human_diagnostics(payload)
+    return 0 if payload["ok"] else 1
+
+
+def _design_edit(args: argparse.Namespace) -> int:
+    paths = WorkspacePaths.create()
+    source = paths.workspace_file(args.path, extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
+    parts = paths.workspace_file(args.parts_override or args.parts, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+    commands = paths.workspace_file(args.commands, extensions={".json"}, max_bytes=256 * 1024)
+    payload = prepare_design_edit(
+        read_bytes_bounded(source, MAX_TEXT_FILE_BYTES).decode("utf-8"), read_json_bounded(commands, 256 * 1024),
+        parts_path=parts, source_path=source.relative_to(paths.workspace).as_posix(),
+        expected_source_sha256=args.expected_source_sha256, expected_parts_sha256=args.expected_parts_sha256,
+    )
+    _print_json(public_workspace_payload(payload, paths.workspace))
     return 0 if payload["ok"] else 1
 
 

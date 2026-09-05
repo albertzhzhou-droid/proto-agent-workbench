@@ -114,7 +114,7 @@ async function spawnJson(
     const terminate = (error: Error) => {
       if (settled || terminating) return;
       terminating = true;
-      void terminateOwnedProcessTree(child).finally(() => finish(error));
+      void terminateOwnedProcessTree(child).then(() => finish(error), cleanupError => finish(cleanupError instanceof Error ? cleanupError : new Error(String(cleanupError))));
     };
     const abort = () => terminate(new DOMException("Model scan cancelled.", "AbortError"));
     const timer = setTimeout(

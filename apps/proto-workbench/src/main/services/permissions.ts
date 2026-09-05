@@ -1,6 +1,8 @@
 import type { ToolApproval } from "../../shared/contracts.ts";
 
 const NETWORK_TOOLS = new Set([
+  "proto_structure_search",
+  "proto_structure_fetch",
   "proto_pubmed_search",
   "proto_europe_pmc_search",
   "proto_crossref_search",
@@ -9,6 +11,11 @@ const NETWORK_TOOLS = new Set([
 ]);
 const CODE_EXECUTION_TOOLS = new Set(["proto_run_analysis", "proto_run_notebook", "proto_run_r"]);
 const AUTO_TOOLS = new Set([
+  "proto_protein_inspect",
+  "proto_structure_list",
+  "proto_structure_read",
+  "proto_structure_import_workspace",
+  "proto_language_reference",
   "proto_check",
   "proto_compile",
   "proto_export",
@@ -21,6 +28,10 @@ const AUTO_TOOLS = new Set([
   "proto_materials_get",
   "proto_materials_facets",
   "proto_materials_materialize",
+  "proto_materials_materialize_proteins",
+  "proto_protein_compile",
+  "proto_protein_validate",
+  "proto_design_edit",
   "proto_workflow_run",
   "proto_provenance_verify",
   "proto_review_packet",
@@ -30,6 +41,7 @@ const AUTO_TOOLS = new Set([
   "workspace_read",
   "workspace_search",
   "workspace_propose_patch",
+  "workspace_resume_validation",
 ]);
 
 export type ToolPermission =
@@ -42,14 +54,14 @@ export function classifyTool(tool: string): ToolPermission {
     return {
       allowed: false,
       risk: "network",
-      reason: "This tool sends a query to an external scientific database and requires approval for each call.",
+      reason: "This tool sends a query to an external scientific database and requires a mission network grant or explicit approval.",
     };
   }
   if (CODE_EXECUTION_TOOLS.has(tool)) {
     return {
       allowed: false,
       risk: "code-execution",
-      reason: "This tool executes workspace-local analysis code and requires approval for each call.",
+      reason: "This tool executes workspace-local analysis code and requires a mission execution grant or explicit approval.",
     };
   }
   if (tool === "workspace_apply_patch") {

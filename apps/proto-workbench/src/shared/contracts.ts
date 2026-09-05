@@ -116,6 +116,8 @@ export interface ModelDescriptor {
   workbenchInstance?: {
     id: string;
     ownedByWorkbench: boolean;
+    /** Actual loaded context; descriptor.contextLength remains model capacity. */
+    contextLength?: number;
   };
   reasoning?: ModelReasoningCapability;
 }
@@ -181,6 +183,7 @@ export interface AgentRunEvent {
 }
 
 export interface PatchProposal {
+  materialBinding?: import("./harness.ts").MaterialBinding;
   id: string;
   runId: string;
   targetPath: string;
@@ -1807,6 +1810,7 @@ export interface StreamEvent {
     | "approval-required"
     | "error"
     | "cancelled";
+  harness?: import("./harness.ts").HarnessProjection;
   messageId?: string;
   delta?: string;
   message?: ChatMessage;
@@ -1836,6 +1840,9 @@ export interface WorkbenchApi {
     subscribe(listener: (models: ModelDescriptor[]) => void): () => void;
   };
   harness: {
+    listExecutions(): Promise<import("./harness.ts").HarnessProjection[]>;
+    resumeExecution(runId: string): Promise<void>;
+    pauseExecution(runId: string): Promise<void>;
     preflight(input: MissionPreflightRequest): Promise<MissionPreflight>;
     simulatePolicy(input: PolicySimulationRequest): Promise<PolicySimulationReport>;
     previewDecisionBundle(input: DecisionBundleRequest): Promise<DecisionBundlePreview>;
@@ -1854,6 +1861,8 @@ export interface WorkbenchApi {
   visualization: {
     exportMap(input: MapExportRequest): Promise<MapExportVerificationReceipt>;
   };
+  designs: import("./dna-edits.ts").DesignEditApi;
+  proteinStructures: import("./protein-structures.ts").ProteinStructureApi;
   materials: {
     status(): Promise<MaterialsStatus>;
     search(input: MaterialsSearchRequest): Promise<MaterialsSearchResult>;

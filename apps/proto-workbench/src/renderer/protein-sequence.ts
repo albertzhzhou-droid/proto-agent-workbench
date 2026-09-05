@@ -55,7 +55,7 @@ const HYDROPHOBIC = new Set("AVILMFWY");
 const CHARGED = new Set("DEKR");
 
 /** Mirrors proto_agent.protein.protein_metrics for renderer verification. */
-export function calculateProteinMetrics(sequence: string): ProteinMetricsViewModel {
+export function calculateLegacyProteinMetrics(sequence: string): ProteinMetricsViewModel {
   const composition: Record<string, number> = {};
   let knownMass = 0;
   let hydrophobic = 0;
@@ -78,6 +78,45 @@ export function calculateProteinMetrics(sequence: string): ProteinMetricsViewMod
     chargedFraction: rounded(charged / length, 6),
     ambiguousOrSpecialFraction: rounded(ambiguousOrSpecial / length, 6),
   };
+}
+
+export const PROTEIN_METRICS_ALGORITHM = "proto.protein-metrics.v2";
+// Free amino-acid average weights: Biopython Bio/Data/IUPACData.py.
+const AMINO_ACID_MASS: Readonly<Record<string, number>> = Object.freeze({
+  A: 89.0932, C: 121.1582, D: 133.1027, E: 147.1293, F: 165.1891,
+  G: 75.0666, H: 155.1546, I: 131.1729, K: 146.1876, L: 131.1729,
+  M: 149.2113, N: 132.1179, P: 115.1305, Q: 146.1445, R: 174.201,
+  S: 105.0926, T: 119.1192, V: 117.1463, W: 204.2252, Y: 181.1885,
+  U: 168.0532, O: 255.3134,
+});
+
+export function calculateProteinMetrics(sequence: string): ProteinMetricsViewModel {
+  if (!sequence.length) throw new Error("Protein metrics require a non-empty sequence.");
+  const base = calculateLegacyProteinMetrics(sequence);
+  const unknown = [...new Set([...sequence].filter((residue) => AMINO_ACID_MASS[residue] === undefined))].sort();
+  const mass = unknown.length ? null : Number((
+    [...sequence].reduce((sum, residue) => sum + AMINO_ACID_MASS[residue], 0) - (sequence.length - 1) * 18.0153
+  ).toFixed(3));
+  return { ...base, molecularWeightDaApprox: mass, algorithm: PROTEIN_METRICS_ALGORITHM,
+    massStatus: unknown.length ? "unavailable" : "available",
+    massReason: unknown.length ? `Unknown residue mass: ${unknown.join(", ")}` : null };
+}
+
+/** Bounded positional residue-class tracks; no predicted secondary structure. */
+export function proteinPropertyBins(sequence: string, maxBins = 100): Array<{ start: number; end: number; hydrophobic: number; charged: number }> {
+  if (!Number.isSafeInteger(maxBins) || maxBins < 1 || maxBins > 1000) throw new Error("Invalid protein track budget.");
+  const width = Math.max(1, Math.ceil(sequence.length / maxBins));
+  const bins = [];
+  for (let start = 0; start < sequence.length; start += width) {
+    const end = Math.min(sequence.length, start + width);
+    let hydrophobic = 0; let charged = 0;
+    for (let index = start; index < end; index += 1) {
+      if (HYDROPHOBIC.has(sequence[index])) hydrophobic += 1;
+      if (CHARGED.has(sequence[index])) charged += 1;
+    }
+    bins.push({ start, end, hydrophobic: hydrophobic / (end - start), charged: charged / (end - start) });
+  }
+  return bins;
 }
 
 export function validateProteinRange(

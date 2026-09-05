@@ -1581,6 +1581,9 @@ const mockWorkbench: WorkbenchApi = {
     },
   },
   harness: {
+    async listExecutions() { return []; },
+    async resumeExecution() { throw new Error("Execution recovery requires the desktop bridge."); },
+    async pauseExecution() { throw new Error("Execution control requires the desktop bridge."); },
     async preflight(input: MissionPreflightRequest): Promise<MissionPreflight> {
       const thread = threads.find((item) => item.id === input.threadId);
       if (!thread) throw new Error("Thread not found");
@@ -1715,6 +1718,17 @@ const mockWorkbench: WorkbenchApi = {
     async listTransparencyWitnessPacks(): Promise<TransparencyWitnessCatalog> {
       return previewTransparencyWitnessCatalog();
     },
+  },
+  designs: {
+    async prepareEdit() { throw new Error("Source edits require the desktop bridge and a bound material library."); },
+    async commitEdit() { throw new Error("Source edits require the desktop bridge and a bound material library."); },
+  },
+  proteinStructures: {
+    async list() { return []; },
+    async search() { throw new Error("Official structure retrieval requires the desktop bridge."); },
+    async fetch() { throw new Error("Official structure retrieval requires the desktop bridge."); },
+    async importFile() { throw new Error("Structure import requires the desktop bridge."); },
+    async read() { throw new Error("Structure cache requires the desktop bridge."); },
   },
   visualization: {
     async exportMap(input) {

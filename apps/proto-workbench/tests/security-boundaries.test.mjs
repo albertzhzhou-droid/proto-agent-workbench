@@ -52,6 +52,27 @@ test("the hidden desktop window is released after either visual readiness or a c
   assert.match(createWindow, /mainWindow\.isDestroyed\(\) \|\| mainWindow\.isVisible\(\)/);
 });
 
+test("protein track export binds a bounded source request without accepting renderer-supplied evidence", () => {
+  const request = {
+    target: {artifactPath: "build/protein.ir.json", artifactSha256: "a".repeat(64), proteinId: "protein-1", sequenceSha256: "b".repeat(64)},
+    selectedRange: {start: 10, end: 25}, structure: null,
+  };
+  assert.deepEqual(validateIpcArguments(IPC.structurePrepareTracks, [request]), [request]);
+  const svg = {request, format: "svg", svgSha256: "c".repeat(64)};
+  assert.deepEqual(validateIpcArguments(IPC.structureExportTracks, [svg]), [svg]);
+  for (const forged of [
+    {...svg, metadata: {artifactSha256: "d".repeat(64)}},
+    {...svg, filename: "../report.svg"},
+    {...svg, svg: "<svg/>"},
+    {...svg, png: new Uint8Array(64)},
+    {...svg, format: "png"},
+    {...svg, request: {...request, selectedRange: {start: 25, end: 10}}},
+    {...svg, request: {...request, structure: {attachmentId: "c".repeat(64), modelIndex: -1, chainId: "A", explicitStartOneBased: 1}}},
+  ]) assert.throws(() => validateIpcArguments(IPC.structureExportTracks, [forged]), /Invalid arguments/);
+  const png = {...svg, format: "png", png: new Uint8Array(64)};
+  assert.deepEqual(validateIpcArguments(IPC.structureExportTracks, [png]), [png]);
+});
+
 test("privileged IPC requires the exact main webContents, top frame, URL, and bounded schema", () => {
   const mainFrame = { url: "http://127.0.0.1:5173/" };
   const webContents = { mainFrame };

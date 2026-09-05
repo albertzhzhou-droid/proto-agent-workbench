@@ -17,7 +17,7 @@ test("Design Explorer discloses unknown topology and blocks mismatched-artifact 
   assert.match(source, /Source topology:\s*<strong>\{topologyDisclosure\}<\/strong>/);
   assert.doesNotMatch(source, /linear \/ not explicitly declared/);
   assert.match(source, /const artifactIntegrityBlocked = selectedDocument\?\.digestBinding\?\.status === "mismatch"/);
-  assert.match(source, /exportDisabled=\{Boolean\(exportingFormat\) \|\| viewerMode === "linear" \|\| governanceBlocked \|\| artifactIntegrityBlocked \|\| provenanceInventoryBlocked \|\| interactiveVisualizationBlocked\}/);
+  assert.match(source, /exportDisabled=\{Boolean\(exportingFormat\) \|\| viewerMode === "linear" \|\| governanceBlocked \|\| artifactIntegrityBlocked \|\| provenanceInventoryBlocked \|\| interactiveVisualizationBlocked \|\| scientificExportBlocked\}/);
   assert.match(source, /Map export is blocked because the artifact does not match its recorded digest\./g);
   assert.match(source, /interactiveVisualizationBlocked/);
   assert.match(source, /Bounded summary mode/);
@@ -32,7 +32,7 @@ test("Design Explorer discloses unknown topology and blocks mismatched-artifact 
   assert.doesNotMatch(provenanceLoader, /return undefined/);
   assert.match(source, /summarizeDesignProvenanceInventory\(provenanceResults\)/);
   assert.match(source, /const provenanceInventoryBlocked = provenanceInventory\.status !== "complete"/);
-  assert.match(source, /exportDisabled=\{Boolean\(exportingFormat\) \|\| viewerMode === "linear" \|\| governanceBlocked \|\| artifactIntegrityBlocked \|\| provenanceInventoryBlocked \|\| interactiveVisualizationBlocked\}/);
+  assert.match(source, /exportDisabled=\{Boolean\(exportingFormat\) \|\| viewerMode === "linear" \|\| governanceBlocked \|\| artifactIntegrityBlocked \|\| provenanceInventoryBlocked \|\| interactiveVisualizationBlocked \|\| scientificExportBlocked\}/);
   assert.match(source, /DNA_PART_GOVERNANCE_UNVERIFIED/);
   assert.match(source, /Governance unverified · export blocked/);
   assert.match(source, /PROVENANCE_INVENTORY_INCOMPLETE/);
@@ -85,7 +85,7 @@ test("the feature table preserves row semantics and a real keyboard-operable but
   assert.match(source, /aria-live="polite" aria-atomic="true">\{selectionAnnouncement\}/);
   assert.match(source, /aria-label="Feature inventory pages"/);
   assert.match(source, /visibleFeatureEntries\.map\(\(\{ feature, featureIndex, hidden \}\)/);
-  assert.match(source, /buildFeatureInventory\(construct\.features/);
+  assert.match(source, /useScientificComputation\("inventory", artifactIdentity, inventoryInput\)/);
   assert.match(source, /aria-label="Filter feature type"/);
   assert.match(source, /className="feature-row-visibility"/);
 });
@@ -141,7 +141,7 @@ test("protein visualization is integrity-bound, bounded, keyboard-readable, and 
 
   assert.match(pageSource, /recomputed sequence SHA-256 digests and enforced the governed identity, source, rights, eligibility, safety, evidence, organism, role, and derived-metric fields/);
   assert.match(proteinViewSource, /Search protein ID, name, source record, or sequence motif/);
-  assert.match(proteinViewSource, /Bounded summary mode is active/);
+  assert.match(proteinViewSource, /summaryMode \? "Collection overview" : "Full sequence available"/);
   assert.match(proteinViewSource, /aria-keyshortcuts="Home End PageUp PageDown"/);
   assert.match(proteinViewSource, /Validate and apply/);
   assert.match(proteinViewSource, /Selected sequence extract/);
@@ -154,11 +154,13 @@ test("protein visualization is integrity-bound, bounded, keyboard-readable, and 
 
 test("automatic ORF discovery stays bounded, optional, and visibly software-derived", async () => {
   const pageSource = await readFile(designsPageUrl, "utf8");
+  const workerSource = await readFile(new URL("../src/renderer/design-scientific.ts", import.meta.url), "utf8");
 
   assert.match(pageSource, /Software ORF discovery/);
   assert.match(pageSource, /six frames · ATG to standard stop · software only/);
   assert.match(pageSource, /minimumAminoAcids: orfMinimumAminoAcids/);
-  assert.match(pageSource, /maximumFeatures: availableFeatureSlots/);
+  assert.match(workerSource, /maximumFeatures: available/);
+  assert.match(workerSource, /VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures - construct.features.length/);
   assert.match(pageSource, /source === "software"/);
   assert.match(pageSource, /uniqueTranslatableFeatures/);
   assert.match(pageSource, /overlapping source entr/);
@@ -174,7 +176,7 @@ test("circular view origin is explicitly non-mutating and preserves source coord
     readFile(sequenceNavigatorUrl, "utf8"),
   ]);
 
-  assert.match(pageSource, /rotateCircularConstructView/);
+  assert.match(pageSource, /useScientificComputation\("view", artifactIdentity, viewInput\)/);
   assert.match(pageSource, /Circular view origin/);
   assert.match(pageSource, /Source base at \+1/);
   assert.match(pageSource, /View \+1 now maps to source base/);
@@ -202,7 +204,8 @@ test("GC skew is configurable, derived, export-traceable, and independently togg
   assert.match(pageSource, /Sequence metric window/);
   assert.match(pageSource, /gcSkewPlot: layers\.gcSkew/);
   assert.match(pageSource, /gcWindowSize: effectiveGcWindowSize/);
-  assert.match(mapSource, /calculateGcSkewSeries/);
+  assert.match(mapSource, /const series = sequenceTracks\.gcSkew/);
+  assert.doesNotMatch(mapSource, /calculateGc(?:Content|Skew)Series\(/);
   assert.match(mapSource, /source: "proto-gc-skew"/);
   assert.match(mapSource, /formula: "\(G-C\)\/\(G\+C\)"/);
   assert.match(mapSource, /G-rich GC skew/);

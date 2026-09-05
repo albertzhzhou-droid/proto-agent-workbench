@@ -1,6 +1,11 @@
 import { ChevronLeft, ChevronRight, CircleAlert, Search } from "lucide-react";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import type { DesignViewModel, ProteinViewModel } from "./design-visualization.ts";
+import type { ProteinResidueMapping, ProteinStructureApi } from "../shared/protein-structures.ts";
+import type { ProteinTrackStructureContext } from "../shared/protein-track-export.ts";
+import { ProteinStructureView } from "./ProteinStructureView.tsx";
+import { ProteinSequenceTracks } from "./ProteinSequenceTracks.tsx";
+import "./protein-workspace.css";
 import {
   calculateProteinMetrics,
   extractProteinRange,
@@ -16,7 +21,13 @@ const BASIC = new Set(["K", "R", "H"]);
 const ACIDIC = new Set(["D", "E"]);
 const POLAR = new Set(["S", "T", "N", "Q", "C"]);
 
-export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
+export function ProteinSequenceView({ design, structureApi, artifact, selectedProteinId, onSelectProtein }: {
+  design: DesignViewModel;
+  structureApi?: ProteinStructureApi;
+  artifact?: { path: string; sha256: string };
+  selectedProteinId?: string;
+  onSelectProtein?(id: string): void;
+}) {
   const firstProtein = design.proteins[0];
   const [selectedProteinIndex, setSelectedProteinIndex] = useState(0);
   const [windowStart, setWindowStart] = useState(0);
@@ -28,6 +39,8 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
     ? { start: 0, end: Math.min(firstProtein.length, PROTEIN_VISUALIZATION_LIMITS.maxSelectedResidues) }
     : undefined);
   const [rangeError, setRangeError] = useState<string>();
+  const [structureMapping, setStructureMapping] = useState<ProteinResidueMapping>();
+  const [structureContext, setStructureContext] = useState<ProteinTrackStructureContext>();
 
   useEffect(() => {
     const protein = design.proteins[0];
@@ -39,7 +52,17 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
     setRangeEnd(String(Math.min(protein?.length ?? 1, PROTEIN_VISUALIZATION_LIMITS.maxSelectedResidues)));
     setSelectedRange(protein ? { start: 0, end: Math.min(protein.length, PROTEIN_VISUALIZATION_LIMITS.maxSelectedResidues) } : undefined);
     setRangeError(undefined);
+    setStructureMapping(undefined);
+    setStructureContext(undefined);
   }, [design]);
+
+  useEffect(() => {
+    if (!selectedProteinId) return;
+    const index = design.proteins.findIndex((item) => item.id === selectedProteinId);
+    if (index >= 0 && index !== selectedProteinIndex) {
+      setSelectedProteinIndex(index); setWindowStart(0); setSelectedRange({ start: 0, end: 1 }); setRangeStart("1"); setRangeEnd("1"); setStructureMapping(undefined);
+    }
+  }, [selectedProteinId, design.proteins]);
 
   const boundedProteinIndex = Math.min(selectedProteinIndex, Math.max(0, design.proteins.length - 1));
   const protein = design.proteins[boundedProteinIndex];
@@ -81,6 +104,8 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
       Math.max(0, target.length - PROTEIN_VISUALIZATION_LIMITS.maxRenderedResidues),
     );
     setSelectedProteinIndex(index);
+    onSelectProtein?.(target.id);
+    setStructureMapping(undefined);
     setWindowStart(nextWindowStart);
     setRangeStart(String(focusStart + 1));
     setRangeEnd(String(Math.max(focusStart + 1, focusEnd)));
@@ -119,7 +144,13 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
   };
 
   const handleWindowKeys = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "PageUp") {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      if (protein) {
+        const position = Math.max(0, Math.min(protein.length - 1, (selectedRange?.start ?? boundedWindowStart) + (event.key === "ArrowRight" ? 1 : -1)));
+        selectRange({ start: position, end: position + 1 });
+      }
+    } else if (event.key === "PageUp") {
       event.preventDefault();
       moveWindow(-1);
     } else if (event.key === "PageDown") {
@@ -132,6 +163,14 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
       event.preventDefault();
       setWindowStart(maxWindowStart);
     }
+  };
+
+  const selectRange = (range: ProteinRange) => {
+    if (!protein) return;
+    const validated = validateProteinRange(range.start + 1, range.end, protein.length);
+    if (!validated.ok) { setRangeError(validated.message); return; }
+    setSelectedRange(validated.range); setRangeStart(String(range.start + 1)); setRangeEnd(String(range.end)); setRangeError(undefined);
+    if (range.start < boundedWindowStart || range.start >= windowEnd) setWindowStart(Math.min(range.start, maxWindowStart));
   };
 
   const searchStatus = !query.trim()
@@ -150,8 +189,8 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
       <div className="protein-view-heading">
         <div>
           <span className="eyebrow">Protein design domain</span>
-          <h2>Amino-acid sequence workspace</h2>
-          <p>Integrity-checked residue browsing and bounded, software-derived processing. This view does not translate, optimize, or imply experimental readiness.</p>
+          <h2>Protein observatory</h2>
+          <p>Explore sequence properties, deposited structures, and residue-level evidence in one linked workspace.</p>
         </div>
         <div className="protein-review-callout"><CircleAlert size={16} /><span>Human scientific review required</span></div>
       </div>
@@ -159,9 +198,9 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
       <div className="protein-summary-grid" aria-label="Protein selection summary">
         <div><span className="eyebrow">Sequences</span><strong>{design.proteins.length.toLocaleString()}</strong><small>governed records verified on read</small></div>
         <div><span className="eyebrow">Residues</span><strong>{totalResidues.toLocaleString()}</strong><small>amino acids</small></div>
-        <div><span className="eyebrow">Rendering</span><strong>{summaryMode ? "Summary" : "Bounded"}</strong><small>≤ {PROTEIN_VISUALIZATION_LIMITS.maxRenderedResidues.toLocaleString()} residues in DOM</small></div>
+        <div><span className="eyebrow">Sequence window</span><strong>{summaryMode ? "Collection overview" : "Full sequence available"}</strong><small>Select any residue range to explore</small></div>
       </div>
-      {summaryMode && <p className="protein-sequence-limit" role="status">Bounded summary mode is active for this large design. Metadata remains searchable; only the selected record and residue window are rendered.</p>}
+      {summaryMode && <p className="protein-sequence-limit" role="status">This collection opens as an overview. Search its records, then select a protein and residue range to explore.</p>}
 
       <div className="protein-workbench-controls">
         <label>
@@ -189,6 +228,11 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
         </div>
       </div>
 
+      <ProteinStructureView protein={protein} api={structureApi} artifact={artifact} selectedRange={selectedRange} onSelectRange={selectRange}
+        onClearSelection={() => { setSelectedRange(undefined); setRangeStart(""); setRangeEnd(""); }} onMappingChange={setStructureMapping} onMappingContextChange={setStructureContext} />
+      <ProteinSequenceTracks sequence={protein.sequence} mapping={structureMapping} selectedRange={selectedRange} onSelectRange={selectRange}
+        api={structureApi} target={artifact ? { artifactPath: artifact.path, artifactSha256: artifact.sha256, proteinId: protein.id, sequenceSha256: protein.sequenceSha256 } : undefined}
+        structureContext={structureContext} />
       <ProteinRecord
         protein={protein}
         proteinIndex={boundedProteinIndex}
@@ -207,6 +251,9 @@ export function ProteinSequenceView({ design }: { design: DesignViewModel }) {
         onRangeStart={setRangeStart}
         onRangeEnd={setRangeEnd}
         onApplyRange={applyRange}
+        onSelectResidue={(index, extend) => selectRange(extend && selectedRange
+          ? { start: Math.min(index, selectedRange.start), end: Math.max(index + 1, selectedRange.end) }
+          : { start: index, end: index + 1 })}
         onMoveWindow={moveWindow}
         onWindowKeyDown={handleWindowKeys}
         canMovePrevious={boundedWindowStart > 0}
@@ -234,6 +281,7 @@ interface ProteinRecordProps {
   onRangeStart(value: string): void;
   onRangeEnd(value: string): void;
   onApplyRange(): void;
+  onSelectResidue(index: number, extend: boolean): void;
   onMoveWindow(direction: -1 | 1): void;
   onWindowKeyDown(event: KeyboardEvent<HTMLDivElement>): void;
   canMovePrevious: boolean;
@@ -259,6 +307,7 @@ function ProteinRecord(props: ProteinRecordProps) {
     onRangeStart,
     onRangeEnd,
     onApplyRange,
+    onSelectResidue,
     onMoveWindow,
     onWindowKeyDown,
     canMovePrevious,
@@ -283,6 +332,8 @@ function ProteinRecord(props: ProteinRecordProps) {
           <div><dt>Charged</dt><dd>{formatFraction(metrics.chargedFraction)}</dd></div>
         </dl>
       </header>
+      {metrics.legacyRecomputed && <p className="protein-metric-correction" role="status">Legacy metric binding verified. Molecular mass is recalculated with the corrected v2 algorithm; the source artifact is unchanged.</p>}
+      {metrics.massReason && <p className="protein-metric-correction">Mass unavailable: {metrics.massReason}. No fallback mass is assigned to ambiguous residues, gaps, or stops.</p>}
 
       <div className="protein-record-copy">
         {protein.description && <p>{protein.description}</p>}
@@ -308,7 +359,7 @@ function ProteinRecord(props: ProteinRecordProps) {
         </div>
         <div className="protein-window-navigation" aria-label="Residue window navigation">
           <button type="button" onClick={() => onMoveWindow(-1)} disabled={!canMovePrevious}><ChevronLeft size={14} />Previous window</button>
-          <span>Window is bounded to {PROTEIN_VISUALIZATION_LIMITS.maxRenderedResidues.toLocaleString()} residues</span>
+          <span>Up to {PROTEIN_VISUALIZATION_LIMITS.maxRenderedResidues.toLocaleString()} residues per window</span>
           <button type="button" onClick={() => onMoveWindow(1)} disabled={!canMoveNext}>Next window<ChevronRight size={14} /></button>
         </div>
         <div
@@ -324,12 +375,15 @@ function ProteinRecord(props: ProteinRecordProps) {
             const inSelection = Boolean(selectedRange && index >= selectedRange.start && index < selectedRange.end);
             const active = activeStart !== undefined && activeEnd !== undefined && index >= activeStart && index < activeEnd;
             return (
-              <span
+              <button type="button"
                 className={`protein-residue residue-${residueClass(residue)}${visibleMatchResidues.has(index) ? " is-match" : ""}${active ? " is-active-match" : ""}${inSelection ? " is-selected-range" : ""}`}
                 key={`${protein.id}-${index}`}
                 title={`${residue} residue ${index + 1}`}
-                aria-hidden="true"
-              >{residue}</span>
+                aria-label={`${residue}, residue ${index + 1}${inSelection ? ", selected" : ""}`}
+                aria-pressed={inSelection}
+                tabIndex={localIndex === 0 ? 0 : -1}
+                onClick={(event) => onSelectResidue(index, event.shiftKey)}
+              >{residue}</button>
             );
           })}
         </div>
@@ -390,7 +444,8 @@ function residueClass(residue: string): string {
   return "special";
 }
 
-function formatMass(value: number): string {
+function formatMass(value: number | null): string {
+  if (value === null) return "Unavailable";
   return value >= 1000 ? `${(value / 1000).toFixed(2)} kDa` : `${value.toFixed(1)} Da`;
 }
 

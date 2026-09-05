@@ -3,6 +3,10 @@ import { diffLines } from "diff";
 import {
   Archive,
   Atom,
+  Sun,
+  Moon,
+  PanelLeft,
+  PanelRight,
   BookOpen,
   Database,
   Boxes,
@@ -49,9 +53,10 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { AgentRunEvent, ModelDescriptor, PatchProposal, RunDetail, RunLifecycleProjection } from "../shared/contracts.ts";
 import { OperationalPage } from "./OperationalPages.tsx";
+import { HarnessMissionPanel } from "./HarnessMissionPanel.tsx";
 import { GlobalEvidenceSearch } from "./GlobalEvidenceSearch.tsx";
 import { DecisionLab } from "./DecisionLab.tsx";
 import { DecisionBundleVerificationCenter } from "./DecisionBundleVerificationCenter.tsx";
@@ -60,8 +65,10 @@ import { workbenchDataMode } from "./mock-api.ts";
 import { deriveWorkbenchReadiness } from "./readiness.ts";
 import { deriveRunStageStates, RUN_STAGES } from "./stage-state.ts";
 import { useWorkbenchStore, type BootstrapPhase } from "./store.ts";
+import { modelContextLabel } from "./model-presentation.ts";
 
 const GIB = 1024 ** 3;
+const WorkbenchTheme = createContext<"light" | "dark">("dark");
 
 export function App() {
   const bootstrap = useWorkbenchStore((state) => state.bootstrap);
@@ -77,6 +84,11 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [decisionLabOpen, setDecisionLabOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem("proto.sidebar.expanded") === "true");
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(() => localStorage.getItem("proto.theme") === "light" ? "light" : "dark");
+  useEffect(() => {document.documentElement.dataset.theme = theme; localStorage.setItem("proto.theme", theme);}, [theme]);
+  useEffect(() => {localStorage.setItem("proto.sidebar.expanded", String(sidebarOpen));}, [sidebarOpen]);
   const closeCommands = () => {
     setCommandOpen(false);
     window.requestAnimationFrame(() => document.getElementById("mission-command-trigger")?.focus());
@@ -208,21 +220,21 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
+    <WorkbenchTheme value={theme}><div className={`app-shell ${sidebarOpen ? "sidebar-expanded" : "sidebar-rail"} ${inspectorOpen ? "inspector-open" : "inspector-closed"}`}>
       <TopBar />
+      <div className="workspace-view-controls"><button type="button" aria-label="Toggle task sidebar" title="Toggle task sidebar" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16}/></button><button type="button" aria-label="Toggle inspector" title="Toggle inspector" aria-pressed={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight size={16}/></button><button type="button" aria-label={`Use ${theme === "dark" ? "light" : "dark"} theme`} title={`Use ${theme === "dark" ? "light" : "dark"} theme`} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button></div>
       <div className={`app-body ${currentView !== "runs" ? "is-page" : ""}`}>
         <Sidebar />
         {currentView === "runs" ? <>
           <main className={`run-workspace ${fullEditor ? "is-full-editor" : ""}`}>
             {!fullEditor && <RunHeader />}
-            {!fullEditor && <RunAttentionStrip />}
-            {!fullEditor && <StageTracker />}
+            {!fullEditor && <HarnessMissionPanel />}
             {!fullEditor && <RunEvidenceViews />}
             <CodeDrawer />
             {!fullEditor && <ToolApprovalBar />}
             {!fullEditor && <Composer />}
           </main>
-          <ReviewPanel />
+          {inspectorOpen && <ReviewPanel />}
         </> : <main className="page-workspace"><OperationalPage view={currentView} /></main>}
       </div>
       {modelsOpen && <ModelPopover />}
@@ -236,7 +248,7 @@ export function App() {
           <span>{toast}</span>
         </div>
       )}
-    </div>
+    </div></WorkbenchTheme>
   );
 }
 
@@ -358,7 +370,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       detail: "Create an Act draft that must pass Mission Preflight before it can start.",
       run: async () => {
         await beginNewRun("act");
-        setPrompt("Review the requested workspace change, explain the intended diff and validation path, then propose only reviewable changes behind explicit approval gates.");
+        setPrompt("Complete the requested workspace change within the mission scope, record the diff, validate the result, and preserve the evidence.");
       },
     },
     {
@@ -440,7 +452,7 @@ function Sidebar() {
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
-            <button className={`nav-item ${currentView === item.view ? "is-active" : ""}`} type="button" key={item.label} onClick={() => navigate(item.view)} aria-current={currentView === item.view ? "page" : undefined}>
+            <button className={`nav-item ${currentView === item.view ? "is-active" : ""}`} type="button" key={item.label} title={item.label} aria-label={item.label} onClick={() => navigate(item.view)} aria-current={currentView === item.view ? "page" : undefined}>
               <Icon size={17} />
               <span>{item.label}</span>
             </button>
@@ -662,6 +674,7 @@ function LedgerEvent({
 }
 
 function CodeDrawer() {
+  const theme = useContext(WorkbenchTheme);
   const dataMode = workbenchDataMode();
   const patch = useWorkbenchStore((state) => state.patch);
   const activeDocument = useWorkbenchStore((state) => state.activeDocument);
@@ -717,7 +730,7 @@ function CodeDrawer() {
           <button className="icon-button" type="button" onClick={() => setFullEditor(!fullEditor)} title={fullEditor ? "Exit full editor" : "Open full editor"} aria-label={fullEditor ? "Exit full editor" : "Open full editor"}>{fullEditor ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</button>
           {!fullEditor && <button className="icon-button" type="button" onClick={() => setDrawerCollapsed(true)} title="Collapse code panel" aria-label="Collapse code panel"><ChevronDown size={15} /></button>}
         </div>
-        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme="proto-light" options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: "Cascadia Code, Consolas, monospace", scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
+        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme={theme === "dark" ? "proto-dark" : "proto-light"} options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: "Cascadia Code, Consolas, monospace", scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
         <div className="code-actionbar"><span className="change-summary"><FileCheck2 size={14} />Run artifact</span><span className="code-rationale">Selected from the auditable run ledger.</span><button className="secondary-button" type="button" onClick={() => void openFile(activeDocument.path)}><Files size={13} />Open externally</button></div>
       </section>
     );
@@ -807,7 +820,7 @@ function CodeDrawer() {
             keepCurrentModifiedModel
             language="proto"
             beforeMount={configureMonaco}
-            theme="proto-light"
+            theme={theme === "dark" ? "proto-dark" : "proto-light"}
             options={{
               automaticLayout: true,
               minimap: { enabled: false },
@@ -829,7 +842,7 @@ function CodeDrawer() {
             value={patch.after}
             language={languageForPath(patch.targetPath)}
             beforeMount={configureMonaco}
-            theme="proto-light"
+            theme={theme === "dark" ? "proto-dark" : "proto-light"}
             options={{
               automaticLayout: true,
               minimap: { enabled: false },
@@ -1166,7 +1179,7 @@ function MissionPreflightCard({ report, onRefresh, refreshing }: {
             </div>
           ))}
       </div>
-      <footer><span>Goal {report.goalSha256.slice(0, 8)}</span><span>{report.mode === "plan" ? "Plan keeps writes and execution deferred" : "Act exposes effects before execution"}</span><span>Launch confirmation never approves later effects</span></footer>
+      <footer><span>Goal {report.goalSha256.slice(0, 8)}</span><span>{report.mode === "plan" ? "Plan keeps writes and execution deferred" : "Act runs within the declared mission scope"}</span><span>Launch authorizes this scope; changes outside it require a new grant</span></footer>
     </section>
   );
 }
@@ -1363,7 +1376,7 @@ function ModelRow({
     <div className="model-row">
       <div className="model-name-cell">
         <StatusDot status={model.loadState} />
-        <span><strong>{model.name}</strong><small>{model.quantization} · {formatContext(model.contextLength)} ctx</small></span>
+        <span><strong>{model.name}</strong><small>{model.quantization} · {modelContextLabel(model)}</small></span>
       </div>
       <span className={`model-state is-${model.loadState}`}>{resident ? "Connected" : model.loadedInstances?.length ? "Loaded in LM Studio" : embedding ? "Embedding" : "Available"}</span>
       <span title="Model weight size reported by LM Studio">{formatGb(model.sizeBytes)}</span>
@@ -1454,6 +1467,9 @@ const configureMonaco: BeforeMount = (monaco) => {
         "editorGutter.deletedBackground": "#cc3b38",
       },
     });
+    monaco.editor.defineTheme("proto-dark", {base: "vs-dark", inherit: true, rules: [
+      {token: "keyword", foreground: "71DBC2", fontStyle: "bold"}, {token: "identifier", foreground: "DEEDE7"}, {token: "number", foreground: "E9BF79"}, {token: "comment", foreground: "819F91", fontStyle: "italic"},
+    ], colors: {"editor.background": "#101B17", "editorLineNumber.foreground": "#5F7B6F", "editor.selectionBackground": "#285545", "editor.lineHighlightBackground": "#172820", "diffEditor.insertedLineBackground": "#1A3B2B", "diffEditor.removedLineBackground": "#3C2928"}});
   }
 };
 
@@ -1469,11 +1485,6 @@ function formatBytes(bytes: number): string {
 
 function shortHash(value?: string): string {
   return value ? `sha ${value.slice(0, 8)}` : "sha unavailable";
-}
-
-function formatContext(context: number): string {
-  if (context >= 1_000_000) return `${(context / 1_000_000).toFixed(1)}M`;
-  return `${Math.round(context / 1024)}K`;
 }
 
 function formatTime(value: string): string {

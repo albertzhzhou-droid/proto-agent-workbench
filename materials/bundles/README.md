@@ -8,7 +8,7 @@ not copies of the local sibling `Proto CLI Materials` root.
 
 | Profile | Path | Records | Sequence content | Runtime policy |
 | --- | --- | ---: | --- | --- |
-| `PUBLIC_CATALOG` | `public/public-reviewed-2026.09/` | 1,051 | 1,046 reviewed iGEM DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators) and 5 reviewed UniProt proteins in content-addressed gzip objects | Installable after verification; inactive by default; explicit human activation only |
+| `PUBLIC_CATALOG` | `public/public-reviewed-2026.09/` | 1,066 | 1,046 reviewed iGEM DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators) and 20 reviewed UniProt proteins in content-addressed gzip objects | Installable after verification; inactive by default; explicit human activation only |
 | `PUBLIC_QUARANTINE` | `quarantine/public-quarantine-metadata-2026.09/` | 1,795 | None | Activation denied; not installable; never model/MCP-visible |
 
 The quarantine index contains 1,744 UniProt, 21 Rhea, and 30 BioModels rows.
@@ -23,7 +23,7 @@ The repository's MIT license applies to project software, not third-party
 records. Every row retains its source URL, license URL, attribution, rights
 notes, and redistribution status.
 
-- Public catalog: 1,044 CC BY 4.0 rows and 7 CC0 1.0 rows.
+- Public catalog: 1,059 CC BY 4.0 rows and 7 CC0 1.0 rows.
 - Quarantine metadata: 1,765 CC BY 4.0 rows and 30 CC0 1.0 rows.
 - UniProt's CC BY 4.0 notice also warns that patents or other third-party rights
   may apply. Public redistribution is not a scientific-use or freedom-to-

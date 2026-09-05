@@ -33,7 +33,7 @@ test("renderer preflight is a two-step review and mutations invalidate the cache
   assert.match(store, /attachmentIdentity\(current\.attachments\) !== reviewedAttachments/);
   assert.match(app, /Main-process preflight/);
   assert.match(app, /missionPreflight \? "Start mission" : "Review mission"/);
-  assert.match(app, /Launch confirmation never approves later effects/);
+  assert.match(app, /Launch authorizes this scope; changes outside it require a new grant/);
 });
 
 test("command palette only navigates or prepares drafts", async () => {

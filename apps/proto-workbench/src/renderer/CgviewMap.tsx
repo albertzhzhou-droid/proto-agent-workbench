@@ -6,7 +6,7 @@ import type { MapExportRequest } from "../shared/contracts.ts";
 import type { DesignConstruct } from "./design-visualization.ts";
 import { CGVIEW_POPOVERS_ENABLED, toCgviewFeatureCoordinates, toCgviewFeatureGeometry } from "./cgview-adapter.ts";
 import { embedSvgMetadata, type MapExportMetadata } from "./map-export.ts";
-import { calculateGcContentSeries, calculateGcSkewSeries } from "./sequence-metrics.ts";
+import type { ScientificOutputs } from "./design-scientific.ts";
 import type { DesignLabelDensity } from "./design-view-preferences.ts";
 
 export const CGVIEW_RENDERER_VERSION = "1.8.2";
@@ -28,7 +28,7 @@ interface ProductMapProps {
   showIndex: boolean;
   showGcContent: boolean;
   showGcSkew: boolean;
-  gcWindowSize?: number;
+  sequenceTracks?: ScientificOutputs["tracks"];
   onSelectFeature(index: number): void;
   onHoverBase(base?: number): void;
 }
@@ -48,9 +48,9 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
   labelDensity,
   showPrimers,
   showIndex,
-  showGcContent,
-  showGcSkew,
-  gcWindowSize,
+  showGcContent: requestedGcContent,
+  showGcSkew: requestedGcSkew,
+  sequenceTracks,
   onSelectFeature,
   onHoverBase,
 }, ref) {
@@ -65,9 +65,9 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
   const topologyCaption = construct.topology === "unknown"
     ? "Topology unknown · circular projection"
     : `${construct.topology === "circular" ? "Circular" : "Linear"} topology · ${construct.topology} map`;
-  const gcSkewSummary = showGcSkew
-    ? calculateGcSkewSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize)
-    : undefined;
+  const showGcContent = requestedGcContent && Boolean(sequenceTracks);
+  const showGcSkew = requestedGcSkew && Boolean(sequenceTracks);
+  const gcSkewSummary = showGcSkew ? sequenceTracks?.gcSkew : undefined;
   onSelectFeatureRef.current = onSelectFeature;
   onHoverBaseRef.current = onHoverBase;
 
@@ -118,8 +118,8 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
     const host = hostRef.current;
     if (!host) return;
     setRenderError(undefined);
-    const width = Math.max(280, Math.floor(host.clientWidth));
-    const height = Math.max(260, Math.floor(host.clientHeight));
+    const width = Math.max(180, Math.floor(host.clientWidth));
+    const height = Math.max(180, Math.floor(host.clientHeight));
     const documentListeners: CapturedDocumentListener[] = [];
     const originalAddEventListener = document.addEventListener;
     document.addEventListener = function captureDocumentListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
@@ -141,7 +141,7 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
         sequence: { seq: construct.sequence, name: construct.name },
         settings: { backgroundColor: "#ffffff", showShading: true, arrowHeadLength: 0.22 },
         backbone: { color: "#63736f", thickness: 4 },
-        ruler: { visible: showIndex && construct.length >= 200, color: "#81908c", font: "Segoe UI, plain, 10" },
+        ruler: { visible: showIndex && construct.length >= 200, color: "#667970", font: "Segoe UI, plain, 9", tickCount: rulerTickCount(width, height, mapFormat), rulerPadding: 6 },
         annotation: {
           visible: showAnnotations && labelDensity !== "hidden",
           font: "Segoe UI, plain, 9",
@@ -189,8 +189,8 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
 
     if (!viewer) return;
     try {
-      if (showGcContent) {
-        const series = calculateGcContentSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize);
+      if (showGcContent && sequenceTracks) {
+        const series = sequenceTracks.gcContent;
         viewer.addPlots([{
           name: "GC content",
           source: "proto-gc-content",
@@ -212,8 +212,8 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
           thicknessRatio: showGcSkew ? 0.38 : 0.55,
         }]);
       }
-      if (showGcSkew) {
-        const series = calculateGcSkewSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize);
+      if (showGcSkew && sequenceTracks) {
+        const series = sequenceTracks.gcSkew;
         viewer.addPlots([{
           name: "GC skew",
           source: "proto-gc-skew",
@@ -245,12 +245,12 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
         thicknessRatio: 1.35,
       }]);
       viewer.addCaptions([{
-        name: `${construct.name}\n${construct.length} bp${construct.viewOrigin ? `\nView +1 = source ${construct.viewOrigin + 1}` : ""}`,
-        position: mapFormat === "circular" ? "middle-center" : "top-center",
-        anchor: mapFormat === "circular" ? "middle-center" : "top-center",
+        name: `${boundedMapLabel(construct.name)}\n${construct.length} bp${construct.viewOrigin ? `\nView +1 = source ${construct.viewOrigin + 1}` : ""}`,
+        position: "top-left",
+        anchor: "top-left",
         font: "Segoe UI, bold, 9",
         fontColor: "#33443f",
-        textAlignment: "center",
+        textAlignment: "left",
         backgroundColor: "rgba(255, 255, 255, 0.94)",
       }, {
         name: `${topologyCaption}\nSoftware-level view · review required`,
@@ -285,8 +285,9 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
 
     const resizeObserver = new ResizeObserver(([entry]) => {
       if (!entry || !viewerRef.current) return;
-      const nextWidth = Math.max(280, Math.floor(entry.contentRect.width));
-      const nextHeight = Math.max(260, Math.floor(entry.contentRect.height));
+      const nextWidth = Math.max(180, Math.floor(entry.contentRect.width));
+      const nextHeight = Math.max(180, Math.floor(entry.contentRect.height));
+      viewerRef.current.ruler.tickCount = rulerTickCount(nextWidth, nextHeight, mapFormat);
       viewerRef.current.resize(nextWidth, nextHeight, false, true);
       viewerRef.current.drawFull();
     });
@@ -305,7 +306,7 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
       host.replaceChildren();
       onHoverBaseRef.current(undefined);
     };
-  }, [construct, containerId, gcWindowSize, hiddenFeatureIndexes, labelDensity, mapFormat, showAnnotations, showGcContent, showGcSkew, showIndex, showPrimers, topologyCaption]);
+  }, [construct, containerId, sequenceTracks, hiddenFeatureIndexes, labelDensity, mapFormat, showAnnotations, showGcContent, showGcSkew, showIndex, showPrimers, topologyCaption]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -337,7 +338,7 @@ export const CgviewMap = forwardRef<ProductMapHandle, ProductMapProps>(function 
     <div className="cgview-map" data-testid="cgview-map" role="group" aria-label={`Interactive ${mapFormat} product map for ${construct.name}`} aria-describedby={`${containerId}-summary`}>
       <div className="cgview-canvas-host" id={containerId} ref={hostRef} aria-hidden="true" />
       {(showGcContent || showGcSkew) && (
-        <div className="cgview-metric-legend" aria-label={`Sequence metric plots using a ${gcSkewSummary?.windowSize ?? calculateGcContentSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize).windowSize} base sliding window`}>
+        <div className="cgview-metric-legend" aria-label={`Sequence metric plots using a ${sequenceTracks?.gcContent.windowSize ?? 0} base sliding window`}>
           {showGcContent && <section aria-label={`GC content relative to the construct mean of ${(construct.gcFraction * 100).toFixed(1)} percent`}>
             <strong>GC content</strong>
             <span><i className="is-content-above" />Above mean</span>
@@ -381,6 +382,13 @@ function uniqueLegendItems(construct: DesignConstruct, showGcContent: boolean, s
 function boundedMapLabel(value: string) {
   const characters = Array.from(value);
   return characters.length <= 18 ? value : `${characters.slice(0, 16).join("")}…`;
+}
+
+function rulerTickCount(width: number, height: number, format: "linear" | "circular") {
+  // The circular ruler labels sit inside the innermost track. Leave enough
+  // circumference for a full number and unit instead of crowding the center.
+  const available = format === "circular" ? Math.min(width, height) : width;
+  return Math.max(2, Math.min(10, Math.floor(available / (format === "circular" ? 120 : 90))));
 }
 
 function captureViewerPng(viewer: Viewer, filename: string): Promise<Uint8Array | undefined> {

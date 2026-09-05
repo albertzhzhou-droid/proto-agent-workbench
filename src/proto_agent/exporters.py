@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .protein import PROTEIN_ALPHABET, PROTEIN_MAX_RECORDS, PROTEIN_MAX_TOTAL_SEQUENCE_CHARS, protein_metrics
+from .protein import PROTEIN_ALPHABET, PROTEIN_MAX_RECORDS, PROTEIN_MAX_TOTAL_SEQUENCE_CHARS, protein_metrics_match
 from .protein_integrity import (
     LEGACY_PROTEIN_SELECTION_SCHEMA_VERSION,
     PROTEIN_SELECTION_SCHEMA_VERSION,
@@ -15,7 +15,9 @@ from .protein_integrity import (
     validate_catalog_selection_attestation,
 )
 from .sbol import export_sbol3_turtle
-from .security import MAX_JSON_FILE_BYTES, read_json_bounded
+from .security import MAX_JSON_FILE_BYTES, read_text_bounded
+from .ir_json import decode_ir_json
+from .dna_placement import DNA_IR_V2, validate_v2_construct
 
 
 IR_SCHEMA_VERSION = "proto-agent.ir.v1"
@@ -27,9 +29,7 @@ _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def load_ir(path: str | Path) -> dict[str, Any]:
-    payload = read_json_bounded(path, MAX_JSON_FILE_BYTES)
-    if not isinstance(payload, dict):
-        raise ValueError("Compiled IR must be a JSON object.")
+    payload = decode_ir_json(read_text_bounded(path, MAX_JSON_FILE_BYTES), max_bytes=MAX_JSON_FILE_BYTES)
     validate_ir_for_export(payload)
     return payload
 
@@ -92,8 +92,10 @@ def _validate_source_license(
 def _validate_common_ir(ir: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(ir, dict):
         raise ValueError("Compiled IR must be a JSON object.")
-    if ir.get("schema_version") != IR_SCHEMA_VERSION:
-        raise ValueError(f"Compiled IR schema must be {IR_SCHEMA_VERSION}.")
+    if ir.get("schema_version") not in (IR_SCHEMA_VERSION, DNA_IR_V2):
+        raise ValueError(f"Compiled IR schema must be {IR_SCHEMA_VERSION} or {DNA_IR_V2}.")
+    if ir.get("schema_version") == DNA_IR_V2 and ir.get("domain") != "dna":
+        raise ValueError("IR v2 placement semantics require explicit domain=dna.")
     _required_text(ir.get("design_id"), "design_id", limit=256)
     _required_text(ir.get("chassis"), "chassis", limit=256)
     constraints = ir.get("constraints")
@@ -162,7 +164,7 @@ def _validate_protein_ir(ir: dict[str, Any], provenance: dict[str, Any]) -> None
                 raise ValueError(f"{context}.safety_flags is required for governed export.")
             if not isinstance(protein.get("evidence_refs"), list) or not protein["evidence_refs"]:
                 raise ValueError(f"{context}.evidence_refs is required for governed export.")
-        if protein.get("metrics") != protein_metrics(sequence):
+        if not protein_metrics_match(sequence, protein.get("metrics")):
             raise ValueError(f"{context}.metrics does not match recomputed sequence metrics.")
 
     snapshot_id = _required_text(provenance.get("snapshot_id"), "provenance.snapshot_id", limit=256)
@@ -232,9 +234,12 @@ def _validate_dna_ir(ir: dict[str, Any]) -> None:
             supplied_sha256 = part.get("sequence_sha256")
             if supplied_sha256 is not None and str(supplied_sha256).lower() != sequence_sha256:
                 raise ValueError(f"{part_context}.sequence_sha256 does not match the sequence.")
+            if ir["schema_version"] == DNA_IR_V2 and part.get("sequence") != sequence:
+                raise ValueError("DNA v2 sequences must be canonical uppercase source-derived bytes.")
             governed = any(field in part for field in ("source", "license", "review_status", "design_eligibility", "safety_status", "safety_flags"))
             if governed:
-                _validate_source_license(part, part_context, sequence_sha256, require_source_sequence_sha256=False)
+                original_sha256 = part.get("source_sequence_sha256") if ir["schema_version"] == DNA_IR_V2 else sequence_sha256
+                _validate_source_license(part, part_context, original_sha256, require_source_sequence_sha256=ir["schema_version"] == DNA_IR_V2)
                 policy_fields = ("review_status", "design_eligibility", "safety_status")
                 if any(field in part for field in policy_fields):
                     if part.get("review_status") != "DESIGN_ELIGIBLE" or part.get("design_eligibility") is not True or part.get("safety_status") != "NO_FLAG":
@@ -249,6 +254,12 @@ def _validate_dna_ir(ir: dict[str, Any]) -> None:
                 }
                 if metrics != expected_metrics:
                     raise ValueError(f"{part_context}.metrics does not match recomputed DNA metrics.")
+        if ir["schema_version"] == DNA_IR_V2:
+            validate_v2_construct(construct)
+        elif any(
+            any(field in part for field in ("instance_id", "placement", "source_sequence_sha256")) for part in parts
+        ):
+            raise ValueError("DNA placement and source annotation semantics require IR v2.")
 
 
 def validate_ir_for_export(ir: dict[str, Any]) -> str:
@@ -287,9 +298,23 @@ def _export_toy_genbank(ir: dict[str, Any]) -> str:
         position = 1
         for part in construct.get("parts", []):
             end = position + len(part.get("sequence", "")) - 1
-            records.append(f"     misc_feature    {position}..{end}")
+            location = f"{position}..{end}"
+            if ir["schema_version"] == DNA_IR_V2 and part.get("direction") == -1:
+                location = f"complement({location})"
+            records.append(f"     misc_feature    {location}")
             records.append(f"                     /label=\"{part['type']}:{part['id']}\"")
+            if ir["schema_version"] == DNA_IR_V2:
+                records.append(f"                     /note=\"instance={part['instance_id']}; placement={part['placement']['orientation']}; biological_direction={part['direction']}; source_sha256={part['source_sequence_sha256']}\"")
             position = end + 1
+        for annotation in construct.get("annotations", []) if ir["schema_version"] == DNA_IR_V2 else []:
+            locations = []
+            for location in annotation["locations"]:
+                value = f"{location['start'] + 1}..{location['end']}"
+                locations.append(f"complement({value})" if location["direction"] == -1 else value)
+            location_text = locations[0] if len(locations) == 1 else f"join({','.join(locations)})"
+            records.append(f"     {annotation['type'][:15]:<16}{location_text}")
+            records.append(f"                     /label=\"{annotation['name'].replace(chr(34), chr(39))}\"")
+            records.append(f"                     /note=\"user annotation={annotation['id']}; source anchored; human review required\"")
         records.append("ORIGIN")
         records.append(f"        1 {sequence.lower()}")
         records.append("//")

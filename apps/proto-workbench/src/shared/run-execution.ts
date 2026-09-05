@@ -59,7 +59,7 @@ export interface RunStepView {
 
 export interface RunTopologyEdge {
   id: string;
-  kind: "artifact" | "fork";
+  kind: "artifact" | "fork" | "execution";
   sourceStepId: string;
   targetStepId: string;
   sourceRunId?: string;
@@ -81,7 +81,7 @@ export interface RunExecutionProjection {
 }
 
 export interface RunProjectionQuarantine {
-  kind: "duplicate-event" | "artifact-reference" | "artifact-edge" | "fork-edge";
+  kind: "duplicate-event" | "artifact-reference" | "artifact-edge" | "fork-edge" | "execution-edge";
   id: string;
   reason: string;
 }
@@ -192,9 +192,41 @@ export function projectRunExecution(
   return {
     steps,
     artifacts,
-    topologyEdges: [...artifactEdges, ...forkEdges].sort(compareEdges),
+    topologyEdges: [...artifactEdges, ...forkEdges, ...observedExecutionEdges(sortedEvents, quarantined)].sort(compareEdges),
     quarantined,
   };
+}
+
+function observedExecutionEdges(events: readonly AgentRunEvent[], quarantined: RunProjectionQuarantine[]): RunTopologyEdge[] {
+  const calls = new Map<string, AgentRunEvent | null>();
+  const order = new Map(events.map((event, index) => [event.id, index]));
+  for (const event of events) {
+    const id = event.payload?.callId;
+    if (event.actor !== "tool" || typeof id !== "string" || !id || id.length > 256) continue;
+    const key = `${event.runId}\0${id}`;
+    calls.set(key, calls.has(key) ? null : event);
+  }
+  const edges: RunTopologyEdge[] = [];
+  for (const target of events) {
+    const value = target.payload?.harnessDependencies;
+    if (value === undefined) continue;
+    const record = value as {schema?: unknown; callIds?: unknown};
+    if (!record || record.schema !== "proto-workbench.observed-tool-results.v1" || !Array.isArray(record.callIds) || record.callIds.length > 32 || target.actor !== "tool") {
+      quarantined.push({kind: "execution-edge", id: target.id, reason: "Malformed observed-result dependency record."});
+      continue;
+    }
+    for (const callId of new Set(record.callIds)) {
+      const source = typeof callId === "string" ? calls.get(`${target.runId}\0${callId}`) : undefined;
+      const finished = Date.parse(source?.completedAt ?? "");
+      const started = Date.parse(target.createdAt);
+      if (!source || (order.get(source.id) ?? Infinity) >= (order.get(target.id) ?? -1) || !Number.isFinite(finished) || !Number.isFinite(started) || finished > started) {
+        quarantined.push({kind: "execution-edge", id: `${target.id}:${String(callId).slice(0, 256)}`, reason: "The observed tool result has no unique completed source before this decision."});
+        continue;
+      }
+      edges.push({id: `execution:${source.id}->${target.id}`, kind: "execution", sourceStepId: source.id, targetStepId: target.id, sourceRunId: source.runId, targetRunId: target.runId});
+    }
+  }
+  return edges;
 }
 
 function projectEventArtifacts(

@@ -92,7 +92,7 @@ function journalAgent(database, mcp) {
   return new AgentService(
     database,
     { get: () => model, getActiveModel: () => model, setToolCapability: () => {} },
-    { read: async () => { throw new Error("No evidence fixture."); } },
+    { read: async () => { throw new Error("No evidence fixture."); }, canonicalRootPath: async () => "C:\\workspace" },
     mcp,
     () => {},
   );

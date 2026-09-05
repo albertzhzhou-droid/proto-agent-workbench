@@ -27,10 +27,27 @@ export function minimalChildEnvironment(extra: NodeJS.ProcessEnv = {}): NodeJS.P
 }
 
 export async function terminateOwnedProcessTree(
-  child: Pick<ChildProcess, "pid" | "exitCode" | "signalCode" | "kill" | "once">,
+  child: Pick<ChildProcess, "pid" | "exitCode" | "signalCode" | "kill" | "once"> & Partial<Pick<ChildProcess, "stdio" | "removeListener">>,
   graceMs = 2_000,
 ): Promise<void> {
-  if (hasExited(child)) return;
+  let streamsClosed = !child.stdio || child.stdio.every(stream => !stream || stream.destroyed);
+  const closed = () => {streamsClosed = true;};
+  if (!streamsClosed) child.once("close", closed);
+  const finish = async () => {
+    if (!hasExited(child)) throw Object.assign(new Error("The owned process did not exit within its termination bound."), {code: "OWNED_PROCESS_EXIT_TIMEOUT"});
+    if (!streamsClosed) {
+      await new Promise<void>(resolve => {
+        let settled = false;
+        const done = () => {if (!settled) {settled = true;clearTimeout(timer);child.removeListener?.("close", done);resolve();}};
+        const timer = setTimeout(done, graceMs);timer.unref?.();
+        child.once("close", done);
+        if (streamsClosed) done();
+      });
+    }
+    if (!streamsClosed) throw Object.assign(new Error("The owned process exited but its stdio did not close within the cleanup bound."), {code: "OWNED_PROCESS_STREAM_TIMEOUT"});
+  };
+  try {
+  if (hasExited(child)) {await finish();return;}
   const pid = child.pid;
   if (process.platform === "win32" && Number.isInteger(pid) && (pid as number) > 0) {
     const systemRoot = process.env.SystemRoot || process.env.WINDIR || "C:\\Windows";
@@ -56,7 +73,7 @@ export async function terminateOwnedProcessTree(
       killer.once("error", finish);
       killer.once("exit", finish);
     });
-    if (await waitForExit(child, graceMs)) return;
+    if (await waitForExit(child, graceMs)) {await finish();return;}
     if (!hasExited(child)) child.kill("SIGKILL");
   } else if (Number.isInteger(pid) && (pid as number) > 0) {
     try {
@@ -64,7 +81,7 @@ export async function terminateOwnedProcessTree(
     } catch {
       child.kill();
     }
-    if (await waitForExit(child, graceMs)) return;
+    if (await waitForExit(child, graceMs)) {await finish();return;}
     try {
       process.kill(-(pid as number), "SIGKILL");
     } catch {
@@ -72,6 +89,8 @@ export async function terminateOwnedProcessTree(
     }
   }
   await waitForExit(child, graceMs);
+  await finish();
+  } finally {child.removeListener?.("close", closed);}
 }
 
 function waitForExit(

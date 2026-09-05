@@ -94,9 +94,9 @@ def _rewrite_bundle_checksums(directory: Path) -> None:
 class MaterialsBundleTests(unittest.TestCase):
     def test_checked_in_public_and_quarantine_bundles_verify(self) -> None:
         public = verify_materials_bundle(default_bundle_path("PUBLIC_CATALOG"), expected_profile="PUBLIC_CATALOG")
-        self.assertEqual(public["record_count"], 1051)
-        self.assertEqual(public["status_counts"], {"DESIGN_ELIGIBLE": 1051})
-        self.assertEqual(public["license_counts"], {"CC-BY-4.0": 1044, "CC0-1.0": 7})
+        self.assertEqual(public["record_count"], 1066)
+        self.assertEqual(public["status_counts"], {"DESIGN_ELIGIBLE": 1066})
+        self.assertEqual(public["license_counts"], {"CC-BY-4.0": 1059, "CC0-1.0": 7})
         public_notice = (default_bundle_path("PUBLIC_CATALOG") / "LICENSES.md").read_text(encoding="utf-8")
         self.assertIn("1,039 CC BY 4.0 records and 7 CC0 1.0 records", public_notice)
 
@@ -137,7 +137,7 @@ class MaterialsBundleTests(unittest.TestCase):
             self.assertEqual(pointer["operator_identity_assurance"], "SELF_DECLARED_UNVERIFIED")
             self.assertRegex(pointer["manifest_sha256"], r"^[a-f0-9]{64}$")
             self.assertTrue(pointer["activated_at"].endswith("Z"))
-            self.assertEqual(store.search(limit=40)["match_count"], 1051)
+            self.assertEqual(store.search(limit=40)["match_count"], 1066)
             part = store.materialize_parts(["igem:3c51179f-e370-4738-84b7-91773f750175"], "ecoli_k12")
             self.assertEqual(part["part_count"], 1)
             proteins = store.materialize_proteins(["uniprot:P42212"], design_id="public-protein")
@@ -166,7 +166,7 @@ class MaterialsBundleTests(unittest.TestCase):
             )
             self.assertTrue(installed["installed"])
             self.assertTrue(installed["activated"])
-            self.assertEqual(store.search(limit=40)["match_count"], 1051)
+            self.assertEqual(store.search(limit=40)["match_count"], 1066)
 
     def test_public_snapshot_rollback_requires_and_records_fresh_evidence(self) -> None:
         with tempfile.TemporaryDirectory(prefix="proto-bundle-rollback-") as temp_name:

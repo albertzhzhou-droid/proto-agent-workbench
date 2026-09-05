@@ -154,7 +154,7 @@ def _source_and_license(record: dict[str, Any], index: int) -> tuple[dict[str, A
     return source, license_info
 
 
-def protein_metrics(sequence: str) -> dict[str, Any]:
+def legacy_protein_metrics(sequence: str) -> dict[str, Any]:
     """Return bounded deterministic metrics suitable for a visual summary."""
 
     length = len(sequence)
@@ -171,6 +171,54 @@ def protein_metrics(sequence: str) -> dict[str, Any]:
         "charged_fraction": round(sum(residue in _CHARGED for residue in sequence) / length, 6),
         "ambiguous_or_special_fraction": round(sum(residue not in _RESIDUE_MASS for residue in sequence) / length, 6),
     }
+
+
+PROTEIN_METRICS_ALGORITHM = "proto.protein-metrics.v2"
+# Free amino-acid average molecular weights, matching Biopython IUPACData.
+# https://github.com/biopython/biopython/blob/master/Bio/Data/IUPACData.py
+_AMINO_ACID_MASS = {
+    "A": 89.0932, "C": 121.1582, "D": 133.1027, "E": 147.1293,
+    "F": 165.1891, "G": 75.0666, "H": 155.1546, "I": 131.1729,
+    "K": 146.1876, "L": 131.1729, "M": 149.2113, "N": 132.1179,
+    "P": 115.1305, "Q": 146.1445, "R": 174.2010, "S": 105.0926,
+    "T": 119.1192, "V": 117.1463, "W": 204.2252, "Y": 181.1885,
+    "U": 168.0532, "O": 255.3134,
+}
+
+
+def protein_metrics(sequence: str) -> dict[str, Any]:
+    """Sequence-only average mass for a linear, unmodified peptide.
+
+    Legacy metrics accidentally subtracted water from dehydrated residue masses.
+    Preserve their verifier separately; never change existing artifact bytes.
+    Ambiguous residues, gaps and stop symbols have no invented fallback mass.
+    """
+    if not sequence:
+        raise ValueError("Protein metrics require a non-empty sequence.")
+    metrics = legacy_protein_metrics(sequence)
+    unknown = sorted(set(sequence) - _AMINO_ACID_MASS.keys())
+    mass = None if unknown else round(
+        sum(_AMINO_ACID_MASS[residue] for residue in sequence) - (len(sequence) - 1) * 18.0153, 3
+    )
+    return {
+        **metrics,
+        "algorithm": PROTEIN_METRICS_ALGORITHM,
+        "molecular_weight_da_approx": mass,
+        "mass_status": "unavailable" if unknown else "available",
+        "mass_reason": "Unknown residue mass: " + ", ".join(unknown) if unknown else None,
+    }
+
+
+def protein_metrics_match(sequence: str, supplied: Any) -> bool:
+    """Verify the declared algorithm; an unknown algorithm never falls back."""
+    if not isinstance(supplied, dict):
+        return False
+    algorithm = supplied.get("algorithm")
+    if "algorithm" not in supplied:
+        return supplied == legacy_protein_metrics(sequence)
+    if algorithm != PROTEIN_METRICS_ALGORITHM:
+        return False
+    return supplied == protein_metrics(sequence)
 
 
 def compile_protein_selection(path: str | Path) -> tuple[dict[str, Any] | None, list[Diagnostic]]:
@@ -325,3 +373,9 @@ def compile_protein_selection(path: str | Path) -> tuple[dict[str, Any] | None, 
         "safety_boundary": "Software-level protein sequence compilation only; no wet-lab, orderability, biosafety, or regulatory claim.",
     }
     return ir, diagnostics
+
+
+def validate_protein_selection(path: str | Path) -> tuple[bool, list[Diagnostic]]:
+    """Run the same provenance and sequence checks as compile, without writing IR."""
+    ir, diagnostics = compile_protein_selection(path)
+    return ir is not None and not any(item.severity == "error" for item in diagnostics), diagnostics

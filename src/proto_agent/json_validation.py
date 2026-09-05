@@ -25,6 +25,18 @@ class _Budget:
 
 
 def strict_json_loads(text: str, *, max_bytes: int) -> Any:
+    value = decode_json_bounded(text, max_bytes=max_bytes)
+    _validate_shape(value, 0, _Budget())
+    return value
+
+
+def decode_json_bounded(text: str, *, max_bytes: int) -> Any:
+    """Strict syntax/byte decoding; callers must apply their typed shape limits.
+
+    Generic requests must continue to use strict_json_loads. This separated
+    decoder lets scientific IR use its own documented collection/sequence bounds
+    without relaxing any request, material, annotation or manifest limits.
+    """
     if not isinstance(text, str):
         raise JsonValidationError("JSON input must be text.")
     if len(text) > max_bytes:
@@ -49,7 +61,6 @@ def strict_json_loads(text: str, *, max_bytes: int) -> Any:
         raise JsonValidationError(f"Invalid JSON: {exc.msg}") from exc
     except (ValueError, OverflowError, RecursionError) as exc:
         raise JsonValidationError("Invalid or excessively complex JSON input.") from exc
-    _validate_shape(value, 0, _Budget())
     return value
 
 

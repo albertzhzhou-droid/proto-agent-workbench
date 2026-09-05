@@ -1,5 +1,7 @@
-import { calculateProteinMetrics } from "./protein-sequence.ts";
+import { calculateProteinMetrics, calculateLegacyProteinMetrics, PROTEIN_METRICS_ALGORITHM } from "./protein-sequence.ts";
 import { sha256Text } from "./sha256.ts";
+import { normalizeDnaV2Construct, type DnaPlacement } from "./dna-ir-v2.ts";
+import type { DnaSourceAnnotation } from "../shared/dna-edits.ts";
 
 export type DesignDirection = -1 | 0 | 1;
 export type DesignTopology = "linear" | "circular" | "unknown";
@@ -22,6 +24,10 @@ export interface DesignConstraint {
 
 export interface PartViewModel {
   id: string;
+  instanceId?: string;
+  placement?: DnaPlacement;
+  sourceSequenceSha256?: string;
+  sourceDirection?: DesignDirection;
   name: string | null;
   type: string;
   sequence: string;
@@ -97,11 +103,16 @@ export interface ConstructViewModel {
   gcPercent: number;
   parts: PartViewModel[];
   features: FeatureViewModel[];
+  sourceAnnotations?: DnaSourceAnnotation[];
 }
 
 export interface ProteinMetricsViewModel {
   lengthAa: number;
-  molecularWeightDaApprox: number;
+  molecularWeightDaApprox: number | null;
+  algorithm?: string;
+  massStatus?: "available" | "unavailable";
+  massReason?: string | null;
+  legacyRecomputed?: boolean;
   composition: Record<string, number>;
   hydrophobicFraction: number;
   chargedFraction: number;
@@ -137,11 +148,14 @@ export type DesignFeature = FeatureViewModel;
 export type DesignConstruct = ConstructViewModel;
 
 export interface DesignViewModel {
-  schemaVersion: "proto-agent.ir.v1";
+  schemaVersion: "proto-agent.ir.v1" | "proto-agent.ir.v2";
   domain: DesignDomain;
   designId: string;
   chassis: string;
   source: string;
+  partsSource?: string;
+  sourceSha256?: string;
+  partsSha256?: string;
   sequence: string;
   start: 0;
   end: number;
@@ -179,7 +193,7 @@ export interface DesignSearchHit {
 }
 
 export const DESIGN_VISUALIZATION_LIMITS = Object.freeze({
-  maxJsonCharacters: 2 * 1024 * 1024,
+  maxJsonCharacters: 8 * 1024 * 1024,
   maxDesignIdCharacters: 256,
   maxChassisCharacters: 256,
   maxSourceCharacters: 4_096,
@@ -255,8 +269,12 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
       return { ok: false, diagnostics };
     }
 
-    if (parsedInput.schema_version !== "proto-agent.ir.v1") {
-      report("IR_SCHEMA_UNSUPPORTED", "$.schema_version", "Expected schema_version to be proto-agent.ir.v1.");
+    const isDnaV2 = parsedInput.schema_version === "proto-agent.ir.v2";
+    if (parsedInput.schema_version !== "proto-agent.ir.v1" && !isDnaV2) {
+      report("IR_SCHEMA_UNSUPPORTED", "$.schema_version", "Expected schema_version to be proto-agent.ir.v1 or proto-agent.ir.v2.");
+    }
+    if (isDnaV2 && parsedInput.domain !== "dna") {
+      report("IR_V2_DOMAIN_INVALID", "$.domain", "IR v2 source placements require explicit domain=dna.");
     }
     const designId = requiredText(
       parsedInput.design_id,
@@ -357,6 +375,14 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           report("CONSTRUCT_INVALID", constructPath, "Construct must be a JSON object.");
           return;
         }
+        let v2Projection: ReturnType<typeof normalizeDnaV2Construct> | undefined;
+        if (isDnaV2) {
+          try { v2Projection = normalizeDnaV2Construct(rawConstruct); }
+          catch (error) {
+            report("DNA_V2_PLACEMENT_INVALID", constructPath, error instanceof Error ? error.message : "DNA v2 placement integrity failed.");
+            return;
+          }
+        }
         const name = requiredText(
           rawConstruct.name,
           `${constructPath}.name`,
@@ -396,6 +422,10 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           const partPath = `${constructPath}.parts[${partIndex}]`;
           if (!isJsonObject(rawPart)) {
             report("PART_INVALID", partPath, "Part must be a JSON object.");
+            return;
+          }
+          if (!isDnaV2 && ["instance_id", "placement", "source_sequence_sha256"].some((field) => Object.hasOwn(rawPart, field))) {
+            report("DNA_V2_SCHEMA_REQUIRED", partPath, "Occurrence placement and source/transformed digest semantics require IR v2.");
             return;
           }
           const id = requiredText(
@@ -439,7 +469,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           if (id === undefined || type === undefined || rawSequence === undefined || !SAFE_SEQUENCE.test(rawSequence)) return;
 
           const sequence = rawSequence.toUpperCase();
-          const governance = normalizeDnaPartGovernance(rawPart, id, sequence, partPath, report);
+          const governance = normalizeDnaPartGovernance(rawPart, id, sequence, partPath, report, isDnaV2 ? rawPart.source_sequence_sha256 as string : undefined);
           if (designOffset + sequence.length > DESIGN_VISUALIZATION_LIMITS.maxTotalSequenceCharacters) {
             report(
               "DESIGN_SEQUENCE_LIMIT_EXCEEDED",
@@ -455,6 +485,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           const gcFraction = calculateGcFraction(sequence);
           parts.push({
             id,
+            ...(isDnaV2 ? { instanceId: rawPart.instance_id as string, placement: rawPart.placement as unknown as DnaPlacement, sourceSequenceSha256: rawPart.source_sequence_sha256 as string, sourceDirection: rawPart.source_direction as DesignDirection } : {}),
             name: partName,
             type,
             sequence,
@@ -480,7 +511,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
         if (parts.length !== rawParts.length || name === undefined || topology === undefined) return;
         const sequence = constructSequencePieces.join("");
         const partFeatures = parts.map((part, partIndex): FeatureViewModel => ({
-          id: part.id,
+          id: part.instanceId ?? part.id,
           name: part.name,
           type: part.type,
           sequence: part.sequence,
@@ -501,7 +532,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           partIndex,
         }));
         const annotationFeatures = normalizeAnnotations(
-          rawConstruct.annotations,
+          v2Projection?.annotations ?? rawConstruct.annotations,
           constructPath,
           topology,
           constructStart,
@@ -531,6 +562,7 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
           gcPercent: gcFraction * 100,
           parts,
           features,
+          ...(v2Projection ? { sourceAnnotations: v2Projection.sourceAnnotations } : {}),
         });
       });
     }
@@ -555,11 +587,16 @@ export function parseDesignIr(input: unknown, sourcePath?: string): DesignParseR
     return {
       ok: true,
       design: {
-        schemaVersion: "proto-agent.ir.v1",
+        schemaVersion: isDnaV2 ? "proto-agent.ir.v2" : "proto-agent.ir.v1",
         domain: "dna",
         designId,
         chassis,
         source: explicitSource ?? provenanceSource,
+        ...(isJsonObject(provenance) ? {
+          partsSource: typeof provenance.parts_source === "string" ? provenance.parts_source : undefined,
+          sourceSha256: typeof provenance.source_sha256 === "string" && SAFE_SHA256.test(provenance.source_sha256) ? provenance.source_sha256 : undefined,
+          partsSha256: typeof provenance.parts_sha256 === "string" && SAFE_SHA256.test(provenance.parts_sha256) ? provenance.parts_sha256 : undefined,
+        } : {}),
         sequence,
         start: 0,
         end: sequence.length,
@@ -614,6 +651,7 @@ function normalizeDnaPartGovernance(
   sequence: string,
   path: string,
   report: DesignReport,
+  originalSequenceSha256?: string,
 ): DnaPartGovernance {
   const gaps: string[] = [];
   const addGap = (field: string) => {
@@ -739,7 +777,7 @@ function normalizeDnaPartGovernance(
           `${path}.source.sequence_sha256`,
           "Part source.sequence_sha256 must be a 64-character hexadecimal digest.",
         );
-      } else if (source.sequence_sha256.toLowerCase() !== recomputedSequenceSha256) {
+      } else if (source.sequence_sha256.toLowerCase() !== (originalSequenceSha256 ?? recomputedSequenceSha256)) {
         report(
           "PART_SOURCE_SEQUENCE_HASH_MISMATCH",
           `${path}.source.sequence_sha256`,
@@ -1453,7 +1491,12 @@ function normalizeProteinMetrics(
     report("PROTEIN_METRICS_INVALID", path, "Protein metrics are required and must be a JSON object.");
     return undefined;
   }
-  const expected = calculateProteinMetrics(sequence);
+  const legacy = !Object.hasOwn(input, "algorithm");
+  if (!legacy && input.algorithm !== PROTEIN_METRICS_ALGORITHM) {
+    report("PROTEIN_METRICS_ALGORITHM_UNSUPPORTED", path, "Unknown protein metrics algorithm.");
+    return undefined;
+  }
+  const expected = legacy ? calculateLegacyProteinMetrics(sequence) : calculateProteinMetrics(sequence);
   const numberField = (key: string, maximum?: number): number | undefined => {
     const value = input[key];
     if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || (maximum !== undefined && value > maximum)) {
@@ -1463,7 +1506,8 @@ function normalizeProteinMetrics(
     return value;
   };
   const lengthAa = numberField("length_aa", DESIGN_VISUALIZATION_LIMITS.maxProteinSequenceCharacters);
-  const molecularWeightDaApprox = numberField("molecular_weight_da_approx");
+  const molecularWeightDaApprox = input.molecular_weight_da_approx === null && !legacy
+    ? null : numberField("molecular_weight_da_approx");
   const hydrophobicFraction = numberField("hydrophobic_fraction", 1);
   const chargedFraction = numberField("charged_fraction", 1);
   const ambiguousOrSpecialFraction = numberField("ambiguous_or_special_fraction", 1);
@@ -1484,7 +1528,7 @@ function normalizeProteinMetrics(
   if (numbers.some((value) => value === undefined)) return undefined;
   const supplied = {
     lengthAa: lengthAa as number,
-    molecularWeightDaApprox: molecularWeightDaApprox as number,
+    molecularWeightDaApprox: molecularWeightDaApprox as number | null,
     composition: normalizedComposition,
     hydrophobicFraction: hydrophobicFraction as number,
     chargedFraction: chargedFraction as number,
@@ -1492,7 +1536,10 @@ function normalizeProteinMetrics(
   };
   if (
     supplied.lengthAa !== expected.lengthAa
-    || Math.abs(supplied.molecularWeightDaApprox - expected.molecularWeightDaApprox) > 0.001
+    || (supplied.molecularWeightDaApprox === null || expected.molecularWeightDaApprox === null
+      ? supplied.molecularWeightDaApprox !== expected.molecularWeightDaApprox
+      : Math.abs(supplied.molecularWeightDaApprox - expected.molecularWeightDaApprox) > 0.001)
+    || (!legacy && (input.mass_status !== expected.massStatus || input.mass_reason !== expected.massReason))
     || Math.abs(supplied.hydrophobicFraction - expected.hydrophobicFraction) > 0.000001
     || Math.abs(supplied.chargedFraction - expected.chargedFraction) > 0.000001
     || Math.abs(supplied.ambiguousOrSpecialFraction - expected.ambiguousOrSpecialFraction) > 0.000001
@@ -1500,6 +1547,10 @@ function normalizeProteinMetrics(
   ) {
     report("PROTEIN_METRICS_MISMATCH", path, "Protein metrics do not match values recomputed from the sequence.");
     return undefined;
+  }
+  if (legacy) {
+    report("PROTEIN_LEGACY_METRICS_RECOMPUTED", path, "Legacy metric binding verified. The obsolete molecular mass is replaced in this view by the corrected v2 calculation; source artifact bytes are unchanged.", "warning");
+    return { ...calculateProteinMetrics(sequence), legacyRecomputed: true };
   }
   return expected;
 }

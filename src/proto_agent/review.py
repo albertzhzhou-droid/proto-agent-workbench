@@ -30,6 +30,9 @@ from .security import (
     write_text_bounded,
 )
 from .skill_sdk import resolve_skill_adapter
+from .compiler import compile_design_text
+from .dna_placement import DNA_IR_V2
+from .exporters import load_ir, validate_ir_for_export
 
 
 DEFAULT_REVIEW_OUT_DIR = Path("build") / "reviews"
@@ -78,6 +81,7 @@ def build_review_packet(
         {"design": design_source, "parts": parts_source, "workflow": workflow_source},
         paths,
     )
+    _verify_dna_v2_artifact_binding(manifest, verified_inputs, parts_source, paths)
     governed_parts_library = _is_governed_materialized_parts_library(
         verified_inputs["parts"],
         workspace=paths.workspace,
@@ -357,6 +361,35 @@ def _verify_current_workflow_skill_bindings(
     if manifest["skill_bindings"] != expected_bindings:
         raise ProvenanceError("workflow Skill bindings do not match current governed resolution")
     return current_payloads
+
+
+def _verify_dna_v2_artifact_binding(
+    manifest: dict[str, Any], verified_inputs: dict[str, bytes], parts_source: Path, paths: WorkspacePaths,
+) -> None:
+    """Recompute placement/annotation geometry from the review-bound source.
+
+    A self-consistent transformed hash is insufficient: the source sequence must
+    also match the exact governed (or explicitly toy) library consumed by review.
+    """
+    for step in manifest["steps"]:
+        if step["id"] != "compile" or not step["ok"]:
+            continue
+        for artifact in step["artifacts"]:
+            artifact_path = paths.build_file(artifact, extensions={".json"}, must_exist=True)
+            payload = load_ir(artifact_path)
+            if not isinstance(payload, dict) or payload.get("schema_version") != DNA_IR_V2:
+                continue
+            try:
+                validate_ir_for_export(payload)
+                expected, diagnostics = compile_design_text(verified_inputs["design"].decode("utf-8"), parts_source, source_path=manifest["inputs"]["design"])
+                if expected is None or any(item.severity == "error" for item in diagnostics):
+                    raise ValueError("Review-bound source no longer compiles.")
+                if {key: value for key, value in payload.items() if key != "provenance"} != {key: value for key, value in expected.items() if key != "provenance"}:
+                    raise ValueError("Compiled placements or annotations differ from the review-bound source and library.")
+                if read_bytes_bounded(parts_source, MAX_JSON_FILE_BYTES) != verified_inputs["parts"]:
+                    raise ValueError("Parts library changed during source/placement verification.")
+            except ValueError as error:
+                raise ProvenanceError(f"DNA v2 review binding failed: {error}") from error
 
 
 def _is_governed_materialized_parts_library(payload: bytes, *, workspace: Path) -> bool:

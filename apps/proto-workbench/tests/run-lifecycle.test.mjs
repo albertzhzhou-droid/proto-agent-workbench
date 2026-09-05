@@ -297,3 +297,29 @@ test("an older uncertain artifact journal takes precedence over a newer resumabl
   assert.equal(actions.resumePatchValidation, false);
   assert.equal(actions.prepareCheckpointRestore, true);
 });
+
+const mission = (state, status = "completed") => ({...event({title: "Autonomous mission", status}), payload: {harness: {state}}});
+
+test("durable active mission takes precedence over an approved intermediate review", () => {
+  const input = {events: [mission("generating")], review: {gate: "approved", claims: [], checklist: [], summary: "Human reviewed an intermediate artifact"}};
+  assert.equal(projectRunLifecycle(input).state, "running");
+  assert.equal(runAllowedActions(input).approveRun, false);
+});
+
+test("paused, incomplete and unknown mission states never project completion", () => {
+  for (const state of ["paused", "incomplete", "blocked", "unknown-future-state"]) {
+    const result = projectRunLifecycle({events: [mission(state)]});
+    assert.equal(result.state, "interrupted");
+    assert.equal(result.terminal, false);
+  }
+});
+
+test("verified mission completion ignores a historical failed tool but preserves unknown effects", () => {
+  const events = [mission("completed"), event({stage: "tool", status: "failed", title: "Recovered transport"})];
+  assert.equal(projectRunLifecycle({events}).state, "completed");
+  assert.equal(projectRunLifecycle({events, patchOperations: [operation({state: "effect-unknown"})]}).state, "effect-unknown");
+});
+
+test("new mission startup remains running before its first checkpoint", () => {
+  assert.equal(projectRunLifecycle({events: [event({title: "Autonomous mission", status: "running"})]}).state, "running");
+});

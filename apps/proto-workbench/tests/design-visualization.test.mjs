@@ -14,7 +14,7 @@ import {
   viewBaseToSourceBase,
   viewIntervalToSourceSegments,
 } from "../src/renderer/design-visualization.ts";
-import { calculateProteinMetrics } from "../src/renderer/protein-sequence.ts";
+import { calculateProteinMetrics, calculateLegacyProteinMetrics } from "../src/renderer/protein-sequence.ts";
 
 async function toggleSwitchIr() {
   return JSON.parse(await readFile(resolve("..", "..", "build", "toggle_switch.ir.json"), "utf8"));
@@ -67,6 +67,9 @@ function validProteinIr(sequence = "MKTWVDEFGH") {
       role_terms: ["fixture protein"],
       metadata: { reviewed_record: true },
       metrics: {
+        algorithm: metrics.algorithm,
+        mass_status: metrics.massStatus,
+        mass_reason: metrics.massReason,
         length_aa: metrics.lengthAa,
         molecular_weight_da_approx: metrics.molecularWeightDaApprox,
         hydrophobic_fraction: metrics.hydrophobicFraction,
@@ -308,6 +311,28 @@ test("protein IR uses an isolated amino-acid domain with bounded metrics", () =>
   assert.equal(result.design.length, sequence.length);
 });
 
+test("legacy protein mass binding verifies without displaying obsolete mass", () => {
+  const ir = validProteinIr("AGC");
+  const metrics = calculateLegacyProteinMetrics("AGC");
+  ir.proteins[0].metrics = { length_aa: 3, molecular_weight_da_approx: 195.24, composition: metrics.composition,
+    hydrophobic_fraction: metrics.hydrophobicFraction, charged_fraction: metrics.chargedFraction,
+    ambiguous_or_special_fraction: metrics.ambiguousOrSpecialFraction };
+  const result = parseDesignIr(ir);
+  assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+  assert.equal(result.design.proteins[0].metrics.molecularWeightDaApprox, 249.287);
+  assert.equal(result.design.proteins[0].metrics.legacyRecomputed, true);
+  assert.ok(result.diagnostics.some((item) => item.code === "PROTEIN_LEGACY_METRICS_RECOMPUTED"));
+  ir.proteins[0].metrics.molecular_weight_da_approx = 249.287;
+  assert.equal(parseDesignIr(ir).ok, false, "Unversioned data may not silently use a different algorithm");
+});
+
+test("protein mass supports explicit unavailable values and rejects unknown algorithms", () => {
+  const ir = validProteinIr("AGX");
+  assert.equal(parseDesignIr(ir).ok, true);
+  ir.proteins[0].metrics.algorithm = "future.v999";
+  assert.equal(parseDesignIr(ir).ok, false);
+});
+
 test("protein IR recomputes hashes and fails closed on source, rights, eligibility, safety, or metric drift", () => {
   const cases = [
     ["sequence hash", (ir) => { ir.proteins[0].sequence_sha256 = "0".repeat(64); }, "PROTEIN_SEQUENCE_HASH_MISMATCH"],
@@ -486,7 +511,7 @@ test("invalid annotation bounds, overlaps, and linear origin wraps fail closed",
 });
 
 test("invalid schemas and malformed JSON fail closed with structured diagnostics", () => {
-  const wrongSchema = parseDesignIr({ schema_version: "proto-agent.ir.v2" });
+  const wrongSchema = parseDesignIr({ schema_version: "proto-agent.ir.v999" });
   const malformed = parseDesignIr("{not json");
 
   assert.equal(wrongSchema.ok, false);

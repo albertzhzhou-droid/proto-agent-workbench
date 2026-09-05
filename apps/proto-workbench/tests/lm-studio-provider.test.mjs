@@ -6,6 +6,7 @@ import {
   LM_STUDIO_CHAT_HEADER_TIMEOUT_MS,
   LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS,
   LM_STUDIO_MAX_CHAT_DEADLINE_MS,
+  LM_STUDIO_CHAT_IDLE_TIMEOUT_MS,
 } from "../src/main/services/lm-studio-provider.ts";
 
 function nativeModel(overrides = {}) {
@@ -94,13 +95,172 @@ function scriptedFetch(responses, requests = []) {
 }
 
 test("uses independent bounded production deadlines for chat headers and total generation", () => {
-  assert.equal(LM_STUDIO_CHAT_HEADER_TIMEOUT_MS, 15_000);
-  assert.equal(LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS, 10 * 60_000);
+  assert.equal(LM_STUDIO_CHAT_HEADER_TIMEOUT_MS, 10 * 60_000);
+  assert.equal(LM_STUDIO_CHAT_IDLE_TIMEOUT_MS, 90_000);
+  assert.equal(LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS, 20 * 60_000);
   assert.equal(LM_STUDIO_MAX_CHAT_DEADLINE_MS, 30 * 60_000);
   assert.throws(
     () => new LmStudioProvider({ chatDeadlineMs: LM_STUDIO_MAX_CHAT_DEADLINE_MS + 1 }),
     /chatDeadlineMs must be an integer from 1 to 1800000/,
   );
+});
+
+async function connectedProvider(responseFactory, options = {}) {
+  const model = nativeModel({ loaded_instances: [loadedInstance("selected", { context_length: 32_768 })] });
+  const provider = new LmStudioProvider({ ...options, fetchImpl: async (url, init) => {
+    if (String(url).endsWith("/v1/chat/completions")) return responseFactory(init);
+    return jsonResponse({ models: [model] });
+  } });
+  const [descriptor] = await provider.scan("");
+  await provider.load(descriptor, { instanceId: "selected" });
+  return { provider, descriptor, model };
+}
+
+test("reports exact loaded context instead of advertised maximum and refreshes it", async () => {
+  const { provider, descriptor, model } = await connectedProvider(() => sseResponse(["data: [DONE]\n\n"]));
+  assert.equal(descriptor.contextLength, 131_072);
+  assert.equal((await provider.getExecutionBinding(descriptor.id)).contextLength, 32_768);
+  model.loaded_instances[0].config.context_length = 8192;
+  assert.equal((await provider.getExecutionBinding(descriptor.id)).contextLength, 8192);
+  model.loaded_instances = [];
+  await assert.rejects(provider.getExecutionBinding(descriptor.id), (error) => error.code === "MODEL_UNAVAILABLE");
+});
+
+test("delayed prefill headers within the first-token budget can complete", async () => {
+  const { provider, descriptor } = await connectedProvider(async (request) => {
+    assert.deepEqual(JSON.parse(request.body).stream_options, {include_usage: true});
+    await new Promise((resolve) => setTimeout(resolve, 35));
+    return sseResponse(['data: {"choices":[{"delta":{"content":"ready"},"finish_reason":"stop"}]}\n\n', "data: [DONE]\n\n"]);
+  }, { prefillDeadlineMs: 200, idleDeadlineMs: 30, chatDeadlineMs: 300 });
+  const chunks = [];
+  await provider.chat(descriptor.id, {}, (chunk) => chunks.push(chunk));
+  assert.equal(chunks[0].choices[0].finish_reason, "stop");
+});
+
+test("prefill timeout has a stage code even if headers were already sent", async () => {
+  const stream = endlessSseResponse(": heartbeat\n\n", 2);
+  const { provider, descriptor } = await connectedProvider(() => stream.response, {
+    prefillDeadlineMs: 25, idleDeadlineMs: 15, chatDeadlineMs: 300,
+  });
+  await assert.rejects(provider.chat(descriptor.id, {}, () => {}), (error) => error.code === "PREFILL_TIMEOUT" && error.stage === "prefill");
+  assert.equal(stream.wasCancelled(), true);
+});
+
+test("reasoning deltas count as generation progress while usage and finish metadata survive", async () => {
+  const encoder = new TextEncoder();
+  const frames = [
+    { choices: [{ delta: { reasoning_content: "thinking" } }] },
+    { choices: [{ delta: { reasoning_content: "continued" } }] },
+    { choices: [{ delta: { content: "result" }, finish_reason: "length" }] },
+    { choices: [], usage: { prompt_tokens: 123, completion_tokens: 20, total_tokens: 143, completion_tokens_details: { reasoning_tokens: 14 } } },
+  ];
+  const { provider, descriptor } = await connectedProvider(() => new Response(new ReadableStream({
+    async pull(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      const frame = frames.shift();
+      if (frame) controller.enqueue(encoder.encode(`data: ${JSON.stringify(frame)}\n\n`));
+      else { controller.enqueue(encoder.encode("data: [DONE]\n\n")); controller.close(); }
+    },
+  }), { headers: { "content-type": "text/event-stream" } }), { prefillDeadlineMs: 80, idleDeadlineMs: 100, chatDeadlineMs: 500 });
+  const chunks = [];
+  await provider.chat(descriptor.id, {}, (chunk) => chunks.push(chunk));
+  assert.equal(chunks[2].choices[0].finish_reason, "length");
+  assert.equal(chunks[3].usage.completion_tokens_details.reasoning_tokens, 14);
+});
+
+test("heartbeats after a token do not hide a stalled generation", async () => {
+  const encoder = new TextEncoder();
+  let first = true;
+  let wasCancelled = false;
+  const { provider, descriptor } = await connectedProvider(() => new Response(new ReadableStream({
+    async pull(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      if (wasCancelled) return;
+      controller.enqueue(encoder.encode(first ? 'data: {"choices":[{"delta":{"content":"one"}}]}\n\n' : ": heartbeat\n\n"));
+      first = false;
+    }, cancel() { wasCancelled = true; },
+  }), { headers: { "content-type": "text/event-stream" } }), { prefillDeadlineMs: 100, idleDeadlineMs: 25, chatDeadlineMs: 500 });
+  await assert.rejects(provider.chat(descriptor.id, {}, () => {}), (error) => error.code === "STREAM_STALLED");
+  assert.equal(wasCancelled, true);
+});
+
+test("load deadline includes both headers and body, and records its uncertain effect", async () => {
+  const model = nativeModel();
+  const provider = new LmStudioProvider({ lifecycleDeadlineMs: 55, fetchImpl: async (url) => {
+    if (!String(url).endsWith("/load")) return jsonResponse({ models: [model] });
+    await new Promise((resolve) => setTimeout(resolve, 35));
+    return new Response(new ReadableStream({ start() {}, cancel() {} }), { headers: { "content-type": "application/json" } });
+  } });
+  const [descriptor] = await provider.scan("");
+  await assert.rejects(provider.load(descriptor, {}), (error) => error.code === "PROVIDER_TIMEOUT" && error.stage === "model-load" && error.effectState === "unknown");
+});
+
+test("tokenizer receives exact connected instance and reports unavailable fallback honestly", async () => {
+  const ids = [];
+  const { provider, descriptor } = await connectedProvider(() => undefined, { tokenizer: {
+    async countPrompt(instance, payload) { ids.push(instance); assert.equal(payload.tools.length, 1); return 77; },
+  } });
+  assert.deepEqual(await provider.countPromptTokens(descriptor.id, { messages: [], tools: [{}] }), { tokens: 77, method: "tokenizer" });
+  assert.deepEqual(ids, ["selected"]);
+  const other = await connectedProvider(() => undefined, { tokenizer: { async countPrompt() { throw new Error("unsupported"); } } });
+  const payload = { messages: [{ role: "user", content: "中文" }], tools: [] };
+  const count = await other.provider.countPromptTokens(other.descriptor.id, payload);
+  assert.equal(count.method, "utf8-upper-bound");
+  assert.equal(count.tokens, Buffer.byteLength(JSON.stringify(payload), "utf8") + 512);
+});
+
+test("one lifecycle deadline spans initial catalog, load, and verification", async (context) => {
+  const model = nativeModel();
+  let armed = false;
+  let loaded = false;
+  let cleaned = false;
+  const entered = Array.from({ length: 3 }, () => Promise.withResolvers());
+  const stages = [];
+  let verificationSignal;
+  const provider = new LmStudioProvider({ lifecycleDeadlineMs: 90, fetchImpl: async (url, init) => {
+    if (String(url).endsWith("/unload")) {
+      cleaned = true;
+      return jsonResponse({ instance_id: "owned" });
+    }
+    if (armed) {
+      stages.push(String(url).endsWith("/load") ? "load" : loaded ? "verification" : "catalog");
+      if (loaded) verificationSignal = init.signal;
+      entered[stages.length - 1].resolve();
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(resolve, 35);
+        init.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new DOMException("Aborted", "AbortError")); }, { once: true });
+      });
+    }
+    if (String(url).endsWith("/load")) {
+      loaded = true;
+      return jsonResponse({ status: "loaded", type: "llm", instance_id: "owned", load_config: loadedInstance("owned").config });
+    }
+    return jsonResponse({ models: [{ ...model, loaded_instances: loaded ? [loadedInstance("owned")] : [] }] });
+  } });
+  const [descriptor] = await provider.scan("");
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  armed = true;
+  const completed = assert.rejects(provider.load(descriptor, {}), (error) => error.code === "PROVIDER_TIMEOUT" && error.stage === "model-load");
+  await entered[0].promise;
+  context.mock.timers.tick(35);
+  await entered[1].promise;
+  context.mock.timers.tick(35);
+  await entered[2].promise;
+  assert.deepEqual(stages, ["catalog", "load", "verification"]);
+  assert.equal(loaded, true);
+  context.mock.timers.tick(19);
+  assert.equal(verificationSignal.aborted, false);
+  context.mock.timers.tick(1);
+  assert.equal(verificationSignal.aborted, true);
+  await completed;
+  assert.equal(loaded, true);
+  assert.equal(cleaned, true);
+  assert.equal(provider.has(descriptor.id), false);
+});
+
+test("invalid usage numbers are rejected before reaching the agent", async () => {
+  const { provider, descriptor } = await connectedProvider(() => sseResponse(['data: {"choices":[],"usage":{"prompt_tokens":-1}}\n\n', "data: [DONE]\n\n"]));
+  await assert.rejects(provider.chat(descriptor.id, {}, () => assert.fail("invalid chunk reached agent")), /usage prompt_tokens/);
 });
 
 test("discovers rich native model metadata from the one fixed LM Studio endpoint", async () => {
@@ -396,6 +556,7 @@ test("resynchronizes before chat and parses fragmented OpenAI-compatible SSE", a
   assert.deepEqual(JSON.parse(chatRequest.init.body), {
     model: "external-instance",
     stream: true,
+    stream_options: { include_usage: true },
     messages: [{ role: "user", content: "fixture" }],
   });
 });

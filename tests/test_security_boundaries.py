@@ -480,7 +480,9 @@ class SecurityBoundaryTests(unittest.TestCase):
             server, "_emit_response"
         ) as emit:
             server._tool_request_worker(message, 7, cancel_event)
-        emit.assert_not_called()
+        emit.assert_called_once_with({"jsonrpc": "2.0", "method": "notifications/proto-request-finished", "params": {
+            "requestId": 7, "status": "cancelled",
+        }})
 
     def test_tool_response_limit_returns_small_structured_error(self) -> None:
         result = _tool_result({"ok": True, "data": "x" * (600 * 1024)})

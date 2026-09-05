@@ -5,8 +5,10 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { createTwoFilesPatch } from "diff";
 import type { FileCheckpoint, PatchOperation, PatchProposal, WorkspaceEntry } from "../../shared/contracts.ts";
 import type { AppDatabase } from "./database.ts";
+import { inspectArtifactFormat, type ArtifactFormat } from "./artifact-format.ts";
 
 const MAX_TEXT_BYTES = 2 * 1024 * 1024;
+const MAX_VISUALIZATION_IR_BYTES = 8 * 1024 * 1024;
 const MAX_SCAN_FILES = 2_000;
 const MAX_SCAN_DIRECTORIES = 512;
 const MAX_SCAN_ENTRIES = 10_000;
@@ -66,6 +68,7 @@ const ROOT_BUILD_IGNORED_DIRECTORIES = new Set([
   "cache",
   "pyinstaller",
   "upgrade-queue",
+  "upgrade-20260904",
   // Retained screenshots, unpacked Electron applications, and browser export
   // diagnostics are QA evidence for the workbench itself. They are not Proto
   // review artifacts and can contain hundreds of nested runtime directories.
@@ -95,9 +98,32 @@ export class WorkspaceFiles {
   async read(inputPath: string): Promise<{ path: string; content: string; sha256: string }> {
     const root = await this.getCanonicalRoot();
     const path = await this.resolveInside(inputPath, false);
-    const content = await readRegularContainedFile(root, path);
+    const artifactPath = relative(root, path).replaceAll("\\", "/");
+    const limit = /^build\/.+\.ir\.json$/i.test(artifactPath) ? MAX_VISUALIZATION_IR_BYTES : MAX_TEXT_BYTES;
+    const content = await readRegularContainedFile(root, path, limit);
     if (content === undefined) throw new Error("Only bounded single-link workspace files can be read.");
     return { path, content, sha256: sha256(content) };
+  }
+
+  /** Hash artifact bytes without decoding PNG/PDF/structure data as UTF-8. */
+  async artifactFingerprint(inputPath: string): Promise<{path: string; sha256: string; sizeBytes: number} & ArtifactFormat> {
+    const root = await this.getCanonicalRoot();
+    const path = await this.resolveInside(inputPath, false);
+    const original = await lstat(path);
+    if (!original.isFile() || original.isSymbolicLink() || original.nlink !== 1 || original.size > 32 * 1024 * 1024) {
+      throw new Error("Artifact must be a single-link regular file no larger than 32 MiB.");
+    }
+    const canonical = await realpath(path);
+    assertContained(root, canonical);
+    const handle = await open(canonical, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+    try {
+      const opened = await handle.stat();
+      if (!sameRegularFileIdentity(original, opened) || opened.nlink !== 1) throw new Error("Artifact changed before hashing.");
+      const bytes = await handle.readFile();
+      const after = await handle.stat();
+      if (!sameRegularFileIdentity(opened, after) || after.nlink !== 1 || bytes.length !== opened.size) throw new Error("Artifact changed while hashing.");
+      return {path: canonical, sha256: createHash("sha256").update(bytes).digest("hex"), sizeBytes: bytes.length, ...inspectArtifactFormat(bytes)};
+    } finally {await handle.close();}
   }
 
   async search(
@@ -473,13 +499,13 @@ function isRootBuildReviewArtifact(name: string): boolean {
   return normalized.endsWith(".ir.json") || ROOT_BUILD_REVIEW_ARTIFACTS.has(normalized);
 }
 
-async function readRegularContainedFile(root: string, path: string): Promise<string | undefined> {
+async function readRegularContainedFile(root: string, path: string, maxBytes = MAX_TEXT_BYTES): Promise<string | undefined> {
   const original = await lstat(path);
   if (
     original.isSymbolicLink()
     || !original.isFile()
     || original.nlink !== 1
-    || original.size > MAX_TEXT_BYTES
+    || original.size > maxBytes
   ) return undefined;
   const canonical = await realpath(path);
   assertContained(root, canonical);
@@ -490,7 +516,7 @@ async function readRegularContainedFile(root: string, path: string): Promise<str
     if (
       !info.isFile()
       || info.nlink !== 1
-      || info.size > MAX_TEXT_BYTES
+      || info.size > maxBytes
       || !sameRegularFileIdentity(original, info)
     ) return undefined;
     const content = await handle.readFile("utf8");

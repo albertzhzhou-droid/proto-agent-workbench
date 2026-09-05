@@ -12,6 +12,9 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { once } from "node:events";
+import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
 import test from "node:test";
 
 import {
@@ -242,27 +245,153 @@ test("only actual owned child objects can be terminated", async () => {
   );
 });
 
-test("owned tree termination is idempotent and stops a bounded descendant", async () => {
-  const workspace = await mkdtemp(resolve(tmpdir(), "proto-owned-tree-"));
-  const pidPath = join(workspace, "descendant.pid");
+test("owned termination joins inherited stdio after the direct child has exited", async () => {
+  const workspace = await mkdtemp(resolve(tmpdir(), "proto-owned-close-"));
+  const releasePath = join(workspace, "release");
+  const descendantCode = [
+    "const fs=require('node:fs');",
+    "process.stdout.write('descendant-ready');",
+    "const timer=setInterval(()=>{if(fs.existsSync(process.argv[1]))process.exit(0)},5);",
+    "setTimeout(()=>process.exit(0),5000);",
+  ].join("");
   const childCode = [
     "const {spawn}=require('node:child_process');",
-    "const fs=require('node:fs');",
-    "const child=spawn(process.execPath,['-e','setTimeout(()=>process.exit(0),5000)'],{stdio:'ignore'});",
-    "fs.writeFileSync(process.argv[1],String(child.pid));",
-    "setTimeout(()=>process.exit(0),5000);",
+    `const child=spawn(process.execPath,['-e',${JSON.stringify(descendantCode)},process.argv[1]],{windowsHide:true,stdio:['ignore','pipe','inherit']});`,
+    "child.stdout.once('data',data=>{process.stdout.write(data);process.exit(0)});",
+    "setTimeout(()=>process.exit(1),5000);",
   ].join("");
   let child;
   try {
-    child = await spawnOwned(process.execPath, ["-e", childCode, pidPath], { cwd: workspace });
-    const descendantPid = Number(await readEventually(pidPath, 2_000));
-    assert.equal(Number.isInteger(descendantPid) && descendantPid > 0, true);
-    await Promise.all([terminateOwned(child), terminateOwned(child)]);
-    assert.equal(await pidIsAlive(descendantPid), false);
+    child = await spawnOwned(process.execPath, ["-e", childCode, releasePath], { cwd: workspace });
+    const close = once(child, "close");
+    await once(child, "exit");
+    assert.equal(child.stderr.closed, false, "the bounded descendant still holds the inherited pipe");
+    let settled = false;
+    const termination = terminateOwned(child).then(() => { settled = true; });
+    await new Promise((resolvePromise) => setImmediate(resolvePromise));
+    assert.equal(settled, false, "exit alone must not claim that owned stdio is closed");
+    await writeFile(releasePath, "release");
+    await termination;
+    await close;
+    assert.equal(child.stderr.closed, true);
   } finally {
-    if (child?.exitCode === null && child?.signalCode === null) await terminateOwned(child);
+    await writeFile(releasePath, "release");
+    if (child) {
+      const closed = child.stderr.closed ? Promise.resolve() : once(child, "close");
+      if (child.exitCode === null && child.signalCode === null) await terminateOwned(child);
+      await closed;
+    }
     await rm(workspace, { recursive: true, force: true });
   }
+});
+
+test("owned tree termination is idempotent and stops a bounded descendant", async (context) => {
+  const workspace = await mkdtemp(resolve(tmpdir(), "proto-owned-tree-"));
+  const pidPath = join(workspace, "descendant.pid");
+  const nonce = randomUUID();
+  const startedAt = new Date().toISOString();
+  const childCode = [
+    "const {spawn}=require('node:child_process');",
+    "const code=\"require('node:fs').writeFileSync(process.argv[1],JSON.stringify({pid:process.pid,ppid:process.ppid,exe:process.execPath,cwd:process.cwd(),nonce:process.argv[2]}));setTimeout(()=>process.exit(0),20000)\";",
+    "spawn(process.execPath,['-e',code,process.argv[1],process.argv[2]],{windowsHide:true,stdio:'ignore'});",
+    "setTimeout(()=>process.exit(0),22000);",
+  ].join("");
+  let child;
+  let observer;
+  let observerClosed;
+  let observerOutput = "";
+  let nativeResult;
+  let descendantPid;
+  const receiptPath = join(workspace, "termination-receipt.json");
+  const observerResultPath = join(workspace, "native-exit-result.json");
+  const errors = [];
+  try {
+    child = await spawnOwned(process.execPath, ["-e", childCode, pidPath, nonce], { cwd: workspace });
+    const ready = JSON.parse(await readEventually(pidPath, 2_000));
+    descendantPid = ready.pid;
+    assert.equal(Number.isInteger(descendantPid) && descendantPid > 0, true);
+    assert.deepEqual(ready, { pid: descendantPid, ppid: child.pid, exe: process.execPath, cwd: workspace, nonce });
+    assert.equal(await pidIsAlive(descendantPid), true, "the descendant acknowledged startup before termination");
+    if (process.platform === "win32") {
+      const observerReadyPath = join(workspace, "native-handles-ready.json");
+      const bindingPath = join(workspace, "native-handle-binding.json");
+      await writeFile(bindingPath, JSON.stringify({
+        parentPid: child.pid, descendantPid, executable: process.execPath, workspace,
+        descendantReadyPath: pidPath, nonce, startedAt, observerReadyPath, observerResultPath,
+      }));
+      // This fixed Windows system observer is deliberately not an owned CLI
+      // executable: the OS PowerShell binary is legitimately hardlinked.
+      observer = spawn(
+        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", join(appRoot, "tests", "helpers", "hold-owned-descendant.ps1"), "-BindingPath", bindingPath],
+        // The fixture parent and descendant retain the original temp cwd.
+        // The read-only observer must not add its own cwd handle to that fixture.
+        {
+          cwd: appRoot, windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"],
+          env: { ...minimalChildEnvironment(), TEMP: tmpdir(), TMP: tmpdir() },
+        },
+      );
+      const captureObserver = (chunk) => { observerOutput = (observerOutput + chunk.toString()).slice(0, 8_192); };
+      observer.stdout.on("data", captureObserver);
+      observer.stderr.on("data", captureObserver);
+      observerClosed = once(observer, "close");
+      observerClosed.catch(() => {});
+      let nativeReady;
+      try { nativeReady = JSON.parse(await readEventually(observerReadyPath, 6_000)); }
+      catch (error) { throw new Error(`${error.message} Native observer output: ${observerOutput}`, { cause: error }); }
+      assert.equal(nativeReady.descendant.pid, descendantPid);
+      assert.equal(nativeReady.parent.pid, child.pid);
+      assert.equal(nativeReady.descendantInitialWait, 258, "the held descendant object must be unsignaled before termination");
+    }
+    const [first, repeated] = await Promise.all([terminateOwned(child), terminateOwned(child)]);
+    assert.strictEqual(first, repeated, "idempotent calls return the same completion receipt");
+    await writeFile(receiptPath, JSON.stringify(first, null, 2));
+    assert.equal(first.scope, "owned-direct-child-and-captured-streams");
+    assert.equal(first.directChildClosed, true);
+    assert.equal(first.descendantsVerified, false, "the generic helper must not claim a descendant-handle join");
+    if (process.platform === "win32") {
+      const request = first.windowsTreeRequest;
+      assert.equal(request.attempted, true);
+      assert.equal(request.helperClosed, true);
+      assert.equal(request.status, request.exitCode === 0 ? "succeeded" : "failed");
+      assert.equal(typeof request.stdout, "string");
+      assert.equal(typeof request.stderr, "string");
+      assert.ok(Buffer.byteLength(request.stdout) <= 4_098 && Buffer.byteLength(request.stderr) <= 4_098);
+      if (request.exitCode !== 0) assert.ok(request.stderr || request.stdout || request.errorCode, "tree-request failure must retain diagnostic evidence");
+      const [observerCode] = await observerClosed;
+      nativeResult = JSON.parse(await readFile(observerResultPath, "utf8"));
+      assert.equal(observerCode, 0, JSON.stringify(nativeResult));
+      assert.equal(nativeResult.descendantFinalWait, 0, "the original descendant process object must be signaled before cleanup");
+      assert.equal(nativeResult.parentFinalWait, 0);
+      assert.equal(nativeResult.handlesClosed, true);
+      context.diagnostic(JSON.stringify({ windowsTreeRequest: request, nativeExit: nativeResult }));
+    }
+    assert.equal(await pidIsAlive(descendantPid), false);
+  } catch (error) {
+    errors.push(error);
+  } finally {
+    try {
+      if (child) await terminateOwned(child);
+    } catch (error) {
+      if (!errors.includes(error)) errors.push(error);
+    }
+    if (observerClosed && !nativeResult) {
+      try {
+        await observerClosed;
+        nativeResult = JSON.parse(await readFile(observerResultPath, "utf8"));
+      } catch (error) { errors.push(error); }
+    }
+    try {
+      if (process.platform === "win32" && descendantPid && (!nativeResult?.ok || !nativeResult?.handlesClosed)) {
+        throw new Error(`Native descendant exit was not verified; fixture preserved at ${workspace}`);
+      }
+      await rm(workspace, { recursive: true, force: true });
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "Owned tree verification and cleanup failed; all failures are preserved.");
 });
 
 async function readEventually(path, timeoutMs) {

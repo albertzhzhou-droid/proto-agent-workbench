@@ -183,6 +183,12 @@ class CliTests(unittest.TestCase):
                     "TMPDIR": str(self.temp_dir),
                 }
             )
+        # The expanded reviewed bundle can exceed 15 seconds on Windows during
+        # verified import. Keep ordinary CLI calls on their existing short gate.
+        timeout_seconds = 120 if any(
+            first == "materials" and second == "bundle-install-public"
+            for first, second in zip(args, args[1:])
+        ) else CLI_TIMEOUT_SECONDS
         try:
             return subprocess.run(
                 [sys.executable, "-m", "proto_agent.cli", *args],
@@ -192,11 +198,11 @@ class CliTests(unittest.TestCase):
                 encoding="utf-8",
                 errors="strict",
                 capture_output=True,
-                timeout=CLI_TIMEOUT_SECONDS,
+                timeout=timeout_seconds,
                 check=False,
             )
         except subprocess.TimeoutExpired as exc:
-            self.fail(f"CLI exceeded {CLI_TIMEOUT_SECONDS}s timeout: {exc.cmd}")
+            self.fail(f"CLI exceeded {timeout_seconds}s timeout: {exc.cmd}")
 
     def run_materials_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
         materials_root = self.workspace.parent / f"{self.workspace.name}-materials"

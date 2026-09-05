@@ -18,6 +18,7 @@ export function validationPlanForPatch(
     targetPath: patch.targetPath,
     resultSha256: operation.resultSha256,
     resultExists: operation.resultExists,
+    materialBinding: patch.materialBinding,
   };
   const plan: Array<Omit<ValidationStepPlan, "sequence" | "inputSha256"> & { input: unknown }> = [
     {

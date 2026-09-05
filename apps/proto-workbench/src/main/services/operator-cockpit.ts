@@ -29,7 +29,7 @@ const BUILTIN_MISSIONS: Array<Omit<MissionLibraryEntry, "digest">> = [
     title: "Controlled change",
     summary: "Prepare a bounded diff and its validation path behind explicit review gates.",
     mode: "act",
-    goal: "Review the requested workspace improvement, describe the intended diff and validation path, then propose only reviewable changes behind explicit approval gates.",
+    goal: "Complete the requested workspace improvement within the mission scope, record the diff, validate the result, and preserve the evidence.",
     intent: { network: false, writes: true, execution: false },
   },
   {

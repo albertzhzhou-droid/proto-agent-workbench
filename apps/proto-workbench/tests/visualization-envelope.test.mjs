@@ -10,12 +10,14 @@ test("interactive envelope accepts its exact declared boundaries", () => {
   ), { mode: "interactive", reasons: [] });
 });
 
-test("oversize and invalid constructs switch to an explicit summary mode", () => {
+test("larger constructs use bounded windows and invalid constructs stay in summary mode", () => {
   const oversize = classifyVisualizationEnvelope(
     VISUALIZATION_INTERACTIVE_LIMITS.maxBases + 1,
     VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures + 1,
   );
-  assert.equal(oversize.mode, "summary");
+  assert.equal(oversize.mode, "windowed");
   assert.equal(oversize.reasons.length, 2);
   assert.equal(classifyVisualizationEnvelope(Number.NaN, -1).mode, "summary");
+  assert.equal(classifyVisualizationEnvelope(1_000_000, 20_000).mode, "windowed");
+  assert.equal(classifyVisualizationEnvelope(1_000_001, 20_000).mode, "summary");
 });

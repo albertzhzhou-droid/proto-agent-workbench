@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildMissionPreflight } from "../src/main/services/mission-preflight.ts";
+import { buildMissionPreflight, classifyMissionIntent } from "../src/main/services/mission-preflight.ts";
 import { parseCapabilities } from "../src/main/services/mcp-client.ts";
 
 const WORKSPACE_URI = "file:///C:/workspace";
+
+test("controlled scientific workflows and local searches do not request arbitrary code or network access", () => {
+  assert.deepEqual(classifyMissionIntent("Search local materials, run workflow and review, compile and export the design"), {network:false,writes:true,execution:false});
+  assert.equal(classifyMissionIntent("Read the Python script without executing it").execution,false);
+  assert.equal(classifyMissionIntent("Run the Python script").execution,true);
+  assert.equal(classifyMissionIntent("Search PubMed online").network,true);
+  assert.equal(classifyMissionIntent("Search cached PubMed results offline only").network,false);
+});
 
 function inputs(overrides = {}) {
   const base = {
@@ -101,6 +109,15 @@ test("a pure local mission is launchable and issuedAt is excluded from the stabl
   assert.equal(first.launchable, true);
   assert.equal(first.digest, second.digest);
   assert.notEqual(first.issuedAt, second.issuedAt);
+});
+test("launch digest binds the observed instance and loaded context while excluding transient metrics",()=>{
+  const model={...inputs().model,workbenchInstance:{id:"instance-a",ownedByWorkbench:true,contextLength:32768}};
+  const digest=buildMissionPreflight(inputs({model})).digest;
+  assert.notEqual(buildMissionPreflight(inputs({model:{...model,workbenchInstance:{...model.workbenchInstance,id:"instance-b"}}})).digest,digest);
+  assert.notEqual(buildMissionPreflight(inputs({model:{...model,workbenchInstance:{...model.workbenchInstance,contextLength:16384}}})).digest,digest);
+  assert.equal(buildMissionPreflight(inputs({model:{...model,measuredVramBytes:999,lastUsedAt:"2026-09-05T00:00:00Z"}})).digest,digest);
+  const observed={...model,workbenchInstance:{id:"instance-a",ownedByWorkbench:true},loadedInstances:[{id:"instance-a",contextLength:32768}]};
+  assert.equal(buildMissionPreflight(inputs({model:observed})).digest,digest);
 });
 
 test("goal, mode, and attachment mutations invalidate the launch digest", () => {

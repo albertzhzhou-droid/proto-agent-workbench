@@ -23,9 +23,13 @@ import {
 } from "../shared/run-execution.ts";
 import { previewRunEvidenceFixture, workbenchDataMode } from "./mock-api.ts";
 import { useWorkbenchStore } from "./store.ts";
+import { RunDependencyGraph } from "./RunDependencyGraph.tsx";
+import { RunOperationDetails } from "./RunOperationDetails.tsx";
+import { harnessEventDisplayStatus } from "./harness-projection.ts";
 
 type EvidenceTab = "timeline" | "topology" | "artifacts";
 type EvidenceArtifact = RunArtifactRef & { sha256?: string; sizeBytes?: number };
+type DisplayRunStep = RunStepView & { displayStatus?: "paused" | "incomplete" };
 
 const EVIDENCE_TABS: Array<{ id: EvidenceTab; label: string; icon: typeof Clock3 }> = [
   { id: "timeline", label: "Timeline", icon: Clock3 },
@@ -66,7 +70,11 @@ export function RunEvidenceViews() {
     ? previewRunEvidenceFixture(runDetail.summary.runId)
     : undefined;
   const projection = useMemo(
-    () => projectRunExecution(events, fixture?.execution),
+    () => {
+      const result = projectRunExecution(events, fixture?.execution);
+      const byId = new Map(events.map(event => [event.id, event]));
+      return {...result, steps: result.steps.map(step => ({...step, displayStatus: harnessEventDisplayStatus(byId.get(step.eventId))}))};
+    },
     [events, fixture],
   );
   const selectedStep = projection.steps.find((step) => step.id === selectedStepId) ?? projection.steps[0];
@@ -211,6 +219,8 @@ export function RunEvidenceViews() {
           />
         )}
 
+        <div className="run-selected-operation">
+        <RunOperationDetails event={events.find(event => event.id === selectedStep?.eventId)} />
         <aside className="immutable-checkpoint-card" aria-label="Immutable task checkpoint">
           <header><span aria-hidden="true"><LockKeyhole size={14} /></span><div><strong>Task checkpoint</strong><small>Immutable task context · workspace unchanged</small></div></header>
           {taskCheckpoint ? (
@@ -265,6 +275,7 @@ export function RunEvidenceViews() {
             </div>
           )}
         </aside>
+        </div>
       </div>
     </section>
   );
@@ -295,7 +306,7 @@ function StepSelector({ steps, selectedStepId, onSelect }: {
 }
 
 function TimelineView({ steps, selectedStepId, onSelect }: {
-  steps: RunStepView[];
+  steps: DisplayRunStep[];
   selectedStepId?: string;
   onSelect: (stepId: string) => void;
 }) {
@@ -317,7 +328,7 @@ function TimelineView({ steps, selectedStepId, onSelect }: {
             <span>{capitalize(step.actor)}</span>
             <span><strong>{step.title}</strong><small>{step.summary}</small></span>
             <span>{capitalize(step.stage)}</span>
-            <span className={`evidence-state is-${step.status}`}>{step.status === "completed" ? <CheckCircle2 size={12} /> : <CircleAlert size={12} />}{step.status.replaceAll("-", " ")}</span>
+            <span className={`evidence-state is-${step.displayStatus ?? step.status}`} title={step.displayStatus ? `Recorded mission state: ${step.displayStatus}. Legacy audit status: ${step.status}.` : undefined}>{step.status === "completed" ? <CheckCircle2 size={12} /> : <CircleAlert size={12} />}{(step.displayStatus ?? step.status).replaceAll("-", " ")}</span>
           </button>
         ))}
       </div>
@@ -326,7 +337,7 @@ function TimelineView({ steps, selectedStepId, onSelect }: {
 }
 
 function TopologyView({ steps, edges, quarantined, selectedStepId, onSelect }: {
-  steps: RunStepView[];
+  steps: DisplayRunStep[];
   edges: ReturnType<typeof projectRunExecution>["topologyEdges"];
   quarantined: ReturnType<typeof projectRunExecution>["quarantined"];
   selectedStepId?: string;
@@ -337,20 +348,20 @@ function TopologyView({ steps, edges, quarantined, selectedStepId, onSelect }: {
     <section id="run-evidence-panel-topology" className="evidence-panel topology-evidence-panel" role="tabpanel" aria-labelledby="run-evidence-tab-topology">
       <div className="topology-boundary"><Link2 size={13} /><span>Only persisted explicit lineage is shown. Matching locators never create an edge.</span></div>
       {quarantined.length > 0 && <div className="topology-quarantine" role="alert"><CircleAlert size={13} /><span>{quarantined.length} malformed projection record{quarantined.length === 1 ? " was" : "s were"} quarantined and cannot drive selection or lineage.</span></div>}
-      <div className="topology-lanes" aria-label="Execution topology lanes">
+      {edges.some(edge => edge.kind === "execution") ? <RunDependencyGraph steps={steps} edges={edges} selectedStepId={selectedStepId} onSelect={onSelect}/> : <div className="topology-lanes" aria-label="Execution topology lanes">
         {STAGE_LANES.map((stage) => {
           const laneSteps = steps.filter((step) => step.stage === stage);
           return (
             <section className="topology-lane" aria-label={`${capitalize(stage)} lane`} key={stage}>
               <h3>{capitalize(stage)}</h3>
               <ol role="listbox" aria-label={`${capitalize(stage)} steps`}>
-                {laneSteps.map((step) => <li key={step.id}><button className={selectedStepId === step.id ? "is-selected" : ""} type="button" role="option" aria-selected={selectedStepId === step.id} aria-current={selectedStepId === step.id ? "step" : undefined} onClick={() => onSelect(step.id)}><span>{step.ordinal + 1}</span><strong>{step.title}</strong><small>{step.status.replaceAll("-", " ")}</small></button></li>)}
+                {laneSteps.map((step) => <li key={step.id}><button className={selectedStepId === step.id ? "is-selected" : ""} type="button" role="option" aria-selected={selectedStepId === step.id} aria-current={selectedStepId === step.id ? "step" : undefined} onClick={() => onSelect(step.id)}><span>{step.ordinal + 1}</span><strong>{step.title}</strong><small>{(step.displayStatus ?? step.status).replaceAll("-", " ")}</small></button></li>)}
                 {!laneSteps.length && <li className="topology-empty">Not reached</li>}
               </ol>
             </section>
           );
         })}
-      </div>
+      </div>}
       <div className="explicit-edge-list" aria-label="Persisted explicit topology edges">
         <strong>Explicit edges</strong>
         {edges.map((edge) => (
@@ -358,7 +369,7 @@ function TopologyView({ steps, edges, quarantined, selectedStepId, onSelect }: {
             <span>{stepsById.get(edge.sourceStepId)?.title ?? `${edge.sourceRunId ?? "parent"} / ${shortHash(edge.sourceStepId)}`}</span>
             <ArrowRight size={13} />
             <span>{stepsById.get(edge.targetStepId)?.title ?? shortHash(edge.targetStepId)}</span>
-            <em>{edge.kind === "fork" ? "task fork" : shortPath(edge.locator ?? "bound artifact")}</em>
+            <em>{edge.kind === "fork" ? "task fork" : edge.kind === "execution" ? "observed tool result" : shortPath(edge.locator ?? "bound artifact")}</em>
           </button>
         ))}
         {!edges.length && <p>No persisted edge metadata is available for this run. The lane order is chronological only.</p>}
