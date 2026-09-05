@@ -6,6 +6,21 @@ import { collectConfiguredRuntimeResources } from "../scripts/packaging-resource
 
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 
+test("Molstar and LM Studio SDK licenses are copied verbatim and configured as release resources", async () => {
+  for (const [dependency, installed, copied] of [
+    ["molstar", "molstar/LICENSE", "licenses/Molstar-MIT.txt"],
+    ["@lmstudio/sdk", "@lmstudio/sdk/LICENSE", "licenses/LM-Studio-SDK-Apache-2.0.txt"],
+  ]) {
+    assert.ok(packageJson.dependencies[dependency]);
+    const [original, distributed] = await Promise.all([
+      readFile(new URL(`../node_modules/${installed}`, import.meta.url)),
+      readFile(new URL(`../${copied}`, import.meta.url)),
+    ]);
+    assert.ok(original.equals(distributed), `${dependency} license bytes differ`);
+    assert.ok(packageJson.build.extraResources.some(entry => entry.from === copied && entry.to === copied));
+  }
+});
+
 test("package:win delegates the complete release transaction to one locked wrapper", async () => {
   assert.match(packageJson.scripts["build:sidecars"], /build-proto-sidecar\.ps1/);
   assert.match(packageJson.scripts["verify:sidecars"], /verify-sidecars\.ps1/);
@@ -13,13 +28,18 @@ test("package:win delegates the complete release transaction to one locked wrapp
   assert.doesNotMatch(packageJson.scripts["package:win"], /electron-builder|build:sidecars/);
 
   const wrapper = await readFile(new URL("../scripts/package-win.ps1", import.meta.url), "utf8");
-  const buildIndex = wrapper.indexOf('@("build:sidecars")');
-  const verifyIndex = wrapper.indexOf('@("verify:sidecars")');
-  const desktopIndex = wrapper.indexOf('@("build:desktop")');
+  const buildIndex = wrapper.indexOf('"build-proto-sidecar.ps1"');
+  const verifyIndex = wrapper.indexOf('"verify-sidecars.ps1"');
+  const desktopIndex = wrapper.indexOf('-Task Desktop -BuildLease');
   const packageIndex = wrapper.indexOf('-Label "Electron Builder"');
   assert.ok(buildIndex >= 0 && buildIndex < verifyIndex);
   assert.ok(verifyIndex < desktopIndex && desktopIndex < packageIndex);
-  assert.match(wrapper, /package-win\.lock/);
+  assert.match(wrapper, /Enter-ProjectBuildLease/);
+  assert.match(wrapper, /Private build input capture/);
+  assert.match(wrapper, /Original source verification before publication/);
+  assert.match(wrapper, /if \(\$CandidateOnly\)/);
+  assert.ok(wrapper.indexOf("if ($CandidateOnly)") < wrapper.indexOf("Move-Item -LiteralPath $ReleaseRoot -Destination $BackupRoot"));
+  assert.match(wrapper, /-not \$RetainCandidate/);
   assert.match(wrapper, /release-staging-/);
   assert.match(wrapper, /Pre-package source snapshot/);
   assert.match(wrapper, /Post-package source snapshot/);
@@ -40,8 +60,8 @@ test("package:win delegates the complete release transaction to one locked wrapp
   assert.match(packagedVerifier, /collectTreeFiles\(resourcesRoot, "runtime", "runtime"\)/);
 
   const sidecarBuilder = await readFile(new URL("../scripts/build-proto-sidecar.ps1", import.meta.url), "utf8");
-  assert.match(sidecarBuilder, /sidecar-build\.lock/);
-  assert.doesNotMatch(sidecarBuilder, /package-win\.lock/);
+  assert.match(sidecarBuilder, /Enter-ProjectBuildLease/);
+  assert.match(sidecarBuilder, /-ParentLease \$BuildLease/);
 
   const sidecarResources = packageJson.build.extraResources
     .filter((entry) => entry.to.startsWith("runtime/proto-agent"))
@@ -71,7 +91,7 @@ test("sidecar builder stages, validates, and publishes without the legacy scanne
   const source = await readFile(new URL("../scripts/build-proto-sidecar.ps1", import.meta.url), "utf8");
   assert.match(source, /\.proto-agent-staging-/);
   assert.match(source, /\.proto-agent-backup-/);
-  assert.match(source, /FileShare\]::None/);
+  assert.match(source, /Enter-ProjectBuildLease/);
   assert.match(source, /Assert-SidecarRuntime -Root \$Staging/);
   assert.match(source, /Move-Item -LiteralPath \$Staging -Destination \$Destination/);
   assert.match(source, /Build-Sidecar -Name "proto-agent-mcp"/);

@@ -2235,6 +2235,7 @@ function normalizePatchRow(row: DbPatchRow): PatchProposal {
     status,
     revision: Number.isSafeInteger(row.revision) && row.revision >= 0 ? row.revision : 0,
     restoresCheckpointId: payload && typeof payload.restoresCheckpointId === "string" ? payload.restoresCheckpointId : undefined,
+    materialBinding: payload?.materialBinding && typeof payload.materialBinding === "object" ? payload.materialBinding as PatchProposal["materialBinding"] : undefined,
     createdAt: row.created_at,
   };
 }

@@ -46,6 +46,7 @@ export async function snapshotReleaseTree(root) {
     topLevelExecutables: records
       .filter((record) => !record.path.includes("/") && record.path.toLowerCase().endsWith(".exe"))
       .map((record) => record.path),
+    executableArtifacts: records.filter((record) => !record.path.includes("/") && record.path.toLowerCase().endsWith(".exe")),
   };
 
   async function visit(directory, relativeDirectory) {

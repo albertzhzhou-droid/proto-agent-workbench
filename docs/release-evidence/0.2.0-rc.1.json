@@ -1,0 +1,181 @@
+{
+  "schema": "proto-workbench.public-upgrade-evidence.v1",
+  "version": "0.2.0-rc.1",
+  "date": "2026-09-05",
+  "scope": "Path-free summary of retained local evidence; raw reports remain private because they include machine state. Hashes bind retained evidence; this summary does not independently reproduce the original runs.",
+  "captures": [
+    {
+      "path": "docs/assets/workbench-0.2.0/harness-execution.png",
+      "sha256": "b5262662cf5709ab1ddc8ce8e2d7592294f327eda4dd87311928406ba3f42911",
+      "bytes": 536526,
+      "width": 3838,
+      "height": 2160,
+      "sourceReportSha256": "b5560e9e7f6b5bfebc720058cb20534b1d3291c66ddff5f4ab3f7b5a1eafc351",
+      "scope": "Earlier real completed local-model mission, reopened in native development Electron; not part of the fifteen samples or final packaged-model acceptance.",
+      "transformation": "none; byte-identical copy",
+      "privacyReview": "Visible QA-only labels and relative paths; no account identity, credentials, absolute host paths or unrelated application content."
+    },
+    {
+      "path": "docs/assets/workbench-0.2.0/dna-workbench.png",
+      "sha256": "8e04e94517d899228c7e6b4bdd59ff0f9755e7679252ed45c1f00bbf450b3c05",
+      "bytes": 547275,
+      "width": 2974,
+      "height": 2048,
+      "sourceReportSha256": "5d60c713cdaa89f4583a91bd32e87d285f490db6dfe334290cd0d46580ae1e55",
+      "scope": "Final actual Portable; governed 896 bp software QA construct, linked map and sequence, independently reopened native exports.",
+      "transformation": "none; byte-identical copy",
+      "privacyReview": "Visible QA-only labels and relative paths; no account identity, credentials, absolute host paths or unrelated application content."
+    },
+    {
+      "path": "docs/assets/workbench-0.2.0/protein-structure.png",
+      "sha256": "07131c2b53a31b6fb1a9823ad6c77d82606a750a535ead02e76ad8b0194d0bb3",
+      "bytes": 849575,
+      "width": 2974,
+      "height": 2048,
+      "sourceReportSha256": "4c6f42a2e8806da44f8a0192b1fe8c4155fd98ee41453bb58451711acb4a6625",
+      "scope": "Final exact extracted installer payload, real local mmCIF import, 449 mapped residues and independently reopened structure PNG; no installer OS integration claim.",
+      "transformation": "none; byte-identical copy",
+      "privacyReview": "Visible QA-only labels and relative paths; no account identity, credentials, absolute host paths or unrelated application content."
+    },
+    {
+      "path": "docs/assets/workbench-0.2.0/launchpad.png",
+      "sha256": "5119b331688ef0bcd118097f672a7ba23095e6de47c3138dc09fb721a4f475d1",
+      "bytes": 438508,
+      "width": 2974,
+      "height": 2048,
+      "sourceReportSha256": "5d60c713cdaa89f4583a91bd32e87d285f490db6dfe334290cd0d46580ae1e55",
+      "scope": "Final actual Portable readiness checks, verified modules, dark theme and zero loaded models.",
+      "transformation": "none; byte-identical copy",
+      "privacyReview": "Visible QA-only labels and relative paths; no account identity, credentials, absolute host paths or unrelated application content."
+    }
+  ],
+  "modelDebug": {
+    "model": "qwen3.8-27b@q4_k_m",
+    "actualContextTokens": 32768,
+    "samples": 15,
+    "passed": 15,
+    "directSuccess": 7,
+    "afterRetryOrRepair": 8,
+    "hostRecovery": 0,
+    "incomplete": 0,
+    "falseCompletion": 0,
+    "families": [
+      "file_synthesis",
+      "paginated_materials",
+      "governed_dna"
+    ],
+    "samplesPerFamily": 5,
+    "generationRoundsAcrossSamples": 175,
+    "generatedTokensAcrossSamples": 170133,
+    "activeTimeMsAcrossSamples": 5225736,
+    "ownedUnloadVerified": true,
+    "sixteenthSampleStarted": false,
+    "fullSixtyCaseAcceptance": false,
+    "sourceSummarySha256": "0678236b4e881aa2f242f7cf68ae20d32b9afc4a6448320423cbb2ffe5d71a92"
+  },
+  "sourceChecks": {
+    "javascript": {
+      "passed": 809,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "c7312b37628b166f0cf23682ef4a1be85e50e19e4a0fe70b6a9719b244e4fd68"
+    },
+    "python": {
+      "passed": 242,
+      "failed": 0,
+      "platformSkips": 4,
+      "logSha256": "ab884b7837f0ea2bde3fa27570591dec1c8fa395104d3ed969aab515be717cf6"
+    },
+    "typescript": {
+      "passed": true,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "nativePackages": [
+    {
+      "kind": "portable",
+      "passedChecks": 8,
+      "cleanOwnedExit": true,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "modelsLoaded": false,
+      "sourceReportSha256": "5d60c713cdaa89f4583a91bd32e87d285f490db6dfe334290cd0d46580ae1e55"
+    },
+    {
+      "kind": "installer-payload",
+      "passedChecks": 8,
+      "cleanOwnedExit": true,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "modelsLoaded": false,
+      "sourceReportSha256": "4c6f42a2e8806da44f8a0192b1fe8c4155fd98ee41453bb58451711acb4a6625"
+    }
+  ],
+  "candidate": {
+    "sourceTreeSha256": "cc2de4bb7599d9db367b5779900667f175731c45238508b73cf813d81620602d",
+    "asarSha256": "25b2f4d31f1f9995c6835911d0dddcc052b9bda96558c2c192182e460e15a70c",
+    "manifestSha256": "9094c0a76ebb284645be2983008facd629772d6f4746a040a49a6c25dd19e30f",
+    "artifacts": [
+      {
+        "path": "Proto Workbench-0.2.0-rc.1-x64-portable.exe",
+        "sizeBytes": 161349262,
+        "sha256": "69be72326268022d675c5974cb97a7108f3428dd4e80dc78e31ff285a771f314"
+      },
+      {
+        "path": "Proto Workbench-0.2.0-rc.1-x64-setup.exe",
+        "sizeBytes": 161568170,
+        "sha256": "d36268a2c8fb6af8f074ed8a2350a9ccb9ffb5fff7d9ca80594ec84b0513b723"
+      }
+    ],
+    "signatureStatus": "NotSigned",
+    "installerOsIntegrationTested": false,
+    "binariesCommitted": false
+  },
+  "publicMaterials": {
+    "catalog": {
+      "record_count": 1066,
+      "source_counts": {
+        "UniProtKB/Swiss-Prot": 20,
+        "iGEM Registry": 1046
+      },
+      "license_counts": {
+        "CC-BY-4.0": 1059,
+        "CC0-1.0": 7
+      },
+      "status_counts": {
+        "DESIGN_ELIGIBLE": 1066
+      },
+      "activation_policy": "EXPLICIT_HUMAN_ONLY"
+    },
+    "quarantine": {
+      "record_count": 1795,
+      "source_counts": {
+        "BioModels": 30,
+        "Rhea": 21,
+        "UniProtKB/Swiss-Prot": 1744
+      },
+      "license_counts": {
+        "CC-BY-4.0": 1765,
+        "CC0-1.0": 30
+      },
+      "status_counts": {
+        "QUARANTINED": 1795
+      },
+      "activation_policy": "DENY"
+    },
+    "independentRebuildFilesCompared": 1083,
+    "independentRebuildDifferences": 0,
+    "catalogVerificationSha256": "586516fa09b4ddf781db18de650876bae8f32db144450bbee837d99ca2531e98",
+    "quarantineVerificationSha256": "e052446d6bb014c5fe3b67b7b280e5f4678c2992f9a80663f37e66cee203b8b5"
+  },
+  "limits": [
+    "No full sixty-case/all-family claim.",
+    "No additional live-model fault campaign or final packaged native-model mission.",
+    "No signing, Windows reputation, installation, upgrade or uninstallation acceptance.",
+    "Biological materials retain their upstream licenses; software eligibility is not scientific or experimental approval."
+  ],
+  "publicationNotes": [
+    "After the recorded source gates, publication changed documentation, curated screenshots, ignore rules and one trailing blank line in protein-chain-data.ts. Runtime logic and measured model results were unchanged.",
+    "The 1,083 staged public bundle Git blobs match the verified working files exactly; Git newline conversion did not change their pinned bytes."
+  ]
+}

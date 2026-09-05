@@ -36,6 +36,16 @@ class PartRef:
     type: str
     id: str
     line: int
+    instance_id: str | None = None
+    orientation: Literal["forward", "reverse"] = "forward"
+    placement_declared: bool = False
+
+
+@dataclass
+class SourceAnnotation:
+    id: str
+    line: int
+    payload: dict[str, Any]
 
 
 @dataclass
@@ -44,6 +54,7 @@ class Construct:
     line: int
     parts: list[PartRef] = field(default_factory=list)
     topology: ConstructTopology = "unknown"
+    annotations: list[SourceAnnotation] = field(default_factory=list)
 
 
 @dataclass
@@ -60,3 +71,4 @@ class Design:
     source_path: str
     constructs: list[Construct] = field(default_factory=list)
     constraints: list[Constraint] = field(default_factory=list)
+    source_sha256: str | None = None

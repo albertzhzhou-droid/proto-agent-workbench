@@ -1,8 +1,30 @@
 # Proto Workbench third-party notices
 
-This distribution includes open-source software. The visualization component
-introduced for the Design Explorer is listed below. Dependency versions are
+This distribution includes open-source software. Selected visualization,
+local-model, and verification components are listed below. Dependency versions are
 pinned in `pnpm-lock.yaml`.
+
+## Mol* 5.11.0
+
+- Project: https://github.com/molstar/molstar
+- License: MIT
+- Copyright: 2017 - now, Mol* contributors
+
+Mol* supplies the imported protein structure viewer. The installed package's
+unmodified license is distributed as `licenses/Molstar-MIT.txt`. Structure
+files and their scientific provenance remain separate from the viewer's
+software license.
+
+## LM Studio JavaScript SDK 1.5.0
+
+- Package: `@lmstudio/sdk`
+- Project: https://github.com/lmstudio-ai/lmstudio.js
+- License: Apache License 2.0
+
+The SDK supplies local LM Studio model-instance and tokenization access.
+The installed package's unmodified license is distributed as
+`licenses/LM-Studio-SDK-Apache-2.0.txt`. Proto Workbench does not distribute
+LM Studio or model weights under this SDK license.
 
 ## CGView.js 1.8.2
 

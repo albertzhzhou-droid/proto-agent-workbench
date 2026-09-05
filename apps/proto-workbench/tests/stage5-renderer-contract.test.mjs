@@ -5,12 +5,12 @@ import test from "node:test";
 
 const rendererPath = (...parts) => resolve("src", "renderer", ...parts);
 
-test("Runs mounts the Stage 5 evidence explorer without replacing the Stage 4 shell", async () => {
+test("Runs preserves the evidence explorer beside the mission panel and review inspector", async () => {
   const app = await readFile(rendererPath("App.tsx"), "utf8");
   const runs = section(app, "currentView === \"runs\" ? <>", "</> : <main className=\"page-workspace\">");
 
   assert.match(app, /import \{ RunEvidenceViews \} from "\.\/RunEvidenceViews\.tsx"/);
-  assert.match(runs, /<RunHeader \/>[\s\S]*?<RunAttentionStrip \/>[\s\S]*?<StageTracker \/>[\s\S]*?<RunEvidenceViews \/>[\s\S]*?<CodeDrawer \/>[\s\S]*?<ReviewPanel \/>/);
+  assert.match(runs, /<RunHeader \/>[\s\S]*?<HarnessMissionPanel \/>[\s\S]*?<RunEvidenceViews \/>[\s\S]*?<CodeDrawer \/>[\s\S]*?<ReviewPanel \/>/);
   assert.doesNotMatch(runs, /<RunLedger \/>/);
 });
 

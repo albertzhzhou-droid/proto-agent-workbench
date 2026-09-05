@@ -9,7 +9,8 @@ import type {
   ResidencyPolicy,
   VramEstimate,
 } from "../../shared/contracts.ts";
-import type { ChatCompletionChunk, InferenceRuntime, ModelCatalogSource } from "./inference-provider.ts";
+import type { ChatCompletionChunk, ExecutionBinding, InferenceRuntime, ModelCatalogSource } from "./inference-provider.ts";
+import { GenerationQueue, RuntimeFailure } from "./runtime-control.ts";
 import type { AppDatabase } from "./database.ts";
 import { nvidiaSmiExecutable } from "./nvidia-smi.ts";
 import { defaultVramBudget, expiredWarmModels, retryContext, selectEvictions, GIB } from "./residency.ts";
@@ -56,6 +57,9 @@ export class ModelService {
   private loadQueue: Promise<void> = Promise.resolve();
   private readonly loadInFlight = new Map<string, Promise<ModelInstance>>();
   private loadController?: { modelId: string; controller: AbortController };
+  private readonly generationQueue = new GenerationQueue();
+  private readonly shutdownController = new AbortController();
+  private readonly generations = new Set<Promise<void>>();
 
   constructor(
     database: AppDatabase,
@@ -70,6 +74,7 @@ export class ModelService {
     this.gpuMemoryProbe = gpuMemoryProbe;
     this.systemMemoryProbe = systemMemoryProbe;
     this.catalog = database.listModels().map((model) => {
+      if (model.provider === "lmstudio") return { ...model, loadState: "unloaded" as const, vramEstimate: undefined, measuredVramBytes: undefined, workbenchInstance: undefined };
       const saved = model.vramEstimate;
       const estimate = estimateModelVram(model, saved ? {
         contextLength: saved.contextLength,
@@ -120,6 +125,36 @@ export class ModelService {
     return this.activeModelId ? this.get(this.activeModelId) : undefined;
   }
 
+  getLoadedContextLength(modelId: string): number | undefined {
+    if (!this.runtime.has(modelId)) return undefined;
+    return this.runtime.peekExecutionBinding?.(modelId)?.contextLength ?? this.instances.get(modelId)?.contextLength;
+  }
+
+  async getExecutionBinding(modelId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
+    if (this.runtime.getExecutionBinding) {
+      const binding = await this.runtime.getExecutionBinding(modelId, signal);
+      const instance = this.instances.get(modelId);
+      if (instance?.instanceId && instance.instanceId !== binding.instanceId) throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The model instance changed; reconnect its exact instance before execution.");
+      if (instance) instance.contextLength = binding.contextLength;
+      return binding;
+    }
+    const instance = this.instances.get(modelId);
+    if (!this.runtime.has(modelId) || !instance || !Number.isSafeInteger(instance.contextLength) || instance.contextLength < 1) {
+      throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The selected model has no observed loaded context.");
+    }
+    return { modelId, instanceId: instance.instanceId ?? `legacy:${modelId}`, contextLength: instance.contextLength,
+      ownedByWorkbench: instance.ownedByWorkbench === true, observedAt: new Date().toISOString() };
+  }
+
+  async countExecutionTokens(modelId: string, messages: unknown[], tools: unknown[] = [], signal?: AbortSignal): Promise<{ tokens: number; method: "exact" | "conservative-estimate" }> {
+    if (this.runtime.countPromptTokens) {
+      const count = await this.runtime.countPromptTokens(modelId, { messages, tools }, signal);
+      return { tokens: count.tokens, method: count.method === "tokenizer" ? "exact" : "conservative-estimate" };
+    }
+    await this.getExecutionBinding(modelId, signal);
+    return { tokens: Buffer.byteLength(JSON.stringify({ messages, tools }), "utf8") + 512, method: "conservative-estimate" };
+  }
+
   async estimate(modelId: string, options: ModelLoadOptions): Promise<VramEstimate> {
     const estimate = estimateModelVram(this.requireModel(modelId), options);
     const gpu = await this.gpuMemoryProbe();
@@ -150,7 +185,33 @@ export class ModelService {
     if (!this.runtime.has(modelId)) {
       throw new Error("The selected model is not loaded or connected. Load or attach an exact instance explicitly first.");
     }
-    await this.runtime.chat(modelId, payload, onChunk, signal);
+    const combinedSignal = signal ? AbortSignal.any([signal, this.shutdownController.signal]) : this.shutdownController.signal;
+    const { _onQueueState, ...requestPayload } = payload;
+    const queueState = typeof _onQueueState === "function" ? _onQueueState as (state: "queued" | "active") => void : undefined;
+    const queuedAt = Date.now();
+    queueState?.("queued");
+    const run = async () => {
+      // Let an already-started residency transaction finish before claiming
+      // its model. Claiming first could prevent that transaction from unloading
+      // the old instance and incorrectly make its own reload fail as leased.
+      let residency: Promise<void>;
+      do {
+        residency = this.loadQueue;
+        await waitForResidency(residency, combinedSignal);
+      } while (residency !== this.loadQueue);
+      const release = await this.generationQueue.acquire(modelId, combinedSignal);
+      try {
+        combinedSignal.throwIfAborted();
+        if (!this.runtime.has(modelId)) throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The selected model was disconnected while queued.", { retryable: true });
+        queueState?.("active");
+        if (typeof requestPayload.deadline === "number") requestPayload.deadline += Date.now() - queuedAt;
+        await this.runtime.chat(modelId, requestPayload, onChunk, combinedSignal);
+      } finally { release(); }
+    };
+    const generation = run();
+    this.generations.add(generation);
+    try { await generation; }
+    finally { this.generations.delete(generation); }
   }
 
   setToolCapability(modelId: string, capability: ModelDescriptor["toolCapability"]): void {
@@ -212,7 +273,7 @@ export class ModelService {
           loadState: instance?.state ?? model.loadState,
           lastUsedAt: instance?.lastUsedAt ?? old?.lastUsedAt,
           workbenchInstance: instance?.instanceId
-            ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true }
+            ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true, contextLength: instance.contextLength }
             : undefined,
         };
       }
@@ -271,6 +332,7 @@ export class ModelService {
     modelId: string,
     options: Partial<ModelLoadOptions> = {},
   ): Promise<ModelInstance> {
+    if (this.generationQueue.isLeased()) throw new RuntimeFailure("MODEL_LEASED", "model-load", "Wait for queued and active generations before changing model residency.");
     const existing = this.loadInFlight.get(modelId);
     if (existing) return existing;
     this.loadController?.controller.abort();
@@ -517,6 +579,7 @@ export class ModelService {
   }
 
   async unload(modelId: string): Promise<void> {
+    if (this.generationQueue.isLeased(modelId)) throw new RuntimeFailure("MODEL_LEASED", "model-unload", "The model is leased by an active or queued generation.");
     if (this.loadController?.modelId === modelId) {
       this.loadController.controller.abort();
       this.loadGeneration += 1;
@@ -530,6 +593,7 @@ export class ModelService {
   }
 
   private async performUnload(modelId: string): Promise<void> {
+    if (this.generationQueue.isLeased(modelId)) throw new RuntimeFailure("MODEL_LEASED", "model-unload", "The model is leased by an active or queued generation.");
     await this.runtime.unload(modelId);
     this.instances.delete(modelId);
     if (this.activeModelId === modelId) this.activeModelId = undefined;
@@ -538,10 +602,12 @@ export class ModelService {
 
   async shutdown(): Promise<void> {
     this.dispose();
+    this.shutdownController.abort();
     this.catalogService.cancel?.();
     this.loadController?.controller.abort();
     this.loadGeneration += 1;
     await this.loadQueue;
+    await Promise.allSettled([...this.generations]);
     await this.runtime.unloadAll();
     this.instances.clear();
   }
@@ -572,7 +638,7 @@ export class ModelService {
       if (state === "active" || state === "warm") model.lastUsedAt = new Date().toISOString();
       const instance = this.instances.get(modelId);
       model.workbenchInstance = instance?.instanceId && (state === "active" || state === "warm")
-        ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true }
+        ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true, contextLength: instance.contextLength }
         : undefined;
       this.database.saveModels(this.catalog);
     }
@@ -644,7 +710,7 @@ export class ModelService {
   private async evictExpiredWarmModels(): Promise<void> {
     if (this.policy.mode !== "auto-evict") return;
     const expired = expiredWarmModels([...this.instances.values()], this.policy);
-    await Promise.all(expired.map((modelId) => this.unload(modelId)));
+    await Promise.all(expired.filter((modelId) => !this.generationQueue.isLeased(modelId)).map((modelId) => this.unload(modelId)));
   }
 
   private requireModel(modelId: string): ModelDescriptor {
@@ -656,6 +722,15 @@ export class ModelService {
   private emitChanged(): void {
     this.emitter.emit("changed", this.list());
   }
+}
+
+function waitForResidency(pending: Promise<void>, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(new RuntimeFailure("USER_CANCELLED", "cancel", "Cancelled while waiting for model residency."));
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(new RuntimeFailure("USER_CANCELLED", "cancel", "Cancelled while waiting for model residency."));
+    signal.addEventListener("abort", abort, { once: true });
+    pending.then(() => { signal.removeEventListener("abort", abort); resolve(); }, (error) => { signal.removeEventListener("abort", abort); reject(error); });
+  });
 }
 
 class ModelLoadSupersededError extends Error {

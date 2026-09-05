@@ -1,0 +1,278 @@
+{
+  "schema_version": "proto-agent.materials.uniprot-expansion.v1",
+  "generated_at": "2026-09-03T19:14:17Z",
+  "record_count": 15,
+  "records": [
+    {
+      "accession": "P00634",
+      "entry_id": "PPB_ECOLI",
+      "tax_id": 83333,
+      "length": 471,
+      "sha256": "2fbd9b2222475cdfbac6ed3cac42079ac076d47941e54350fc18f99b00da0736",
+      "aliases": [
+        "PhoA",
+        "alkaline phosphatase"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "colorimetric enzyme",
+        "enzyme"
+      ],
+      "description_en": "Escherichia coli K-12 PhoA alkaline phosphatase sequence, retained as a reviewed colorimetric reporter reference for software-level design composition.",
+      "description_zh": "大肠杆菌 K-12 PhoA 碱性磷酸酶序列；作为已审查的比色报告酶参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P00722",
+      "entry_id": "BGAL_ECOLI",
+      "tax_id": 83333,
+      "length": 1024,
+      "sha256": "d192d45958b03c26f677259276df226f5442462bf8c0a20fea4a10f0f426ad39",
+      "aliases": [
+        "LacZ",
+        "beta-galactosidase"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "colorimetric enzyme",
+        "enzyme"
+      ],
+      "description_en": "Escherichia coli K-12 LacZ beta-galactosidase sequence, retained as a reviewed colorimetric reporter reference for software-level design composition.",
+      "description_zh": "大肠杆菌 K-12 LacZ β-半乳糖苷酶序列；作为已审查的比色报告酶参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P03034",
+      "entry_id": "RPC1_LAMBD",
+      "tax_id": 2681611,
+      "length": 237,
+      "sha256": "ec5d954fd10be8c19c920e78badc5d9e9cc281f6801e2c5fde3803c9f133f580",
+      "aliases": [
+        "lambda cI repressor",
+        "cI"
+      ],
+      "role_terms": [
+        "transcription regulator",
+        "repressor protein",
+        "gene regulation"
+      ],
+      "description_en": "Enterobacteria phage lambda cI repressor sequence, retained as a reviewed regulator-protein reference that pairs with lambda cI-regulated promoters for software-level design composition.",
+      "description_zh": "λ 噬菌体 cI 阻遏蛋白序列；作为已审查的调控蛋白参考，与受 cI 调控的 λ 启动子配对用于软件层设计组合。"
+    },
+    {
+      "accession": "P03870",
+      "entry_id": "FLP_YEAST",
+      "tax_id": 559292,
+      "length": 423,
+      "sha256": "b93cf3999d939081ea7a56c89dd009c44a3366a608dd241462ac7469238019ff",
+      "aliases": [
+        "Flp recombinase",
+        "flipping recombinase"
+      ],
+      "role_terms": [
+        "site-specific recombinase",
+        "genome engineering tool",
+        "enzyme"
+      ],
+      "description_en": "Saccharomyces cerevisiae 2-micron plasmid Flp recombinase sequence, retained as a reviewed site-specific recombination tool reference for software-level design composition.",
+      "description_zh": "酿酒酵母 2μ 质粒 Flp 重组酶序列；作为已审查的位点特异性重组工具蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P06956",
+      "entry_id": "RECR_BPP1",
+      "tax_id": 2886926,
+      "length": 343,
+      "sha256": "844e9e932b8b812b2f282dfbe9c28331d31897abbb698ea8aa70982c5b65b05f",
+      "aliases": [
+        "Cre recombinase",
+        "cyclization recombinase"
+      ],
+      "role_terms": [
+        "site-specific recombinase",
+        "genome engineering tool",
+        "enzyme"
+      ],
+      "description_en": "Enterobacteria phage P1 Cre recombinase sequence, retained as a reviewed site-specific recombination tool reference for software-level design composition.",
+      "description_zh": "P1 噬菌体 Cre 重组酶序列；作为已审查的位点特异性重组工具蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P07164",
+      "entry_id": "AEQ1_AEQVI",
+      "tax_id": 6100,
+      "length": 196,
+      "sha256": "7ce6ab9d87ae7c13324707706837e12c8584006fe14e5aea8ed753837d35a238",
+      "aliases": [
+        "aequorin",
+        "calcium reporter photoprotein"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "calcium sensor",
+        "photoprotein"
+      ],
+      "description_en": "Aequorea victoria aequorin photoprotein sequence, retained as a reviewed calcium-indicator reporter reference for software-level design composition.",
+      "description_zh": "维多利亚水母水母发光蛋白序列；作为已审查的钙指示报告蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P07739",
+      "entry_id": "LUXB_VIBHA",
+      "tax_id": 669,
+      "length": 324,
+      "sha256": "71e782d4f05f008fa2b29e4fb7d2213a124d98a26803ada4d976403bb76ff1d2",
+      "aliases": [
+        "bacterial luciferase beta chain",
+        "LuxB"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "luminescence",
+        "enzyme"
+      ],
+      "description_en": "Vibrio harveyi bacterial luciferase beta chain sequence, retained as a reviewed luminescent reporter reference for software-level design composition.",
+      "description_zh": "哈维氏弧菌细菌荧光素酶 β 链序列；作为已审查的发光报告蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P07740",
+      "entry_id": "LUXA_VIBHA",
+      "tax_id": 669,
+      "length": 355,
+      "sha256": "b10d0dbadfaf5e0c4c7faead43381aff9c4025eeeecdb8a74347408df8b85ce2",
+      "aliases": [
+        "bacterial luciferase alpha chain",
+        "LuxA"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "luminescence",
+        "enzyme"
+      ],
+      "description_en": "Vibrio harveyi bacterial luciferase alpha chain sequence, retained as a reviewed luminescent reporter reference for software-level design composition.",
+      "description_zh": "哈维氏弧菌细菌荧光素酶 α 链序列；作为已审查的发光报告蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P08127",
+      "entry_id": "NAHH_PSEPU",
+      "tax_id": 303,
+      "length": 307,
+      "sha256": "b87f50a6178caf6e3c4ae539fa7da64be86146fe130a6863433d89e0a4a7796f",
+      "aliases": [
+        "XylE",
+        "catechol 2,3-dioxygenase"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "colorimetric enzyme",
+        "enzyme"
+      ],
+      "description_en": "Pseudomonas putida XylE catechol 2,3-dioxygenase sequence, retained as a reviewed colorimetric reporter reference for software-level design composition.",
+      "description_zh": "恶臭假单胞菌 XylE 儿茶酚 2,3-双加氧酶序列；作为已审查的比色报告酶参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P08659",
+      "entry_id": "LUCI_PHOPY",
+      "tax_id": 7054,
+      "length": 550,
+      "sha256": "abda0b3a5aa96aaa72c6b8e345ebbb67db0936532456cd861c94257224f9babc",
+      "aliases": [
+        "firefly luciferase",
+        "Luc"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "luminescence",
+        "enzyme"
+      ],
+      "description_en": "Photinus pyralis firefly luciferase sequence, retained as a reviewed luminescent reporter reference for software-level design composition.",
+      "description_zh": "北美萤火虫荧光素酶序列；作为已审查的发光报告蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P0A7C2",
+      "entry_id": "LEXA_ECOLI",
+      "tax_id": 83333,
+      "length": 202,
+      "sha256": "29cd607d00d716d70d815868f0a8714615872b843dae0c3db79c9603397b0ec3",
+      "aliases": [
+        "LexA",
+        "LexA repressor"
+      ],
+      "role_terms": [
+        "transcription regulator",
+        "repressor protein",
+        "gene regulation"
+      ],
+      "description_en": "Escherichia coli K-12 LexA repressor sequence, retained as a reviewed SOS-response regulator reference for software-level design composition.",
+      "description_zh": "大肠杆菌 K-12 LexA 阻遏蛋白序列；作为已审查的 SOS 应答调控蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P0A9E0",
+      "entry_id": "ARAC_ECOLI",
+      "tax_id": 83333,
+      "length": 292,
+      "sha256": "79d8a2ecb0a76a6668b182b1eb7f2f0d40337212c1b706de535824003d1ec743",
+      "aliases": [
+        "AraC",
+        "arabinose operon regulator"
+      ],
+      "role_terms": [
+        "transcription regulator",
+        "activator protein",
+        "gene regulation"
+      ],
+      "description_en": "Escherichia coli K-12 AraC regulatory protein sequence, retained as a reviewed regulator-protein reference that pairs with the PBAD promoter for software-level design composition.",
+      "description_zh": "大肠杆菌 K-12 AraC 调控蛋白序列；作为已审查的调控蛋白参考，与 PBAD 启动子配对用于软件层设计组合。"
+    },
+    {
+      "accession": "P0ACJ8",
+      "entry_id": "CRP_ECOLI",
+      "tax_id": 83333,
+      "length": 210,
+      "sha256": "8d8ae0de8d128490a1acd7998ba21bc0e86dcbf40df552787542100d3a976b9b",
+      "aliases": [
+        "CRP",
+        "cAMP receptor protein",
+        "CAP"
+      ],
+      "role_terms": [
+        "transcription regulator",
+        "activator protein",
+        "gene regulation"
+      ],
+      "description_en": "Escherichia coli K-12 cAMP receptor protein (CRP) sequence, retained as a reviewed global regulator reference for software-level design composition.",
+      "description_zh": "大肠杆菌 K-12 cAMP 受体蛋白（CRP）序列；作为已审查的全局调控蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P12746",
+      "entry_id": "LUXR_ALIFS",
+      "tax_id": 668,
+      "length": 250,
+      "sha256": "741ce2fadb696370bcc45b8383707d66e26252d36b28a4a396a645d90af676e0",
+      "aliases": [
+        "LuxR",
+        "quorum-sensing regulator"
+      ],
+      "role_terms": [
+        "transcription regulator",
+        "quorum sensing",
+        "gene regulation"
+      ],
+      "description_en": "Aliivibrio fischeri LuxR transcriptional activator sequence, retained as a reviewed quorum-sensing regulator reference for software-level design composition.",
+      "description_zh": "费氏弧菌 LuxR 转录激活因子序列；作为已审查的群体感应调控蛋白参考，用于软件层设计组合。"
+    },
+    {
+      "accession": "P27652",
+      "entry_id": "LUCI_RENRE",
+      "tax_id": 6136,
+      "length": 311,
+      "sha256": "625219b0991e13f0c0179a03a5de369949f26291677872011dbc0643a431ecc4",
+      "aliases": [
+        "Renilla luciferase",
+        "Rluc"
+      ],
+      "role_terms": [
+        "reporter protein",
+        "luminescence",
+        "enzyme"
+      ],
+      "description_en": "Renilla reniformis luciferase sequence, retained as a reviewed luminescent reporter reference for software-level design composition.",
+      "description_zh": "海肾荧光素酶序列；作为已审查的发光报告蛋白参考，用于软件层设计组合。"
+    }
+  ]
+}

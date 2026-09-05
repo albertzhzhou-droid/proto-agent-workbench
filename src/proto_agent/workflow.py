@@ -172,6 +172,7 @@ def run_design_review(
         if ir is not None:
             ir["provenance"] = {
                 "source": design_source.relative_to(paths.workspace).as_posix(),
+                **({"parts_source": parts_source.relative_to(paths.workspace).as_posix()} if ir.get("schema_version") == "proto-agent.ir.v2" else {}),
                 "source_sha256": input_digests["design"]["sha256"],
                 "parts_sha256": input_digests["parts"]["sha256"],
             }

@@ -1,5 +1,6 @@
 export interface GroupableDesignArtifact {
   path: string;
+  relativePath?: string;
   modifiedAt: string;
   status: "ready" | "invalid";
   sha256?: string;
@@ -7,7 +8,13 @@ export interface GroupableDesignArtifact {
   digestBinding?: { status: "match" | "mismatch" };
 }
 
-export type GroupedDesignArtifact<T> = T & { copyCount: number };
+export type GroupedDesignArtifact<T> = T & { copyCount: number; artifactPaths: string[] };
+
+export function designArtifactHasPath(artifact: {path: string; relativePath?: string; artifactPaths?: readonly string[]}, path: string): boolean {
+  const normalized = (value: string) => value.replaceAll("\\", "/").replace(/^\.\//, "").toLowerCase();
+  return [artifact.path, artifact.relativePath, ...(artifact.artifactPaths ?? [])]
+    .some(candidate => candidate !== undefined && normalized(candidate) === normalized(path));
+}
 
 function representativeRank(document: GroupableDesignArtifact): number {
   if (document.digestBinding?.status === "match") return 3;
@@ -39,11 +46,12 @@ export function groupDesignArtifacts<T extends GroupableDesignArtifact>(document
   const groupIndexBySha = new Map<string, number>();
 
   for (const document of documents) {
+    const artifactPaths = [...new Set([document.path, ...(document.relativePath ? [document.relativePath] : [])])];
     const canGroup = document.status === "ready"
       && Boolean(document.sha256)
       && document.digestBinding?.status !== "mismatch";
     if (!canGroup) {
-      grouped.push({ ...document, copyCount: 1 });
+      grouped.push({ ...document, copyCount: 1, artifactPaths });
       continue;
     }
 
@@ -51,15 +59,16 @@ export function groupDesignArtifacts<T extends GroupableDesignArtifact>(document
     const existingIndex = groupIndexBySha.get(key);
     if (existingIndex === undefined) {
       groupIndexBySha.set(key, grouped.length);
-      grouped.push({ ...document, copyCount: 1 });
+      grouped.push({ ...document, copyCount: 1, artifactPaths });
       continue;
     }
 
     const existing = grouped[existingIndex];
     const copyCount = existing.copyCount + 1;
+    const combinedPaths = [...new Set([...existing.artifactPaths, ...artifactPaths])];
     grouped[existingIndex] = shouldReplaceRepresentative(existing, document)
-      ? { ...document, copyCount }
-      : { ...existing, copyCount };
+      ? { ...document, copyCount, artifactPaths: combinedPaths }
+      : { ...existing, copyCount, artifactPaths: combinedPaths };
   }
 
   return grouped;

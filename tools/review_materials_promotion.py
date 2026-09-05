@@ -44,6 +44,8 @@ AUDIT_PATH = "materials/reviewed/promotion_audit_2026-09.json"
 SOURCE_LOCK_PATH = "materials/bundles/source-lock.json"
 EXPANSION_MANIFEST_PATH = "materials/reviewed/igem_expansion_2026-09.json"
 EXPANSION_STATE_PATH = "materials/reviewed/igem_expansion_state_2026-09.jsonl"
+PROTEIN_EXPANSION_MANIFEST_PATH = "materials/reviewed/protein_expansion_2026-09.json"
+PROTEIN_EXPANSION_STATE_PATH = "materials/reviewed/uniprot_expansion_state_2026-09.jsonl"
 IGEM_LICENSE_API = "https://api.registry.igem.org/v1/licenses/"
 UNIPROT_LICENSE_API = "https://rest.uniprot.org/help/license"
 UNIPROT_LICENSE_PAGE = "https://www.uniprot.org/help/license"
@@ -208,6 +210,26 @@ def _load_expansion_parts(repo: Path) -> tuple[dict[str, Any], ...]:
     return tuple(parts)
 
 
+def _load_protein_expansion(repo: Path) -> tuple[dict[str, Any], ...]:
+    """Load the curated UniProt protein expansion manifest when it is emitted."""
+
+    path = repo / PROTEIN_EXPANSION_MANIFEST_PATH
+    if not path.is_file():
+        return ()
+    payload = _read_json_bytes(path.read_bytes(), label=PROTEIN_EXPANSION_MANIFEST_PATH)
+    if payload.get("schema_version") != "proto-agent.materials.uniprot-expansion.v1":
+        raise ValueError("Unsupported UniProt expansion manifest schema")
+    records = payload.get("records")
+    if not isinstance(records, list):
+        raise ValueError("UniProt expansion manifest has no records array")
+    for item in records:
+        if not isinstance(item, dict) or not all(item.get(key) for key in ("accession", "entry_id", "tax_id", "length", "sha256", "description_en", "description_zh")):
+            raise ValueError(f"UniProt expansion manifest entry is invalid: {item}")
+        if not re.fullmatch(r"[A-Z0-9]{6,10}", str(item["accession"])) or not re.fullmatch(r"[a-f0-9]{64}", str(item["sha256"])):
+            raise ValueError(f"UniProt expansion manifest entry has invalid identity fields: {item['accession']}")
+    return tuple(records)
+
+
 def _fetch_one(item: dict[str, str]) -> tuple[dict[str, Any], bytes]:
     _FETCH_THROTTLE()
     request = urllib.request.Request(item["url"], headers={"Accept": item["accept"], "User-Agent": USER_AGENT})
@@ -263,7 +285,7 @@ def _fetch_plan(repo: Path) -> list[dict[str, str]]:
             "url": f"{IGEM_LICENSE_API}{uuid}",
             "accept": "application/json",
         })
-    for item in UNIPROT_RECORDS:
+    for item in (*UNIPROT_RECORDS, *_load_protein_expansion(repo)):
         accession = item["accession"]
         plan.append({
             "path": f"{EVIDENCE_DIRECTORY}/uniprot/entries/{accession}.json",
@@ -465,7 +487,7 @@ def _uniprot_records(repo: Path, responses: dict[str, dict[str, Any]]) -> tuple[
         raise ValueError("UniProt license/disclaimer response did not contain the reviewed rights assertions")
     records: list[dict[str, Any]] = []
     evidence: dict[str, dict[str, Any]] = {}
-    for expected in UNIPROT_RECORDS:
+    for expected in (*UNIPROT_RECORDS, *_load_protein_expansion(repo)):
         accession = expected["accession"]
         relative = f"{EVIDENCE_DIRECTORY}/uniprot/entries/{accession}.json"
         payload, receipt = _response(repo, responses, relative)
@@ -687,51 +709,43 @@ def check_outputs(repo: Path) -> None:
         raise ValueError(f"Reviewed materials outputs are stale or missing: {mismatches}")
 
 
+def _load_state_entries(path: Path) -> dict[str, dict[str, Any]]:
+    """Read an append-only crawler state file with last-entry-wins semantics."""
+
+    entries: dict[str, dict[str, Any]] = {}
+    if not path.is_file():
+        return entries
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            entry = json.loads(line)
+            key = str(entry.get("uuid") or entry.get("accession") or "")
+            entries[key] = entry
+    return entries
+
+
 def _crawl_receipt(repo: Path) -> None:
     """Merge crawler evidence into the retrieval receipt without network access.
 
-    Keeps every existing receipt entry whose evidence file still matches its
-    locked digest, then appends one entry per accepted expansion part from the
-    crawler state file.  The merged receipt must cover the full fetch plan
-    (seed parts, expansion parts, licenses, UniProt entries) or the build
-    fails closed.
+    Crawler state entries (accepted iGEM expansion parts, accepted curated
+    UniProt proteins, and refreshed UniProt seed entries) override or extend
+    the existing receipt; every other existing entry is kept only while its
+    evidence file still matches the locked digest.  The merged receipt must
+    cover the full fetch plan or the build fails closed.
     """
 
     receipt_path = repo / RECEIPT_PATH
     existing = _read_json_bytes(receipt_path.read_bytes(), label=RECEIPT_PATH)
     if existing.get("schema_version") != RECEIPT_SCHEMA or not isinstance(existing.get("responses"), list):
         raise ValueError("Existing retrieval receipt is missing or unsupported")
-    kept: dict[str, dict[str, Any]] = {}
-    for item in existing["responses"]:
-        if not isinstance(item, dict):
-            raise ValueError("Existing receipt entry is invalid")
-        relative = _safe_relative(str(item.get("path") or ""))
-        body = (repo / relative).read_bytes()
-        if len(body) != int(item.get("byte_count", -1)) or _sha256_bytes(body) != str(item.get("sha256") or ""):
-            raise ValueError(f"Existing receipt evidence no longer matches: {relative}")
-        kept[relative] = item
-    state_path = repo / EXPANSION_STATE_PATH
-    if not state_path.is_file():
-        raise ValueError("Crawler state file is missing")
-    state_entries: dict[str, dict[str, Any]] = {}
-    for line in state_path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line:
-            entry = json.loads(line)
-            state_entries[str(entry.get("uuid") or "")] = entry
+    overrides: dict[str, dict[str, Any]] = {}
+    igem_state = _load_state_entries(repo / EXPANSION_STATE_PATH)
     manifest_uuids = {str(item["uuid"]) for item in _load_expansion_parts(repo)}
-    appended: dict[str, dict[str, Any]] = {}
-    for uuid, entry in state_entries.items():
+    for uuid, entry in igem_state.items():
         if entry.get("decision") != "accepted" or uuid not in manifest_uuids:
             continue
-        relative = f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json"
-        if relative in kept:
-            continue
-        body = (repo / _safe_relative(relative)).read_bytes()
-        if _sha256_bytes(body) != str(entry.get("content_sha256") or "") or len(body) != int(entry.get("byte_count", -1)):
-            raise ValueError(f"Crawler evidence does not match its state entry: {relative}")
-        appended[relative] = {
-            "path": relative,
+        overrides[f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json"] = {
+            "path": f"{EVIDENCE_DIRECTORY}/igem/parts/{uuid}.json",
             "url": str(entry.get("url") or f"https://api.registry.igem.org/v1/parts/{uuid}"),
             "retrieved_at": str(entry.get("retrieved_at") or ""),
             "sha256": str(entry.get("content_sha256") or ""),
@@ -739,7 +753,44 @@ def _crawl_receipt(repo: Path) -> None:
             "content_type": str(entry.get("content_type") or "application/json"),
             "response_headers": {},
         }
-    merged = {**kept, **appended}
+    uniprot_state = _load_state_entries(repo / PROTEIN_EXPANSION_STATE_PATH)
+    protein_accessions = {str(item["accession"]) for item in _load_protein_expansion(repo)}
+    for accession, entry in uniprot_state.items():
+        if entry.get("decision") != "accepted":
+            continue
+        # Refreshed seed entries (no candidate key) replace their old receipt
+        # rows too, so their current evidence bytes stay locked.
+        if accession not in protein_accessions and not entry.get("refresh"):
+            continue
+        relative = f"{EVIDENCE_DIRECTORY}/uniprot/entries/{accession}.json"
+        headers = entry.get("response_headers") if isinstance(entry.get("response_headers"), dict) else {}
+        if not str(headers.get("X-UniProt-Release") or ""):
+            raise ValueError(f"UniProt crawl state is missing the release header: {accession}")
+        overrides[relative] = {
+            "path": relative,
+            "url": str(entry.get("url") or f"https://rest.uniprot.org/uniprotkb/{accession}.json"),
+            "retrieved_at": str(entry.get("retrieved_at") or ""),
+            "sha256": str(entry.get("content_sha256") or ""),
+            "byte_count": int(entry.get("byte_count", -1)),
+            "content_type": str(entry.get("content_type") or "application/json"),
+            "response_headers": headers,
+        }
+    for relative in overrides:
+        body = (repo / _safe_relative(relative)).read_bytes()
+        if _sha256_bytes(body) != overrides[relative]["sha256"] or len(body) != overrides[relative]["byte_count"]:
+            raise ValueError(f"Crawler evidence does not match its state entry: {relative}")
+    kept: dict[str, dict[str, Any]] = {}
+    for item in existing["responses"]:
+        if not isinstance(item, dict):
+            raise ValueError("Existing receipt entry is invalid")
+        relative = _safe_relative(str(item.get("path") or ""))
+        if relative in overrides:
+            continue
+        body = (repo / relative).read_bytes()
+        if len(body) != int(item.get("byte_count", -1)) or _sha256_bytes(body) != str(item.get("sha256") or ""):
+            raise ValueError(f"Existing receipt evidence no longer matches: {relative}")
+        kept[relative] = item
+    merged = {**kept, **overrides}
     plan_paths = {item["path"] for item in _fetch_plan(repo)}
     missing = sorted(plan_paths - set(merged))
     if missing:
@@ -752,7 +803,8 @@ def _crawl_receipt(repo: Path) -> None:
         "completed_at": _now(),
         "transport": (
             "HTTPS GET with certificate validation via certifi; redirects and non-200 responses rejected. "
-            "iGEM expansion responses were captured by tools/crawl_igem_parts.py under the same transport policy."
+            "iGEM and UniProt expansion responses were captured by tools/crawl_igem_parts.py and "
+            "tools/crawl_uniprot_proteins.py under the same transport policy."
         ),
         "responses": [merged[relative] for relative in sorted(plan_paths)],
     }
@@ -783,7 +835,12 @@ def main() -> int:
     except Exception as exc:
         print(f"materials promotion review failed: {exc}", file=sys.stderr)
         return 1
-    total = len(IGEM_PARTS) + len(_load_expansion_parts(repo)) + len(UNIPROT_RECORDS)
+    total = (
+        len(IGEM_PARTS)
+        + len(_load_expansion_parts(repo))
+        + len(UNIPROT_RECORDS)
+        + len(_load_protein_expansion(repo))
+    )
     print(f"materials promotion review passed: {total}/{total} candidates; this command did not activate a snapshot")
     return 0
 

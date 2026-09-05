@@ -7,6 +7,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
 import "./styles.css";
+import "./workbench-theme.css";
 
 type MonacoWorker = new () => Worker;
 const workerScope = globalThis as typeof globalThis & {

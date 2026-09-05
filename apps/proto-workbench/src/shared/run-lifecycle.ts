@@ -42,7 +42,9 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
   const validationJournals = input.validationJournals ?? [];
   const review = input.review;
   const latest = events.at(-1);
-  const controller = events.find((event) => event.stage === "plan" && event.title === "Agent plan started");
+  const controller = [...events].reverse().find((event) => event.stage === "plan" && ["Agent plan started", "Autonomous mission", "Mission resumed"].includes(event.title));
+  const harnessEvent = [...events].reverse().find((event) => typeof event.payload?.harness === "object" && event.payload.harness !== null);
+  const harness = harnessEvent?.payload?.harness as {state?: string; error?: {message?: string}} | undefined;
   const pendingApprovalCount = approvals.filter((approval) => approval.status === "pending").length;
   const activePatch = patches.find((patch) => patch.status === "pending");
   const activeOperation = selectActiveOperation(operations, validationJournals);
@@ -52,7 +54,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
   const uncertainArtifactStep = activeJournal?.steps.find(
     (step) => step.effect === "artifact-write" && step.state === "effect-unknown",
   );
-  const validating = events.some((event) => event.stage === "validate" && event.status === "running");
+  const validating = !harness && events.some((event) => event.stage === "validate" && event.status === "running");
   const hasReviewPacket = Boolean(
     review?.packetPath
     || review?.claims.length
@@ -99,7 +101,25 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       false,
     );
   }
-  if (latest?.status === "effect-unknown") {
+  // Scientific review and historical tool events cannot override the durable
+  // execution checkpoint. A valid intermediate artifact is not task completion.
+  if (harness && harness.state !== "completed") {
+    const detail = harness.error?.message || harnessEvent?.summary || "Execution is saved for continuation.";
+    switch (harness.state) {
+      case "effect-unknown": return lifecycle("effect-unknown", "recovery", "Effect needs reconciliation", detail, false);
+      case "paused": return lifecycle("interrupted", "recovery", "Task paused", detail, false);
+      case "incomplete": return lifecycle("interrupted", "recovery", "Task incomplete", detail, false);
+      case "blocked": return lifecycle("interrupted", "recovery", "Task blocked", detail, false);
+      case "failed": return lifecycle("failed", "failure", "Task failed", detail, true);
+      case "cancelled": return lifecycle("cancelled", "none", "Task cancelled", detail, true);
+      case "validating": return lifecycle("validating", "validation", "Verifying deliverables", detail, false);
+      case "queued": return lifecycle("pending", "none", "Task queued", detail, false);
+      case "preparing": case "generating": case "executing": case "checkpointing": case "recovering":
+        return lifecycle("running", "none", "Task in progress", detail, false);
+      default: return lifecycle("interrupted", "recovery", "Execution state unavailable", "The saved execution state is not recognized. Completion cannot be inferred.", false);
+    }
+  }
+  if (!harness && latest?.status === "effect-unknown") {
     return lifecycle(
       "effect-unknown",
       "recovery",
@@ -108,7 +128,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       false,
     );
   }
-  if (latest?.status === "interrupted") {
+  if (!harness && latest?.status === "interrupted") {
     return lifecycle(
       "interrupted",
       "recovery",
@@ -153,7 +173,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       false,
     );
   }
-  if (latest?.status === "approval-required") {
+  if (!harness && latest?.status === "approval-required") {
     return lifecycle(
       "waiting-tool-approval",
       "tool-approval",
@@ -171,7 +191,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       false,
     );
   }
-  if (controller?.status === "failed") {
+  if (!harness && controller?.status === "failed") {
     return lifecycle(
       "failed",
       "failure",
@@ -180,7 +200,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       true,
     );
   }
-  if (controller?.status === "cancelled") {
+  if (!harness && controller?.status === "cancelled") {
     return lifecycle(
       "cancelled",
       "none",
@@ -198,7 +218,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       true,
     );
   }
-  if (latest?.status === "failed" && controller?.status !== "completed") {
+  if (!harness && latest?.status === "failed" && controller?.status !== "completed") {
     return lifecycle(
       "failed",
       "failure",
@@ -207,7 +227,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       true,
     );
   }
-  if (latest?.status === "cancelled") {
+  if (!harness && latest?.status === "cancelled") {
     return lifecycle(
       "cancelled",
       "none",
@@ -243,7 +263,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
       false,
     );
   }
-  if (latest?.status === "running" || controller?.status === "running") {
+  if (!harness && (latest?.status === "running" || controller?.status === "running")) {
     return lifecycle(
       "running",
       "none",
@@ -341,6 +361,7 @@ export function runAllowedActions(input: RunLifecycleInput): RunAllowedActions {
       )
     );
   const stableForFinalReview = stateAllowsDecision
+    && !["running", "pending", "validating"].includes(projection.state)
     && !activePatch
     && !pendingApproval
     && (!activeOperation || activeOperation.state === "verified");

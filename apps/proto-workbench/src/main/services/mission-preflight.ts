@@ -10,6 +10,7 @@ import type {
 } from "../../shared/contracts.ts";
 import type { ModuleIntegrityReport } from "../../shared/modules.ts";
 import type { McpCapabilities } from "./mcp-client.ts";
+import { deriveMissionCapabilities } from "./mission-contract.ts";
 
 export interface MissionPreflightInputs {
   thread: AgentThread;
@@ -24,16 +25,15 @@ export interface MissionPreflightInputs {
   toolNames: string[];
 }
 
-const NETWORK_INTENT = /(?:\b(?:search|browse|query|fetch|download|look\s*up|pubmed|crossref|uniprot|rhea|europe\s*pmc|online|internet|web)\b|联网|上网|网络|在线|检索|搜索|查询|下载|文献库)/iu;
 const WRITE_INTENT = /(?:\b(?:write|edit|change|modify|update|create|delete|remove|rename|patch|apply|compile|export|save|implement|fix|upgrade|build)\b|写入|修改|编辑|更新|创建|删除|移除|重命名|补丁|应用|编译|导出|保存|实现|修复|升级|构建)/iu;
-const EXECUTION_INTENT = /(?:\b(?:run|execute|python|notebook|jupyter|script|shell|terminal|powershell|benchmark|train|simulate)\b|运行|执行|脚本|终端|命令|测试|训练|模拟|仿真)/iu;
 
 export function classifyMissionIntent(content: string): MissionIntent {
   const normalized = normalizeText(content);
+  const capabilities = deriveMissionCapabilities(normalized);
   return {
-    network: NETWORK_INTENT.test(normalized),
+    network: capabilities.network,
     writes: WRITE_INTENT.test(normalized),
-    execution: EXECUTION_INTENT.test(normalized),
+    execution: capabilities.execution,
   };
 }
 
@@ -105,7 +105,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
     action: modelReady ? undefined : "models",
   });
   if (modelReady && input.model?.toolCapability === "unknown" && needsAgentTools) {
-    warnings.push("The model's tool behavior is uncharacterized; tool calls remain fail-closed and approval-gated.");
+    warnings.push("The model's tool behavior is uncharacterized; every tool call is checked against the mission scope.");
   }
 
   const imageAttachments = input.attachments.filter((attachment) => attachment.mediaType.startsWith("image/"));
@@ -133,7 +133,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       title: "Live network boundary",
       state: networkTools && networkControlled ? "approval-required" : "blocked",
       detail: networkTools && networkControlled
-        ? "Live scientific lookup is available only through a fresh per-call approval capability."
+        ? "Starting this mission authorizes its scientific lookups. Each request receives a fresh capability within that scope."
         : !networkTools
           ? "No approved live scientific lookup tool is enabled for this workspace."
           : "The MCP sidecar did not report the required per-call network authorization boundary.",
@@ -157,7 +157,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       detail: input.thread.mode === "plan"
         ? "Plan mode may inspect and propose a path forward, but it cannot apply workspace changes."
         : writeSupported
-          ? "The mission may propose a diff; applying it still requires explicit human review."
+          ? "Starting this mission authorizes changes within its workspace targets. Each change records a diff, checks the baseline, writes atomically, and validates."
           : "The reviewed patch proposal boundary is unavailable.",
       action: input.thread.mode === "plan" || writeSupported ? undefined : "settings",
     });
@@ -168,7 +168,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       state: "ready",
       detail: input.thread.mode === "plan"
         ? "Plan mode keeps workspace writes disabled."
-        : "No write intent was detected; any later patch still pauses for explicit review.",
+        : "No write intent was detected; changes outside the mission scope remain blocked.",
     });
   }
 
@@ -186,7 +186,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       detail: input.thread.mode === "plan"
         ? "Plan mode records the execution need but will not run code."
         : isolated
-          ? `Digest-pinned ${execution.provider || "OCI"} execution is available and still requires per-call approval.`
+          ? `Starting this mission authorizes its requested analysis in the digest-pinned ${execution.provider || "OCI"} boundary.`
           : execution.reason || "A configured, digest-pinned OCI sandbox is required before code can run.",
       action: input.thread.mode === "plan" || isolated ? undefined : "settings",
     });
@@ -206,7 +206,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
     id: "human-review",
     title: "Human review",
     state: "ready",
-    detail: "Network, execution, and file effects cannot inherit this launch confirmation; each uses its own fresh gate.",
+    detail: "Launch binds the goal, workspace, inputs, capabilities, and budget. Scientific conclusions and materials eligibility retain their human-review requirements.",
   });
 
   const launchable = !requirements.some((requirement) => requirement.state === "blocked");
@@ -218,7 +218,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
   const nextAction = !launchable
     ? requirements.find((requirement) => requirement.state === "blocked")?.detail ?? "Resolve the blocked requirement and refresh preflight."
     : state === "approval-required"
-      ? "Start the mission; each declared side effect will still pause at its dedicated approval gate."
+      ? "Start the mission to authorize the scope above. In-scope work proceeds automatically with durable evidence and validation."
       : requirements.some((requirement) => requirement.state === "deferred")
         ? "Start the Plan mission; deferred effects will remain disabled until a separately reviewed Act mission."
         : "Start the mission with this exact goal, mode, model, capability set, and attachment set.";
@@ -238,6 +238,13 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       loadState: input.model.loadState,
       toolCapability: input.model.toolCapability,
       vision: input.model.vision,
+      workbenchInstance: input.model.workbenchInstance ? {
+        id: input.model.workbenchInstance.id,
+        ownedByWorkbench: input.model.workbenchInstance.ownedByWorkbench,
+        contextLength: input.model.workbenchInstance.contextLength
+          ?? input.model.loadedInstances?.find(instance => instance.id === input.model!.workbenchInstance!.id)?.contextLength
+          ?? null,
+      } : null,
     } : null,
     attachments: input.attachments.map((attachment) => ({
       path: normalizePath(attachment.path),

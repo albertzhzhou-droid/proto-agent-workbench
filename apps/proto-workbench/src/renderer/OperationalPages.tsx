@@ -32,6 +32,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { connectedContext, modelContextLabel } from "./model-presentation.ts";
 import type {
   FileCheckpoint,
   MaterialSummary,
@@ -284,7 +285,7 @@ function LaunchpadPage() {
         <div><span className="eyebrow">Blank mission</span><h2>Start with an explicit permission posture</h2><p>These choices create a new empty draft and leave earlier runs untouched. Use the Mission Library above when you want a reusable goal as a starting point.</p></div>
         <div className="guided-run-actions">
           <button className="secondary-button guided-mode" type="button" disabled={!readiness.operational} onClick={() => void startRun("plan")}><LockKeyhole size={16} /><span><strong>Plan</strong><small>Explore and prepare without file writes</small></span></button>
-          <button className="primary-button guided-mode" type="button" disabled={!readiness.operational} onClick={() => void startRun("act")}><ShieldCheck size={16} /><span><strong>Act with approvals</strong><small>Propose reviewable changes behind gates</small></span></button>
+          <button className="primary-button guided-mode" type="button" disabled={!readiness.operational} onClick={() => void startRun("act")}><ShieldCheck size={16} /><span><strong>Act within scope</strong><small>Apply and validate authorized workspace changes</small></span></button>
         </div>
         <dl className="readiness-facts"><div><dt>Workspace</dt><dd>{entries.length} indexed files</dd></div><div><dt>Runtime</dt><dd>{runtime.available ? runtime.backend?.toUpperCase() ?? "Available" : "Not ready"}</dd></div><div><dt>Model</dt><dd>{activeModel?.name ?? "Not loaded"}</dd></div><div><dt>Safety</dt><dd>Human review required</dd></div></dl>
       </section>
@@ -378,7 +379,7 @@ function LmStudioModelsPage() {
     setSelectedId(selected.id);
     const loaded = selected.loadedInstances?.find((instance) => instance.id === selected.workbenchInstance?.id)
       ?? selected.loadedInstances?.[0];
-    setContextLength(loaded?.contextLength ?? Math.min(selected.contextLength, 32_768));
+    setContextLength(connectedContext(selected) ?? loaded?.contextLength ?? Math.min(selected.contextLength, 32_768));
     setEvalBatchSize(loaded?.evalBatchSize ?? 512);
     setFlashAttention(loaded?.flashAttention ?? true);
     setKvCachePlacement(loaded?.offloadKvCacheToGpu === false ? "cpu" : "gpu");
@@ -447,7 +448,7 @@ function LmStudioModelsPage() {
                   <span className={`model-dot is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`} />
                   <span className="catalog-model-copy">
                     <strong>{model.name}</strong>
-                    <small>{model.publisher || "Local"} · {model.quantization} · {formatContext(model.contextLength)}</small>
+                    <small>{model.publisher || "Local"} · {model.quantization} · {modelContextLabel(model)}</small>
                   </span>
                   <span>{model.modelKind ?? "llm"}</span>
                   <span className={`model-state is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`}>{state}</span>
@@ -1116,11 +1117,11 @@ function HelpPage() {
   const runtime = useWorkbenchStore((state) => state.runtime);
   return (
     <div className="operational-page">
-      <PageHeader icon={HelpCircle} title="Help & diagnostics" subtitle="Operational guidance for the local, approval-gated Proto workflow." />
+      <PageHeader icon={HelpCircle} title="Help & diagnostics" subtitle="Operational guidance for local missions, scientific evidence, and recovery." />
       <section className="help-route-grid">
         <button type="button" onClick={() => navigate("workspaces")}><FolderOpen size={18} /><span><strong>Choose a workspace</strong><small>Inspect source and generated evidence.</small></span></button>
         <button type="button" onClick={() => navigate("models")}><Boxes size={18} /><span><strong>Connect an LM Studio model</strong><small>Review native metadata, then load or attach explicitly.</small></span></button>
-        <button type="button" onClick={() => navigate("runs")}><SlidersHorizontal size={18} /><span><strong>Run the agent</strong><small>Use Plan or Act with explicit approvals.</small></span></button>
+        <button type="button" onClick={() => navigate("runs")}><SlidersHorizontal size={18} /><span><strong>Run the agent</strong><small>Use Plan to inspect or Act to complete an authorized mission.</small></span></button>
         <button type="button" onClick={() => navigate("reviews")}><CheckCircle2 size={18} /><span><strong>Review evidence</strong><small>Complete the human gate and decision log.</small></span></button>
       </section>
       <section className="page-section diagnostics-section"><div className="section-heading"><div><h2>Runtime diagnostics</h2><p>LM Studio is the single model catalog, residency manager, and inference provider.</p></div></div><div className="diagnostic-row"><Cpu size={15} /><span>Provider</span><strong>{runtime.provider === "lmstudio" ? "LM Studio" : "Unavailable"}</strong></div><div className="diagnostic-row"><Gauge size={15} /><span>Status</span><strong>{runtime.detail}</strong></div><div className="diagnostic-row"><ShieldCheck size={15} /><span>Security</span><strong>Sandboxed renderer · fixed loopback origin · environment-only token · explicit load</strong></div></section>

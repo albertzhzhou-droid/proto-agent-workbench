@@ -1,11 +1,12 @@
 export const VISUALIZATION_INTERACTIVE_LIMITS = Object.freeze({
-  maxBases: 10_000,
-  maxFeatures: 750,
+  maxBases: 100_000,
+  maxFeatures: 2_000,
+  maxWindowedBases: 1_000_000,
   maxAccessibleRows: 500,
 });
 
 export interface VisualizationEnvelopeResult {
-  readonly mode: "interactive" | "summary";
+  readonly mode: "interactive" | "windowed" | "summary";
   readonly reasons: string[];
 }
 
@@ -19,5 +20,6 @@ export function classifyVisualizationEnvelope(length: number, featureCount: numb
   else if (featureCount > VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures) {
     reasons.push(`Feature count exceeds the ${VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures.toLocaleString("en-US")} interactive limit.`);
   }
-  return { mode: reasons.length ? "summary" : "interactive", reasons };
+  const windowable = Number.isSafeInteger(length) && length > 0 && length <= VISUALIZATION_INTERACTIVE_LIMITS.maxWindowedBases && Number.isSafeInteger(featureCount) && featureCount >= 0 && featureCount <= 20_000;
+  return { mode: reasons.length ? windowable ? "windowed" : "summary" : "interactive", reasons };
 }

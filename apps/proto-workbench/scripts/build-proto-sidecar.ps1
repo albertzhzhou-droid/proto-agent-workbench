@@ -1,20 +1,21 @@
 param(
-  [string]$Python = ""
+  [string]$Python = "",
+  $BuildLease = $null
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $AppRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "build-transaction.ps1")
 $RepoRoot = (Resolve-Path (Join-Path $AppRoot "..\..")).Path
 $RuntimeRoot = Join-Path $AppRoot "runtime"
 $Destination = Join-Path $RuntimeRoot "proto-agent"
 $BuildRoot = Join-Path $AppRoot "build\pyinstaller"
-$LockRoot = Join-Path $AppRoot "build\locks"
 $BuildId = [Guid]::NewGuid().ToString("N")
 $Staging = Join-Path $RuntimeRoot ".proto-agent-staging-$BuildId"
 $Backup = Join-Path $RuntimeRoot ".proto-agent-backup-$BuildId"
-$Failed = Join-Path $RuntimeRoot ".proto-agent-failed-$BuildId"
+$Failed = Join-Path $BuildRoot "failed-runtime-$BuildId"
 $ReadmeSource = Join-Path $Destination "README.md"
 $McpRequestRelative = "apps/proto-workbench/build/pyinstaller/mcp-tools-list-$BuildId.json"
 $McpRequestPath = Join-Path $RepoRoot ($McpRequestRelative -replace "/", "\")
@@ -34,20 +35,7 @@ if (-not (Test-Path -LiteralPath $ReadmeSource -PathType Leaf)) {
 
 New-Item -ItemType Directory -Force -Path $RuntimeRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $BuildRoot | Out-Null
-New-Item -ItemType Directory -Force -Path $LockRoot | Out-Null
-
-$LockPath = Join-Path $LockRoot "sidecar-build.lock"
-$LockStream = $null
-try {
-  $LockStream = [System.IO.File]::Open(
-    $LockPath,
-    [System.IO.FileMode]::OpenOrCreate,
-    [System.IO.FileAccess]::ReadWrite,
-    [System.IO.FileShare]::None
-  )
-} catch [System.IO.IOException] {
-  throw "Another sidecar build owns the project lock: $LockPath"
-}
+$Lease = Enter-ProjectBuildLease -AppRoot $AppRoot -ParentLease $BuildLease
 
 function Invoke-JsonCommand {
   param(
@@ -195,15 +183,16 @@ function Restore-PreviousRuntime {
     return
   }
   if (Test-Path -LiteralPath $Destination) {
-    Move-Item -LiteralPath $Destination -Destination $Failed
+    Move-FailedBuildEvidence -Path $Destination -SourceBoundary $RuntimeRoot -Destination $Failed -BuildRoot $BuildRoot
   }
   Move-Item -LiteralPath $Backup -Destination $Destination
-  if (Test-Path -LiteralPath $Failed) {
-    Remove-Item -LiteralPath $Failed -Recurse -Force
-  }
 }
 
 try {
+  foreach ($ManagedPath in @($Staging, $Destination, $Backup)) {
+    Assert-BuildManagedPath -Path $ManagedPath -Boundary $RuntimeRoot
+  }
+  Assert-BuildManagedPath -Path $Failed -Boundary $BuildRoot
   & $Python -c "import PyInstaller"
   if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller is not installed in the project-local .venv."
@@ -245,6 +234,7 @@ try {
   }
 
   if (Test-Path -LiteralPath $Backup) {
+    Assert-BuildManagedPath -Path $Backup -Boundary $RuntimeRoot
     Remove-Item -LiteralPath $Backup -Recurse -Force
   }
   Write-Host ("Proto sidecars published: admin={0}, mcp={1}, skills={2}" -f `
@@ -253,12 +243,11 @@ try {
     $PublishedEvidence.SkillCatalogSha256)
 } finally {
   if (Test-Path -LiteralPath $Staging) {
-    Remove-Item -LiteralPath $Staging -Recurse -Force
+    Move-FailedBuildEvidence -Path $Staging -SourceBoundary $RuntimeRoot -Destination $Failed -BuildRoot $BuildRoot
+    Write-Host "Failed sidecar runtime retained for inspection: $Failed"
   }
   if (Test-Path -LiteralPath $McpRequestPath) {
     Remove-Item -LiteralPath $McpRequestPath -Force
   }
-  if ($null -ne $LockStream) {
-    $LockStream.Dispose()
-  }
+  Exit-ProjectBuildLease $Lease
 }

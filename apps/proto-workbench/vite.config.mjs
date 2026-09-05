@@ -6,7 +6,8 @@ export default defineConfig({
     include: ["react", "react-dom/client"],
   },
   server: {
-    host: "0.0.0.0",
+    host: "127.0.0.1",
+    watch: { ignored: ["**/build/**", "**/out/**", "**/runtime/**", "**/release*/**", "**/qa/**"] },
     allowedHosts: ["terminal.local"],
     warmup: {
       clientFiles: ["./src/renderer/main.tsx"],

@@ -1,15 +1,68 @@
-# Proto Agent Toolchain
+# Proto Workbench
 
-> Experimental `0.1.x` software. The Python CLI (`0.1.0`) and Windows
-> Workbench (`0.1.2`) are versioned independently. The legacy parts library is
-> a development fixture; the small public materials bundles retain upstream
+> Experimental software. The Python CLI (`0.1.0`) and Windows
+> Workbench (`0.2.0-rc.1`) are versioned independently. The legacy parts library is
+> a development fixture; the public materials bundles retain upstream
 > provenance and per-record rights. Every scientific result remains
 > human-review-required.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for the reconstructed version history,
-retained Stage 16 build, validation boundaries, and retired build lineage.
+An auditable local AI workbench for source-based DNA design, protein sequences,
+and real molecular structures. The autonomous Harness carries material identity,
+tool results and validation evidence through a mission, with durable checkpoints
+and explicit incomplete states when delivery cannot be verified.
 
-This repository is a local-first development scaffold for making Proto-like synthetic biology design files usable by AI hosts through a strict tool loop:
+## Upgrade demo: real native application captures
+
+These are unchanged screenshots from actual Windows Electron validation, not
+mockups or preview fixtures. [Evidence and scope](docs/upgrade-verification.md)
+identify the captured builds, source reports and screenshot SHA-256 values.
+
+**Harness: inspect the execution graph, tool arguments and review evidence.**
+This is a real completed local-model mission reopened in native development
+Electron. It is separate from the fifteen-task debug campaign and final package
+checks; the visible 15/128 counter describes rounds within that one mission.
+
+![Actual completed Harness mission with execution dependencies and review evidence](docs/assets/workbench-0.2.0/harness-execution.png)
+
+**DNA: connected circular map, sequence and feature selection.** The final
+Portable used a governed 896 bp QA construct; its source edits, compiler checks,
+undo/redo and SVG/PNG exports were exercised in the native application.
+
+![Native Portable DNA map with linked sequence and features](docs/assets/workbench-0.2.0/dna-workbench.png)
+
+**Protein: real coordinates, explicit residue mapping and linked selection.**
+The final installer payload imported retained PDB 1B8J mmCIF bytes through the
+native file dialog, mapped 449 observed residues and independently reopened a
+1920 x 1080 structure export. Local import remains classified as source unknown;
+the validation record separately binds its bytes to the prior official download.
+
+![Actual native protein structure with a selected residue and export receipt](docs/assets/workbench-0.2.0/protein-structure.png)
+
+<details>
+<summary>Live Launchpad readiness and dark-theme workbench</summary>
+
+![Native Launchpad showing verified modules and an unloaded model](docs/assets/workbench-0.2.0/launchpad.png)
+
+</details>
+
+The September 5 debug campaign completed **15/15 task samples: 7 direct and
+8 after bounded retry or repair**, with zero host recovery, incomplete results
+or false completion. It used `qwen3.8-27b@q4_k_m` with an actual **32,768-token**
+context and covered file synthesis, paginated materials and governed DNA.
+The model was unloaded after sample fifteen. This is not the full sixty-task
+acceptance matrix or evidence for every planned task family.
+
+Source checks passed **809 JavaScript tests**, **242 Python tests** (four Windows
+platform skips) and TypeScript. The actual Portable and exact extracted installer
+payload each passed eight native checks. Candidates are unsigned; installation,
+upgrade and uninstallation were not tested in a disposable Windows environment.
+Generated installers, raw sessions and local databases stay outside Git.
+
+See the [upgrade evidence](docs/upgrade-verification.md),
+[publication boundaries](docs/repository-publication.md), and
+[`CHANGELOG.md`](CHANGELOG.md) for precise validation and release scope.
+
+The CLI and MCP layer make Proto-like design files usable by AI hosts through a strict tool loop:
 
 1. Edit `.proto` design files.
 2. Run `proto-agent check`.
@@ -23,7 +76,7 @@ The current implementation is intentionally conservative: it uses a tiny Proto-l
 
 ## Biological Materials Catalogue
 
-The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`. Large synchronized snapshots and local state stay outside Git, but `materials/bundles/` contains a deterministic public distribution: 1,046 reviewed iGEM DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators; 26 hand-reviewed classics plus a 1,020-part 2026-09 expansion crawled from published, openly licensed registry records dated no later than the 2025 season) and 5 reviewed UniProt protein records, plus a physically separate metadata-only quarantine index. The 1,795 quarantine rows retain public source, license, original length/hash, and isolation reasons, while all quarantine sequence objects and personal or machine-local fields are omitted.
+The repository keeps the six-record `parts/ecoli_k12_library.json` toy fixture unchanged. A separate materials catalogue defaults to the project sibling `..\Proto CLI Materials` and can be overridden with `PROTO_AGENT_MATERIALS_ROOT`. Large synchronized snapshots and local state stay outside Git, but `materials/bundles/` contains a deterministic public distribution: 1,046 reviewed iGEM DNA parts (230 promoters, 265 RBSs, 287 CDSs, 264 terminators; 26 hand-reviewed classics plus a 1,020-part 2026-09 expansion crawled from published, openly licensed registry records dated no later than the 2025 season) and 20 reviewed UniProt protein records (5 seed references plus 15 curated 2026-09 additions: luciferases, aequorin, Cre/Flp recombinases, and transcription regulators), plus a physically separate metadata-only quarantine index. The 1,795 quarantine rows retain public source, license, original length/hash, and isolation reasons, while all quarantine sequence objects and personal or machine-local fields are omitted.
 
 Verify both profiles before use. Installing the public catalog does not activate it; activation remains a separate human decision. The quarantine profile has `activation_policy: DENY`, is not accepted by the public installer, and is never enumerated by model-facing MCP tools.
 

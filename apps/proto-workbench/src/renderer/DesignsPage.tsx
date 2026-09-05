@@ -36,10 +36,7 @@ import {
   type DesignRunProvenance,
 } from "./design-artifacts.ts";
 import {
-  discoverOpenReadingFrames,
   parseDesignIr,
-  rotateCircularConstructView,
-  searchDesign,
   viewBaseToSourceBase,
   viewIntervalToSourceSegments,
   type DesignConstruct,
@@ -48,21 +45,24 @@ import {
   type DesignSearchHit,
   type DesignViewModel,
 } from "./design-visualization.ts";
-import { groupDesignArtifacts } from "./design-inventory.ts";
+import { designArtifactHasPath, groupDesignArtifacts } from "./design-inventory.ts";
 import { normalizeSegmentedSequenceSelection, normalizeSequenceSelection } from "./design-selection.ts";
 import { mapWithConcurrency } from "./bounded-concurrency.ts";
 import { CGVIEW_RENDERER_VERSION, CgviewMap, type ProductMapHandle } from "./CgviewMap.tsx";
 import { SequenceNavigator } from "./SequenceNavigator.tsx";
 import { ProteinSequenceView } from "./ProteinSequenceView.tsx";
+import { DnaDesignEditor } from "./DnaDesignEditor.tsx";
+import { DnaSequenceWindow } from "./DnaSequenceWindow.tsx";
+import { parseDesignIrAsync, disposeDesignParserWorker } from "./design-parser-async.ts";
+import type { DesignEditApi, DesignEditResult } from "../shared/dna-edits.ts";
+import { committedDesignArtifact } from "./design-source-revision.ts";
 import type { MapExportMetadata } from "./map-export.ts";
-import { calculateGcContentSeries } from "./sequence-metrics.ts";
+import { useScientificComputation } from "./use-scientific-computation.ts";
 import { workbenchApi, workbenchDataMode } from "./mock-api.ts";
 import { useWorkbenchStore } from "./store.ts";
 import { VisualizationErrorBoundary } from "./VisualizationErrorBoundary.tsx";
 import { classifyVisualizationEnvelope, VISUALIZATION_INTERACTIVE_LIMITS } from "./visualization-envelope.ts";
 import {
-  buildFeatureInventory,
-  featureInventoryTypes,
   normalizeFeatureFilterQuery,
   type FeatureInventorySortDirection,
   type FeatureInventorySortKey,
@@ -92,6 +92,7 @@ interface LoadedDesign {
   provenance?: DesignRunProvenance;
   digestBinding?: DesignArtifactDigestBinding;
   copyCount?: number;
+  artifactPaths?: string[];
 }
 
 interface LoadedManifest {
@@ -157,6 +158,7 @@ export function DesignsPage() {
   const [selectedFeatureIndex, setSelectedFeatureIndex] = useState<number>();
   const [rangeSelection, setRangeSelection] = useState<RangeSelection>();
   const [viewerMode, setViewerMode] = useState<ViewerMode>("both");
+  const [mapShare, setMapShare] = useState(48);
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCursor, setSearchCursor] = useState(0);
@@ -183,6 +185,7 @@ export function DesignsPage() {
   const [mapHoverBase, setMapHoverBase] = useState<number>();
   const mapRef = useRef<ProductMapHandle>(null);
   const loadGeneration = useRef(0);
+  const committedRevision = useRef<{receipt: DesignEditResult; constructName: string; selectedPath?: string} | undefined>(undefined);
   const dataMode = workbenchDataMode();
 
   useEffect(() => {
@@ -242,8 +245,7 @@ export function DesignsPage() {
         try {
           const file = await workbenchApi().files.read(entry.path);
           const artifactSizeBytes = new TextEncoder().encode(file.content).byteLength;
-          const parsedJson: unknown = JSON.parse(file.content);
-          const parsed = parseDesignIr(parsedJson);
+          const parsed = await parseDesignIrAsync(file.content);
           const provenance = provenanceForArtifact(entry.relativePath, manifests);
           const digestBinding = digestBindingForArtifact(entry.relativePath, file.sha256, artifactSizeBytes, provenanceStatements);
           if (!parsed.ok || !parsed.design) {
@@ -297,9 +299,20 @@ export function DesignsPage() {
         status: inventory.complete ? "complete" : "incomplete",
         diagnostics: inventory.diagnostics,
       });
+      const revision = committedRevision.current;
+      const committed = revision ? committedDesignArtifact(grouped, revision.receipt, revision.constructName) : undefined;
+      if (revision) {
+        revision.selectedPath = committed?.path;
+        if (!committed) {
+          setLoadError("The source edit was validated, but its current compiled artifact could not be selected. The previous artifact remains open; inspect the recorded workflow outputs.");
+          return;
+        }
+      }
       setDocuments(grouped);
-      setSelectedPath((current) => grouped.some((item) => item.path === current) ? current : firstReady?.path ?? grouped[0]?.path);
-      setConstructIndex(0);
+      setSelectedPath((current) => committed?.path ?? (current
+        ? grouped.find(item => designArtifactHasPath(item, current))?.path ?? current
+        : firstReady?.path ?? grouped[0]?.path));
+      setConstructIndex(committed ? Math.max(0, committed.design?.constructs.findIndex(construct => construct.name === revision?.constructName) ?? 0) : 0);
       setFeaturePage(0);
       setSelectedFeatureIndex(undefined);
       setRangeSelection(undefined);
@@ -321,6 +334,7 @@ export function DesignsPage() {
 
     return () => {
       loadGeneration.current += 1;
+      disposeDesignParserWorker();
     };
   }, [entries]);
 
@@ -330,7 +344,7 @@ export function DesignsPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const selectedDocument = documents.find((item) => item.path === selectedPath) ?? documents[0];
+  const selectedDocument = selectedPath ? documents.find((item) => designArtifactHasPath(item, selectedPath)) : documents[0];
   const design = selectedDocument?.status === "ready" ? selectedDocument.design : undefined;
 
   useEffect(() => {
@@ -342,7 +356,10 @@ export function DesignsPage() {
     if (!artifactSha256 || !design) return;
 
     const saved = readDesignViewPreferences(window.localStorage, artifactSha256);
-    const nextConstructIndex = Math.min(saved?.selectedConstructIndex ?? 0, Math.max(0, design.constructs.length - 1));
+    const revision = committedRevision.current;
+    const committedIndex = revision?.selectedPath === selectedDocument?.path ? design.constructs.findIndex(construct => construct.name === revision.constructName) : -1;
+    const nextConstructIndex = Math.min(committedIndex >= 0 ? committedIndex : saved?.selectedConstructIndex ?? 0, Math.max(0, design.constructs.length - 1));
+    if (committedIndex >= 0) committedRevision.current = undefined;
     const nextViewOrigins = saved
       ? Object.fromEntries(Object.entries(saved.viewOrigins).filter(([index, origin]) => {
         const target = design.constructs[Number(index)];
@@ -401,34 +418,26 @@ export function DesignsPage() {
   }, [constructIndex, featureFilterQuery, featureSortDirection, featureSortKey, featureSourceFilter, featureTypeFilter, gcWindowSize, hiddenFeatureIndexesByConstruct, labelDensity, layers, linearZoom, orfMinimumAminoAcids, preferenceArtifactKey, selectedDocument?.sha256, viewOrigins, viewerMode]);
 
   const sourceConstruct = design?.constructs[constructIndex] ?? design?.constructs[0];
-  const discoveredOrfsByConstruct = useMemo(() => design?.constructs.map((item) => {
-    if (!layers.discoveredOrfs || item.length > VISUALIZATION_INTERACTIVE_LIMITS.maxBases) {
-      return { features: [], truncated: false };
-    }
-    const availableFeatureSlots = VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures - item.features.length;
-    if (availableFeatureSlots < 1) return { features: [], truncated: false };
-    return discoverOpenReadingFrames(item.sequence, {
-      topology: item.topology,
-      constructStart: item.start,
-      minimumAminoAcids: orfMinimumAminoAcids,
-      maximumFeatures: availableFeatureSlots,
-    });
-  }) ?? [], [design, layers.discoveredOrfs, orfMinimumAminoAcids]);
-  const visualDesign = useMemo(() => design ? {
-    ...design,
-    constructs: design.constructs.map((item, index) => {
-      const enriched = layers.discoveredOrfs
-        ? { ...item, features: [...item.features, ...(discoveredOrfsByConstruct[index]?.features ?? [])] }
-        : item;
-      return rotateCircularConstructView(enriched, viewOrigins[index] ?? 0);
-    }),
-  } : undefined, [design, discoveredOrfsByConstruct, layers.discoveredOrfs, viewOrigins]);
-  const construct = visualDesign?.constructs[constructIndex] ?? visualDesign?.constructs[0];
+  const artifactIdentity = `${selectedDocument?.path ?? ""}:${selectedDocument?.sha256 ?? "unverified"}`;
+  const viewInput = useMemo(() => design?.domain === "dna" ? { design, discoverOrfs: layers.discoveredOrfs, minimumAminoAcids: orfMinimumAminoAcids, viewOrigins } : undefined, [design, layers.discoveredOrfs, orfMinimumAminoAcids, viewOrigins]);
+  const viewComputation = useScientificComputation("view", artifactIdentity, viewInput);
+  const visualDesign = viewComputation.result?.design;
+  const discoveredOrfsByConstruct = viewComputation.result?.discoveredOrfs ?? [];
+  // Source summaries remain readable while derived geometry is being prepared.
+  const construct = visualDesign?.constructs[constructIndex] ?? visualDesign?.constructs[0] ?? sourceConstruct;
   const hiddenFeatureIndexes = useMemo(
     () => new Set(hiddenFeatureIndexesByConstruct[constructIndex] ?? []),
     [constructIndex, hiddenFeatureIndexesByConstruct],
   );
   const hiddenFeatureCount = hiddenFeatureIndexes.size;
+  const inventoryInput = useMemo(() => visualDesign && construct ? { features: construct.features, options: { query: featureFilterQuery, type: featureTypeFilter, source: featureSourceFilter, sortKey: featureSortKey, sortDirection: featureSortDirection, hiddenIndexes: [...hiddenFeatureIndexes] } } : undefined, [visualDesign, construct, featureFilterQuery, featureTypeFilter, featureSourceFilter, featureSortKey, featureSortDirection, hiddenFeatureIndexes]);
+  const inventoryComputation = useScientificComputation("inventory", artifactIdentity, inventoryInput);
+  const featureInventory = inventoryComputation.result?.entries ?? [];
+  const featureTypes = inventoryComputation.result?.types ?? [];
+  const tracksInput = useMemo(() => visualDesign && construct ? { sequence: construct.sequence, circular: construct.topology === "circular", windowSize: gcWindowSize || undefined } : undefined, [visualDesign, construct, gcWindowSize]);
+  const tracksComputation = useScientificComputation("tracks", artifactIdentity, tracksInput);
+  const scientificViewBlocked = viewComputation.pending || Boolean(viewComputation.error);
+  const scientificExportBlocked = scientificViewBlocked || tracksComputation.pending || !tracksComputation.result;
   const activeViewOrigin = construct?.viewOrigin ?? 0;
   const orfDiscovery = discoveredOrfsByConstruct[constructIndex] ?? discoveredOrfsByConstruct[0] ?? { features: [], truncated: false };
   const selectedFeature = selectedFeatureIndex === undefined ? undefined : construct?.features[selectedFeatureIndex];
@@ -442,17 +451,22 @@ export function DesignsPage() {
   const visualizationEnvelope = construct
     ? classifyVisualizationEnvelope(construct.length, construct.features.length)
     : { mode: "summary" as const, reasons: ["No renderable construct is selected."] };
-  const interactiveVisualizationBlocked = visualizationEnvelope.mode === "summary";
+  const interactiveVisualizationBlocked = visualizationEnvelope.mode !== "interactive";
   const selectionAnnouncement = selectedFeature
     ? `${selectedFeature.id}, ${selectedFeature.type}, ${formatFeatureIntervals(selectedFeature)}, selected in ${construct?.name ?? "the active construct"}.`
     : rangeSelection
       ? `${formatCoordinateSegments(selectionSegments, segmentsWrapOrigin(selectionSegments))}, ${selectionLength} base pairs, selected in ${construct?.name ?? "the active construct"}.`
       : `No feature or sequence range is selected in ${construct?.name ?? "the active construct"}.`;
 
-  const searchHits = useMemo(() => visualDesign ? searchDesign(visualDesign, searchQuery) : [], [searchQuery, visualDesign]);
+  const searchInput = useMemo(() => visualDesign && searchQuery.trim() ? { design: visualDesign, query: searchQuery } : undefined, [searchQuery, visualDesign]);
+  const searchComputation = useScientificComputation("search", artifactIdentity, searchInput);
+  const searchHits = searchComputation.result ?? [];
   const activeSearchHit = searchHits[searchCursor] ?? searchHits[0];
   const searchStatus = !searchQuery
     ? ""
+    : viewComputation.pending || searchComputation.pending
+      ? "Searching…"
+      : searchComputation.error || viewComputation.error ? "Search unavailable"
     : searchHits.length === 0
       ? "No results"
       : `${Math.min(searchCursor + 1, searchHits.length)}/${searchHits.length} · ${activeSearchHit?.field ?? "match"}`;
@@ -488,7 +502,7 @@ export function DesignsPage() {
   useEffect(() => {
     setSearchCursor(0);
     showSearchHit(searchHits[0]);
-  }, [searchHits, visualDesign]);
+  }, [searchComputation.result, visualDesign]);
 
   useEffect(() => {
     if (selectedFeatureIndex === undefined || construct?.features[selectedFeatureIndex]) return;
@@ -586,8 +600,8 @@ export function DesignsPage() {
   };
 
   const mapExportMetadata = (format: "svg" | "png"): MapExportMetadata | undefined => {
-    if (!design || !construct || !selectedDocument?.relativePath || !selectedDocument.sha256) return undefined;
-    const effectiveGcWindowSize = calculateGcContentSeries(construct.sequence, construct.topology === "circular", 96, gcWindowSize || undefined).windowSize;
+    if (!design || !construct || !selectedDocument?.relativePath || !selectedDocument.sha256 || scientificExportBlocked || !tracksComputation.result) return undefined;
+    const effectiveGcWindowSize = tracksComputation.result.gcContent.windowSize;
     return {
       schema: "proto-workbench.map-export.v1",
       exportedAt: new Date().toISOString(),
@@ -638,6 +652,10 @@ export function DesignsPage() {
   };
 
   const exportMap = async (format: "svg" | "png") => {
+    if (scientificExportBlocked) {
+      setNotice("Map export is waiting for the current sequence geometry and metrics.");
+      return;
+    }
     if (governanceBlocked) {
       setNotice("Map export is blocked because one or more DNA parts have incomplete governance metadata.");
       return;
@@ -717,6 +735,7 @@ export function DesignsPage() {
   };
 
   const chooseDocument = (path: string) => {
+    committedRevision.current = undefined;
     setSelectedPath(path);
   };
 
@@ -737,7 +756,7 @@ export function DesignsPage() {
           <span><FileJson2 size={26} /></span>
           <div>
             <h2>{loadError ? "Design visualization is blocked" : "Compile a design to open its product view"}</h2>
-            <p>{loadError ?? "The explorer reads validated proto-agent.ir.v1 artifacts from build/. Source .proto files remain unchanged and all views are read-only."}</p>
+            <p>{loadError ?? "The explorer reads validated DNA and protein artifacts from build/. Source-bound DNA edits prepare a checked diff before applying changes."}</p>
           </div>
           <button className="primary-button" type="button" onClick={() => void refresh()}><RefreshCw size={14} />Scan build artifacts</button>
         </section>
@@ -876,21 +895,12 @@ export function DesignsPage() {
   const visibleDiagnostics = selectedDocument?.diagnostics.filter((item) => item.severity !== "info") ?? [];
   const hiddenDiagnosticCount = Math.max(0, visibleDiagnostics.length - 8);
   const effectiveLabelDensity: Exclude<DesignLabelDensity, "auto"> = labelDensity === "auto"
-    ? viewerMode === "circular" ? "balanced" : "hidden"
+    ? viewerMode === "circular" || renderableFeatures.length <= 24 ? "balanced" : "hidden"
     : labelDensity;
   const denseMapLabels = renderableFeatures.length > (effectiveLabelDensity === "dense" ? 160 : 48) && effectiveLabelDensity !== "hidden";
   const orfDiscoveryUnavailable = !sourceConstruct
     || sourceConstruct.length > VISUALIZATION_INTERACTIVE_LIMITS.maxBases
     || sourceConstruct.features.length >= VISUALIZATION_INTERACTIVE_LIMITS.maxFeatures;
-  const featureTypes = featureInventoryTypes(construct.features);
-  const featureInventory = buildFeatureInventory(construct.features, {
-    query: featureFilterQuery,
-    type: featureTypeFilter,
-    source: featureSourceFilter,
-    sortKey: featureSortKey,
-    sortDirection: featureSortDirection,
-    hiddenFeatureIndexes,
-  });
   const featurePageCount = Math.max(1, Math.ceil(featureInventory.length / VISUALIZATION_INTERACTIVE_LIMITS.maxAccessibleRows));
   const boundedFeaturePage = Math.min(featurePage, featurePageCount - 1);
   const featurePageStart = boundedFeaturePage * VISUALIZATION_INTERACTIVE_LIMITS.maxAccessibleRows;
@@ -966,7 +976,7 @@ export function DesignsPage() {
         onExportSvg={exportMapSvg}
         onExportPng={exportMapPng}
         exportingFormat={exportingFormat}
-        exportDisabled={Boolean(exportingFormat) || viewerMode === "linear" || governanceBlocked || artifactIntegrityBlocked || provenanceInventoryBlocked || interactiveVisualizationBlocked}
+        exportDisabled={Boolean(exportingFormat) || viewerMode === "linear" || governanceBlocked || artifactIntegrityBlocked || provenanceInventoryBlocked || interactiveVisualizationBlocked || scientificExportBlocked}
         exportDisabledReason={governanceBlocked
           ? "Export is blocked because this construct contains parts with incomplete governance metadata."
           : artifactIntegrityBlocked
@@ -977,6 +987,7 @@ export function DesignsPage() {
               : "Export is blocked because the provenance inventory contains unreadable or invalid statements."
           : interactiveVisualizationBlocked
             ? "Export is unavailable while the construct is in bounded summary mode."
+            : scientificExportBlocked ? "Waiting for the current sequence geometry and metrics."
             : "Open Map or Split view to export the map."}
       />
 
@@ -994,6 +1005,7 @@ export function DesignsPage() {
           <div><dt>Chassis</dt><dd>{design.chassis}</dd></div>
         </dl>
         <div className="design-product-badges">
+          {loadError && <span className="design-digest-badge is-mismatch" title={loadError}>Last valid artifact · refresh incomplete</span>}
           {dataMode === "preview" && <span className="design-mode-badge">Development fixture</span>}
           {selectedDocument?.digestBinding?.status === "match" && <span className="design-digest-badge is-match">Digest matched</span>}
           {selectedDocument?.digestBinding?.status === "mismatch" && <span className="design-digest-badge is-mismatch">Digest mismatch</span>}
@@ -1003,6 +1015,16 @@ export function DesignsPage() {
           <span className="design-review-badge"><CircleAlert size={13} />Software-level view · review required</span>
         </div>
       </div>
+
+      <DnaDesignEditor
+        design={design}
+        construct={sourceConstruct ?? construct}
+        api={(workbenchApi() as { designs?: DesignEditApi }).designs}
+        binding={{ sourcePath: selectedDocument?.provenance?.sourcePath ?? design.source, partsPath: design.partsSource ?? selectedDocument?.provenance?.partsPath, sourceSha256: design.sourceSha256 ?? selectedDocument?.provenance?.sourceSha256, partsSha256: design.partsSha256 ?? selectedDocument?.provenance?.partsSha256 }}
+        readFile={(path) => workbenchApi().files.read(path)}
+        onCommitted={async (receipt) => {committedRevision.current = {receipt, constructName: sourceConstruct?.name ?? construct.name}; await refresh();}}
+        disabledReason={dataMode === "preview" ? "Source editing is available in the connected desktop workspace." : artifactIntegrityBlocked ? "The compiled artifact no longer matches its provenance. Open a current validated artifact." : undefined}
+      />
 
       <div className="design-explorer-grid">
         <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{selectionAnnouncement}</span>
@@ -1054,17 +1076,20 @@ export function DesignsPage() {
             <span>{mapHoverBase ? <>View position <strong>{mapHoverBase} bp</strong>{activeViewOrigin !== 0 && hoverSourceBase !== undefined ? <> · source <strong>{hoverSourceBase + 1} bp</strong></> : null} · </> : null}Source topology: <strong>{topologyDisclosure}</strong>{activeViewOrigin !== 0 ? <> · view +1 = source <strong>{activeViewOrigin + 1}</strong></> : null} · labels <strong>{labelDensity === "auto" ? `auto (${effectiveLabelDensity})` : effectiveLabelDensity}</strong>{hiddenFeatureCount > 0 ? <> · <strong>{hiddenFeatureCount}</strong> hidden</> : null}</span>
           </div>
 
-          <div className={`design-viewer is-${viewerMode}`} data-testid="design-sequence-viewer">
+          {(viewComputation.pending || tracksComputation.pending || inventoryComputation.pending) && <p role="status" className="design-computation-status">Preparing sequence views and indexes…</p>}
+          {(viewComputation.error || tracksComputation.error || inventoryComputation.error || searchComputation.error) && <p role="alert" className="design-computation-status">{viewComputation.error ?? tracksComputation.error ?? inventoryComputation.error ?? searchComputation.error}</p>}
+          <div className={`design-viewer is-${viewerMode}`} data-testid="design-sequence-viewer" style={viewerMode === "both" && !interactiveVisualizationBlocked && !scientificViewBlocked ? {gridTemplateColumns: `minmax(0, ${mapShare}fr) 8px minmax(0, ${100 - mapShare}fr)`} : undefined}>
             {interactiveVisualizationBlocked && (
               <section className="visualization-summary-mode" role="status" aria-label="Bounded visualization summary mode">
                 <CircleAlert size={22} />
-                <div><span className="eyebrow">Bounded summary mode</span><h3>Interactive renderers are paused for this construct</h3></div>
+                <div><span className="eyebrow">{visualizationEnvelope.mode === "windowed" ? "Windowed sequence review" : "Bounded summary mode"}</span><h3>{visualizationEnvelope.mode === "windowed" ? "Explore this construct in focused sequence windows" : "Interactive renderers are paused for this construct"}</h3></div>
                 {visualizationEnvelope.reasons.map((reason) => <p key={reason}>{reason}</p>)}
                 <dl><div><dt>Bases</dt><dd>{construct.length.toLocaleString()}</dd></div><div><dt>Features</dt><dd>{construct.features.length.toLocaleString()}</dd></div></dl>
-                <small>Search, provenance, diagnostics, and the paginated feature inventory remain available. Narrow the input or use a future genome-scale renderer before enabling map export.</small>
+                <small>Search, provenance, diagnostics, and the paginated feature inventory remain available. Full-map export stays disabled beyond the interactive envelope.</small>
+                {visualizationEnvelope.mode === "windowed" && !scientificViewBlocked && <DnaSequenceWindow artifactIdentity={artifactIdentity} construct={construct} selectedStart={selectedFeature?.segments[0]?.start ?? rangeSelection?.start} onSelect={(start, end) => { setSelectedFeatureIndex(undefined); setRangeSelection({ start, end }); }} />}
               </section>
             )}
-            {!interactiveVisualizationBlocked && viewerMode !== "linear" && (
+            {!interactiveVisualizationBlocked && !scientificViewBlocked && viewerMode !== "linear" && (
               <section className="visual-engine-pane map-engine-pane" aria-label={`Interactive ${mapDisplayLabel}`}>
                 <span className="visual-engine-label">CGView.js · overview</span>
                 <CgviewMap
@@ -1078,14 +1103,20 @@ export function DesignsPage() {
                   showPrimers={layers.primers}
                   showGcContent={layers.gcContent}
                   showGcSkew={layers.gcSkew}
-                  gcWindowSize={gcWindowSize || undefined}
+                  sequenceTracks={tracksComputation.result}
                   showIndex={layers.index}
                   onSelectFeature={selectFeature}
                   onHoverBase={setMapHoverBase}
                 />
               </section>
             )}
-            {!interactiveVisualizationBlocked && viewerMode !== "circular" && (
+            {!interactiveVisualizationBlocked && !scientificViewBlocked && viewerMode === "both" && <div className="dna-pane-resizer" role="separator" aria-label="Resize map and sequence panes" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={75} aria-valuenow={mapShare} tabIndex={0}
+              onPointerDown={event => {event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);}}
+              onPointerMove={event => {if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; const bounds = event.currentTarget.parentElement!.getBoundingClientRect(); setMapShare(Math.max(25, Math.min(75, Math.round((event.clientX - bounds.left) / bounds.width * 100))));}}
+              onPointerUp={event => {if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);}}
+              onKeyDown={event => {if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {event.preventDefault(); setMapShare(current => event.key === "Home" ? 25 : event.key === "End" ? 75 : Math.max(25, Math.min(75, current + (event.key === "ArrowLeft" ? -5 : 5))));}}}
+            />}
+            {!interactiveVisualizationBlocked && !scientificViewBlocked && viewerMode !== "circular" && (
               <section className="visual-engine-pane sequence-engine-pane" aria-label="Interactive base-level sequence">
                 <div className="sequence-navigator-shell">
                   <span className="visual-engine-label">CGView.js · navigator</span>
@@ -1102,7 +1133,7 @@ export function DesignsPage() {
                 </div>
                 <div className="sequence-engine-main">
                   <span className="visual-engine-label">SeqViz · sequence</span>
-                  <VisualizationErrorBoundary
+                  {construct.length > 10_000 ? <DnaSequenceWindow artifactIdentity={artifactIdentity} construct={construct} selectedStart={selectedFeature?.segments[0]?.start ?? rangeSelection?.start} onSelect={(start, end) => { setSelectedFeatureIndex(undefined); setRangeSelection({ start, end }); }} /> : <VisualizationErrorBoundary
                     resetKey={`${construct.name}-${viewerRevision}`}
                     fallback={<div className="sequence-render-error" role="alert"><strong>Sequence view unavailable</strong><code>SEQVIZ_RENDER_FAILED</code><span>Reset the view or choose another construct. The map and feature table remain available.</span></div>}
                   >
@@ -1128,7 +1159,7 @@ export function DesignsPage() {
                       zoom={{ linear: linearZoom }}
                       style={{ height: "100%", width: "100%" }}
                     />
-                  </VisualizationErrorBoundary>
+                  </VisualizationErrorBoundary>}
                 </div>
               </section>
             )}
@@ -1143,7 +1174,7 @@ export function DesignsPage() {
               <button type="button" className="feature-visibility-command" disabled={featureInventory.length === 0 || featureInventory.every((entry) => entry.hidden)} onClick={() => setFilteredFeaturesHidden(true)}><EyeOff size={13} />Hide filtered</button>
               <button type="button" className="feature-visibility-command" disabled={featureInventory.length === 0 || featureInventory.every((entry) => !entry.hidden)} onClick={() => setFilteredFeaturesHidden(false)}><Eye size={13} />Show filtered</button>
             </div>
-            {!selectedFeatureInInventory && <p className="feature-inventory-note" role="status">The selected feature is outside the current inventory filter. Its inspector and linked selection remain active.</p>}
+            {!inventoryComputation.pending && !scientificViewBlocked && !selectedFeatureInInventory && <p className="feature-inventory-note" role="status">The selected feature is outside the current inventory filter. Its inspector and linked selection remain active.</p>}
             <div className="parts-table" role="table" aria-label={`${construct.name} features`}>
               <div className="parts-table-row is-header" role="row">
                 <span role="columnheader"><button type="button" onClick={() => updateFeatureSort("name")} aria-pressed={featureSortKey === "name"}>Feature{featureSortKey === "name" ? featureSortDirection === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : null}</button></span>
@@ -1163,7 +1194,7 @@ export function DesignsPage() {
                 </div>
                 );
               })}
-              {visibleFeatureEntries.length === 0 && <div className="parts-table-empty" role="row"><span role="cell">No features match the current filters.</span></div>}
+              {visibleFeatureEntries.length === 0 && <div className="parts-table-empty" role="row"><span role="cell">{inventoryComputation.pending || viewComputation.pending ? "Preparing feature index…" : inventoryComputation.error || viewComputation.error ? "Feature index unavailable." : "No features match the current filters."}</span></div>}
               {featurePageCount > 1 && (
                 <div className="parts-table-pagination" role="group" aria-label="Feature inventory pages">
                   <button type="button" disabled={boundedFeaturePage === 0} onClick={() => setFeaturePage((page) => Math.max(0, page - 1))}>Previous</button>
@@ -1328,6 +1359,8 @@ function ProteinDesignPage({
   onReveal: (path?: string) => Promise<void>;
   notice?: string;
 }) {
+  const [selectedProteinId, setSelectedProteinId] = useState<string>();
+  useEffect(() => { setSelectedProteinId(design.proteins[0]?.id); }, [design]);
   const totalResidues = design.proteins.reduce((sum, protein) => sum + protein.length, 0);
   const firstProtein = design.proteins[0];
   return (
@@ -1363,7 +1396,7 @@ function ProteinDesignPage({
           <ArtifactList documents={documents} selectedPath={selectedDocument?.path} onSelect={onSelectDocument} />
           <div className="design-panel-heading is-sub"><span>Protein records</span><strong>{design.proteins.length}</strong></div>
           <div className="construct-list protein-record-nav">
-            {design.proteins.map((protein, index) => <div className="construct-item protein-record-nav-item" key={`${protein.id}-${index}`}><span className="construct-glyph"><Atom size={13} /></span><span><strong>{protein.name ?? protein.id}</strong><small>{protein.length.toLocaleString()} aa · {protein.source.provider || "source pending"}</small></span></div>)}
+            {design.proteins.map((protein, index) => <button type="button" className={`construct-item protein-record-nav-item ${selectedProteinId === protein.id ? "is-selected" : ""}`} key={`${protein.id}-${index}`} onClick={() => setSelectedProteinId(protein.id)} aria-current={selectedProteinId === protein.id ? "true" : undefined}><span className="construct-glyph"><Atom size={13} /></span><span><strong>{protein.name ?? protein.id}</strong><small>{protein.length.toLocaleString()} aa · {protein.source.provider || "source pending"}</small></span></button>)}
           </div>
           <div className="design-source-card">
             <span className="eyebrow">Provenance</span>
@@ -1378,7 +1411,7 @@ function ProteinDesignPage({
         </aside>
 
         <main className="design-stage protein-design-stage">
-          <ProteinSequenceView design={design} />
+          <ProteinSequenceView design={design} selectedProteinId={selectedProteinId} onSelectProtein={setSelectedProteinId} structureApi={workbenchApi().proteinStructures} artifact={selectedDocument?.sha256 ? { path: selectedDocument.path, sha256: selectedDocument.sha256 } : undefined} />
         </main>
 
         <aside className="design-inspector protein-inspector" aria-label="Protein design inspector">

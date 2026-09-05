@@ -27,6 +27,7 @@ export default defineConfig({
     root: ".",
     server: {
       host: "127.0.0.1",
+      watch: { ignored: ["**/build/**", "**/out/**", "**/runtime/**", "**/release*/**", "**/qa/**"] },
     },
     plugins: [react()],
     resolve: {

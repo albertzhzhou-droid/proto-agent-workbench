@@ -1,10 +1,15 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
 import { lstat, realpath, stat } from "node:fs/promises";
+import { mkdirSync, realpathSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { AgentService } from "./services/agent-service.ts";
+import { prepareLaunchSession, prepareLaunchWorkspace } from "./services/launch-session.ts";
+import { ProteinStructureService } from "./services/protein-structures.ts";
+import type { DesignEditRequest, DesignEditResult } from "../shared/dna-edits.ts";
+import type { ProteinStructureTarget, ProteinStructureImageRequest } from "../shared/protein-structures.ts";
 import { AppDatabase } from "./services/database.ts";
 import { LmStudioProvider, LM_STUDIO_BASE_URL, LM_STUDIO_TOKEN_ENV_NAMES } from "./services/lm-studio-provider.ts";
 import { McpClient } from "./services/mcp-client.ts";
@@ -21,6 +26,7 @@ import { buildGlobalEvidenceSearch, GLOBAL_EVIDENCE_LIMITS } from "./services/gl
 import { ModelService } from "./services/model-service.ts";
 import { verifyModuleIntegrity } from "./services/module-integrity.ts";
 import { WorkspaceFiles } from "./services/workspace-files.ts";
+import { withWorkspaceWrite } from "./services/workspace-execution-queue.ts";
 import { patchValidationOutcome } from "./services/patch-validation.ts";
 import { buildDecisionBundle, exportDecisionBundle } from "./services/decision-bundle.ts";
 import { scanDecisionBundles } from "./services/decision-bundle-verification.ts";
@@ -29,7 +35,8 @@ import { scanTrustPolicies } from "./services/trust-policy-catalog.ts";
 import { importSignatureEvidence, scanSignatureEvidence } from "./services/signature-evidence.ts";
 import { importTrustRootCandidate, scanTrustRootCandidates } from "./services/trust-root-lifecycle.ts";
 import { importTransparencyWitnessPack, scanTransparencyWitnessPacks } from "./services/transparency-log-witness.ts";
-import { exportVerifiedMap, validatedMapCaptureScale, type DecodedMapEvidence } from "./services/map-export.ts";
+import { exportVerifiedMap, type DecodedMapEvidence } from "./services/map-export.ts";
+import { rasterizeSvgForVerification, MAP_DECODER_CLEANUP_SCRIPT, MAP_DECODER_DOCUMENT_URL, withMapDecoderDeadline } from "./services/map-image-decoder.ts";
 import { validateSelectedAttachments, type AttachmentGrant } from "./services/attachment-validation.ts";
 import {
   packagedMaterialsCliPath,
@@ -38,7 +45,7 @@ import {
   validateMaterializedPartsResult,
 } from "./services/materials-admin.ts";
 import { minimalChildEnvironment } from "./services/process-security.ts";
-import { activateStartupWorkspace, seedWorkspace } from "./services/workspace-bootstrap.ts";
+import { activateStartupWorkspace } from "./services/workspace-bootstrap.ts";
 import {
   assertSafeExternalOpenPath,
   canonicalSelectedDirectory,
@@ -104,9 +111,49 @@ let workspaceTransition: Promise<void> = Promise.resolve();
 let filePickerActive = false;
 const attachmentGrants = new Map<string, AttachmentGrant>();
 const validationOperationsInFlight = new Set<string>();
+let sourceTransactionsInFlight = 0;
 
 process.on("uncaughtException", (error) => reportMainProcessError(error));
 process.on("unhandledRejection", (reason) => reportMainProcessError(reason));
+
+const projectRoot = app.isPackaged ? app.getAppPath() : resolve(app.getAppPath());
+const repoRoot = app.isPackaged ? projectRoot : resolve(projectRoot, "..", "..");
+const moduleDirectory = fileURLToPath(new URL(".", import.meta.url));
+let defaultWorkspacePath = repoRoot;
+const launchSession = (() => {
+  try {
+    const session = prepareLaunchSession(process.argv);
+    if (session && process.env.PROTO_WORKBENCH_QA_ROOT) throw new Error("Choose either --session-root or the development QA root.");
+    return session;
+  } catch (reason) {
+    console.error("Invalid launch session:", reason);
+    app.exit(1);
+    throw reason;
+  }
+})();
+if (launchSession) {
+  app.setPath("userData", launchSession.profile);
+  app.setPath("sessionData", launchSession.profile);
+  defaultWorkspacePath = launchSession.workspace;
+}
+// Native QA gets a separate profile before Electron acquires its instance lock.
+// The opt-in is development-only and cannot point at an existing user profile.
+if (!app.isPackaged && process.env.PROTO_WORKBENCH_QA_ROOT) {
+  const qaRoot = realpathSync(process.env.PROTO_WORKBENCH_QA_ROOT);
+  const qaRelative = relative(realpathSync(repoRoot), qaRoot).replaceAll("\\", "/");
+  if (!qaRelative.startsWith("build/upgrade-20260904/native-qa/")) {
+    throw new Error("Native QA root must be a real directory inside repository build/upgrade-20260904/native-qa/.");
+  }
+  const profile = join(qaRoot, "profile");
+  const workspace = join(qaRoot, "workspace");
+  mkdirSync(profile, {recursive: true});
+  mkdirSync(workspace, {recursive: true});
+  for (const child of [profile, workspace]) {
+    if (relative(qaRoot, realpathSync(child)).startsWith("..")) throw new Error("Native QA child escaped its root.");
+  }
+  app.setPath("userData", profile);
+  defaultWorkspacePath = workspace;
+}
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
@@ -116,11 +163,6 @@ app.on("second-instance", () => {
   mainWindow.show();
   mainWindow.focus();
 });
-
-const projectRoot = app.isPackaged ? app.getAppPath() : resolve(app.getAppPath());
-const repoRoot = app.isPackaged ? projectRoot : resolve(projectRoot, "..", "..");
-const moduleDirectory = fileURLToPath(new URL(".", import.meta.url));
-let defaultWorkspacePath = repoRoot;
 
 function defaultSettings(): AppSettings {
   return {
@@ -188,6 +230,7 @@ function reportMainProcessError(reason: unknown): void {
 
 function createWorkspaceServices(workspacePath: string): Promise<void> {
   const transition = workspaceTransition.catch(() => undefined).then(async () => {
+    if (sourceTransactionsInFlight) throw new Error("A source transaction is still validating. Wait for it to finish before switching workspaces.");
     const canonicalWorkspace = await canonicalSelectedDirectory(workspacePath);
     activeWorkspacePath = canonicalWorkspace;
     attachmentGrants.clear();
@@ -195,7 +238,7 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
     const previousMcp = mcpClient;
     if (previousAgent) {
       previousAgent.invalidatePendingApprovals("The workspace service was replaced.");
-      await previousAgent.cancelAll();
+      await previousAgent.pauseAll("Workspace changed; the task and its used budget are saved for continuation.");
     }
     if (previousMcp) await previousMcp.stop();
     database.invalidatePendingApprovals("The approval is not bound to the current workspace service.");
@@ -300,12 +343,14 @@ async function verifyExportedMapImage(
   const partition = `map-export-verifier-${randomBytes(12).toString("hex")}`;
   const verifierSession = session.fromPartition(partition, { cache: false });
   verifierSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  verifierSession.setPermissionCheckHandler(() => false);
   verifierSession.webRequest.onBeforeRequest(
-    { urls: ["http://*/*", "https://*/*", "file://*/*", "ftp://*/*"] },
-    (_details, callback) => callback({ cancel: true }),
+    { urls: ["<all_urls>"] },
+    (details, callback) => callback({ cancel: details.url !== MAP_DECODER_DOCUMENT_URL && !details.url.startsWith("blob:") }),
   );
   const verifierWindow = new BrowserWindow({
     show: false,
+    paintWhenInitiallyHidden: true,
     width: expected.width,
     height: expected.height,
     useContentSize: true,
@@ -315,27 +360,27 @@ async function verifyExportedMapImage(
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
+      backgroundThrottling: false,
       partition,
     },
   });
+  verifierWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  verifierWindow.webContents.on("will-navigate", event => event.preventDefault());
+  verifierWindow.webContents.on("will-frame-navigate", event => event.preventDefault());
   try {
-    const svgDataUrl = `data:image/svg+xml;base64,${bytes.toString("base64")}`;
-    const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}img{display:block;width:${expected.width}px;height:${expected.height}px}</style><img id="map" alt="" src="${svgDataUrl}">`;
-    await verifierWindow.loadURL(`data:text/html;base64,${Buffer.from(html, "utf8").toString("base64")}`);
-    const decoded = await verifierWindow.webContents.executeJavaScript(`(async () => { const image = document.getElementById("map"); if (!image) return { complete: false, width: 0, height: 0 }; await image.decode(); return { complete: image.complete, width: image.naturalWidth, height: image.naturalHeight }; })()`); // isolated static image probe
-    if (!decoded?.complete || decoded.width !== expected.width || decoded.height !== expected.height) {
-      throw new Error(`Map SVG could not be independently decoded at ${expected.width}x${expected.height}.`);
-    }
-    const capturedImage = await verifierWindow.webContents.capturePage({ x: 0, y: 0, width: expected.width, height: expected.height });
-    const capturedSize = capturedImage.getSize();
-    const captureScale = validatedMapCaptureScale(capturedSize, expected);
-    const logicalImage = captureScale === 1
-      ? capturedImage
-      : capturedImage.resize({ width: expected.width, height: expected.height, quality: "best" });
-    return decodedMapEvidence(logicalImage, expected, "chromium-isolated-image");
+    return await withMapDecoderDeadline(async () => {
+      const raster = await rasterizeSvgForVerification({
+        loadURL: url => verifierWindow.loadURL(url),
+        executeJavaScript: script => verifierWindow.webContents.executeJavaScript(script),
+      }, bytes, expected);
+      const evidence = decodedMapEvidence(nativeImage.createFromBuffer(raster), expected, "chromium-isolated-image");
+      await verifierWindow.webContents.executeJavaScript(MAP_DECODER_CLEANUP_SCRIPT);
+      return evidence;
+    }, () => { if (!verifierWindow.isDestroyed()) verifierWindow.destroy(); });
   } finally {
     if (!verifierWindow.isDestroyed()) verifierWindow.destroy();
-    await verifierSession.clearStorageData().catch(() => undefined);
+    verifierSession.webRequest.onBeforeRequest(null);
+    await withMapDecoderDeadline(() => verifierSession.clearStorageData(), () => undefined, 2_000).catch(() => undefined);
   }
 }
 
@@ -409,11 +454,12 @@ async function issuePolicySimulation(
 async function captureMissionEnvironment(threadId: string) {
   const { thread } = agentService.getThread(threadId);
   const model = thread.modelId ? modelService.get(thread.modelId) : modelService.getActiveModel();
-  const [runtime, capabilities, tools] = await Promise.all([
+  const [runtime, capabilities, mcpTools] = await Promise.all([
     inferenceProvider.runtimeStatus(),
     mcpClient.capabilities(true),
     mcpClient.tools(true),
   ]);
+  const tools = agentService.executionTools(threadId, mcpTools);
   return { thread, model, runtime, capabilities, tools };
 }
 
@@ -463,6 +509,29 @@ function registerIpc(): void {
   handlePrivileged(IPC.modelsPolicy, (_event, policy: ResidencyPolicy) => modelService.setPolicy(policy));
   handlePrivileged(IPC.modelsPin, (_event, modelId: string, pinned: boolean) => modelService.pin(modelId, pinned));
 
+  handlePrivileged(IPC.harnessExecutions, () => agentService.listExecutions());
+  handlePrivileged(IPC.harnessResume, (_event, runId: string) => agentService.resumeExecution(runId));
+  handlePrivileged(IPC.harnessPause, (_event, runId: string) => agentService.pauseExecution(runId));
+  handlePrivileged(IPC.designPrepareEdit, (_event, input: DesignEditRequest) => prepareDesignEdit(input));
+  handlePrivileged(IPC.designCommitEdit, (_event, input: DesignEditRequest) => commitDesignEdit(input));
+  const structures = () => new ProteinStructureService(activeWorkspacePath, {
+    verifyPng: async (bytes, expected) => {await verifyExportedMapImage("png", bytes, expected);},
+    verifyTracksImage: verifyExportedMapImage,
+  });
+  handlePrivileged(IPC.structureList, (_event, input: ProteinStructureTarget) => structures().list(input));
+  handlePrivileged(IPC.structureSearch, (_event, input) => structures().search(input));
+  handlePrivileged(IPC.structureFetch, (_event, input) => structures().fetch(input));
+  handlePrivileged(IPC.structureRead, (_event, input) => structures().read(input));
+  handlePrivileged(IPC.structureSaveView, (_event, input) => structures().saveView(input));
+  handlePrivileged(IPC.structureReadView, (_event, input) => structures().readView(input));
+  handlePrivileged(IPC.structurePrepareTracks, (_event, input) => structures().prepareTracks(input));
+  handlePrivileged(IPC.structureExportTracks, (_event, input) => structures().exportTracks(input));
+  handlePrivileged(IPC.structureExportImage, (_event, input: ProteinStructureImageRequest) => structures().exportImage(input));
+  handlePrivileged(IPC.structureImport, async (_event, input: ProteinStructureTarget) => {
+    const targetWorkspace = structures();
+    const selection = await showPrivilegedOpenDialog({title: "Import protein structure", properties: ["openFile"], filters: [{name: "Protein structures", extensions: ["cif", "mmcif", "pdb"]}]});
+    return selection.canceled || !selection.filePaths[0] ? null : targetWorkspace.importLocal(input, selection.filePaths[0]);
+  });
   handlePrivileged(IPC.harnessPreflight, async (_event, input: MissionPreflightRequest) => {
     const selected = await validateSelectedAttachments(
       input.attachments ?? [],
@@ -743,9 +812,16 @@ function registerIpc(): void {
   });
   handlePrivileged(IPC.filesApplyPatch, async (_event, patchId: string, expectedRevision: number) => {
     agentService.assertPatchReadyForApproval(patchId);
-    const applied = await workspaceFiles.applyApprovedPatch(patchId, expectedRevision);
-    const validated = await validatePatchOperation(applied.patch, applied.operation);
-    return { patch: applied.patch, operation: validated.operation, checkpoint: applied.checkpoint, events: validated.events };
+    const root = activeWorkspacePath;
+    sourceTransactionsInFlight += 1;
+    try {
+      return await withWorkspaceWrite(root, undefined, async () => {
+        if (root !== activeWorkspacePath) throw new Error("Workspace changed before the source transaction began.");
+        const applied = await workspaceFiles.applyApprovedPatch(patchId, expectedRevision);
+        const validated = await validatePatchOperation(applied.patch, applied.operation);
+        return { patch: applied.patch, operation: validated.operation, checkpoint: applied.checkpoint, events: validated.events };
+      });
+    } finally {sourceTransactionsInFlight -= 1;}
   });
   handlePrivileged(IPC.filesRejectPatch, (_event, patchId: string, expectedRevision: number) => {
     const patch = database.getPatch(patchId);
@@ -899,6 +975,59 @@ function registerIpc(): void {
   );
 }
 
+async function prepareDesignEdit(input: DesignEditRequest): Promise<DesignEditResult> {
+  const root = activeWorkspacePath;
+  const source = await workspaceFiles.read(input.sourcePath);
+  const parts = await workspaceFiles.read(input.partsPath);
+  if (root !== activeWorkspacePath || source.sha256 !== input.expectedSourceSha256 || parts.sha256 !== input.expectedPartsSha256) throw new Error("Design or material library changed. Refresh before editing.");
+  const client = mcpClient.fork();
+  try {
+    return await client.call("proto_design_edit", {path: relative(root, source.path).replaceAll("\\", "/"), parts_path: relative(root, parts.path).replaceAll("\\", "/"), commands: input.commands, expected_source_sha256: source.sha256, expected_parts_sha256: parts.sha256}, undefined, undefined, {timeoutMs: 60_000}) as unknown as DesignEditResult;
+  } finally {await client.stop();}
+}
+
+async function commitDesignEdit(input: DesignEditRequest): Promise<DesignEditResult> {
+  const root = activeWorkspacePath;
+  sourceTransactionsInFlight += 1;
+  try {
+    return await withWorkspaceWrite(root, undefined, () => commitDesignEditLocked(input, root));
+  } finally {sourceTransactionsInFlight -= 1;}
+}
+
+async function commitDesignEditLocked(input: DesignEditRequest, root: string): Promise<DesignEditResult> {
+  if (root !== activeWorkspacePath) throw new Error("Workspace changed before the design transaction began.");
+  const candidate = await prepareDesignEdit(input);
+  if (!candidate.ok) return candidate;
+  const files = workspaceFiles, agent = agentService;
+  const [source, parts] = await Promise.all([files.read(input.sourcePath), files.read(input.partsPath)]);
+  if (root !== activeWorkspacePath || source.sha256 !== input.expectedSourceSha256 || parts.sha256 !== input.expectedPartsSha256) throw new Error("Edit inputs changed after preview. No source was written.");
+  if (createHash("sha256").update(candidate.candidate_source).digest("hex") !== candidate.candidate_sha256) throw new Error("Candidate source digest mismatch.");
+  const thread = agent.createThread({workspacePath: root, title: `Edit ${basename(source.path)}`, mode: "act"});
+  const runId = randomUUID(), now = new Date().toISOString();
+  database.recordRunStart({id: randomUUID(), runId, stage: "goal", actor: "user", title: "Design source edit", summary: `Apply ${input.commands.length} reviewed source edit command(s).`, inputProvenance: [source.path, parts.path], outputArtifacts: [], evidenceIds: [], status: "completed", createdAt: now, completedAt: now, payload: {threadId: thread.id, workspacePath: root}}, thread.id, root);
+  const patch = await files.proposePatch({runId, targetPath: source.path, after: candidate.candidate_source, rationale: "User committed the DNA source edit transaction."});
+  if (patch.baseSha256 !== source.sha256) throw new Error("Source changed while creating its transaction.");
+  patch.materialBinding = {partsPath: parts.path, partsSha256: parts.sha256};
+  database.savePatch(patch);
+  const applied = await files.applyApprovedPatch(patch.id, patch.revision);
+  broadcast(IPC.threadStream, {threadId: thread.id, type: "patch-proposal", patch: applied.patch} satisfies StreamEvent);
+  let validated: Awaited<ReturnType<typeof validatePatchOperation>>;
+  try { validated = await validatePatchOperation(applied.patch, applied.operation); }
+  catch (error) {
+    for (const event of database.getRunEvents(runId)) broadcast(IPC.threadStream, {threadId: thread.id, type: "run-event", runEvent: event} satisfies StreamEvent);
+    return {...candidate, ok: false, source_written: true, validation_state: "unknown", run_id: runId,
+      diagnostics: [...candidate.diagnostics, {severity: "error", code: "DESIGN_VALIDATION_INTERRUPTED", message: String(error).replace(/^Error:\s*/, "")}]};
+  }
+  for (const event of validated.events) broadcast(IPC.threadStream, {threadId: thread.id, type: "run-event", runEvent: event} satisfies StreamEvent);
+  const failures = validated.events.filter(event => event.status === "failed" || event.status === "effect-unknown").flatMap(event => {
+    const output = event.payload?.output as {diagnostics?: Array<{severity?: string; code?: string; message?: string}>} | undefined;
+    const diagnostics = output?.diagnostics?.filter(item => typeof item.message === "string");
+    return diagnostics?.length ? diagnostics.map(item => ({severity: item.severity ?? "error", code: item.code ?? "DESIGN_VALIDATION_FAILED", message: `${event.tool ?? event.title}: ${item.message}`}))
+      : [{severity: "error", code: "DESIGN_VALIDATION_FAILED", message: `${event.tool ?? event.title}: ${event.summary}`}];
+  });
+  return {...candidate, ok: validated.operation.state === "verified", source_written: true, validation_state: validated.operation.state === "verified" ? "verified" : "failed", run_id: runId, artifact_paths: [...new Set(validated.events.flatMap(event => event.outputArtifacts))], diagnostics: [...candidate.diagnostics, ...failures]};
+}
+
 async function validatePatchOperation(
   patch: PatchProposal,
   operation: PatchOperation,
@@ -1027,11 +1156,11 @@ function createWindow(): void {
 }
 
 async function prepareDefaultWorkspace(): Promise<void> {
-  if (!app.isPackaged) return;
-  const workspacePath = join(app.getPath("documents"), "Proto Workbench Workspace");
-  const templatePath = join(process.resourcesPath, "runtime", "workspace-template");
-  await seedWorkspace(templatePath, workspacePath);
-  defaultWorkspacePath = workspacePath;
+  defaultWorkspacePath = await prepareLaunchWorkspace({
+    packaged: app.isPackaged, session: launchSession, fallbackPath: defaultWorkspacePath,
+    documentsPath: () => app.getPath("documents"),
+    templatePath: join(process.resourcesPath, "runtime", "workspace-template"),
+  });
 }
 
 app.whenReady().then(async () => {
@@ -1056,6 +1185,7 @@ app.whenReady().then(async () => {
     throw new Error(`Core module integrity verification failed. Startup is blocked. ${failures}`);
   }
   await prepareDefaultWorkspace();
+  if (launchSession) database.setSetting("workspacePath", launchSession.workspace);
   inferenceProvider = new LmStudioProvider();
   modelService = new ModelService(database, inferenceProvider, inferenceProvider);
   modelService.subscribe((models) => broadcast(IPC.modelsChanged, models));
@@ -1092,7 +1222,7 @@ app.on("before-quit", (event) => {
 });
 
 async function shutdown(): Promise<void> {
-  await agentService?.cancelAll();
+  await agentService?.pauseAll("Application closed; the task and its used budget are saved for continuation.");
   await Promise.all([mcpClient?.stop(), modelService?.shutdown()]);
   database?.close();
 }

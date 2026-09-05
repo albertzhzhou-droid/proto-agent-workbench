@@ -89,9 +89,123 @@ const descriptor = (id, sizeBytes = 4 * GIB) => ({
 const abundantGpu = async () => ({ totalBytes: 64 * GIB, usedBytes: 0, freeBytes: 64 * GIB });
 const abundantRam = () => ({ totalBytes: 128 * GIB, availableBytes: 112 * GIB });
 
+test("a generation waits for an already queued reload without blocking its unload", async () => {
+  const model = descriptor("reload-race");
+  const runtime = new FakeRuntime();
+  const database = new FakeDatabase([model], { mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: [] });
+  const service = new ModelService(database, { scan: async () => [model] }, runtime, abundantGpu, abundantRam);
+  const calls = [];
+  runtime.chat = async () => { calls.push("chat"); };
+  try {
+    await service.load(model.id, { contextLength: 4096 });
+    const reload = service.load(model.id, { contextLength: 8192 });
+    const generation = service.chat(model.id, {}, () => {});
+    assert.equal((await reload).contextLength, 8192);
+    await generation;
+    assert.deepEqual(runtime.unloads, [model.id]);
+    assert.deepEqual(calls, ["chat"]);
+  } finally { await service.shutdown(); }
+});
+
+test("cancelling a generation waiting for residency does not wait for a model load", async () => {
+  const model = descriptor("residency-cancel");
+  const runtime = new FakeRuntime();
+  const database = new FakeDatabase([model], { mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: [] });
+  const service = new ModelService(database, { scan: async () => [model] }, runtime, abundantGpu, abundantRam);
+  let release;
+  try {
+    await service.load(model.id, { contextLength: 4096 });
+    service.loadQueue = new Promise((resolve) => { release = resolve; });
+    const abort = new AbortController();
+    const generation = service.chat(model.id, {}, () => {}, abort.signal);
+    abort.abort();
+    await assert.rejects(generation, (error) => error.code === "USER_CANCELLED");
+  } finally { release?.(); await service.shutdown(); }
+});
+
+test("generation is FIFO, queued cancellation is prompt, and residency stays leased", async () => {
+  const model = descriptor("queued");
+  const database = new FakeDatabase([model], { mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: [] });
+  const runtime = new FakeRuntime();
+  const started = [];
+  const releases = [];
+  runtime.chat = async (_model, payload, _onChunk, signal) => {
+    started.push(payload.id);
+    await new Promise((resolve, reject) => {
+      releases.push(resolve);
+      signal.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), { once: true });
+    });
+  };
+  const service = new ModelService(database, { scan: async () => [model] }, runtime, abundantGpu, abundantRam);
+  try {
+    await service.load(model.id, { contextLength: 8192 });
+    const a = service.chat(model.id, { id: "A" }, () => {});
+    const controller = new AbortController();
+    const b = service.chat(model.id, { id: "B" }, () => {}, controller.signal);
+    const rejectedB = assert.rejects(b, (error) => error.name === "AbortError");
+    const c = service.chat(model.id, { id: "C" }, () => {});
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(started, ["A"]);
+    controller.abort();
+    await rejectedB;
+    await assert.rejects(service.unload(model.id), (error) => error.code === "MODEL_LEASED");
+    await assert.rejects(service.load(model.id), (error) => error.code === "MODEL_LEASED");
+    releases.shift()();
+    await a;
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(started, ["A", "C"]);
+    releases.shift()();
+    await c;
+    await service.unload(model.id);
+    assert.deepEqual(runtime.unloads, [model.id]);
+  } finally { await service.shutdown(); }
+});
+
+test("queued residency time extends the private request deadline without changing caller data", async () => {
+  const model = descriptor("queue-deadline"), runtime = new FakeRuntime();
+  const database = new FakeDatabase([model], {mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: []});
+  const service = new ModelService(database, {scan: async () => [model]}, runtime, abundantGpu, abundantRam);
+  let release; const states = []; let observed;
+  runtime.chat = async (_model, payload) => {observed = payload;};
+  try {
+    await service.load(model.id, {contextLength: 32768});
+    service.loadQueue = new Promise(resolve => {release = resolve;});
+    const payload = {deadline: Date.now() + 30, _onQueueState: state => states.push(state)};
+    const generation = service.chat(model.id, payload, () => {});
+    await new Promise(resolve => setTimeout(resolve, 70));
+    release(); await generation;
+    assert.deepEqual(states, ["queued", "active"]);
+    assert.ok(observed.deadline >= payload.deadline + 50);
+    assert.ok(observed.deadline > Date.now());
+    assert.equal(observed._onQueueState, undefined);
+    assert.equal(typeof payload._onQueueState, "function");
+  } finally {release?.(); await service.shutdown();}
+});
+
+test("execution budget uses observed context and shutdown cancels an active generation", async () => {
+  const model = descriptor("context");
+  const database = new FakeDatabase([model], { mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: [] });
+  const runtime = new FakeRuntime();
+  runtime.chat = async (_model, _payload, _onChunk, signal) => new Promise((_resolve, reject) => {
+    signal.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), { once: true });
+  });
+  const service = new ModelService(database, { scan: async () => [model] }, runtime, abundantGpu, abundantRam);
+  await service.load(model.id, { contextLength: 8192 });
+  assert.equal(service.get(model.id).contextLength, 32_768);
+  assert.equal(service.getLoadedContextLength(model.id), 8192);
+  assert.equal((await service.getExecutionBinding(model.id)).contextLength, 8192);
+  const running = service.chat(model.id, {}, () => {});
+  const rejected = assert.rejects(running, (error) => error.name === "AbortError");
+  await new Promise((resolve) => setImmediate(resolve));
+  await service.shutdown();
+  await rejected;
+  assert.equal(runtime.residents.size, 0);
+});
+
 test("LM Studio models bypass the legacy GPU estimator and preserve exact instance ownership", async () => {
   const model = {
     ...descriptor("lmstudio-model"),
+    contextLength: 131_072,
     path: "lmstudio:fixture/model",
     files: [],
     provider: "lmstudio",
@@ -129,11 +243,15 @@ test("LM Studio models bypass the legacy GPU estimator and preserve exact instan
   );
   try {
     await service.scan("http://127.0.0.1:1234");
-    const instance = await service.load(model.id, { contextLength: 16_384, evalBatchSize: 512 });
+    const instance = await service.load(model.id, { contextLength: 32_768, evalBatchSize: 512 });
     assert.equal(instance.instanceId, "workbench-owned-instance");
     assert.equal(instance.ownedByWorkbench, true);
     assert.equal(service.get(model.id).workbenchInstance.id, "workbench-owned-instance");
-    assert.deepEqual(runtime.loads, [{ modelId: model.id, contextLength: 16_384, evalBatchSize: 512 }]);
+    assert.equal(service.get(model.id).workbenchInstance.contextLength, 32_768);
+    assert.equal(service.get(model.id).contextLength, model.contextLength);
+    await service.scan("http://127.0.0.1:1234");
+    assert.equal(service.get(model.id).workbenchInstance.contextLength, 32_768);
+    assert.deepEqual(runtime.loads, [{ modelId: model.id, contextLength: 32_768, evalBatchSize: 512 }]);
   } finally {
     await service.shutdown();
   }

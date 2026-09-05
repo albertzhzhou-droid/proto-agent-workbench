@@ -10,6 +10,7 @@ const MAX_ARGUMENTS = 128;
 const MAX_ARGUMENT_BYTES = 64 * 1024;
 const SPAWN_TIMEOUT_MS = 5_000;
 const ownedProcesses = new WeakMap();
+const closedProcesses = new WeakSet();
 const verifiedWorkspaces = new Map();
 export const DISPOSABLE_WORKSPACE_MARKER = "PROTO_AGENT_DISPOSABLE_WORKSPACE_V1\n";
 
@@ -50,6 +51,7 @@ export async function spawnOwned(command, args, options = {}) {
   } catch (error) {
     throw processStartError(error);
   }
+  observeProcessClose(child);
   const ownership = { pid: child.pid, termination: undefined };
   ownedProcesses.set(child, ownership);
   try {
@@ -254,6 +256,8 @@ export async function runJsonOwned(command, args, options = {}) {
   });
 }
 
+// Completion joins the owned direct child and its captured streams. A Windows
+// tree request is recorded separately; it is not a descendant-handle barrier.
 export async function terminateOwned(child, options = {}) {
   const ownership = ownedProcesses.get(child);
   if (!ownership) {
@@ -266,7 +270,6 @@ export async function terminateOwned(child, options = {}) {
 
 async function terminateOwnedOnce(child, ownership, options) {
   if (!Number.isInteger(ownership.pid) || ownership.pid <= 0 || child.pid !== ownership.pid) return;
-  if (child.exitCode !== null || child.signalCode !== null) return;
 
   const gracefulMs = boundedInteger(options.gracefulMs ?? 750, "gracefulMs", 0, 5_000);
   const killerTimeoutMs = boundedInteger(
@@ -275,17 +278,34 @@ async function terminateOwnedOnce(child, ownership, options) {
     100,
     15_000,
   );
+  // A direct child can exit while a descendant still holds inherited stdio.
+  // Keep its original identity and join close; never retarget its former PID.
+  if (child.exitCode !== null || child.signalCode !== null) {
+    if (!(await waitForExit(child, killerTimeoutMs))) {
+      throw new OwnedProcessError("PROCESS_STREAM_CLOSE_TIMEOUT", "Exited owned process did not close its streams in time.");
+    }
+    return terminationReceipt();
+  }
   if (process.platform === "win32") {
-    await terminateWindowsTree(child, ownership, killerTimeoutMs);
-    return;
+    return terminateWindowsTree(child, ownership, killerTimeoutMs);
   }
 
   signalOwnedGroup(ownership.pid, "SIGTERM", child);
-  if (await waitForExit(child, gracefulMs)) return;
+  if (await waitForExit(child, gracefulMs)) return terminationReceipt();
   signalOwnedGroup(ownership.pid, "SIGKILL", child);
   if (!(await waitForExit(child, killerTimeoutMs))) {
     throw new OwnedProcessError("PROCESS_TERMINATION_FAILED", "Owned process did not exit after termination.");
   }
+  return terminationReceipt();
+}
+
+function terminationReceipt(windowsTreeRequest = null) {
+  return {
+    scope: "owned-direct-child-and-captured-streams",
+    directChildClosed: true,
+    descendantsVerified: false,
+    windowsTreeRequest,
+  };
 }
 
 export function minimalChildEnvironment(extra = {}) {
@@ -531,39 +551,70 @@ function trustedSystemRootSyntax() {
 }
 
 async function terminateWindowsTree(child, ownership, timeoutMs) {
-  if (child.pid !== ownership.pid || child.exitCode !== null || child.signalCode !== null) return;
+  const request = {
+    attempted: false, status: "not-requested", exitCode: null, signalCode: null,
+    stdout: "", stderr: "", outputTruncated: false, errorCode: null,
+    helperClosed: false, directChildFallback: null,
+  };
   let taskkill;
   try {
     taskkill = await trustedTaskkillPath();
-  } catch {
+  } catch (error) {
     taskkill = undefined;
+    request.status = "unavailable";
+    request.errorCode = error?.code ?? "UNKNOWN";
   }
   if (taskkill && child.pid === ownership.pid && child.exitCode === null && child.signalCode === null) {
     let killer;
+    const output = { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) };
+    const capture = (name, chunk) => {
+      const bytes = Buffer.from(chunk);
+      const remaining = 4_096 - output[name].length;
+      if (bytes.length > remaining) request.outputTruncated = true;
+      if (remaining > 0) output[name] = Buffer.concat([output[name], bytes.subarray(0, remaining)]);
+    };
     try {
+      request.attempted = true;
       killer = spawn(taskkill, ["/PID", String(ownership.pid), "/T", "/F"], {
         env: minimalChildEnvironment(),
         windowsHide: true,
         shell: false,
-        stdio: "ignore",
+        stdio: ["ignore", "pipe", "pipe"],
       });
+      observeProcessClose(killer);
+      killer.stdout.on("data", (chunk) => capture("stdout", chunk));
+      killer.stderr.on("data", (chunk) => capture("stderr", chunk));
       await waitForSpawn(killer, 2_000);
       const completed = await waitForExit(killer, timeoutMs);
+      request.status = completed ? (killer.exitCode === 0 ? "succeeded" : "failed") : "timed-out";
       if (!completed && killer.exitCode === null && killer.signalCode === null) killer.kill("SIGKILL");
-    } catch {
+    } catch (error) {
+      request.status = "failed";
+      request.errorCode = error?.code ?? "UNKNOWN";
       if (killer?.exitCode === null && killer?.signalCode === null) killer.kill("SIGKILL");
+    } finally {
+      request.helperClosed = killer ? await waitForExit(killer, Math.min(timeoutMs, 1_000)) : true;
+      request.exitCode = killer?.exitCode ?? null;
+      request.signalCode = killer?.signalCode ?? null;
+      request.stdout = output.stdout.toString("utf8");
+      request.stderr = output.stderr.toString("utf8");
     }
   }
   if (child.pid === ownership.pid && child.exitCode === null && child.signalCode === null) {
     try {
+      request.directChildFallback = "SIGKILL";
       child.kill("SIGKILL");
     } catch {
       // The final wait distinguishes an already-exited child from failure.
     }
   }
   if (!(await waitForExit(child, timeoutMs))) {
-    throw new OwnedProcessError("PROCESS_TERMINATION_FAILED", "Owned process did not exit after termination.");
+    throw new OwnedProcessError("PROCESS_TERMINATION_FAILED", "Owned process did not exit after termination.", { windowsTreeRequest: request });
   }
+  if (request.attempted && !request.helperClosed) {
+    throw new OwnedProcessError("PROCESS_TREE_REQUEST_CLOSE_TIMEOUT", "Owned tree request did not close its streams in time.", { windowsTreeRequest: request });
+  }
+  return terminationReceipt(request);
 }
 
 async function trustedTaskkillPath() {
@@ -623,8 +674,12 @@ function waitForSpawn(child, timeoutMs) {
   });
 }
 
+function observeProcessClose(child) {
+  child.once("close", () => closedProcesses.add(child));
+}
+
 function waitForExit(child, timeoutMs) {
-  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve(true);
+  if (closedProcesses.has(child)) return Promise.resolve(true);
   if (timeoutMs === 0) return Promise.resolve(false);
   return new Promise((resolvePromise) => {
     const timer = setTimeout(() => {
@@ -635,13 +690,15 @@ function waitForExit(child, timeoutMs) {
       cleanup();
       resolvePromise(true);
     };
+    // A spawn/kill error is not proof of exit; close or the deadline settles it.
+    const onError = () => {};
     const cleanup = () => {
       clearTimeout(timer);
       child.removeListener("close", done);
-      child.removeListener("error", done);
+      child.removeListener("error", onError);
     };
     child.once("close", done);
-    child.once("error", done);
+    child.on("error", onError);
   });
 }
 

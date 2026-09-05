@@ -1,7 +1,7 @@
 {
   "name": "proto-workbench",
   "productName": "Proto Workbench",
-  "version": "0.1.2",
+  "version": "0.2.0-rc.1",
   "description": "Independent local AI workbench for auditable Proto design workflows.",
   "license": "MIT",
   "private": true,
@@ -14,15 +14,15 @@
   "main": "out/main/index.js",
   "scripts": {
     "dev": "vite --configLoader runner",
-    "dev:desktop": "electron-vite dev",
-    "build": "vite build --configLoader runner",
-    "build:desktop": "pnpm sync:workspace-template && electron-vite build && node --experimental-strip-types scripts/generate-module-manifest.mjs",
+    "dev:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task DevDesktop",
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task Renderer",
+    "build:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task Desktop",
     "preview": "vite preview --configLoader runner",
-    "build:icon": "node scripts/build-app-icon.mjs",
+    "build:icon": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task Icon",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "verify:visualization": "node --experimental-strip-types --test tests/sha256.test.mjs tests/protein-sequence.test.mjs tests/design-visualization.test.mjs tests/igem-materials-visualization-corpus.test.mjs tests/map-export.test.mjs tests/map-export-service.test.mjs tests/designs-safety-contract.test.mjs tests/cgview-adapter.test.mjs tests/security-boundaries.test.mjs tests/visualization-envelope.test.mjs",
-    "sync:workspace-template": "node scripts/sync-workspace-template.mjs --write",
+    "sync:workspace-template": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task SyncTemplate",
     "verify:workspace-template": "node scripts/sync-workspace-template.mjs --check",
     "verify:offline": "node scripts/verify-offline.mjs",
     "build:sidecars": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-proto-sidecar.ps1",
@@ -32,6 +32,7 @@
     "rebuild:native": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@lmstudio/sdk": "1.5.0",
     "@monaco-editor/react": "^4.7.0",
     "@sigstore/bundle": "5.0.0",
     "@sigstore/protobuf-specs": "0.5.2",
@@ -43,6 +44,7 @@
     "cgview": "1.8.2",
     "diff": "^9.0.0",
     "lucide-react": "^1.31.0",
+    "molstar": "5.11.0",
     "monaco-editor": "^0.56.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -157,6 +159,14 @@
         "filter": [
           "**/*.json"
         ]
+      },
+      {
+        "from": "licenses/Molstar-MIT.txt",
+        "to": "licenses/Molstar-MIT.txt"
+      },
+      {
+        "from": "licenses/LM-Studio-SDK-Apache-2.0.txt",
+        "to": "licenses/LM-Studio-SDK-Apache-2.0.txt"
       }
     ],
     "win": {

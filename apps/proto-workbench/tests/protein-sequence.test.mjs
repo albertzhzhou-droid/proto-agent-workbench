@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateProteinMetrics,
+  calculateLegacyProteinMetrics,
+  proteinPropertyBins,
   extractProteinRange,
   PROTEIN_VISUALIZATION_LIMITS,
   searchProteins,
@@ -38,15 +40,36 @@ test("protein ranges are 1-based inclusive at input and bounded at extraction", 
   assert.equal(extractProteinRange("ABCDE", { start: -1, end: 4 }), undefined);
 });
 
-test("software-derived protein metrics mirror the compiler contract", () => {
+test("ambiguous residues have no fabricated mass", () => {
   assert.deepEqual(calculateProteinMetrics("AVDEBX"), {
     lengthAa: 6,
-    molecularWeightDaApprox: 544.345,
+    molecularWeightDaApprox: null,
+    algorithm: "proto.protein-metrics.v2",
+    massStatus: "unavailable",
+    massReason: "Unknown residue mass: B, X",
     composition: { A: 1, B: 1, D: 1, E: 1, V: 1, X: 1 },
     hydrophobicFraction: 0.333333,
     chargedFraction: 0.333333,
     ambiguousOrSpecialFraction: 0.333333,
   });
+});
+
+test("average masses agree with independent Biopython reference values", () => {
+  for (const [sequence, expected] of [["A", 89.093], ["AA", 160.171], ["AGC", 249.287], ["U", 168.053], ["O", 255.313]]) {
+    assert.equal(calculateProteinMetrics(sequence).molecularWeightDaApprox, expected);
+  }
+  assert.equal(calculateLegacyProteinMetrics("AGC").molecularWeightDaApprox, 195.24);
+  for (const symbol of ["X", "B", "Z", "J", "*", "-"]) assert.equal(calculateProteinMetrics(`AG${symbol}`).molecularWeightDaApprox, null);
+  assert.throws(() => calculateProteinMetrics(""), /non-empty/);
+});
+
+test("positional residue tracks are bounded and preserve exact bin intervals", () => {
+  const bins = proteinPropertyBins("AVDEK".repeat(1000), 80);
+  assert.ok(bins.length <= 80);
+  assert.equal(bins[0].start, 0);
+  assert.equal(bins.at(-1).end, 5000);
+  assert.equal(bins.reduce((sum, bin) => sum + bin.end - bin.start, 0), 5000);
+  assert.throws(() => proteinPropertyBins("AV", 0), /budget/);
 });
 
 test("protein search covers ID, name, source record, and overlapping sequence motifs", () => {

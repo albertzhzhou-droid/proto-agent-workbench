@@ -22,6 +22,7 @@ declare module "cgview" {
       drawElement(layer: string, start: number, stop: number, centerOffset: number, color?: string, width?: number, decoration?: string): void;
     };
     backbone: { adjustedCenterOffset: number; adjustedThickness: number };
+    ruler: { tickCount: number };
     io: {
       getSVG(): string | undefined;
       downloadImage(width: number, height: number, filename?: string): void;

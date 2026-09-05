@@ -1,15 +1,70 @@
 # Proto Agent / Proto Workbench Changelog
 
-This record was reconstructed on 2026-09-01 from the source, tests, QA
+The historical entries through 2026-09-01 were reconstructed from source, tests, QA
 screenshots, build contents, and SHA-256 values that remained in the project.
-The project's `.git` directory was empty and could not provide commit, tag, or
-branch history. The entries below therefore are not inferred from a Git log,
+At that time, the project's `.git` directory was empty and could not provide commit, tag, or
+branch history. Those historical entries therefore are not inferred from a Git log,
 and byte-level differences without sufficient evidence are not presented as
 known feature changes.
 
-Version boundary: the current Python CLI version is `0.1.0`, and the current
-Windows Workbench version is `0.1.2`. `Stage N`, `rN`, `vN`, and
+Version boundary: the Python CLI version is `0.1.0`; the Workbench upgrade candidate
+is `0.2.0-rc.1`, with the local debug scope complete and full release acceptance
+still outstanding. The previous Windows version
+was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
+
+## 2026-09-05 — Reliable Harness and scientific workbench candidate
+
+- Added durable mission budgets, exact loaded model context, structured working
+  memory, full tool result paging, per-task MCP cancellation, execution dependencies,
+  and artifact-backed completion and recovery.
+- Unified DNA edits in checked source transactions with occurrence identity,
+  orientation, anchored annotations, undo/redo, and backwards-compatible IR v2.
+- Added real structure attachments, explicit residue mapping, lazy Mol* views,
+  sequence and structure selection, confidence provenance, and verified exports.
+  Protein mass algorithm v2 corrects the water term and reports ambiguous masses
+  without fabricated precision.
+- Added a responsive light/dark workbench, large-sequence workers and window
+  browsing, and isolated, locked candidate packaging with payload verification.
+- Completed the user-limited 15-task Qwen Q4 / 32,768-context debug campaign:
+  7 direct successes, 8 after bounded retry or repair, zero host recovery,
+  incomplete or false completion. No sixteenth case was started.
+- Passed 809 JavaScript tests, 242 Python tests (four Windows platform skips),
+  TypeScript, and immutable candidate/distribution checks. Actual Portable and
+  extracted installer-payload native checks each passed 8/8, including DNA
+  commit/undo/redo, real mmCIF import, bidirectional selection and export reopen.
+- Corrected Launchpad dark-theme contrast and guarded packaging against Windows
+  path limits and implicit package-manager dependency mutation.
+- Added unchanged native validation screenshots and path-free public evidence
+  summaries. Raw sessions and candidate binaries remain Git-ignored.
+- Full sixty-task acceptance, additional live-model faults, Windows installer
+  install/upgrade/uninstall and signing remain outstanding. The local candidate
+  is not a signed or generally accepted production release.
+
+## 2026-09-03 — Curated UniProt protein expansion and reference-source review
+
+- Added `tools/crawl_uniprot_proteins.py`, a curated crawler over the public
+  UniProtKB/Swiss-Prot REST API that resolves hand-picked design proteins,
+  enforces reviewed-entry, identity, alphabet, length, safety-text, and
+  duplicate-sequence gates, and refreshes seed evidence whose local bytes
+  were lost.  One curation error (a C. elegans neuropeptide picked up by a
+  loose `gene:flp` query) was caught and demoted before audit; the authentic
+  `FLP_YEAST` recombinase replaced it.
+- The reviewed protein seed grew from 5 to 20 records: firefly and Renilla
+  luciferases, bacterial luciferase LuxA/LuxB, aequorin, Cre and Flp
+  recombinases, lambda cI, AraC, LuxR, LexA, and CRP regulators, plus the
+  XylE, LacZ, and PhoA reporter enzymes.  The three-round promotion audit
+  passes 1,066/1,066 candidates (1,046 iGEM parts + 20 proteins).
+- `tools/review_materials_promotion.py --from-crawl` now merges both crawler
+  states into the retrieval receipt, with crawl-state entries overriding
+  refreshed rows so current evidence bytes stay hash-locked.
+- Rebuilt and reactivated `public-reviewed-2026.09`: 1,066 DESIGN_ELIGIBLE
+  records (1,059 CC BY 4.0, 7 CC0 1.0).
+- Reference sources reviewed without new bulk crawling: Rhea (18,561-row
+  snapshot) and BioModels (2,784-row snapshot) are structurally
+  REFERENCE_ONLY in this catalog — no compiler or materializer consumes
+  them — so additional bulk rows would add no designable value.  They remain
+  queryable via explicit `--snapshot` selection.
 
 ## 2026-09-02 — Materials catalogue expansion past 1,000 designable parts
 

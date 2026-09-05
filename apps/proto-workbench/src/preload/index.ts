@@ -126,6 +126,9 @@ const api: WorkbenchApi = {
     },
   },
   harness: {
+    listExecutions: () => invoke(IPC.harnessExecutions),
+    resumeExecution: (runId) => invoke(IPC.harnessResume, runId),
+    pauseExecution: (runId) => invoke(IPC.harnessPause, runId),
     preflight: (input: MissionPreflightRequest) => invoke(IPC.harnessPreflight, {
       threadId: boundedString(input.threadId, "threadId", 128),
       content: boundedString(input.content, "message", 131_072),
@@ -172,6 +175,33 @@ const api: WorkbenchApi = {
   },
   visualization: {
     exportMap: (input: MapExportRequest) => invokeMapExport(input),
+  },
+  designs: {
+    prepareEdit: input => invoke(IPC.designPrepareEdit, input),
+    commitEdit: input => invoke(IPC.designCommitEdit, input),
+  },
+  proteinStructures: {
+    list: input => invoke(IPC.structureList, input),
+    search: input => invoke(IPC.structureSearch, input),
+    fetch: input => invoke(IPC.structureFetch, input),
+    importFile: input => invoke(IPC.structureImport, input),
+    read: input => invoke(IPC.structureRead, input),
+    saveView: input => invoke(IPC.structureSaveView, input),
+    readView: input => invoke(IPC.structureReadView, input),
+    prepareTracks: input => invoke(IPC.structurePrepareTracks, input),
+    exportTracks: input => {
+      if (input.format === "png" && (!(input.png instanceof Uint8Array) || input.png.byteLength < 32 || input.png.byteLength > MAX_BINARY_IPC_BYTES)) {
+        return Promise.reject(new Error("Invalid sequence landscape PNG size."));
+      }
+      if (JSON.stringify({ ...input, png: undefined }).length > MAX_IPC_ARGUMENT_CHARACTERS) {
+        return Promise.reject(new Error("Sequence landscape request exceeds the payload limit."));
+      }
+      return ipcRenderer.invoke(IPC.structureExportTracks, input);
+    },
+    exportImage: input => {
+      if (!(input.png instanceof Uint8Array) || input.png.byteLength < 32 || input.png.byteLength > MAX_BINARY_IPC_BYTES) return Promise.reject(new Error("Invalid structure PNG size."));
+      return ipcRenderer.invoke(IPC.structureExportImage, input);
+    },
   },
   materials: {
     status: () => invoke(IPC.materialsStatus),

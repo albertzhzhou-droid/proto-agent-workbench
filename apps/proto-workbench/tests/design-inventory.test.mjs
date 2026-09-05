@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { groupDesignArtifacts } from "../src/renderer/design-inventory.ts";
+import { groupDesignArtifacts, designArtifactHasPath } from "../src/renderer/design-inventory.ts";
 
 function artifact(path, overrides = {}) {
   return {
@@ -50,4 +50,15 @@ test("invalid dates and Unicode-equivalent paths still choose a stable represent
 
   assert.equal(forward[0].path, reverse[0].path);
   assert.equal(forward[0].copyCount, 2);
+});
+
+test("refresh preserves selection when an identical artifact gains a newer representative", () => {
+  const old = artifact("C:/workspace/build/old.ir.json", {relativePath: "build/old.ir.json"});
+  const newer = artifact("C:/workspace/build/new.ir.json", {relativePath: "build/new.ir.json", modifiedAt: "2026-08-31T12:00:00Z"});
+  const [group] = groupDesignArtifacts([old, newer]);
+  assert.equal(group.path, newer.path);
+  assert.equal(designArtifactHasPath(group, "C:\\workspace\\build\\OLD.ir.json"), true);
+  assert.equal(designArtifactHasPath(group, "./build/old.ir.json"), true);
+  assert.equal(designArtifactHasPath(group, "build/missing.ir.json"), false);
+  assert.deepEqual(new Set(group.artifactPaths), new Set([old.path, old.relativePath, newer.path, newer.relativePath]));
 });

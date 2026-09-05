@@ -1,14 +1,14 @@
 {
   "schema_version": "proto-agent.materials-promotion-audit.v1",
   "policy_version": "proto-agent.materials-promotion-policy.2026-09",
-  "generated_at": "2026-09-03T00:50:33Z",
+  "generated_at": "2026-09-03T19:14:17Z",
   "round_order": [
     "provenance_rights",
     "sequence_ontology_safety",
     "duplicate_roundtrip_visibility"
   ],
-  "candidate_count": 1051,
-  "pass_count": 1051,
+  "candidate_count": 1066,
+  "pass_count": 1066,
   "fail_count": 0,
   "candidates": [
     {
@@ -60681,6 +60681,122 @@
     },
     {
       "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P00634",
+      "record_sha256": "def7e91f3e0b202f952961450892120eab6b688ddf6d3c85d666c1eb9ee76647",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00634.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P00634.json",
+          "retrieved_at": "2026-09-03T18:42:54Z",
+          "sha256": "3daf839ecfe721bb781dc3f569c692923808cb6cc60a6b8f1ded7a98a528f7c8",
+          "byte_count": 61640
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P00722",
+      "record_sha256": "dfca9ca817e22a2a89ffbaf0f38f068be227f7aef5c7a9038d98ba8ef4148baa",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00722.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P00722.json",
+          "retrieved_at": "2026-09-03T18:42:51Z",
+          "sha256": "e1eae9c808320ba6141d7354ff193c6b92781ccc72f1e5c3af14c47dedf707e8",
+          "byte_count": 94656
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
       "resource_id": "uniprot:P03023",
       "record_sha256": "a5f8afceadfef9777e374b03fb0ac4a23b397572757f2a48742edc7c27fcd59a",
       "decision": "PASS",
@@ -60725,6 +60841,122 @@
           "retrieved_at": "2026-09-02T21:56:41Z",
           "sha256": "b5b10ec845338ef95b11c6b485e4b534be8a051c91e9b75b2e6e20fa74b8fbff",
           "byte_count": 39797
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P03034",
+      "record_sha256": "f823395412314574a6ce19a15473cec7b70dad8684e3e046beb8219dec687d50",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03034.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P03034.json",
+          "retrieved_at": "2026-09-03T18:53:30Z",
+          "sha256": "103e93e02620a8e4ae737ec0e88ee6cbb2aa6ef88a1265a14fe2d98db639b99b",
+          "byte_count": 21419
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P03870",
+      "record_sha256": "42746a921a4a8c0af3164c5deb8285342d82e82c6960f9e87f2f22607a61aca2",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03870.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P03870.json",
+          "retrieved_at": "2026-09-03T18:59:15Z",
+          "sha256": "3b80c8254102d2450f6b30acaf4b29104e07d877610ddaefe8842ad0e765aefb",
+          "byte_count": 26117
         },
         "license_response": {
           "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
@@ -60797,8 +61029,646 @@
     },
     {
       "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P06956",
+      "record_sha256": "e1e385eae408631da3d2849eb81d81456add7934ebbb686b9f1685fd9c44ba42",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P06956.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P06956.json",
+          "retrieved_at": "2026-09-03T18:53:24Z",
+          "sha256": "437e722dc55a985b6f8e1fd8ad0feb520559d88851367fa7af044735c0e69531",
+          "byte_count": 24082
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P07164",
+      "record_sha256": "a2fcb7432e90ff312608bc829b97c192bb507d3c8ee30db73393a34449094bc4",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07164.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P07164.json",
+          "retrieved_at": "2026-09-03T18:53:21Z",
+          "sha256": "8e3690bde9c0a12341a302097c81dc30def68d5d28f47450d4be695d1ff93ad4",
+          "byte_count": 18238
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P07739",
+      "record_sha256": "c53d0bcdfc422f7fa1a116e4e1b45c3ac1d2beed4e60f9212b009acede75b1ea",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07739.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P07739.json",
+          "retrieved_at": "2026-09-03T18:53:18Z",
+          "sha256": "1edb9a9bc07adf30cce15113bea67bae9a803b1372337d8f3efd0c812366b4f0",
+          "byte_count": 17673
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P07740",
+      "record_sha256": "586d2e73c74a2d3799359ea6d34608fd1eaea510f10d0ddf28053d9d8821c22f",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07740.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P07740.json",
+          "retrieved_at": "2026-09-03T18:53:15Z",
+          "sha256": "f4f735ebdb329bed98f3b895b4f616994561c70309ea56033c5606b60189ecdb",
+          "byte_count": 19444
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P08127",
+      "record_sha256": "d2f9f5da45b4b44d7e849b72c95cf8db5fbe5e6ebbbee136e98c28fa3946cada",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08127.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P08127.json",
+          "retrieved_at": "2026-09-03T18:53:38Z",
+          "sha256": "b896eae9f1545ca6b8938e9fc3bc389031aa133186a9854d0c542012c12951b8",
+          "byte_count": 9829
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P08659",
+      "record_sha256": "970ca28be56fea38e14aed2f703510efa64b844659cf634fd1197a578603eb48",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08659.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P08659.json",
+          "retrieved_at": "2026-09-03T18:53:09Z",
+          "sha256": "caa43a11fae4b54f05fb158cbd674de50f55e27a6aa3ae521fd4e20add86f10a",
+          "byte_count": 30239
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P0A7C2",
+      "record_sha256": "f18f12507e252783b81da15bde1af71f30ecb8b59e746c842eb503928283a608",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A7C2.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P0A7C2.json",
+          "retrieved_at": "2026-09-03T18:42:57Z",
+          "sha256": "c89dba5f3e832e79b10884b958c688894d9ea32f43a4b16287ba32af290b752a",
+          "byte_count": 33893
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P0A9E0",
+      "record_sha256": "291fcdbd77ffebf97c22e2f55058001f2471b52c2563486cd3999c6fc7790388",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A9E0.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P0A9E0.json",
+          "retrieved_at": "2026-09-03T18:42:45Z",
+          "sha256": "0e8d3f1d96810e2301235205a08ef380af7f0953d00389f033d97c3e10c309a7",
+          "byte_count": 41870
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P0ACJ8",
+      "record_sha256": "a9118627796567de8a986177da943a342c27776c4d5246be902cc46b6a17992e",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0ACJ8.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P0ACJ8.json",
+          "retrieved_at": "2026-09-03T18:43:00Z",
+          "sha256": "78363826a61b49132c01d2811a8a2d68439b35023ce5a602672d6aa82927a9a1",
+          "byte_count": 86831
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P12746",
+      "record_sha256": "99be95db083e43ca02a3a1e0024b6273686181c55b68e4bd1a7208e29fe27f18",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P12746.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P12746.json",
+          "retrieved_at": "2026-09-03T18:53:35Z",
+          "sha256": "82387f8ade03b326ede15e28cc3cf22c8669dc63953662aa243766b460f38a82",
+          "byte_count": 12278
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+      "resource_id": "uniprot:P27652",
+      "record_sha256": "fc46e7aaaa2e381dc5858bbd0590a896329645317ba34cb3f8122b5c3a1dd636",
+      "decision": "PASS",
+      "rounds": [
+        {
+          "round_id": "provenance_rights",
+          "status": "PASS",
+          "reason_codes": [
+            "EVIDENCE_LINKS_VERIFIED",
+            "LICENSE_RESPONSE_VERIFIED",
+            "PROVIDER_LICENSE_POLICY_MATCHED",
+            "SOURCE_RESPONSE_HASH_VERIFIED",
+            "SOURCE_VERSIONED"
+          ]
+        },
+        {
+          "round_id": "sequence_ontology_safety",
+          "status": "PASS",
+          "reason_codes": [
+            "DERIVED_SAFETY_NO_FLAG",
+            "ONTOLOGY_SUPPORTED",
+            "SEQUENCE_HASH_VERIFIED",
+            "SOFTWARE_DOMAIN_COMPATIBLE"
+          ]
+        },
+        {
+          "round_id": "duplicate_roundtrip_visibility",
+          "status": "PASS",
+          "reason_codes": [
+            "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+            "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+            "NORMALIZATION_ROUNDTRIP_VERIFIED",
+            "RESOURCE_ID_UNIQUE",
+            "SEQUENCE_UNIQUE"
+          ]
+        }
+      ],
+      "source_evidence": {
+        "record_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P27652.json",
+          "url": "https://rest.uniprot.org/uniprotkb/P27652.json",
+          "retrieved_at": "2026-09-03T18:53:12Z",
+          "sha256": "10377ce9235e3dcdf356fe063a82c1e04decf399bd9295687b12098a90ae047c",
+          "byte_count": 20253
+        },
+        "license_response": {
+          "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+          "url": "https://rest.uniprot.org/help/license",
+          "retrieved_at": "2026-09-02T21:56:51Z",
+          "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+          "byte_count": 914,
+          "declared_license_id": "CC-BY-4.0",
+          "declared_license_url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      }
+    },
+    {
+      "policy_version": "proto-agent.materials-promotion-policy.2026-09",
       "resource_id": "uniprot:P42212",
-      "record_sha256": "07f160937cdbe53623bd95c327c93b3c98b52028e109b92bc8501e6cd074a8f2",
+      "record_sha256": "f7835725e73acaecf492b8a474c9300cfffbd233731fc722218bf4f110c783b8",
       "decision": "PASS",
       "rounds": [
         {
@@ -60838,7 +61708,7 @@
         "record_response": {
           "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P42212.json",
           "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
-          "retrieved_at": "2026-09-02T21:56:49Z",
+          "retrieved_at": "2026-09-03T18:42:28Z",
           "sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
           "byte_count": 244843
         },
@@ -60856,7 +61726,7 @@
     {
       "policy_version": "proto-agent.materials-promotion-policy.2026-09",
       "resource_id": "uniprot:Q9U6Y4",
-      "record_sha256": "9eccabacdcd30d61928eddbf630249dd880bf19068a6312a702d09b23800a987",
+      "record_sha256": "b9229b451dde69b1c196adcb6f3908411b22a247894fb4c3cbf2dc7d5361e82e",
       "decision": "PASS",
       "rounds": [
         {
@@ -60896,7 +61766,7 @@
         "record_response": {
           "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y4.json",
           "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y4.json",
-          "retrieved_at": "2026-09-02T21:56:49Z",
+          "retrieved_at": "2026-09-03T18:42:29Z",
           "sha256": "a678b787c3d2968ccaec1b843e1fbd0151ee59ffea2ba11b1480d4c0e937b91b",
           "byte_count": 14902
         },
@@ -60914,7 +61784,7 @@
     {
       "policy_version": "proto-agent.materials-promotion-policy.2026-09",
       "resource_id": "uniprot:Q9U6Y8",
-      "record_sha256": "a23f5d9e69d04148e8109798276b84f6b63fb6149f8d529f16007fa897b0e8bc",
+      "record_sha256": "cdd5fada34b161ef194b1b993f0532188569f4b648e2b35da367da17001d260d",
       "decision": "PASS",
       "rounds": [
         {
@@ -60954,7 +61824,7 @@
         "record_response": {
           "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y8.json",
           "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y8.json",
-          "retrieved_at": "2026-09-02T21:56:49Z",
+          "retrieved_at": "2026-09-03T18:42:30Z",
           "sha256": "83d6d4d4e7bdbd6d5c69a12776ce4c525db4847739e946716964c371df9d1d79",
           "byte_count": 20126
         },

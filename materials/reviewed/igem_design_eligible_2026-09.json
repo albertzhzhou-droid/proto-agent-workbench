@@ -1,6 +1,6 @@
 {
   "schema_version": "proto-agent.materials.reviewed.v1",
-  "reviewed_at": "2026-09-03T00:50:33Z",
+  "reviewed_at": "2026-09-03T19:14:17Z",
   "reviewer": "controlled-three-round-audit",
   "notice": "Small open-license, software-only eligibility seed. Passing this audit is not a wet-lab, orderability, biosafety, or regulatory claim. Activation remains an explicit human action.",
   "records": [

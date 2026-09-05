@@ -28,6 +28,7 @@ import { workbenchApi } from "./mock-api.ts";
 import { deriveWorkbenchReadiness } from "./readiness.ts";
 import { shouldFollowNewRun } from "./run-follow.ts";
 import { emptyReview } from "../shared/run-lifecycle.ts";
+import { modelPreflightIdentity } from "./model-presentation.ts";
 
 export type AppView = "launchpad" | "workspaces" | "designs" | "runs" | "models" | "materials" | "sources" | "reviews" | "settings" | "help";
 export type BootstrapPhase = "connecting" | "environment" | "session" | "ready";
@@ -233,7 +234,12 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     const api = workbenchApi();
     if (!subscriptionsReady) {
       subscriptionsReady = true;
-      api.models.subscribe((models) => set({ models, missionPreflight: undefined }));
+      api.models.subscribe((models) => set((state) => ({
+        models,
+        missionPreflight: modelPreflightIdentity(state.models, state.missionPreflight?.modelId)
+          === modelPreflightIdentity(models, state.missionPreflight?.modelId)
+          ? state.missionPreflight : undefined,
+      })));
       api.threads.subscribe((event) => {
         const targetsCurrentThread = event.threadId === get().thread?.id;
         if (event.type === "message-start" && targetsCurrentThread) {
@@ -428,7 +434,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     try {
       await workbenchApi().models.load(modelId, options);
       const thread = get().thread;
-      if (thread) set({ thread: await workbenchApi().threads.update(thread.id, { modelId }) });
+      if (thread) set({ thread: await workbenchApi().threads.update(thread.id, { modelId }), missionPreflight: undefined });
       const runtime = await workbenchApi().app.getRuntimeStatus();
       set({ runtime, toast: "The exact LM Studio instance is connected for Workbench chat." });
     } catch (error) {
@@ -1029,6 +1035,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     if (!missionPreflight || missionPreflight.threadId !== thread.id) {
       const reviewedGoal = prompt.trim();
       const reviewedAttachments = attachmentIdentity(attachments);
+      const reviewedModel = modelPreflightIdentity(models, thread.modelId);
       set({ preflighting: true, missionPreflight: undefined });
       try {
         const report = await workbenchApi().harness.preflight({
@@ -1042,6 +1049,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
           || current.mode !== report.mode
           || current.prompt.trim() !== reviewedGoal
           || attachmentIdentity(current.attachments) !== reviewedAttachments
+          || modelPreflightIdentity(current.models, thread.modelId) !== reviewedModel
         ) {
           set({ preflighting: false, missionPreflight: undefined, toast: "The draft changed during preflight. Review the updated mission when ready." });
           return;

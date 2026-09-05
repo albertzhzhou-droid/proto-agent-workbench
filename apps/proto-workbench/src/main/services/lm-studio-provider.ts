@@ -10,15 +10,21 @@ import type {
   ChatCompletionChunk,
   InferenceRuntime,
   ModelCatalogSource,
+  ExecutionBinding,
+  InstanceTokenizer,
+  TokenCountResult,
 } from "./inference-provider.ts";
+import { RuntimeFailure } from "./runtime-control.ts";
+import { LmStudioTokenizer } from "./lm-studio-tokenizer.ts";
 
 export const LM_STUDIO_BASE_URL = "http://127.0.0.1:1234" as const;
 export const LM_STUDIO_TOKEN_ENV_NAMES = ["LMSTUDIO_API_KEY", "LM_API_TOKEN"] as const;
 
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 const LOAD_TIMEOUT_MS = 15 * 60_000;
-export const LM_STUDIO_CHAT_HEADER_TIMEOUT_MS = 15_000;
-export const LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS = 10 * 60_000;
+export const LM_STUDIO_CHAT_HEADER_TIMEOUT_MS = 10 * 60_000;
+export const LM_STUDIO_CHAT_IDLE_TIMEOUT_MS = 90_000;
+export const LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS = 20 * 60_000;
 export const LM_STUDIO_MAX_CHAT_DEADLINE_MS = 30 * 60_000;
 const MAX_CATALOG_BYTES = 4 * 1024 * 1024;
 const MAX_ERROR_BYTES = 64 * 1024;
@@ -37,6 +43,10 @@ interface LmStudioProviderOptions {
   chatDeadlineMs?: number;
   maxSseStreamBytes?: number;
   maxSseChunks?: number;
+  prefillDeadlineMs?: number;
+  idleDeadlineMs?: number;
+  lifecycleDeadlineMs?: number;
+  tokenizer?: InstanceTokenizer;
 }
 
 interface NativeLoadedInstance {
@@ -90,6 +100,10 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
   private readonly chatDeadlineMs: number;
   private readonly maxSseStreamBytes: number;
   private readonly maxSseChunks: number;
+  private readonly prefillDeadlineMs: number;
+  private readonly idleDeadlineMs: number;
+  private readonly lifecycleDeadlineMs: number;
+  private readonly tokenizer?: InstanceTokenizer;
   private readonly bindings = new Map<string, InstanceBinding>();
   private nativeModels = new Map<string, NativeModel>();
   private scanController?: AbortController;
@@ -97,6 +111,10 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
   constructor(options: LmStudioProviderOptions = {}) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.environment = options.environment ?? process.env;
+    this.prefillDeadlineMs = boundedInteger(options.prefillDeadlineMs ?? LM_STUDIO_CHAT_HEADER_TIMEOUT_MS, "prefillDeadlineMs", 1, LM_STUDIO_MAX_CHAT_DEADLINE_MS);
+    this.idleDeadlineMs = boundedInteger(options.idleDeadlineMs ?? LM_STUDIO_CHAT_IDLE_TIMEOUT_MS, "idleDeadlineMs", 1, LM_STUDIO_MAX_CHAT_DEADLINE_MS);
+    this.lifecycleDeadlineMs = boundedInteger(options.lifecycleDeadlineMs ?? LOAD_TIMEOUT_MS, "lifecycleDeadlineMs", 1, LOAD_TIMEOUT_MS);
+    this.tokenizer = options.tokenizer ?? new LmStudioTokenizer();
     this.chatDeadlineMs = boundedInteger(
       options.chatDeadlineMs ?? LM_STUDIO_DEFAULT_CHAT_DEADLINE_MS,
       "chatDeadlineMs",
@@ -166,6 +184,14 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     options: Partial<ModelLoadOptions>,
     signal?: AbortSignal,
   ): Promise<ModelInstance> {
+    return this.withLifecycleDeadline("model-load", signal, (boundedSignal) => this.performLoad(descriptor, options, boundedSignal));
+  }
+
+  private async performLoad(
+    descriptor: ModelDescriptor,
+    options: Partial<ModelLoadOptions>,
+    signal: AbortSignal,
+  ): Promise<ModelInstance> {
     const providerModelId = requireProviderModelId(descriptor);
     const models = await this.synchronize(signal);
     const model = models.find((candidate) => candidate.key === providerModelId);
@@ -215,6 +241,9 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
       model: providerModelId,
       echo_load_config: true,
     };
+    if (/qwen3[.]8[-/]27b/i.test(providerModelId) && /q4/i.test(model.quantization?.name ?? providerModelId)) {
+      body.context_length = Math.min(32_768, model.max_context_length);
+    }
     if (options.contextLength !== undefined) {
       body.context_length = boundedInteger(options.contextLength, "contextLength", 256, model.max_context_length);
     }
@@ -232,7 +261,7 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     const response = await this.requestJson(
       "/api/v1/models/load",
       { method: "POST", body: JSON.stringify(body), signal },
-      LOAD_TIMEOUT_MS,
+      this.lifecycleDeadlineMs,
     );
     const record = requireRecord(response, "LM Studio load response");
     if (record.status !== "loaded" || record.type !== "llm") {
@@ -277,13 +306,17 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
   }
 
   async unload(modelId: string): Promise<void> {
+    return this.withLifecycleDeadline("model-unload", undefined, (signal) => this.performUnload(modelId, signal));
+  }
+
+  private async performUnload(modelId: string, signal: AbortSignal): Promise<void> {
     const binding = this.bindings.get(modelId);
     if (!binding) return;
     if (!binding.ownedByWorkbench) {
       this.bindings.delete(modelId);
       return;
     }
-    const models = await this.synchronize();
+    const models = await this.synchronize(signal);
     const stillLoaded = models
       .find((model) => model.key === binding.providerModelId)
       ?.loaded_instances.some((instance) => instance.id === binding.instanceId);
@@ -295,7 +328,8 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     const response = await this.requestJson("/api/v1/models/unload", {
       method: "POST",
       body: JSON.stringify({ instance_id: binding.instanceId }),
-    }, LOAD_TIMEOUT_MS);
+      signal,
+    }, this.lifecycleDeadlineMs);
     const record = requireRecord(response, "LM Studio unload response");
     if (record.instance_id !== binding.instanceId) {
       throw new Error("LM Studio did not confirm the exact Workbench-owned instance unload.");
@@ -337,37 +371,79 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     return undefined;
   }
 
+  peekExecutionBinding(modelId: string): ExecutionBinding | undefined {
+    const binding = this.bindings.get(modelId);
+    if (!binding || !this.has(modelId)) return undefined;
+    return {
+      modelId, instanceId: binding.instanceId, contextLength: binding.config.context_length,
+      ownedByWorkbench: binding.ownedByWorkbench, observedAt: new Date().toISOString(),
+    };
+  }
+
+  async getExecutionBinding(modelId: string, signal?: AbortSignal): Promise<ExecutionBinding> {
+    await this.synchronize(signal);
+    const binding = this.peekExecutionBinding(modelId);
+    if (!binding) throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The selected LM Studio model is not explicitly connected and loaded. Load it before chatting.", { retryable: true });
+    return binding;
+  }
+
+  async countPromptTokens(modelId: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<TokenCountResult> {
+    const binding = await this.getExecutionBinding(modelId, signal);
+    if (this.tokenizer) {
+      try {
+        const tokens = await this.tokenizer.countPrompt(binding.instanceId, payload, signal);
+        if (!Number.isSafeInteger(tokens) || tokens < 0) throw new Error("The instance tokenizer returned an invalid token count.");
+        return { tokens, method: "tokenizer" };
+      } catch (error) {
+        if (signal?.aborted) throw abortError();
+        // SDK availability and exact template support are separate from inference.
+        // Falling back is explicitly reported and never claims an exact token count.
+      }
+    }
+    // Explicitly conservative: includes serialized tool schemas and message framing.
+    return { tokens: Buffer.byteLength(JSON.stringify({ messages: payload.messages ?? [], tools: payload.tools ?? [] }), "utf8") + 512, method: "utf8-upper-bound" };
+  }
+
   async chat(
     modelId: string,
     payload: Record<string, unknown>,
     onChunk: (chunk: ChatCompletionChunk) => void,
     signal?: AbortSignal,
   ): Promise<void> {
+    const { deadline: callerDeadline, _onQueueState: _ignoredQueueState, ...requestPayload } = payload;
+    if (callerDeadline !== undefined && (typeof callerDeadline !== "number" || !Number.isFinite(callerDeadline))) throw new Error("The generation deadline must be a finite epoch timestamp.");
+    const totalDeadlineMs = typeof callerDeadline === "number" ? Math.min(this.chatDeadlineMs, Math.max(0, callerDeadline - Date.now())) : this.chatDeadlineMs;
+    if (totalDeadlineMs <= 0) throw new RuntimeFailure("GENERATION_TIMEOUT", "generation", "The task generation deadline is exhausted.", { budgetMs: 0 });
     const deadlineController = new AbortController();
-    let deadlineExpired = false;
-    const deadline = setTimeout(() => {
-      deadlineExpired = true;
+    let failure: RuntimeFailure | undefined;
+    let prefillTimer: NodeJS.Timeout | undefined;
+    let idleTimer: NodeJS.Timeout | undefined;
+    const expire = (code: "PREFILL_TIMEOUT" | "STREAM_STALLED" | "GENERATION_TIMEOUT", stage: string, budgetMs: number) => {
+      if (failure) return;
+      failure = new RuntimeFailure(code, stage, code === "GENERATION_TIMEOUT"
+        ? `LM Studio chat exceeded the ${budgetMs}-millisecond total deadline.`
+        : `LM Studio ${stage} exceeded its ${budgetMs}-millisecond deadline.`, { retryable: true, budgetMs });
       deadlineController.abort();
-    }, this.chatDeadlineMs);
+    };
+    const deadline = setTimeout(() => {
+      expire("GENERATION_TIMEOUT", "generation", totalDeadlineMs);
+    }, totalDeadlineMs);
     const chatSignal = signal
       ? AbortSignal.any([signal, deadlineController.signal])
       : deadlineController.signal;
     try {
       // Synchronization immediately before inference is the fail-closed JIT guard.
       // No model identifier is ever sent unless its explicit binding is still loaded.
-      await this.synchronize(chatSignal);
-      const binding = this.bindings.get(modelId);
-      if (!binding || !this.has(modelId)) {
-        throw new Error("The selected LM Studio model is not explicitly connected and loaded. Load it before chatting.");
-      }
+      const binding = await this.getExecutionBinding(modelId, chatSignal);
+      prefillTimer = setTimeout(() => expire("PREFILL_TIMEOUT", "prefill", this.prefillDeadlineMs), this.prefillDeadlineMs);
 
       // The outer deadline stays armed until [DONE], unlike the request helper's
       // header deadline, and its signal remains attached to the response body.
       const response = await this.request("/v1/chat/completions", {
         method: "POST",
-        body: JSON.stringify({ ...payload, model: binding.instanceId, stream: true }),
+        body: JSON.stringify({ ...requestPayload, model: binding.instanceId, stream: true, stream_options: {include_usage: true} }),
         signal: chatSignal,
-      }, LM_STUDIO_CHAT_HEADER_TIMEOUT_MS);
+      }, 0);
       if (!response.body) throw new Error("LM Studio returned an empty streaming response.");
       const contentType = response.headers.get("content-type")?.toLocaleLowerCase() ?? "";
       if (!contentType.startsWith("text/event-stream")) {
@@ -376,19 +452,31 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
       }
       await parseSse(
         response.body,
-        onChunk,
+        (chunk) => {
+          if (chunk.choices?.some((choice) => {
+            const delta = choice.delta;
+            return Boolean(delta?.content || delta?.reasoning || delta?.reasoning_content
+              || delta?.tool_calls?.some((call) => call.function?.name || call.function?.arguments));
+          })) {
+            if (prefillTimer) clearTimeout(prefillTimer);
+            prefillTimer = undefined;
+            if (idleTimer) clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => expire("STREAM_STALLED", "stream-idle", this.idleDeadlineMs), this.idleDeadlineMs);
+          }
+          onChunk(chunk);
+        },
         chatSignal,
         this.maxSseStreamBytes,
         this.maxSseChunks,
       );
     } catch (error) {
       if (signal?.aborted) throw abortError();
-      if (deadlineExpired) {
-        throw new Error(`LM Studio chat exceeded the ${this.chatDeadlineMs}-millisecond total deadline.`);
-      }
+      if (failure) throw failure;
       throw error;
     } finally {
       clearTimeout(deadline);
+      if (prefillTimer) clearTimeout(prefillTimer);
+      if (idleTimer) clearTimeout(idleTimer);
     }
   }
 
@@ -405,7 +493,7 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     const response = await this.requestJson("/api/v1/models/unload", {
       method: "POST",
       body: JSON.stringify({ instance_id: instanceId }),
-    }, LOAD_TIMEOUT_MS);
+    }, REQUEST_TIMEOUT_MS);
     const record = requireRecord(response, "LM Studio cleanup unload response");
     if (record.instance_id !== instanceId) {
       throw new Error("LM Studio did not confirm cleanup of the exact Workbench-owned instance.");
@@ -491,13 +579,43 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     init: RequestInit,
     timeoutMs = REQUEST_TIMEOUT_MS,
   ): Promise<unknown> {
-    const response = await this.request(path, init, timeoutMs);
-    const text = await readBoundedText(response, MAX_CATALOG_BYTES, timeoutMs);
+    const controller = new AbortController();
+    let expired = false;
+    const timer = setTimeout(() => { expired = true; controller.abort(); }, timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal;
     try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      throw new Error("LM Studio returned malformed JSON.");
+      const response = await this.request(path, { ...init, signal }, 0);
+      const text = await readBoundedText(response, MAX_CATALOG_BYTES, timeoutMs, signal);
+      signal.throwIfAborted();
+      try { return JSON.parse(text) as unknown; }
+      catch { throw new Error("LM Studio returned malformed JSON."); }
+    } catch (error) {
+      if (init.signal?.aborted) throw abortError();
+      if (expired) throw new RuntimeFailure("PROVIDER_TIMEOUT", path.endsWith("/load") ? "model-load" : path.endsWith("/unload") ? "model-unload" : "catalog", `LM Studio request exceeded its ${timeoutMs}-millisecond total deadline.`, {
+        budgetMs: timeoutMs, retryable: init.method !== "POST", effectState: init.method === "POST" ? "unknown" : "none",
+      });
+      throw error;
+    } finally {
+      clearTimeout(timer);
     }
+  }
+
+  private async withLifecycleDeadline<T>(stage: string, callerSignal: AbortSignal | undefined, operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
+    const controller = new AbortController();
+    let expired = false;
+    const timer = setTimeout(() => { expired = true; controller.abort(); }, this.lifecycleDeadlineMs);
+    const signal = callerSignal ? AbortSignal.any([callerSignal, controller.signal]) : controller.signal;
+    try {
+      const result = await operation(signal);
+      signal.throwIfAborted();
+      return result;
+    } catch (error) {
+      if (callerSignal?.aborted) throw abortError();
+      if (expired) throw new RuntimeFailure("PROVIDER_TIMEOUT", stage, `LM Studio ${stage} exceeded its ${this.lifecycleDeadlineMs}-millisecond lifecycle deadline; reconcile the exact instance before retrying.`, {
+        budgetMs: this.lifecycleDeadlineMs, effectState: "unknown", retryable: false,
+      });
+      throw error;
+    } finally { clearTimeout(timer); }
   }
 
   private async request(path: string, init: RequestInit, timeoutMs: number): Promise<Response> {
@@ -519,7 +637,7 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
         signal: requestSignal,
       });
       if (!response.ok) {
-        const detail = await readBoundedText(response, MAX_ERROR_BYTES, REQUEST_TIMEOUT_MS).catch(() => "");
+        const detail = await readBoundedText(response, MAX_ERROR_BYTES, REQUEST_TIMEOUT_MS, requestSignal).catch(() => "");
         throw new Error(formatHttpError(response.status, detail, token));
       }
       return response;
@@ -728,7 +846,7 @@ async function parseSse(
     buffer += decoder.decode();
     if (buffer.trim() && emit(buffer)) sawDone = true;
     if (!sawDone) {
-      throw new Error("LM Studio SSE stream ended before the required [DONE] terminator.");
+      throw new RuntimeFailure("STREAM_TRUNCATED", "stream", "LM Studio SSE stream ended before the required [DONE] terminator.", { retryable: true });
     }
   } catch (error) {
     await reader.cancel().catch(() => undefined);
@@ -742,12 +860,23 @@ async function parseSse(
 
 function validateChatChunk(value: unknown): asserts value is ChatCompletionChunk {
   const record = requireRecord(value, "LM Studio chat chunk");
+  if (record.usage !== undefined && record.usage !== null) {
+    const usage = requireRecord(record.usage, "LM Studio token usage");
+    for (const field of ["prompt_tokens", "completion_tokens", "total_tokens"] as const) {
+      if (usage[field] !== undefined) boundedInteger(usage[field], `usage ${field}`, 0, 2 ** 31 - 1);
+    }
+    if (usage.completion_tokens_details !== undefined) {
+      const details = requireRecord(usage.completion_tokens_details, "LM Studio completion token details");
+      if (details.reasoning_tokens !== undefined) boundedInteger(details.reasoning_tokens, "reasoning_tokens", 0, 2 ** 31 - 1);
+    }
+  }
   if (record.choices === undefined) return;
   if (!Array.isArray(record.choices) || record.choices.length > 256) {
     throw new Error("LM Studio chat chunk has invalid choices.");
   }
   for (const choiceValue of record.choices) {
     const choice = requireRecord(choiceValue, "LM Studio chat choice");
+    if (choice.finish_reason !== undefined && choice.finish_reason !== null) boundedString(choice.finish_reason, "finish_reason", 1, 128);
     if (choice.delta === undefined) continue;
     const delta = requireRecord(choice.delta, "LM Studio chat delta");
     for (const key of ["content", "reasoning", "reasoning_content"] as const) {
@@ -772,19 +901,22 @@ function validateChatChunk(value: unknown): asserts value is ChatCompletionChunk
   }
 }
 
-async function readBoundedText(response: Response, limit: number, timeoutMs: number): Promise<string> {
+async function readBoundedText(response: Response, limit: number, timeoutMs: number, signal?: AbortSignal): Promise<string> {
   if (!response.body) return "";
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let result = "";
   let bytes = 0;
   let timedOut = false;
+  const cancelReader = () => { void reader.cancel().catch(() => undefined); };
+  signal?.addEventListener("abort", cancelReader, { once: true });
   const timeout = setTimeout(() => {
     timedOut = true;
     void reader.cancel().catch(() => undefined);
   }, timeoutMs);
   try {
     while (true) {
+      signal?.throwIfAborted();
       const { value, done } = await reader.read();
       if (done) break;
       bytes += value.byteLength;
@@ -794,10 +926,12 @@ async function readBoundedText(response: Response, limit: number, timeoutMs: num
       }
       result += decoder.decode(value, { stream: true });
     }
+    signal?.throwIfAborted();
     if (timedOut) throw new Error("LM Studio response body timed out.");
     return result + decoder.decode();
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener("abort", cancelReader);
     reader.releaseLock();
   }
 }

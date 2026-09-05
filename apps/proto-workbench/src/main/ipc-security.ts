@@ -164,7 +164,47 @@ const MAP_EXPORT_REQUEST = z.object({
   }
 });
 const noArguments = z.tuple([]);
+const STRUCTURE_TARGET = z.object({artifactPath: FILE_PATH, artifactSha256: SHA256, proteinId: z.string().min(1).max(256), sequenceSha256: SHA256}).strict();
+const STRUCTURE_PROVIDER = z.enum(["pdb", "alphafold"]);
+const TRACK_RANGE = z.object({start: z.number().int().min(0).max(2_000_000), end: z.number().int().min(1).max(2_000_000)}).strict().refine(range => range.end > range.start);
+const PROTEIN_TRACK_REQUEST = z.object({
+  target: STRUCTURE_TARGET,
+  selectedRange: TRACK_RANGE.nullable(),
+  structure: z.object({attachmentId: SHA256, modelIndex: z.number().int().min(0).max(10_000), chainId: z.string().min(1).max(128), explicitStartOneBased: z.number().int().min(1).max(2_000_000).nullable()}).strict().nullable(),
+}).strict();
+const CAMERA_VECTOR = z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]);
+const STRUCTURE_CAMERA = z.object({mode: z.enum(["perspective", "orthographic"]), fov: z.number().finite(), position: CAMERA_VECTOR, up: CAMERA_VECTOR, target: CAMERA_VECTOR, radius: z.number().nonnegative(), radiusMax: z.number().nonnegative(), fog: z.number().finite(), clipFar: z.boolean(), minNear: z.number().finite(), minFar: z.number().finite()}).strict();
+const STRUCTURE_VIEW = z.object({modelIndex: z.number().int().min(0).max(10000), chainId: z.string().min(1).max(128), representation: z.enum(["cartoon", "ball-and-stick", "molecular-surface"]), color: z.enum(["chain", "residue", "confidence"]), selectedRange: z.object({start: z.number().int().min(0), end: z.number().int().min(1)}).strict().nullable(), explicitStartOneBased: z.number().int().min(1).nullable(), camera: STRUCTURE_CAMERA}).strict();
+const ANNOTATION = z.object({id: ID, name: z.string().min(1).max(256), type: z.string().min(1).max(128), origin: z.literal("user"), anchors: z.array(z.object({instance_id: ID, start: z.number().int().min(0), end: z.number().int().min(1), direction: z.union([z.literal(-1), z.literal(0), z.literal(1)])}).strict()).min(1).max(128)}).strict();
+const DESIGN_EDIT = z.object({sourcePath: FILE_PATH, partsPath: FILE_PATH, expectedSourceSha256: SHA256, expectedPartsSha256: SHA256,
+  commands: z.array(z.discriminatedUnion("type", [
+    z.object({type: z.literal("reorder_occurrences"), construct: ID, instance_ids: z.array(ID).min(1).max(2000)}).strict(),
+    z.object({type: z.literal("set_orientation"), construct: ID, instance_id: ID, orientation: z.enum(["forward", "reverse"])}).strict(),
+    z.object({type: z.literal("upsert_annotation"), construct: ID, annotation: ANNOTATION}).strict(),
+    z.object({type: z.literal("delete_annotation"), construct: ID, annotation_id: ID}).strict(),
+  ])).min(1).max(2000),
+}).strict();
 const schemas: Record<string, z.ZodType<unknown[]>> = {
+  [IPC.harnessExecutions]: noArguments,
+  [IPC.harnessResume]: z.tuple([ID]),
+  [IPC.harnessPause]: z.tuple([ID]),
+  [IPC.designPrepareEdit]: z.tuple([DESIGN_EDIT]),
+  [IPC.designCommitEdit]: z.tuple([DESIGN_EDIT]),
+  [IPC.structureList]: z.tuple([STRUCTURE_TARGET]),
+  [IPC.structureSearch]: z.tuple([z.object({provider: STRUCTURE_PROVIDER, query: z.string().min(1).max(160)}).strict()]),
+  [IPC.structureFetch]: z.tuple([z.object({target: STRUCTURE_TARGET, provider: STRUCTURE_PROVIDER, accession: z.string().min(1).max(32)}).strict()]),
+  [IPC.structureImport]: z.tuple([STRUCTURE_TARGET]),
+  [IPC.structureRead]: z.tuple([z.object({target: STRUCTURE_TARGET, attachmentId: SHA256}).strict()]),
+  [IPC.structureSaveView]: z.tuple([z.object({target: STRUCTURE_TARGET, attachmentId: SHA256, view: STRUCTURE_VIEW}).strict()]),
+  [IPC.structureReadView]: z.tuple([z.object({target: STRUCTURE_TARGET, attachmentId: SHA256}).strict()]),
+  [IPC.structurePrepareTracks]: z.tuple([PROTEIN_TRACK_REQUEST]),
+  [IPC.structureExportTracks]: z.tuple([z.discriminatedUnion("format", [
+    z.object({request: PROTEIN_TRACK_REQUEST, format: z.literal("svg"), svgSha256: SHA256}).strict(),
+    z.object({request: PROTEIN_TRACK_REQUEST, format: z.literal("png"), svgSha256: SHA256, png: z.instanceof(Uint8Array).refine(bytes => bytes.byteLength >= 32 && bytes.byteLength <= 16 * 1024 * 1024)}).strict(),
+  ])]),
+  [IPC.structureExportImage]: z.tuple([z.object({target: STRUCTURE_TARGET, attachmentId: SHA256, png: z.instanceof(Uint8Array).refine(b => b.byteLength >= 32 && b.byteLength <= 16 * 1024 * 1024), width: z.number().int().min(64).max(4096), height: z.number().int().min(64).max(4096),
+    view: z.object({chainId: z.string().max(128), representation: z.enum(["cartoon", "ball-and-stick", "molecular-surface"]), color: z.enum(["chain", "residue", "confidence"]), selectedRange: z.object({start: z.number().int().min(0), end: z.number().int().min(1)}).strict().nullable(), mappingStatus: z.string().max(128), camera: z.record(z.string(), z.unknown()).refine(c => JSON.stringify(c).length < 8192)}).strict(),
+  }).strict()]),
   [IPC.settingsGet]: noArguments,
   [IPC.settingsUpdate]: z.tuple([z.object({
     residencyPolicy: RESIDENCY_POLICY.optional(),

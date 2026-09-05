@@ -13,16 +13,18 @@ from typing import Any, Callable
 
 from .analysis import DEFAULT_ANALYSIS_OUT_DIR, run_python_analysis
 from .compiler import compile_design, validate_design
+from .design_edits import prepare_design_edit
 from .connectors import connector_summary
 from .exporters import export_ir, load_ir
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
+from .language_reference import language_reference
 from .models import Diagnostic
 from .notebook import DEFAULT_NOTEBOOK_OUT_DIR, run_notebook
 from .optimization import optimize_design
 from .parser import parse_design
 from .parts import DEFAULT_PARTS_PATH, search_parts
 from .materials import MaterialsError, MaterialsStore, MAX_MATERIALIZED_PARTS, MAX_MCP_RESULT_LIMIT
-from .protein import compile_protein_selection
+from .protein import compile_protein_selection, validate_protein_selection
 from .provenance import verify_provenance
 from .r_runtime import DEFAULT_R_OUT_DIR, r_status, run_r_script
 from .review import DEFAULT_REVIEW_OUT_DIR, build_review_packet
@@ -47,6 +49,7 @@ from .security import (
     SecurityBoundaryError,
     WorkspacePaths,
     public_workspace_payload,
+    read_bytes_bounded,
     read_text_bounded,
     write_text_bounded,
 )
@@ -58,6 +61,7 @@ MAX_RESPONSE_BYTES = 1024 * 1024
 MAX_QUERY_CHARS = 512
 MAX_ERROR_MESSAGE_CHARS = 1024
 MAX_ACTIVE_REQUESTS = 4
+PROGRESS_INTERVAL_SECONDS = 5.0
 NETWORK_CAPABILITY_VERSION = "proto-workbench.network-capability.v1"
 NETWORK_CAPABILITY_MAX_TTL_MS = 60_000
 NETWORK_CAPABILITY_CLOCK_SKEW_MS = 5_000
@@ -109,6 +113,45 @@ def _secure_tool_schema(schema: dict[str, Any]) -> None:
 
 
 TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "proto_language_reference",
+        "description": "Read supported DNA .proto syntax, protein selection workflow, typed edit commands, identity rules and coordinates. All template part IDs are placeholders; real IDs must come from governed materialization and parts search. This tool is read-only.",
+        "inputSchema": {"type": "object", "properties": {"topic": {"type": "string", "enum": ["all", "dna", "protein", "edits"], "default": "all"}}},
+    },
+    {
+        "name": "proto_design_edit",
+        "description": "Prepare and compile-check a DNA source edit without writing files. Bind the current source and materialized library SHA-256. Commands reorder occurrence instance IDs, change placement orientation, or edit user annotations; biological resource IDs cannot be introduced. Returns a candidate source and unified diff for a host transaction.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["path", "parts_path", "commands", "expected_source_sha256", "expected_parts_sha256"],
+            "properties": {
+                "path": {"type": "string"},
+                "parts_path": {"type": "string"},
+                "expected_source_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                "expected_parts_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                "commands": {
+                    "type": "array", "minItems": 1, "maxItems": 100,
+                    "items": {
+                        "type": "object", "required": ["type", "construct"], "additionalProperties": False, "maxProperties": 4,
+                        "properties": {
+                            "type": {"type": "string", "enum": ["reorder_occurrences", "set_orientation", "upsert_annotation", "delete_annotation"]},
+                            "construct": {"type": "string", "minLength": 1, "maxLength": 128},
+                            "instance_ids": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+                            "instance_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                            "orientation": {"type": "string", "enum": ["forward", "reverse"]},
+                            "annotation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                            "annotation": {"type": "object", "additionalProperties": True, "maxProperties": 6},
+                        },
+                    },
+                },
+            },
+        },
+    },
+    {
+        "name": "proto_protein_validate",
+        "description": "Validate a materialized design-eligible protein selection and its provenance without writing an artifact. Returns structured diagnostics; no biological or wet-lab validation claim.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
     {
         "name": "proto_check",
         "description": "Validate a Proto-like design file and return structured diagnostics.",
@@ -546,6 +589,9 @@ class McpServer:
         self._active_lock = threading.Lock()
         self._output_lock = threading.Lock()
         self._tool_handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
+            "proto_language_reference": lambda arguments: language_reference(arguments.get("topic", "all")),
+            "proto_design_edit": self._tool_design_edit,
+            "proto_protein_validate": self._tool_protein_validate,
             "proto_check": self._tool_check,
             "proto_compile": self._tool_compile,
             "proto_protein_compile": self._tool_protein_compile,
@@ -648,13 +694,45 @@ class McpServer:
         request_id: str | int,
         cancel_event: threading.Event,
     ) -> None:
+        progress_token = message.get("params", {}).get("_meta", {}).get("progressToken")
+        stopped = threading.Event()
+        started = time.monotonic()
+
+        def emit_progress(progress: int, description: str) -> None:
+            if progress_token is not None and not cancel_event.is_set():
+                self._emit_response({"jsonrpc": "2.0", "method": "notifications/progress", "params": {
+                    "progressToken": progress_token, "progress": progress, "message": description,
+                }})
+
+        def heartbeat() -> None:
+            while not stopped.wait(PROGRESS_INTERVAL_SECONDS):
+                if cancel_event.is_set():
+                    break
+                elapsed = int(time.monotonic() - started)
+                emit_progress(elapsed, f"Tool is running; elapsed {elapsed} seconds. No completion estimate is available.")
+
+        progress_worker = None
         try:
-            response = self.handle_message(message, cancel_event=cancel_event)
+            emit_progress(0, "Tool request started.")
+            if progress_token is not None and not cancel_event.is_set():
+                progress_worker = threading.Thread(target=heartbeat, daemon=True, name=f"proto-mcp-progress-{request_id}")
+                progress_worker.start()
+            response = None if cancel_event.is_set() else self.handle_message(message, cancel_event=cancel_event)
+            stopped.set()
+            if progress_worker is not None:
+                progress_worker.join(timeout=1)
             if response is not None and not cancel_event.is_set():
+                emit_progress(int(time.monotonic() - started) + 1, "Tool request finished; inspect the result for validation status.")
                 self._emit_response(response)
         finally:
+            stopped.set()
             with self._active_lock:
                 self._active_requests.pop(request_id, None)
+            # Terminal acknowledgement means this worker has stopped. It does
+            # not claim that effects were rolled back after cancellation.
+            self._emit_response({"jsonrpc": "2.0", "method": "notifications/proto-request-finished", "params": {
+                "requestId": request_id, "status": "cancelled" if cancel_event.is_set() else "completed",
+            }})
 
     def _cancel_request(self, request_id: str | int) -> None:
         with self._active_lock:
@@ -796,6 +874,10 @@ class McpServer:
                         }
                     ],
                 }
+            except PermissionError:
+                payload = _internal_tool_error("The operating system or sandbox denied a required file or lock operation. The host must resolve the permission boundary; changing biological IDs or retrying the same call will not repair it.", code="TOOL_PERMISSION_DENIED")
+            except FileNotFoundError:
+                payload = _internal_tool_error("A required local file or directory is unavailable. Check the tool-returned paths and workspace configuration.", code="TOOL_INPUT_UNAVAILABLE")
             except OSError:
                 payload = _internal_tool_error("A local file or runtime operation failed safely.")
             except Exception:
@@ -832,6 +914,20 @@ class McpServer:
         )
         payload["ir"] = ir
         return payload
+
+    def _tool_design_edit(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        path = self.paths.workspace_file(_required_string(arguments, "path"), extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
+        parts = self.paths.workspace_file(_required_string(arguments, "parts_path"), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        return prepare_design_edit(
+            read_bytes_bounded(path, MAX_TEXT_FILE_BYTES).decode("utf-8"), arguments["commands"],
+            parts_path=parts, source_path=path.relative_to(self.paths.workspace).as_posix(),
+            expected_source_sha256=arguments["expected_source_sha256"], expected_parts_sha256=arguments["expected_parts_sha256"],
+        )
+
+    def _tool_protein_validate(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        path = self.paths.workspace_file(_required_string(arguments, "path"), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        ok, diagnostics = validate_protein_selection(path)
+        return {**_diagnostics_payload(ok, diagnostics, []), "domain": "protein"}
 
     def _tool_protein_compile(self, arguments: dict[str, Any]) -> dict[str, Any]:
         path = self.paths.workspace_file(_required_string(arguments, "path"), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
@@ -1352,6 +1448,14 @@ def _validate_rpc_message(message: Any) -> None:
         validate_json_schema(params, _TOOLS_LIST_PARAMS_SCHEMA, path="$.params")
     elif method == "tools/call":
         validate_json_schema(params, _TOOLS_CALL_PARAMS_SCHEMA, path="$.params")
+        if "_meta" in params:
+            token = params["_meta"]["progressToken"]
+            if isinstance(token, bool) or not isinstance(token, (str, int)):
+                raise JsonValidationError("$.params._meta.progressToken must be a string or integer.")
+            if isinstance(token, str) and (not token or len(token) > 128 or "\x00" in token):
+                raise JsonValidationError("$.params._meta.progressToken must contain 1 to 128 non-NUL characters.")
+            if isinstance(token, int) and not -(2**53 - 1) <= token <= 2**53 - 1:
+                raise JsonValidationError("$.params._meta.progressToken exceeds the interoperable integer range.")
     elif method in {"notifications/initialized", "proto/roots", "proto/capabilities"}:
         validate_json_schema(params, _EMPTY_PARAMS_SCHEMA, path="$.params")
     elif method == "notifications/cancelled":
@@ -1433,6 +1537,10 @@ _TOOLS_CALL_PARAMS_SCHEMA: dict[str, Any] = {
     "properties": {
         "name": {"type": "string", "minLength": 1, "maxLength": 128},
         "arguments": {"type": "object", "properties": {}, "additionalProperties": True, "maxProperties": 64},
+        "_meta": {
+            "type": "object", "required": ["progressToken"], "properties": {"progressToken": {}},
+            "additionalProperties": False, "maxProperties": 1,
+        },
         "capability": {
             "type": "object",
             "required": [
@@ -1455,7 +1563,7 @@ _TOOLS_CALL_PARAMS_SCHEMA: dict[str, Any] = {
         },
     },
     "additionalProperties": False,
-    "maxProperties": 3,
+    "maxProperties": 4,
 }
 
 _CANCEL_PARAMS_SCHEMA: dict[str, Any] = {

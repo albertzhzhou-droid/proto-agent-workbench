@@ -1,7 +1,7 @@
 {
   "schema_version": "proto-agent.materials-source-receipt.v1",
-  "completed_at": "2026-09-03T00:50:33Z",
-  "transport": "HTTPS GET with certificate validation via certifi; redirects and non-200 responses rejected. iGEM expansion responses were captured by tools/crawl_igem_parts.py under the same transport policy.",
+  "completed_at": "2026-09-03T19:14:17Z",
+  "transport": "HTTPS GET with certificate validation via certifi; redirects and non-200 responses rejected. iGEM and UniProt expansion responses were captured by tools/crawl_igem_parts.py and tools/crawl_uniprot_proteins.py under the same transport policy.",
   "responses": [
     {
       "path": "materials/reviewed/source_responses/2026-09/igem/licenses/5b2a6fd4-f5fa-4626-a37f-35f1ea89eec7.json",
@@ -9436,6 +9436,32 @@
       "response_headers": {}
     },
     {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00634.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P00634.json",
+      "retrieved_at": "2026-09-03T18:42:54Z",
+      "sha256": "3daf839ecfe721bb781dc3f569c692923808cb6cc60a6b8f1ded7a98a528f7c8",
+      "byte_count": 61640,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00722.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P00722.json",
+      "retrieved_at": "2026-09-03T18:42:51Z",
+      "sha256": "e1eae9c808320ba6141d7354ff193c6b92781ccc72f1e5c3af14c47dedf707e8",
+      "byte_count": 94656,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03023.json",
       "url": "https://rest.uniprot.org/uniprotkb/P03023.json",
       "retrieved_at": "2026-09-02T21:56:41Z",
@@ -9446,6 +9472,32 @@
         "X-UniProt-Release": "2026_03",
         "X-UniProt-Release-Date": "02-September-2026",
         "X-API-Deployment-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03034.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P03034.json",
+      "retrieved_at": "2026-09-03T18:53:30Z",
+      "sha256": "103e93e02620a8e4ae737ec0e88ee6cbb2aa6ef88a1265a14fe2d98db639b99b",
+      "byte_count": 21419,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03870.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P03870.json",
+      "retrieved_at": "2026-09-03T18:59:15Z",
+      "sha256": "3b80c8254102d2450f6b30acaf4b29104e07d877610ddaefe8842ad0e765aefb",
+      "byte_count": 26117,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
       }
     },
     {
@@ -9462,42 +9514,185 @@
       }
     },
     {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P06956.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P06956.json",
+      "retrieved_at": "2026-09-03T18:53:24Z",
+      "sha256": "437e722dc55a985b6f8e1fd8ad0feb520559d88851367fa7af044735c0e69531",
+      "byte_count": 24082,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07164.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P07164.json",
+      "retrieved_at": "2026-09-03T18:53:21Z",
+      "sha256": "8e3690bde9c0a12341a302097c81dc30def68d5d28f47450d4be695d1ff93ad4",
+      "byte_count": 18238,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07739.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P07739.json",
+      "retrieved_at": "2026-09-03T18:53:18Z",
+      "sha256": "1edb9a9bc07adf30cce15113bea67bae9a803b1372337d8f3efd0c812366b4f0",
+      "byte_count": 17673,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07740.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P07740.json",
+      "retrieved_at": "2026-09-03T18:53:15Z",
+      "sha256": "f4f735ebdb329bed98f3b895b4f616994561c70309ea56033c5606b60189ecdb",
+      "byte_count": 19444,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08127.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P08127.json",
+      "retrieved_at": "2026-09-03T18:53:38Z",
+      "sha256": "b896eae9f1545ca6b8938e9fc3bc389031aa133186a9854d0c542012c12951b8",
+      "byte_count": 9829,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08659.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P08659.json",
+      "retrieved_at": "2026-09-03T18:53:09Z",
+      "sha256": "caa43a11fae4b54f05fb158cbd674de50f55e27a6aa3ae521fd4e20add86f10a",
+      "byte_count": 30239,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A7C2.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P0A7C2.json",
+      "retrieved_at": "2026-09-03T18:42:57Z",
+      "sha256": "c89dba5f3e832e79b10884b958c688894d9ea32f43a4b16287ba32af290b752a",
+      "byte_count": 33893,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A9E0.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P0A9E0.json",
+      "retrieved_at": "2026-09-03T18:42:45Z",
+      "sha256": "0e8d3f1d96810e2301235205a08ef380af7f0953d00389f033d97c3e10c309a7",
+      "byte_count": 41870,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0ACJ8.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P0ACJ8.json",
+      "retrieved_at": "2026-09-03T18:43:00Z",
+      "sha256": "78363826a61b49132c01d2811a8a2d68439b35023ce5a602672d6aa82927a9a1",
+      "byte_count": 86831,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P12746.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P12746.json",
+      "retrieved_at": "2026-09-03T18:53:35Z",
+      "sha256": "82387f8ade03b326ede15e28cc3cf22c8669dc63953662aa243766b460f38a82",
+      "byte_count": 12278,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P27652.json",
+      "url": "https://rest.uniprot.org/uniprotkb/P27652.json",
+      "retrieved_at": "2026-09-03T18:53:12Z",
+      "sha256": "10377ce9235e3dcdf356fe063a82c1e04decf399bd9295687b12098a90ae047c",
+      "byte_count": 20253,
+      "content_type": "application/json",
+      "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
+        "X-UniProt-Release": "2026_03",
+        "X-UniProt-Release-Date": "02-September-2026"
+      }
+    },
+    {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P42212.json",
       "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:28Z",
       "sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
       "byte_count": 244843,
       "content_type": "application/json",
       "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
         "X-UniProt-Release": "2026_03",
-        "X-UniProt-Release-Date": "02-September-2026",
-        "X-API-Deployment-Date": "02-September-2026"
+        "X-UniProt-Release-Date": "02-September-2026"
       }
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y4.json",
       "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y4.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:29Z",
       "sha256": "a678b787c3d2968ccaec1b843e1fbd0151ee59ffea2ba11b1480d4c0e937b91b",
       "byte_count": 14902,
       "content_type": "application/json",
       "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
         "X-UniProt-Release": "2026_03",
-        "X-UniProt-Release-Date": "02-September-2026",
-        "X-API-Deployment-Date": "02-September-2026"
+        "X-UniProt-Release-Date": "02-September-2026"
       }
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y8.json",
       "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y8.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:30Z",
       "sha256": "83d6d4d4e7bdbd6d5c69a12776ce4c525db4847739e946716964c371df9d1d79",
       "byte_count": 20126,
       "content_type": "application/json",
       "response_headers": {
+        "X-API-Deployment-Date": "02-September-2026",
         "X-UniProt-Release": "2026_03",
-        "X-UniProt-Release-Date": "02-September-2026",
-        "X-API-Deployment-Date": "02-September-2026"
+        "X-UniProt-Release-Date": "02-September-2026"
       }
     },
     {

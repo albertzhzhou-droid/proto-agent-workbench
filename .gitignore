@@ -116,3 +116,7 @@ Proto CLI Materials/
 # promotion audit, and generated bundles.
 /materials/reviewed/source_responses/*/*/
 /materials/reviewed/igem_expansion_state_*.jsonl
+/materials/reviewed/uniprot_expansion_state_*.jsonl
+
+# Curated, privacy-reviewed demo captures belong in docs/assets/.
+# Keep raw sessions, model reports, installer binaries and recovery copies in build/.

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { createHash, createHmac } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import test from "node:test";
+import {mkdir,mkdtemp,rm} from "node:fs/promises";
+import {join,resolve,relative,isAbsolute} from "node:path";
+import {fileURLToPath} from "node:url";
 
-import { McpClient } from "../src/main/services/mcp-client.ts";
+import { McpClient, parseCapabilities } from "../src/main/services/mcp-client.ts";
 
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -75,4 +78,29 @@ test("network capability refuses an expired approval", () => {
     ),
     /expired/,
   );
+});
+
+test("actual Python sidecar capability policy is accepted without granting network or arbitrary execution",async()=>{
+  const repo=fileURLToPath(new URL("../../../",import.meta.url));
+  const owned=resolve("build/test-mcp-capabilities");await mkdir(owned,{recursive:true});
+  const workspace=await mkdtemp(join(owned,"actual-"));
+  const client=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,workspaceCapability:randomBytes(32).toString("hex"),
+    materialsRoot:join(workspace,"isolated-materials"),pythonExecutable:process.env.PROTO_AGENT_PYTHON||join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+  try {
+    const capability=await client.capabilities();
+    assert.equal(capability.networkEnabled,false);
+    assert.equal(capability.networkAuthorization,"per-call-hmac-capability");
+    assert.equal(capability.networkPathPolicy.fixtures,"workspace regular files only");
+    assert.equal(capability.networkPathPolicy.ca,"custom CA selection is disabled for MCP requests");
+    assert.ok(capability.networkPaths.some(path=>path.startsWith("cache: file:")));
+    assert.equal(capability.filesystemSafety.relativePathsOnly,true);
+    assert.throws(()=>parseCapabilities({...capability,networkPaths:{...capability.networkPathPolicy,arbitrary:true}}),/networkPaths/);
+    assert.throws(()=>parseCapabilities({...capability,networkPaths:{...capability.networkPathPolicy,ca:false}}),/networkPaths.ca/);
+  } finally {
+    const process = client.child;let closed = !process;
+    process?.once("close",()=>{closed=true;});
+    await client.stop();
+    if(process){assert.ok(process.exitCode!==null||process.signalCode!==null,"owned Python must have exited before stop resolves");assert.equal(closed,true,"owned Python stdio must close before workspace removal");}
+    const child=relative(owned,workspace);assert.ok(child&&!child.startsWith("..")&&!isAbsolute(child));await rm(workspace,{recursive:true,force:true});
+  }
 });

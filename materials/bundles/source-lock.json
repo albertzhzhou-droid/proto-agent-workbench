@@ -1,27 +1,27 @@
 {
   "schema_version": "proto-agent.public-materials-source-lock.v1",
-  "exported_at": "2026-09-03T00:50:33Z",
+  "exported_at": "2026-09-03T19:14:17Z",
   "eligible_inputs": [
     {
       "path": "materials/reviewed/igem_design_eligible_2026-09.json",
-      "sha256": "ba56c2f19edc63e6e4a204977c7b836d96f6b2c355861a55768f093dfc63d4a1",
+      "sha256": "2b12acce1f491e7929ed62922b85804f5d8bfc0e2b55c9b4ba92e943f948bc1c",
       "selected_record_count": 1046,
       "provider": "iGEM Registry"
     },
     {
       "path": "materials/reviewed/protein_design_eligible_2026-09.json",
-      "sha256": "f87e9c44576100a7f30b458947bedc228545ac4e34e596a9c32d1e0d7f7ab4a7",
-      "selected_record_count": 5,
+      "sha256": "c7375c7c510ab78573939d5a78783200f4aee048f6f140945310310f5830ed13",
+      "selected_record_count": 20,
       "provider": "UniProtKB/Swiss-Prot"
     }
   ],
   "promotion_audit": {
     "path": "materials/reviewed/promotion_audit_2026-09.json",
-    "sha256": "60feba8a63a2ca1f08eb075bde4f8b47faeffc328e2ca8f869e3f913c6a54d5a",
+    "sha256": "e151adc857ccbe8aca36e3accc150c77cbe7c444ec033a46c4c304e1acf2b52d",
     "schema_version": "proto-agent.materials-promotion-audit.v1",
     "policy_version": "proto-agent.materials-promotion-policy.2026-09",
-    "candidate_count": 1051,
-    "pass_count": 1051,
+    "candidate_count": 1066,
+    "pass_count": 1066,
     "fail_count": 0
   },
   "source_evidence": [
@@ -7363,8 +7363,22 @@
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/retrieval-receipt.json",
-      "sha256": "556087d9559f7e8a86e218a17a06a3621520cba986cb3e27feb63427ac367510",
+      "sha256": "3ddece541366a251550f695a2cab5b0c2537e73125dc2d60ef1db1b33cec3638",
       "kind": "retrieval_receipt"
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00634.json",
+      "sha256": "3daf839ecfe721bb781dc3f569c692923808cb6cc60a6b8f1ded7a98a528f7c8",
+      "url": "https://rest.uniprot.org/uniprotkb/P00634.json",
+      "retrieved_at": "2026-09-03T18:42:54Z",
+      "byte_count": 61640
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P00722.json",
+      "sha256": "e1eae9c808320ba6141d7354ff193c6b92781ccc72f1e5c3af14c47dedf707e8",
+      "url": "https://rest.uniprot.org/uniprotkb/P00722.json",
+      "retrieved_at": "2026-09-03T18:42:51Z",
+      "byte_count": 94656
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03023.json",
@@ -7374,6 +7388,20 @@
       "byte_count": 39797
     },
     {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03034.json",
+      "sha256": "103e93e02620a8e4ae737ec0e88ee6cbb2aa6ef88a1265a14fe2d98db639b99b",
+      "url": "https://rest.uniprot.org/uniprotkb/P03034.json",
+      "retrieved_at": "2026-09-03T18:53:30Z",
+      "byte_count": 21419
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P03870.json",
+      "sha256": "3b80c8254102d2450f6b30acaf4b29104e07d877610ddaefe8842ad0e765aefb",
+      "url": "https://rest.uniprot.org/uniprotkb/P03870.json",
+      "retrieved_at": "2026-09-03T18:59:15Z",
+      "byte_count": 26117
+    },
+    {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P04483.json",
       "sha256": "d526f04623e72eaf7db4e74cab9c4948c97346ad64abc0f536f8211a42c24d1c",
       "url": "https://rest.uniprot.org/uniprotkb/P04483.json",
@@ -7381,24 +7409,101 @@
       "byte_count": 18533
     },
     {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P06956.json",
+      "sha256": "437e722dc55a985b6f8e1fd8ad0feb520559d88851367fa7af044735c0e69531",
+      "url": "https://rest.uniprot.org/uniprotkb/P06956.json",
+      "retrieved_at": "2026-09-03T18:53:24Z",
+      "byte_count": 24082
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07164.json",
+      "sha256": "8e3690bde9c0a12341a302097c81dc30def68d5d28f47450d4be695d1ff93ad4",
+      "url": "https://rest.uniprot.org/uniprotkb/P07164.json",
+      "retrieved_at": "2026-09-03T18:53:21Z",
+      "byte_count": 18238
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07739.json",
+      "sha256": "1edb9a9bc07adf30cce15113bea67bae9a803b1372337d8f3efd0c812366b4f0",
+      "url": "https://rest.uniprot.org/uniprotkb/P07739.json",
+      "retrieved_at": "2026-09-03T18:53:18Z",
+      "byte_count": 17673
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P07740.json",
+      "sha256": "f4f735ebdb329bed98f3b895b4f616994561c70309ea56033c5606b60189ecdb",
+      "url": "https://rest.uniprot.org/uniprotkb/P07740.json",
+      "retrieved_at": "2026-09-03T18:53:15Z",
+      "byte_count": 19444
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08127.json",
+      "sha256": "b896eae9f1545ca6b8938e9fc3bc389031aa133186a9854d0c542012c12951b8",
+      "url": "https://rest.uniprot.org/uniprotkb/P08127.json",
+      "retrieved_at": "2026-09-03T18:53:38Z",
+      "byte_count": 9829
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P08659.json",
+      "sha256": "caa43a11fae4b54f05fb158cbd674de50f55e27a6aa3ae521fd4e20add86f10a",
+      "url": "https://rest.uniprot.org/uniprotkb/P08659.json",
+      "retrieved_at": "2026-09-03T18:53:09Z",
+      "byte_count": 30239
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A7C2.json",
+      "sha256": "c89dba5f3e832e79b10884b958c688894d9ea32f43a4b16287ba32af290b752a",
+      "url": "https://rest.uniprot.org/uniprotkb/P0A7C2.json",
+      "retrieved_at": "2026-09-03T18:42:57Z",
+      "byte_count": 33893
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0A9E0.json",
+      "sha256": "0e8d3f1d96810e2301235205a08ef380af7f0953d00389f033d97c3e10c309a7",
+      "url": "https://rest.uniprot.org/uniprotkb/P0A9E0.json",
+      "retrieved_at": "2026-09-03T18:42:45Z",
+      "byte_count": 41870
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P0ACJ8.json",
+      "sha256": "78363826a61b49132c01d2811a8a2d68439b35023ce5a602672d6aa82927a9a1",
+      "url": "https://rest.uniprot.org/uniprotkb/P0ACJ8.json",
+      "retrieved_at": "2026-09-03T18:43:00Z",
+      "byte_count": 86831
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P12746.json",
+      "sha256": "82387f8ade03b326ede15e28cc3cf22c8669dc63953662aa243766b460f38a82",
+      "url": "https://rest.uniprot.org/uniprotkb/P12746.json",
+      "retrieved_at": "2026-09-03T18:53:35Z",
+      "byte_count": 12278
+    },
+    {
+      "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P27652.json",
+      "sha256": "10377ce9235e3dcdf356fe063a82c1e04decf399bd9295687b12098a90ae047c",
+      "url": "https://rest.uniprot.org/uniprotkb/P27652.json",
+      "retrieved_at": "2026-09-03T18:53:12Z",
+      "byte_count": 20253
+    },
+    {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P42212.json",
       "sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
       "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:28Z",
       "byte_count": 244843
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y4.json",
       "sha256": "a678b787c3d2968ccaec1b843e1fbd0151ee59ffea2ba11b1480d4c0e937b91b",
       "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y4.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:29Z",
       "byte_count": 14902
     },
     {
       "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/Q9U6Y8.json",
       "sha256": "83d6d4d4e7bdbd6d5c69a12776ce4c525db4847739e946716964c371df9d1d79",
       "url": "https://rest.uniprot.org/uniprotkb/Q9U6Y8.json",
-      "retrieved_at": "2026-09-02T21:56:49Z",
+      "retrieved_at": "2026-09-03T18:42:30Z",
       "byte_count": 20126
     },
     {

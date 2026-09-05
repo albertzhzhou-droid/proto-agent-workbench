@@ -1,5 +1,17 @@
 # Proto Workbench
 
+The `0.2.0-rc.1` candidate adds a durable autonomous Harness, source-based DNA
+editing, and real protein structure inspection. The local candidate passed
+immutable package checks and native scientific checks for the actual Portable
+and extracted installer payload. The user-limited debug campaign passed 15/15
+task samples; full model acceptance and installer OS integration remain untested.
+Candidates are unsigned. See the [native demos and evidence](../../docs/upgrade-verification.md).
+See [execution contracts](../../docs/reliable-harness.md),
+[DNA placement semantics](../../docs/dna-source-editing.md), and
+[protein structures and exports](../../docs/protein-structures.md).
+Use [isolated desktop sessions](../../docs/isolated-desktop-sessions.md) to keep a
+separate profile and workspace, including when checking a Portable candidate.
+
 ## Offline verification
 
 Run `node scripts/verify-offline.mjs` from this directory for the repository-native offline baseline. The entrypoint never launches pnpm/npm/npx, checks that the installed TypeScript compiler exactly matches the lockfile and declared dependency floor, runs the complete Node test set plus typecheck, permits loopback-only test fixtures, and blocks external Node DNS/socket access. Invoke the Node entrypoint directly; package-manager wrappers may perform their own update or registry checks before a package script starts.
@@ -28,9 +40,11 @@ and never sent to the renderer.
 - Workbench records ownership only for instances returned by its own explicit
   load request. Disconnecting an externally loaded instance never unloads it;
   shutdown unloads only instances owned by the current Workbench process.
-- Models can propose patches but cannot write them. Every write is a separate
-  human approval, followed by the Proto check/workflow/review sequence for
-  `.proto` files.
+- Starting an Act mission authorizes its declared workspace scope and requested
+  capabilities. The host applies in-scope model changes through recorded diffs,
+  baseline checks, atomic writes, and validation. DNA changes carry the exact
+  materialized library through check, workflow, provenance, and review. Plan
+  missions cannot write. Scientific human review remains a separate boundary.
 
 ## Startup and first run
 
@@ -48,9 +62,11 @@ Server Settings. Workbench cannot read or change that application-level switch.
 
 On startup, unfinished ledger events are reconciled to `interrupted`, or to
 `effect-unknown` when a tool side effect may already have occurred, and pending
-approvals are invalidated. The app never replays a write,
-network call, or code-execution side effect after a restart. The Launchpad shows
-how many events and approvals were recovered and provides direct repair actions.
+approvals are invalidated. Saved autonomous missions preserve their scope,
+model binding, results, and consumed budget. Resume first reconciles durable
+receipts and source/library hashes; unknown write effects cannot be replayed.
+Committed source validation can continue from its journal without reapplying the
+source. The Launchpad shows recovery state and explicit resume actions.
 If a send fails, the renderer restores the goal draft and attachments instead of
 leaving a renderer-only message.
 
@@ -86,9 +102,15 @@ The renderer-only preview is built with `pnpm build` and served with
 `pnpm preview`. In a browser-only preview, the app uses realistic local mock data;
 the Electron build replaces it with typed IPC.
 
-Real LM Studio verification is deliberately gated and is not part of CI. It
-requires an exact, initially unloaded LLM key no larger than 8 GiB plus matching
-environment and final command-line confirmations:
+The primary Qwen Harness acceptance uses the twelve-family protocol in
+[autonomous acceptance](../../docs/harness-acceptance-protocol.md), with the
+exact `qwen3.8-27b@q4_k_m` instance loaded at 32,768 tokens. Its sixty scientific
+measurements, fault cases and native desktop evidence are separate gates.
+
+The older short-response LM Studio diagnostic below is not that acceptance
+suite. It is deliberately gated and excluded from CI, and retains its own
+8 GiB model-size limit. It requires an exact, initially unloaded model key plus
+matching environment and command-line confirmations:
 
 ```powershell
 $env:PROTO_AGENT_ALLOW_REAL_MODEL_TESTS = "YES_LOAD_CHAT_UNLOAD_LM_STUDIO"

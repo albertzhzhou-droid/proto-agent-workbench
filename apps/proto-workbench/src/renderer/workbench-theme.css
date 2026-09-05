@@ -1,0 +1,306 @@
+:root { --radius: 10px; --canvas: #f3f7f6; --shadow: 0 6px 30px #1738310c; color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; color: #e3eeeb; background: #101916; --surface: #15221e; --surface-soft: #101b17; --surface-selected: #1b3a31; --line: #2a3e35; --line-strong: #3c554a; --text: #e3eeeb; --text-soft: #a0b7ad; --text-faint: #7e9a8c; --teal: #59d3ba; --teal-dark: #79e1cd; --teal-soft: #193c33; --green: #7ddbab; --green-soft: #1b3527; --amber: #e5b861; --amber-soft: #392f1d; --red: #f38d86; --red-soft: #3b2626; --blue: #8bbbe8; --blue-soft: #223442; --canvas: #101916; --shadow: 0 8px 32px #0002; }
+body { min-width: 0; min-height: 0; color: var(--text); }
+.app-shell { grid-template-rows: 54px minmax(0, 1fr); }
+.topbar { min-height: 54px; padding-right: 128px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.workspace-view-controls { position: absolute; top: 10px; right: 12px; z-index: 80; display: flex; gap: 3px; }
+.workspace-view-controls button { display: grid; place-items: center; width: 32px; height: 32px; color: var(--text-soft); border: 1px solid transparent; border-radius: 7px; background: transparent; cursor: pointer; }
+.workspace-view-controls button:hover, .workspace-view-controls button[aria-pressed="true"] { color: var(--teal); background: var(--teal-soft); border-color: var(--line); }
+.sidebar { background: var(--surface); border-right: 1px solid var(--line); padding-top: 14px; }
+.sidebar-rail .app-body, .sidebar-rail .app-body.is-page { grid-template-columns: 68px minmax(0, 1fr); }
+.sidebar-expanded .app-body, .sidebar-expanded .app-body.is-page { grid-template-columns: 212px minmax(0, 1fr); }
+.inspector-open.sidebar-rail .app-body:not(.is-page) { grid-template-columns: 68px minmax(0, 1fr) 310px; }
+.inspector-open.sidebar-expanded .app-body:not(.is-page) { grid-template-columns: 212px minmax(0, 1fr) 310px; }
+.sidebar-rail .nav-item { width: 44px; height: 44px; padding: 0; margin: 3px auto; justify-content: center; border-radius: 10px; }
+.sidebar-rail .nav-item > span, .sidebar-rail .sidebar-section-title, .sidebar-rail .recent-runs, .sidebar-rail .archive-button, .sidebar-rail .sidebar-footer { display: none; }
+.nav-item { color: var(--text-soft); font-size: 12px; }
+.nav-item:hover { background: var(--surface-soft); color: var(--text); }
+.nav-item.is-active { color: var(--teal); background: var(--teal-soft); }
+.run-workspace, .page-workspace, .designs-page { background: var(--canvas); }
+.run-workspace:not(.is-full-editor) { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+.run-workspace:not(.is-full-editor) > * { flex-shrink: 0; }
+.mission-recovery { display: flex; flex-wrap: wrap; gap: 7px 18px; margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--line); color: var(--text-soft); font-size: 11px; }
+.mission-recovery > div { display: flex; align-items: baseline; gap: 6px; }
+.mission-recovery dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; font-weight: 650; }
+.mission-settling { display: flex; align-items: center; gap: 7px; color: var(--text-soft); font-size: 12px; }
+.run-header { padding: 22px 28px 14px; background: transparent; border-bottom: 0; }
+.run-header h1 { font-size: 21px; letter-spacing: -.45px; font-weight: 600; }
+.run-header h1 { color: var(--text); }
+.run-evidence { margin: 0 24px 12px; padding: 0; flex: 1 0 auto; min-height: 480px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.run-evidence-toolbar { padding: 10px 16px 0; }
+.run-evidence-tabs button { font-size: 12px; padding: 9px 13px; color: var(--text-soft); }
+.workspace-trust-banner { margin: 12px 14px 0; padding: 9px 12px; background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
+.workspace-trust-banner strong { font-size: 10px; color: var(--text-soft); }
+.workspace-trust-banner p { font-size: 9px; }
+.evidence-step-selector { padding: 10px 14px; }
+.evidence-step-selector button { background: var(--surface-soft); color: var(--text); border-color: var(--line); min-height: 45px; }
+.evidence-step-selector button strong { font-size: 10px; }
+.evidence-step-selector button small { font-size: 9px; color: var(--text-soft); }
+.evidence-step-selector button.is-selected, .evidence-timeline-list button.is-selected { background: var(--teal-soft); color: var(--text); border-color: var(--teal); }
+.evidence-step-selector button > span { color: var(--text-soft); background: var(--surface-selected); }
+.run-evidence-content { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); min-height: 340px; }
+.run-evidence-content > .evidence-panel { min-height: 340px; max-height: 570px; }
+.run-selected-operation { min-width: 0; max-height: 570px; padding-top: 12px; overflow: auto; border-left: 1px solid var(--line); }
+.run-selected-operation:empty { display: none; }
+.immutable-checkpoint-card { display: none; }
+.inspector-open .run-evidence-content { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); }
+.inspector-open .immutable-checkpoint-card { display: block; }
+.evidence-table-header { color: var(--text-faint); font-size: 9px; background: var(--surface-soft); }
+.evidence-timeline-list button { color: var(--text-soft); font-size: 10px; border-color: var(--line); min-height: 61px; }
+.evidence-timeline-list button strong { color: var(--text); font-size: 12px; font-weight: 550; }
+.evidence-timeline-list button small { color: var(--text-faint); font-size: 10px; margin-top: 4px; }
+.evidence-timeline-list button:hover { background: var(--surface-selected); }
+.evidence-state { color: var(--green); }
+.evidence-state:not(.is-completed) { color: var(--amber); }
+.code-toolbar, .code-actionbar, .patch-operation-rail { background: var(--surface); color: var(--text); border-color: var(--line); }
+.patch-operation-rail strong, .code-file-title { color: var(--text); }
+.patch-operation-rail small, .code-rationale, .change-summary { color: var(--text-soft); }
+.code-drawer { border-color: var(--line); }
+.composer { background: var(--surface-soft); border-color: var(--line); }
+.composer-card { border-color: var(--line); }
+.mission-overview.is-empty { min-height: 150px; }
+:root[data-theme="dark"] :is(.run-evidence-toolbar, .run-evidence-content, .evidence-step-selector, .immutable-checkpoint-card, .code-toolbar, .code-actionbar, .patch-operation-rail, .composer, .composer-footer, .composer-input-wrap, .evidence-artifact-card, .topology-lane, .topology-node, .evidence-step-detail) { background-color: var(--surface); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] :is(.workspace-trust-banner, .checkpoint-unavailable, .checkpoint-boundary-note) { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
+:root[data-theme="dark"] :is(.run-evidence,.code-toolbar,.code-actionbar,.patch-operation-rail,.review-panel,.designs-header,.design-browser,.design-inspector,.design-toolbar) :is(strong,h1,h2,h3,h4) { color: var(--text); }
+:root[data-theme="dark"] :is(.segmented-control, .segmented-control button, .evidence-step-selector button, .code-tabs button) { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
+:root[data-theme="dark"] :is(.segmented-control button.is-active, .segmented-control button[aria-pressed="true"], .evidence-step-selector button.is-selected) { background: var(--teal-soft); color: var(--teal); }
+.mission-overview { margin: 0 24px 18px; padding: 21px 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); flex: 0 0 auto; }
+.mission-topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.eyebrow { display: flex; gap: 7px; align-items: center; color: var(--teal); font-size: 10px; font-weight: 650; letter-spacing: 1.2px; }
+.mission-status { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-size: 11px; text-transform: capitalize; }
+.mission-status.is-completed { color: var(--green); }
+.mission-status.is-incomplete, .mission-status.is-effect-unknown, .mission-error { color: var(--amber); }
+.mission-summary h2, .mission-overview.is-empty h2 { margin: 13px 0 5px; font-size: 23px; line-height: 1.25; letter-spacing: -.55px; font-weight: 550; }
+.mission-summary p, .mission-overview.is-empty p { margin: 0; color: var(--text-soft); font-size: 12px; line-height: 1.6; max-width: 780px; }
+.mission-metrics { display: flex; align-items: center; gap: 30px; margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.mission-metrics > div { display: flex; align-items: center; gap: 9px; color: var(--text-soft); }
+.mission-metrics strong { font-size: 15px; font-weight: 550; color: var(--text); font-variant-numeric: tabular-nums; }
+.mission-metrics small { font-size: 10px; font-weight: 400; color: var(--text-soft); margin-left: 6px; }
+.context-meter { width: 50px; height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.context-meter i { display: block; height: 100%; background: var(--teal); }
+.mission-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
+.mission-actions button { display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--text); font-size: 11px; cursor: pointer; }
+.mission-actions .mission-resume { color: var(--teal); border-color: var(--teal); }
+.mission-overview.is-empty { display: flex; gap: 20px; align-items: center; min-height: 185px; background: radial-gradient(ellipse at 5% 20%, var(--teal-soft), transparent 65%), var(--surface); }
+.mission-symbol { display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid var(--line-strong); border-radius: 15px; color: var(--teal); flex-shrink: 0; }
+.mission-defaults { margin-left: auto; display: grid; grid-template-columns: auto auto; gap: 7px 12px; min-width: 150px; font-size: 10px; color: var(--text-soft); }
+.mission-defaults strong { color: var(--text); font-weight: 550; }
+.code-drawer, .review-panel, .composer, .composer-card, .ledger-section, .evidence-workspace, .operational-page { background: var(--surface); color: var(--text); }
+:root[data-theme="dark"] :is(.topbar, .designs-header, .designs-toolbar, .design-browser, .design-inspector, .inspector-heading, .inspector-section-title, .design-canvas, .construct-map, .sequence-navigator, .design-summary, .design-detail-panel, .sequence-panel, .ledger-table-header, .ledger-row, .run-header, .composer, .composer-toolbar, .review-panel, .review-heading, .review-card, .code-drawer-header, .code-tabs, .panel-heading, .page-header, .settings-card, .model-card, .source-card, .material-card) { background-color: var(--surface); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] :is(input, textarea, select) { background-color: var(--surface-soft); color: var(--text); border-color: var(--line-strong); }
+:root[data-theme="dark"] :is(.secondary-button, .quiet-button, .icon-button, .topbar-control) { color: var(--text-soft); background-color: transparent; border-color: var(--line); }
+:root[data-theme="dark"] :is(.primary-button, .send-button) { background: #238e79; color: #fff; }
+:root[data-theme="dark"] .designs-footer { color: var(--text-soft); background: var(--surface-soft); }
+.run-workspace > :is(.run-evidence, .run-evidence-views, .evidence-workspace) { margin: 0 24px; border: 1px solid var(--line); border-radius: 10px; }
+@media (max-width: 1360px) { .runtime-picker, .runtime-inline, .topbar .verification-trigger { display: none; } .mission-metrics { gap: 17px; } .mission-overview { margin-inline: 16px; padding: 17px; } .mission-defaults { display: none; } }
+@media (max-width: 980px) { .topbar .decision-lab-trigger, .topbar .command-trigger, .topbar-icon { display: none; } .inspector-open .app-body:not(.is-page) { grid-template-columns: 68px minmax(0, 1fr) !important; } .review-panel { position: absolute; top: 54px; right: 0; bottom: 0; width: min(330px, 85vw); z-index: 20; box-shadow: -12px 0 40px #0003; } .mission-overview.is-empty { min-height: 140px; } .mission-summary h2, .mission-overview.is-empty h2 { font-size: 19px; } .mission-metrics > div:nth-last-child(1) { display: none; } .run-header { padding: 16px; } }
+@media (max-width: 700px) { .sidebar-expanded .app-body, .sidebar-expanded .app-body.is-page { grid-template-columns: 68px minmax(0, 1fr); } .sidebar-expanded .sidebar .recent-runs, .sidebar-expanded .sidebar-section-title, .sidebar-expanded .sidebar .archive-button, .sidebar-expanded .nav-item span { display: none; } .sidebar-expanded .nav-item { justify-content: center; padding-inline: 0; } .mission-overview { padding: 13px; margin: 0 10px 10px; } .mission-metrics { gap: 10px; } .mission-symbol { display: none; } .mission-summary p { max-height: 55px; overflow-y: auto; } .topbar-control.workspace-picker { max-width: 160px; } .run-header h1 { font-size: 17px; } .run-header-actions { display: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Scientific canvases retain their explicit figure palette; surrounding controls use the active theme. */
+.designs-page:has(> .dna-composer) { grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+:root[data-theme] .dna-composer { min-height: 44px; max-height: 38vh; overflow-y: auto; }
+.design-explorer-grid { grid-template-columns: 218px minmax(0, 1fr) 282px; }
+.inspector-closed .design-inspector { display: none; }
+.inspector-closed .design-explorer-grid { grid-template-columns: 218px minmax(0, 1fr); }
+.sidebar-rail .design-browser { display: none; }
+.sidebar-rail.inspector-closed .design-explorer-grid { grid-template-columns: minmax(0, 1fr); }
+.sidebar-rail.inspector-open .design-explorer-grid { grid-template-columns: minmax(0, 1fr) 282px; }
+.design-product-bar, .design-panel-heading, .design-source-card, .design-toolbar, .design-canvas-meta, .selection-card, .layer-panel, .constraints-panel, .parts-table-section, .parts-table-heading, .feature-inventory-controls, .map-export-receipt { background: var(--surface); color: var(--text); border-color: var(--line); }
+.design-product-bar { min-height: 66px; padding-inline: 22px; }
+.design-product-bar dl { background: var(--surface-soft); border-color: var(--line); }
+.design-product-bar dl div { border-color: var(--line); }
+.design-product-bar dl div { background: var(--surface-soft); }
+.design-product-title h2, .design-product-bar dd { color: var(--text); }
+.design-product-title h2 { font-size: 17px; }
+.design-product-bar dd { font-size: 12px; }
+.design-panel-heading, .design-panel-heading.is-sub { color: var(--text-soft); background: var(--surface-soft); }
+.design-source-card { box-shadow: none; }
+.design-source-card p, .design-source-card code { color: var(--text-soft); }
+.design-stage { min-width: 0; background: var(--canvas); }
+.design-toolbar { min-height: 48px; padding: 8px 14px; }
+.design-search input { font-size: 12px; }
+.design-search, .feature-filter-search { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line-strong); }
+.feature-inventory-controls :is(input,select), .feature-visibility-command, .feature-row-visibility { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); font-size: 10px; }
+.feature-filter-search input { background: transparent; }
+.part-type-pill { background: var(--surface-selected); color: var(--text-soft); border-color: var(--line); font-size: 9px; }
+.parts-table-row { font-size: 11px; min-height: 42px; }
+.parts-table-row.is-header { font-size: 9px; min-height: 30px; }
+.design-product-bar dt { font-size: 9px; }
+:root[data-theme] .dna-composer { background: var(--surface); border-color: var(--line); border-radius: 10px; margin: 0 14px 10px; box-shadow: none; }
+:root[data-theme] .dna-composer-heading { background: linear-gradient(110deg,var(--teal-soft),var(--surface)); color: var(--text); padding: 12px 16px; }
+:root[data-theme] .dna-composer-heading small, .dna-composer-count, .dna-composer-boundary, .dna-editor-section-label > span, .dna-composer label, .dna-composer-footer > span { color: var(--text-soft); }
+:root[data-theme] .dna-editor-section-label, .dna-composer-boundary > span:first-child { color: var(--text); }
+:root[data-theme] .dna-composer :is(.dna-occurrence-list li,.dna-edit-review) { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
+:root[data-theme] .dna-composer :is(input,select) { background: var(--surface-soft); color: var(--text); border-color: var(--line-strong); }
+:root[data-theme] .dna-composer :is(.dna-annotation-actions button,.dna-composer-footer button,.dna-editor-pagination button,.dna-occurrence-list button) { background: var(--surface-selected); color: var(--text); border-color: var(--line); }
+:root[data-theme] .dna-composer .dna-orientation { background: var(--teal-soft); color: var(--teal); }
+:root[data-theme] .dna-composer .dna-preview-button, .dna-composer .dna-apply-button { background: var(--teal-dark); color: #fff; }
+:root[data-theme] .dna-existing-annotations > div { background: var(--surface-selected); }
+:root[data-theme] .dna-existing-annotations button, .dna-edit-review > div:first-child { color: var(--text); }
+:root[data-theme] .dna-composer :is(.dna-composer-boundary,.dna-composer-footer) { border-color: var(--line); }
+:root[data-theme] .dna-pane-resizer { cursor: col-resize; background: var(--surface-soft); border-inline: 1px solid var(--line); touch-action: none; position: relative; }
+:root[data-theme] .dna-pane-resizer::after { content: ""; position: absolute; height: 38px; width: 2px; border-radius: 2px; background: var(--text-faint); left: 2px; top: calc(50% - 19px); }
+:root[data-theme] .dna-pane-resizer:hover, .dna-pane-resizer:focus-visible { background: var(--teal-soft); outline: 2px solid var(--teal); outline-offset: -2px; }
+@media (max-width: 850px) { .design-viewer.is-both { grid-template-columns: minmax(0,1fr) !important; grid-template-rows: minmax(250px,1fr) minmax(230px,1fr); overflow: auto; } .dna-pane-resizer { display: none; } .dna-composer-footer { flex-wrap: wrap; } .dna-composer-footer > span { flex-basis: 100%; } }
+.view-segment, .view-segment button { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
+.view-segment button.is-active { background: var(--teal-soft); color: var(--teal); }
+.design-canvas-meta { min-height: 27px; color: var(--text-faint); }
+.design-canvas-meta strong { color: var(--text-soft); }
+.parts-table-heading { padding: 12px 15px; }
+.parts-table-heading h3 { color: var(--text); font-size: 13px; }
+.parts-table-heading p, .parts-table-heading > span { color: var(--text-soft); font-size: 10px; }
+.feature-inventory-controls { padding: 10px 14px; }
+.parts-table-row { background: var(--surface); color: var(--text-soft); border-color: var(--line); }
+.parts-table-row.is-header { background: var(--surface-soft); color: var(--text-faint); }
+.parts-table-row strong { color: var(--text); font-size: 11px; }
+.parts-table-row small { color: var(--text-soft); font-size: 10px; }
+.parts-table-row:hover, .parts-table-row.is-selected { background: var(--surface-selected); }
+.layer-panel, .run-provenance-panel, .selection-card, .constraints-panel { color: var(--text); background: var(--surface); }
+.run-provenance-panel dl, .run-provenance-panel dl div, .provenance-step-list, .provenance-actions, .provenance-boundary-note { background: var(--surface); color: var(--text-soft); border-color: var(--line); }
+.layer-panel :is(p,small,span), .selection-card :is(p,small), .constraints-panel :is(p,small) { color: var(--text-soft); }
+.designs-page :is(.inspector-empty,.design-constraints,.visualization-diagnostics) { background: var(--surface); color: var(--text-soft); }
+.map-export-receipt { min-height: 40px; padding-block: 7px; }
+.map-export-receipt :is(strong,span,p) { color: var(--text-soft); }
+:root[data-theme="dark"] .design-source-card, :root[data-theme="dark"] .design-product-bar, :root[data-theme="dark"] .selection-card, :root[data-theme="dark"] .layer-panel, :root[data-theme="dark"] .feature-inventory-controls, :root[data-theme="dark"] .parts-table-heading, :root[data-theme="dark"] .parts-table-row, :root[data-theme="dark"] .map-export-receipt { background: var(--surface); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] .parts-table-row :is(strong,span) { color: var(--text); }
+:root[data-theme="dark"] .design-review-badge { color: var(--amber); background: var(--amber-soft); border-color: #8c7139; }
+:root[data-theme="dark"] :is(.selection-card dl > div,.sequence-preview,.view-origin-control,.parts-table-pagination) { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] :is(.selection-card dd,.sequence-preview code,.view-origin-copy strong) { color: var(--text); }
+:root[data-theme="dark"] :is(.selection-card dt,.sequence-preview > span,.view-origin-control > label,.view-origin-copy small,.view-origin-control > p,.parts-table-pagination > span) { color: var(--text-soft); }
+:root[data-theme="dark"] :is(.parts-table-pagination button,.view-origin-actions button,.view-origin-control input) { background: var(--surface); color: var(--teal); border-color: var(--line-strong); }
+:root[data-theme="dark"] .parts-table-pagination button:disabled { background: var(--surface-soft); color: var(--text-faint); }
+:root[data-theme="dark"] .run-provenance-panel.is-unlinked { background: var(--surface); }
+:root[data-theme="dark"] .run-provenance-panel.is-unlinked > p { background: var(--amber-soft); color: var(--text-soft); }
+:root[data-theme="dark"] .run-provenance-panel.is-unlinked > p strong { color: var(--amber); }
+:root[data-theme="dark"] :is(.run-provenance-panel .inspector-section-title > strong,.provenance-step-list span.is-complete) { color: var(--green); background: var(--green-soft); }
+:root[data-theme="dark"] .provenance-step-list span.is-skipped { color: var(--amber); background: var(--amber-soft); }
+:root[data-theme="dark"] .provenance-step-list span.is-failed { color: var(--red); background: var(--red-soft); }
+:root[data-theme="dark"] :is(.dna-sequence-window > header,.dna-window-overview,.dna-window-navigation) { color: var(--text); background: var(--surface-soft); border-color: var(--line); }
+:root[data-theme="dark"] :is(.dna-sequence-window > header small,.dna-sequence-window > header > span,.dna-window-navigation > span) { color: var(--text-soft); }
+:root[data-theme="dark"] .dna-window-navigation button { color: var(--teal); background: var(--surface); border-color: var(--line-strong); }
+.parts-table-pagination button { min-height: 27px; font-size: 10px; }
+.parts-table-pagination > span { font-size: 10px; }
+@media (max-width: 980px) { .design-product-bar { grid-template-columns: 1fr 1.4fr; padding: 10px 16px; } .design-product-badges { grid-column: 1/-1; justify-content: flex-start; flex-wrap: wrap; } .design-inspector { position: absolute; right: 0; top: 160px; bottom: 40px; z-index: 30; width: 282px; box-shadow: -8px 0 24px #0003; } .sidebar-rail.inspector-open .design-explorer-grid { grid-template-columns: minmax(0,1fr); } .design-browser { max-width: 180px; } .sidebar-expanded .design-explorer-grid { grid-template-columns: 180px minmax(0,1fr); } }
+
+/* Keep every control reachable when figures exceed a compact viewport. */
+.designs-page .designs-header { min-height: 62px; padding-block: 8px; }
+.designs-page .design-product-bar { min-height: 58px; }
+.design-stage { grid-template-rows: 48px 28px minmax(220px, 1fr) 210px; overflow: auto; }
+:root[data-theme] .dna-composer { margin: 0 14px 8px; border-radius: 9px; }
+:root[data-theme] .dna-composer-heading { padding: 9px 14px; }
+:root[data-theme] .dna-composer-icon { width: 28px; height: 28px; }
+.designs-page .map-export-receipt { min-height: 42px; padding: 6px 14px; }
+@media (max-width: 850px) { .designs-page { overflow: auto; } .design-stage { grid-template-rows: auto auto minmax(460px, 1fr) 240px; } }
+
+/* Sequence controls share the molecular viewport's theme, including lazy pages. */
+:root[data-theme="dark"] :is(.protein-summary-grid > div, .protein-sequence-search, .protein-record, .protein-record-metrics div, .protein-range-tools, .protein-sequence-panel, .protein-composition, .protein-provenance, .protein-selection-metrics div) { background: var(--surface); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] .protein-record-header { background: linear-gradient(90deg,var(--teal-soft),var(--surface)); border-color: var(--line); }
+:root[data-theme="dark"] :is(.protein-record-metrics dd, .protein-selection-metrics dd, .protein-provenance dd, .protein-composition-list > div, .protein-sequence-panel-heading) { color: var(--text); }
+:root[data-theme="dark"] :is(.protein-match-navigation button, .protein-window-navigation button, .protein-range-form button) { color: var(--teal); background: var(--teal-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] :is(.protein-match-navigation button:disabled, .protein-window-navigation button:disabled) { color: var(--text-faint); background: var(--surface-soft); border-color: var(--line); }
+:root[data-theme="dark"] .protein-range-status { color: var(--green); }
+:root[data-theme="dark"] .protein-range-error { color: var(--red); }
+:root[data-theme="dark"] :is(.protein-sequence-limit, .protein-review-callout) { color: var(--amber); }
+:root[data-theme="dark"] :is(.constraint-panel, .diagnostic-panel, .provenance-empty, .archive-button) { background: var(--surface); color: var(--text-soft); border-color: var(--line); }
+:root[data-theme="dark"] :is(.constraint-panel > p, .diagnostic-panel > p, .provenance-empty) { background: var(--surface-soft); color: var(--text-soft); }
+:root[data-theme="dark"] :is(.diagnostic-panel strong, .provenance-empty strong) { color: var(--amber); }
+
+.run-dependency-graph { margin: 12px 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.run-dependency-graph > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.run-dependency-graph > header strong { display: block; color: var(--text); font-size: 13px; margin-top: 7px; }
+.run-dependency-graph > header :is(small,strong > span) { font-weight: 400; color: var(--text-soft); font-size: 11px; }
+.run-dependency-graph > header small { display: flex; gap: 7px; align-items: center; }
+.run-dependency-scroll { min-height: 280px; height: 340px; max-height: 440px; overflow: auto; background: radial-gradient(circle,var(--line) .8px,transparent .8px) 0 0 / 18px 18px,var(--surface-soft); }
+.run-dependency-canvas { position: relative; }
+.run-dependency-canvas > svg { position: absolute; inset: 0; pointer-events: none; color: var(--line-strong); }
+.run-dependency-canvas > svg > path { fill: none; stroke: var(--line-strong); stroke-width: 1.6; }
+.run-dependency-canvas > svg > path.is-selected { stroke: var(--teal); stroke-width: 2.3; color: var(--teal); }
+.run-dependency-node { position: absolute; width: 214px; height: 82px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; text-align: left; background: var(--surface); color: var(--text-soft); border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow); cursor: pointer; }
+.run-dependency-node strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text); font-weight: 600; }
+.run-dependency-node > span:last-child { font-size: 10px; text-transform: capitalize; }
+.dependency-node-state { display: flex; align-items: center; justify-content: space-between; color: var(--text-soft); }
+.dependency-node-state small { font-size: 9px; text-transform: uppercase; letter-spacing: .5px; }
+.run-dependency-node.is-completed .dependency-node-state > svg { color: var(--green); }
+.run-dependency-node:is(.is-failed,.is-effect-unknown) { border-color: var(--amber); }
+.run-dependency-node:is(.is-selected,:focus-visible) { border-color: var(--teal); outline: 2px solid var(--teal-soft); background: var(--teal-soft); }
+.run-dependency-graph > p { margin: 0; padding: 9px 16px; color: var(--text-soft); font-size: 10px; background: var(--surface); border-top: 1px solid var(--line); }
+.run-operation-details { margin: 0 14px 12px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; color: var(--text-soft); }
+.run-operation-details > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--surface); }
+.run-operation-details > header > div { display: flex; align-items: center; gap: 9px; }
+.run-operation-details strong { color: var(--text); font-size: 12px; }
+.run-operation-details span { font-size: 10px; }
+.run-operation-details button { display: inline-flex; align-items: center; padding: 5px 8px; background: var(--surface-soft); color: var(--text-soft); border: 1px solid var(--line); border-radius: 5px; font-size: 10px; cursor: pointer; }
+.run-operation-details button[aria-pressed="true"] { background: var(--teal-soft); color: var(--teal); border-color: var(--teal); }
+.run-operation-details button:disabled { opacity: .4; cursor: default; }
+.run-operation-details pre { margin: 0; padding: 14px 16px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.6 "Cascadia Code",Consolas,monospace; color: var(--text); background: var(--surface-soft); border-block: 1px solid var(--line); }
+.run-operation-details > footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 14px; background: var(--surface); }
+.run-operation-details > footer > div { display: flex; align-items: center; gap: 10px; }
+.run-selected-operation .run-operation-details > header > div { min-width: 0; flex-wrap: wrap; }
+.run-selected-operation .run-operation-details > header strong { overflow-wrap: anywhere; }
+.run-selected-operation .run-operation-details > footer { flex-wrap: wrap; }
+.review-panel .claim-row { grid-template-columns: minmax(0, 1fr) 24px; align-items: start; gap: 6px 10px; padding: 11px 10px; font-size: 11px; }
+.review-panel .claim-row > strong { grid-column: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text-soft); font: 10px/1.4 var(--mono); }
+.review-panel .claim-row > span:nth-child(2) { grid-column: 1; grid-row: 2; overflow-wrap: anywhere; color: var(--text); line-height: 1.5; }
+.review-panel .claim-row > .evidence-link { grid-column: 1; grid-row: 3; font-size: 10px; }
+.review-panel .claim-row > .claim-status { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+.review-panel .claim-header { display: none; }
+.validation-journal > ol { grid-template-columns: repeat(auto-fit, minmax(min(145px, 100%), 1fr)); }
+.validation-journal { max-height: 210px; overflow: auto; }
+.validation-journal li strong { font-size: 10px; }
+.validation-journal :is(li small,.validation-step-state) { font-size: 9px; line-height: 1.5; }
+:root[data-theme="dark"] .validation-journal { background: var(--surface-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .validation-journal.has-attention { border-color: var(--amber); }
+:root[data-theme="dark"] .validation-journal > ol > li { background: var(--surface); border-color: var(--line); }
+:root[data-theme="dark"] .validation-journal > ol > li.is-completed { background: var(--green-soft); }
+:root[data-theme="dark"] .validation-journal :is(.validation-journal-eyebrow,small,.validation-step-state,.validation-step-digest,footer) { color: var(--text-soft); }
+:root[data-theme="dark"] .validation-journal strong { color: var(--text); }
+:root[data-theme="dark"] .validation-journal-state { color: var(--teal); background: var(--teal-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .review-gate { color: var(--green); border-color: var(--line-strong); }
+:root[data-theme="dark"] .review-gate.is-blocked { color: var(--red); }
+:root[data-theme="dark"] .review-gate.is-pending { background: var(--surface-soft); color: var(--text-soft); }
+:root[data-theme="dark"] .review-gate p { color: var(--text-soft); }
+:root[data-theme="dark"] .claim-row { border-color: var(--line); }
+@media (max-width: 1180px) {
+  .run-evidence-content, .inspector-open .run-evidence-content { grid-template-columns: minmax(0, 1fr); }
+  .run-selected-operation { border-left: 0; border-top: 1px solid var(--line); max-height: 380px; }
+  .run-evidence { margin-inline: 14px; }
+  .run-dependency-graph > header { padding: 12px; }
+  .run-dependency-scroll { height: 300px; }
+}
+
+/* Transient status never intercepts the scientific toolbar. */
+.toast { top: auto; bottom: 12px; right: auto; left: 50%; transform: translateX(-50%); max-width: min(390px,calc(100vw - 150px)); pointer-events: none; color: var(--text); background: var(--surface); border-color: var(--line-strong); }
+.designs-header > div:nth-child(2) { flex: 1 1 auto; }
+.designs-header .page-header-actions { flex: 0 0 auto; }
+@media (max-width: 700px) {
+  .designs-page .designs-header { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 8px 10px; padding: 8px 12px; }
+  .designs-header .page-header-actions { grid-column: 1/-1; margin-left: 0; flex-wrap: wrap; }
+  .designs-header .page-header-actions > button { margin-right: auto; }
+  .designs-header .page-header-actions button { min-height: 30px; padding: 5px 9px; }
+}
+.cgview-canvas-host { min-width: 0; min-height: 180px; }
+:root[data-theme="dark"] .recent-run-copy strong { color: var(--text); }
+:root[data-theme="dark"] .recent-run-copy small { color: var(--text-soft); }
+
+/* Launchpad surfaces and status accents use the same theme as the workspaces. */
+:root[data-theme="dark"] .launchpad-page :is(.readiness-card, .readiness-score, .operator-cockpit, .attention-inbox, .mission-library, .guided-run-section) { background: var(--surface); color: var(--text); border-color: var(--line); }
+:root[data-theme="dark"] .launchpad-page :is(.operator-cockpit-heading, .operator-cockpit-metrics > div, .operator-cockpit-grid, .operator-cockpit > footer) { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
+:root[data-theme="dark"] .readiness-hero { background: linear-gradient(135deg,var(--teal-soft),var(--surface)); border-color: var(--line-strong); }
+:root[data-theme="dark"] .readiness-hero.needs-action { background: linear-gradient(135deg,var(--amber-soft),var(--surface)); border-color: var(--amber); }
+:root[data-theme="dark"] .launchpad-page .readiness-score { border-color: var(--green); }
+:root[data-theme="dark"] .needs-action .readiness-score { border-color: var(--amber); }
+:root[data-theme="dark"] .readiness-card[aria-current="step"] { border-color: var(--amber); }
+:root[data-theme="dark"] .readiness-card.is-blocked { border-color: var(--red); }
+:root[data-theme="dark"] :is(.readiness-step-index, .readiness-state, .attention-item-icon, .mission-library-icon.is-checkpoint) { color: var(--amber); }
+:root[data-theme="dark"] .readiness-card.is-ready :is(.readiness-step-index,.readiness-state) { color: var(--green); }
+:root[data-theme="dark"] .readiness-card.is-blocked :is(.readiness-step-index,.readiness-state) { color: var(--red); }
+:root[data-theme="dark"] .launchpad-page :is(.operator-cockpit-icon, .mission-library-icon, .attention-inbox header > span, .mission-library header > span, .mission-posture span) { color: var(--teal); background: var(--teal-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .launchpad-page :is(.operator-cockpit-meta code, .mission-library-title small, .attention-revision) { color: var(--text-soft); background: transparent; border-color: var(--line); }
+:root[data-theme="dark"] .launchpad-page :is(.attention-list b, .attention-empty) { color: var(--text); }
+:root[data-theme="dark"] .attention-filters button:hover,
+:root[data-theme="dark"] .attention-filters button.is-selected { color: var(--teal); background: var(--teal-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .is-critical > .attention-item-icon { color: var(--red); }
+:root[data-theme="dark"] .is-monitoring > .attention-item-icon { color: var(--blue); background: var(--blue-soft); }
+:root[data-theme="dark"] .launchpad-inline-error,
+:root[data-theme="dark"] .launchpad-inline-error button { color: var(--red); border-color: var(--red); }
