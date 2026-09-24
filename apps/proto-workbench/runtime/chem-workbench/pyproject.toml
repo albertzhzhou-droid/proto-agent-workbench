@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chem-workbench"
+version = "0.1.0a2"
+description = "A deterministic, software-only chemistry compiler and review workbench."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "Chem Workbench contributors" }]
+keywords = ["chemistry", "compiler", "provenance", "chemir"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Chemistry",
+]
+dependencies = [
+  "jsonschema>=4.23,<5",
+]
+
+[project.scripts]
+chem = "chem_workbench.cli:main"
+
+[project.optional-dependencies]
+chemistry = [
+    "ase>=3.29.0",
+    "basis-set-exchange>=0.12",
+    "pymatgen>=2026.5.4",
+    "qcelemental>=0.51.1",
+    "qcengine>=0.51.0",
+    "rdkit>=2026.3.6",
+    "scipy>=1.14,<2",
+]
+
+[dependency-groups]
+dev = [
+  "jsonschema>=4.23,<5",
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<10",
+  "ruff>=0.11,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chem_workbench"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"schemas/chemir/v1alpha1" = "chem_workbench/schemas/chemir/v1alpha1"
+"schemas/review/v1alpha1" = "chem_workbench/schemas/review/v1alpha1"
+"schemas/adapters/v1alpha1" = "chem_workbench/schemas/adapters/v1alpha1"
+"scripts" = "chem_workbench/runtime/scripts"
+"examples" = "chem_workbench/runtime/examples"
+"uv.lock" = "chem_workbench/runtime/uv.lock"
+"third_party" = "chem_workbench/runtime/third_party"
+"evaluations" = "chem_workbench/runtime/evaluations"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["chem_workbench"]
+mypy_path = "src"
+
+[tool.uv]
+package = true

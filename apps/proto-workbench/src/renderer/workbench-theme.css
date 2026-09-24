@@ -1,5 +1,5 @@
-:root { --radius: 10px; --canvas: #f3f7f6; --shadow: 0 6px 30px #1738310c; color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; color: #e3eeeb; background: #101916; --surface: #15221e; --surface-soft: #101b17; --surface-selected: #1b3a31; --line: #2a3e35; --line-strong: #3c554a; --text: #e3eeeb; --text-soft: #a0b7ad; --text-faint: #7e9a8c; --teal: #59d3ba; --teal-dark: #79e1cd; --teal-soft: #193c33; --green: #7ddbab; --green-soft: #1b3527; --amber: #e5b861; --amber-soft: #392f1d; --red: #f38d86; --red-soft: #3b2626; --blue: #8bbbe8; --blue-soft: #223442; --canvas: #101916; --shadow: 0 8px 32px #0002; }
+:root { --radius: 10px; color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; color: var(--text); background: var(--surface-soft); }
 body { min-width: 0; min-height: 0; color: var(--text); }
 .app-shell { grid-template-rows: 54px minmax(0, 1fr); }
 .topbar { min-height: 54px; padding-right: 128px; background: var(--surface); border-bottom: 1px solid var(--line); }
@@ -81,7 +81,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 .mission-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
 .mission-actions button { display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--text); font-size: 11px; cursor: pointer; }
 .mission-actions .mission-resume { color: var(--teal); border-color: var(--teal); }
-.mission-overview.is-empty { display: flex; gap: 20px; align-items: center; min-height: 185px; background: radial-gradient(ellipse at 5% 20%, var(--teal-soft), transparent 65%), var(--surface); }
+.mission-overview.is-empty { display: flex; gap: 20px; align-items: center; min-height: 185px; background: var(--surface-soft); }
 .mission-symbol { display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid var(--line-strong); border-radius: 15px; color: var(--teal); flex-shrink: 0; }
 .mission-defaults { margin-left: auto; display: grid; grid-template-columns: auto auto; gap: 7px 12px; min-width: 150px; font-size: 10px; color: var(--text-soft); }
 .mission-defaults strong { color: var(--text); font-weight: 550; }
@@ -89,11 +89,11 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 :root[data-theme="dark"] :is(.topbar, .designs-header, .designs-toolbar, .design-browser, .design-inspector, .inspector-heading, .inspector-section-title, .design-canvas, .construct-map, .sequence-navigator, .design-summary, .design-detail-panel, .sequence-panel, .ledger-table-header, .ledger-row, .run-header, .composer, .composer-toolbar, .review-panel, .review-heading, .review-card, .code-drawer-header, .code-tabs, .panel-heading, .page-header, .settings-card, .model-card, .source-card, .material-card) { background-color: var(--surface); color: var(--text); border-color: var(--line); }
 :root[data-theme="dark"] :is(input, textarea, select) { background-color: var(--surface-soft); color: var(--text); border-color: var(--line-strong); }
 :root[data-theme="dark"] :is(.secondary-button, .quiet-button, .icon-button, .topbar-control) { color: var(--text-soft); background-color: transparent; border-color: var(--line); }
-:root[data-theme="dark"] :is(.primary-button, .send-button) { background: #238e79; color: #fff; }
+:root[data-theme="dark"] :is(.primary-button, .send-button) { background: var(--paper-primary); color: var(--on-primary); }
 :root[data-theme="dark"] .designs-footer { color: var(--text-soft); background: var(--surface-soft); }
 .run-workspace > :is(.run-evidence, .run-evidence-views, .evidence-workspace) { margin: 0 24px; border: 1px solid var(--line); border-radius: 10px; }
 @media (max-width: 1360px) { .runtime-picker, .runtime-inline, .topbar .verification-trigger { display: none; } .mission-metrics { gap: 17px; } .mission-overview { margin-inline: 16px; padding: 17px; } .mission-defaults { display: none; } }
-@media (max-width: 980px) { .topbar .decision-lab-trigger, .topbar .command-trigger, .topbar-icon { display: none; } .inspector-open .app-body:not(.is-page) { grid-template-columns: 68px minmax(0, 1fr) !important; } .review-panel { position: absolute; top: 54px; right: 0; bottom: 0; width: min(330px, 85vw); z-index: 20; box-shadow: -12px 0 40px #0003; } .mission-overview.is-empty { min-height: 140px; } .mission-summary h2, .mission-overview.is-empty h2 { font-size: 19px; } .mission-metrics > div:nth-last-child(1) { display: none; } .run-header { padding: 16px; } }
+@media (max-width: 980px) { .topbar .decision-lab-trigger, .topbar .command-trigger, .topbar-icon { display: none; } .inspector-open .app-body:not(.is-page) { grid-template-columns: 68px minmax(0, 1fr) !important; } .review-panel { position: absolute; top: 54px; right: 0; bottom: 0; width: min(330px, 85vw); z-index: 20; box-shadow: -12px 0 40px var(--shadow-color); } .mission-overview.is-empty { min-height: 140px; } .mission-summary h2, .mission-overview.is-empty h2 { font-size: 19px; } .mission-metrics > div:nth-last-child(1) { display: none; } .run-header { padding: 16px; } }
 @media (max-width: 700px) { .sidebar-expanded .app-body, .sidebar-expanded .app-body.is-page { grid-template-columns: 68px minmax(0, 1fr); } .sidebar-expanded .sidebar .recent-runs, .sidebar-expanded .sidebar-section-title, .sidebar-expanded .sidebar .archive-button, .sidebar-expanded .nav-item span { display: none; } .sidebar-expanded .nav-item { justify-content: center; padding-inline: 0; } .mission-overview { padding: 13px; margin: 0 10px 10px; } .mission-metrics { gap: 10px; } .mission-symbol { display: none; } .mission-summary p { max-height: 55px; overflow-y: auto; } .topbar-control.workspace-picker { max-width: 160px; } .run-header h1 { font-size: 17px; } .run-header-actions { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
@@ -128,14 +128,14 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 .parts-table-row.is-header { font-size: 9px; min-height: 30px; }
 .design-product-bar dt { font-size: 9px; }
 :root[data-theme] .dna-composer { background: var(--surface); border-color: var(--line); border-radius: 10px; margin: 0 14px 10px; box-shadow: none; }
-:root[data-theme] .dna-composer-heading { background: linear-gradient(110deg,var(--teal-soft),var(--surface)); color: var(--text); padding: 12px 16px; }
+:root[data-theme] .dna-composer-heading { background: var(--surface-soft); color: var(--text); padding: 12px 16px; }
 :root[data-theme] .dna-composer-heading small, .dna-composer-count, .dna-composer-boundary, .dna-editor-section-label > span, .dna-composer label, .dna-composer-footer > span { color: var(--text-soft); }
 :root[data-theme] .dna-editor-section-label, .dna-composer-boundary > span:first-child { color: var(--text); }
 :root[data-theme] .dna-composer :is(.dna-occurrence-list li,.dna-edit-review) { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
 :root[data-theme] .dna-composer :is(input,select) { background: var(--surface-soft); color: var(--text); border-color: var(--line-strong); }
 :root[data-theme] .dna-composer :is(.dna-annotation-actions button,.dna-composer-footer button,.dna-editor-pagination button,.dna-occurrence-list button) { background: var(--surface-selected); color: var(--text); border-color: var(--line); }
 :root[data-theme] .dna-composer .dna-orientation { background: var(--teal-soft); color: var(--teal); }
-:root[data-theme] .dna-composer .dna-preview-button, .dna-composer .dna-apply-button { background: var(--teal-dark); color: #fff; }
+:root[data-theme] .dna-composer .dna-preview-button, .dna-composer .dna-apply-button { background: var(--teal-dark); color: var(--on-primary); }
 :root[data-theme] .dna-existing-annotations > div { background: var(--surface-selected); }
 :root[data-theme] .dna-existing-annotations button, .dna-edit-review > div:first-child { color: var(--text); }
 :root[data-theme] .dna-composer :is(.dna-composer-boundary,.dna-composer-footer) { border-color: var(--line); }
@@ -164,7 +164,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 .map-export-receipt :is(strong,span,p) { color: var(--text-soft); }
 :root[data-theme="dark"] .design-source-card, :root[data-theme="dark"] .design-product-bar, :root[data-theme="dark"] .selection-card, :root[data-theme="dark"] .layer-panel, :root[data-theme="dark"] .feature-inventory-controls, :root[data-theme="dark"] .parts-table-heading, :root[data-theme="dark"] .parts-table-row, :root[data-theme="dark"] .map-export-receipt { background: var(--surface); color: var(--text); border-color: var(--line); }
 :root[data-theme="dark"] .parts-table-row :is(strong,span) { color: var(--text); }
-:root[data-theme="dark"] .design-review-badge { color: var(--amber); background: var(--amber-soft); border-color: #8c7139; }
+:root[data-theme="dark"] .design-review-badge { color: var(--amber); background: var(--amber-soft); border-color: var(--line-strong); }
 :root[data-theme="dark"] :is(.selection-card dl > div,.sequence-preview,.view-origin-control,.parts-table-pagination) { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
 :root[data-theme="dark"] :is(.selection-card dd,.sequence-preview code,.view-origin-copy strong) { color: var(--text); }
 :root[data-theme="dark"] :is(.selection-card dt,.sequence-preview > span,.view-origin-control > label,.view-origin-copy small,.view-origin-control > p,.parts-table-pagination > span) { color: var(--text-soft); }
@@ -181,7 +181,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 :root[data-theme="dark"] .dna-window-navigation button { color: var(--teal); background: var(--surface); border-color: var(--line-strong); }
 .parts-table-pagination button { min-height: 27px; font-size: 10px; }
 .parts-table-pagination > span { font-size: 10px; }
-@media (max-width: 980px) { .design-product-bar { grid-template-columns: 1fr 1.4fr; padding: 10px 16px; } .design-product-badges { grid-column: 1/-1; justify-content: flex-start; flex-wrap: wrap; } .design-inspector { position: absolute; right: 0; top: 160px; bottom: 40px; z-index: 30; width: 282px; box-shadow: -8px 0 24px #0003; } .sidebar-rail.inspector-open .design-explorer-grid { grid-template-columns: minmax(0,1fr); } .design-browser { max-width: 180px; } .sidebar-expanded .design-explorer-grid { grid-template-columns: 180px minmax(0,1fr); } }
+@media (max-width: 980px) { .design-product-bar { grid-template-columns: 1fr 1.4fr; padding: 10px 16px; } .design-product-badges { grid-column: 1/-1; justify-content: flex-start; flex-wrap: wrap; } .design-inspector { position: absolute; right: 0; top: 160px; bottom: 40px; z-index: 30; width: 282px; box-shadow: -8px 0 24px var(--shadow-color); } .sidebar-rail.inspector-open .design-explorer-grid { grid-template-columns: minmax(0,1fr); } .design-browser { max-width: 180px; } .sidebar-expanded .design-explorer-grid { grid-template-columns: 180px minmax(0,1fr); } }
 
 /* Keep every control reachable when figures exceed a compact viewport. */
 .designs-page .designs-header { min-height: 62px; padding-block: 8px; }
@@ -195,7 +195,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 
 /* Sequence controls share the molecular viewport's theme, including lazy pages. */
 :root[data-theme="dark"] :is(.protein-summary-grid > div, .protein-sequence-search, .protein-record, .protein-record-metrics div, .protein-range-tools, .protein-sequence-panel, .protein-composition, .protein-provenance, .protein-selection-metrics div) { background: var(--surface); color: var(--text); border-color: var(--line); }
-:root[data-theme="dark"] .protein-record-header { background: linear-gradient(90deg,var(--teal-soft),var(--surface)); border-color: var(--line); }
+:root[data-theme="dark"] .protein-record-header { background: var(--surface-soft); border-color: var(--line); }
 :root[data-theme="dark"] :is(.protein-record-metrics dd, .protein-selection-metrics dd, .protein-provenance dd, .protein-composition-list > div, .protein-sequence-panel-heading) { color: var(--text); }
 :root[data-theme="dark"] :is(.protein-match-navigation button, .protein-window-navigation button, .protein-range-form button) { color: var(--teal); background: var(--teal-soft); border-color: var(--line-strong); }
 :root[data-theme="dark"] :is(.protein-match-navigation button:disabled, .protein-window-navigation button:disabled) { color: var(--text-faint); background: var(--surface-soft); border-color: var(--line); }
@@ -211,7 +211,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 .run-dependency-graph > header strong { display: block; color: var(--text); font-size: 13px; margin-top: 7px; }
 .run-dependency-graph > header :is(small,strong > span) { font-weight: 400; color: var(--text-soft); font-size: 11px; }
 .run-dependency-graph > header small { display: flex; gap: 7px; align-items: center; }
-.run-dependency-scroll { min-height: 280px; height: 340px; max-height: 440px; overflow: auto; background: radial-gradient(circle,var(--line) .8px,transparent .8px) 0 0 / 18px 18px,var(--surface-soft); }
+.run-dependency-scroll { min-height: 280px; height: 340px; max-height: 440px; overflow: auto; background: var(--surface-soft); }
 .run-dependency-canvas { position: relative; }
 .run-dependency-canvas > svg { position: absolute; inset: 0; pointer-events: none; color: var(--line-strong); }
 .run-dependency-canvas > svg > path { fill: none; stroke: var(--line-strong); stroke-width: 1.6; }
@@ -233,7 +233,7 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 .run-operation-details button { display: inline-flex; align-items: center; padding: 5px 8px; background: var(--surface-soft); color: var(--text-soft); border: 1px solid var(--line); border-radius: 5px; font-size: 10px; cursor: pointer; }
 .run-operation-details button[aria-pressed="true"] { background: var(--teal-soft); color: var(--teal); border-color: var(--teal); }
 .run-operation-details button:disabled { opacity: .4; cursor: default; }
-.run-operation-details pre { margin: 0; padding: 14px 16px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.6 "Cascadia Code",Consolas,monospace; color: var(--text); background: var(--surface-soft); border-block: 1px solid var(--line); }
+.run-operation-details pre { margin: 0; padding: 14px 16px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.6 var(--font-mono); color: var(--text); background: var(--surface-soft); border-block: 1px solid var(--line); }
 .run-operation-details > footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 14px; background: var(--surface); }
 .run-operation-details > footer > div { display: flex; align-items: center; gap: 10px; }
 .run-selected-operation .run-operation-details > header > div { min-width: 0; flex-wrap: wrap; }
@@ -286,8 +286,8 @@ body { min-width: 0; min-height: 0; color: var(--text); }
 /* Launchpad surfaces and status accents use the same theme as the workspaces. */
 :root[data-theme="dark"] .launchpad-page :is(.readiness-card, .readiness-score, .operator-cockpit, .attention-inbox, .mission-library, .guided-run-section) { background: var(--surface); color: var(--text); border-color: var(--line); }
 :root[data-theme="dark"] .launchpad-page :is(.operator-cockpit-heading, .operator-cockpit-metrics > div, .operator-cockpit-grid, .operator-cockpit > footer) { background: var(--surface-soft); color: var(--text-soft); border-color: var(--line); }
-:root[data-theme="dark"] .readiness-hero { background: linear-gradient(135deg,var(--teal-soft),var(--surface)); border-color: var(--line-strong); }
-:root[data-theme="dark"] .readiness-hero.needs-action { background: linear-gradient(135deg,var(--amber-soft),var(--surface)); border-color: var(--amber); }
+:root[data-theme="dark"] .readiness-hero { background: var(--surface-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .readiness-hero.needs-action { background: var(--surface-soft); border-color: var(--amber); }
 :root[data-theme="dark"] .launchpad-page .readiness-score { border-color: var(--green); }
 :root[data-theme="dark"] .needs-action .readiness-score { border-color: var(--amber); }
 :root[data-theme="dark"] .readiness-card[aria-current="step"] { border-color: var(--amber); }

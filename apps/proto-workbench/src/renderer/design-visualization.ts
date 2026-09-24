@@ -232,17 +232,17 @@ export interface OrfDiscoveryResult {
 }
 
 const PART_COLORS: Readonly<Record<string, string>> = Object.freeze({
-  promoter: "#2563EB",
-  rbs: "#7C3AED",
-  cds: "#16A34A",
-  terminator: "#DC2626",
-  origin: "#D97706",
-  orf: "#65A30D",
-  primer: "#0891B2",
-  misc_feature: "#64748B",
+  promoter: "#657E93",
+  rbs: "#92839F",
+  cds: "#7C9278",
+  terminator: "#AE7E79",
+  origin: "#AA926D",
+  orf: "#919979",
+  primer: "#709899",
+  misc_feature: "#85858B",
 });
-const UNKNOWN_PART_COLOR = "#64748B";
-const SOFTWARE_ORF_COLOR = "#4D7C0F";
+const UNKNOWN_PART_COLOR = "#85858B";
+const SOFTWARE_ORF_COLOR = "#778065";
 const SAFE_SEQUENCE = /^[ACGTRYSWKMBDHVN]+$/i;
 const SAFE_PROTEIN_SEQUENCE = /^[ACDEFGHIKLMNPQRSTVWYBXZJUO*-]+$/i;
 const SAFE_SHA256 = /^[a-f0-9]{64}$/i;

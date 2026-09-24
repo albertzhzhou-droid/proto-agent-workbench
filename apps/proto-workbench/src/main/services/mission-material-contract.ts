@@ -53,17 +53,20 @@ function reportedMaterialFields(reporting: string): Requirement["fields"] {
  * workspace JSON or model messages cannot mint a trusted evidence record. */
 export function materialEvidenceRecords(results: ToolResultEnvelope[], requirement: Requirement): MaterialEvidenceRecord[] {
   const values = results.filter(result => result.ok).flatMap(result => {
-    if (requirement.recordKind === "protein") return result.tool === "proto_protein_inspect" && Array.isArray(result.data.proteins) ? result.data.proteins : [];
-    if (result.tool === "proto_materials_search") return Array.isArray(result.data.matches) ? result.data.matches : [];
-    if (result.tool === "proto_materials_get") return result.data.resource ? [result.data.resource] : [];
-    return [];
+    const input = object(result.data._harnessInputs);
+    const receiptScope = typeof result.data.snapshot_id === "string" ? `snapshot:${result.data.snapshot_id}`
+      : requirement.recordKind === "protein" && typeof input.sha256 === "string" ? `input:${input.sha256}` : undefined;
+    const rows = requirement.recordKind === "protein" ? result.tool === "proto_protein_inspect" && Array.isArray(result.data.proteins) ? result.data.proteins : []
+      : result.tool === "proto_materials_search" ? Array.isArray(result.data.matches) ? result.data.matches : []
+      : result.tool === "proto_materials_get" && result.data.resource ? [result.data.resource] : [];
+    return rows.map(value => ({value, receiptScope}));
   });
-  return values.flatMap(value => {
+  return values.flatMap(({value, receiptScope}) => {
     const row = object(value), source = object(row.source), license = object(row.license);
     const resourceId = requirement.recordKind === "protein" ? row.id : row.resource_id;
     if (typeof resourceId !== "string" || !resourceId) return [];
     const length = row.length ?? row.sequence_length;
-    return [{resourceId, ...(typeof row.sequence_sha256 === "string" ? {sequenceSha256: row.sequence_sha256} : {}),
+    return [{resourceId, ...(receiptScope ? {receiptScope} : {}), ...(typeof row.sequence_sha256 === "string" ? {sequenceSha256: row.sequence_sha256} : {}),
       ...(typeof length === "number" && Number.isSafeInteger(length) && length >= 0 ? {length} : {}),
       sourceFields: stringFields(source), licenseFields: stringFields(license),
       sourceReferences: strings([source.provider, source.record_id, source.url]), licenseIds: strings([license.id])}];

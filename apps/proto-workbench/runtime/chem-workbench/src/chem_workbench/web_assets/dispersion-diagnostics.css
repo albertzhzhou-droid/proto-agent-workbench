@@ -1,0 +1,37 @@
+/* Scoped to the reusable dispersion-only diagnostic part. */
+.dispersion-diagnostics { min-width: 0; padding: 24px; border: 1px solid #d7e4df; border-radius: 12px; background: #fff; color: #29423f; font: 14px/1.65 LocalUI, "Segoe UI", sans-serif; }
+.dispersion-diagnostics .dd-heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+.dispersion-diagnostics h2 { margin: 3px 0; font-size: 24px; font-weight: 600; line-height: 1.35; }
+.dispersion-diagnostics p { margin: 10px 0; overflow-wrap: anywhere; }
+.dispersion-diagnostics .dd-eyebrow { margin: 0; font-size: 10px; letter-spacing: 1.4px; color: #68837a; }
+.dispersion-diagnostics .dd-status { padding: 5px 10px; color: #276448; background: #edf6ef; border: 1px solid #c7decf; border-radius: 20px; font-size: 12px; white-space: nowrap; }
+.dispersion-diagnostics .dd-lede { color: #56726a; font-size: 13px; }
+.dispersion-diagnostics .dd-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.dispersion-diagnostics .dd-metric { min-width: 0; padding: 18px; border: 1px solid #d8e8e0; border-radius: 9px; background: #f4f9f6; }
+.dispersion-diagnostics .dd-metric dt { color: #567369; font-size: 12px; }
+.dispersion-diagnostics .dd-metric dd { margin: 10px 0 3px; font: 600 20px/1.4 Consolas, monospace; overflow-wrap: anywhere; }
+.dispersion-diagnostics .dd-metric span { color: #698478; font-size: 11px; }
+.dispersion-diagnostics .dd-scope { padding: 12px 15px; background: #f4f6f7; border-left: 3px solid #8aa5a6; border-radius: 5px; font-size: 12px; }
+.dispersion-diagnostics .dd-note { color: #607971; font-size: 12px; line-height: 1.65; }
+.dispersion-diagnostics .dd-actions, .dispersion-diagnostics .dd-table-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 10px; }
+.dispersion-diagnostics button { flex: 0 0 auto; width: auto; min-height: 38px; max-width: 100%; padding: 8px 12px; border: 1px solid #b4cdc1; border-radius: 7px; color: #315f4d; background: white; font: 12px/1.5 LocalUI, "Segoe UI", sans-serif; cursor: pointer; }
+.dispersion-diagnostics button.dd-primary, .dispersion-diagnostics button[aria-pressed=true] { color: white; background: #2d755b; border-color: #2d755b; }
+.dispersion-diagnostics :is(button,summary):focus-visible { outline: 3px solid #2b9278; outline-offset: 3px; }
+.dispersion-diagnostics .dd-notice { color: #326753; font-size: 12px; }
+.dispersion-diagnostics .dd-notice:empty { display: none; }
+.dispersion-diagnostics .dd-table-wrap { margin: 14px 0; max-width: 100%; overflow-x: auto; border: 1px solid #dce7e1; border-radius: 8px; }
+.dispersion-diagnostics table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.dispersion-diagnostics caption { text-align: left; padding: 12px; color: #5d796a; font-size: 12px; }
+.dispersion-diagnostics th, .dispersion-diagnostics td { padding: 10px 12px; border-top: 1px solid #e2ece5; vertical-align: top; white-space: nowrap; }
+.dispersion-diagnostics th { background: #eff6f1; color: #536e61; font-weight: 500; white-space: normal; }
+.dispersion-diagnostics td { font-family: Consolas, monospace; font-variant-numeric: tabular-nums; }
+.dispersion-diagnostics td code { display: block; font: inherit; line-height: 1.8; }
+.dispersion-diagnostics details { margin-top: 14px; border-top: 1px solid #dce7e1; color: #577667; font-size: 12px; }
+.dispersion-diagnostics summary { padding: 12px 0; cursor: pointer; }
+.dispersion-diagnostics pre { margin: 0 0 12px; padding: 14px; max-height: none; overflow: visible; background: #f4f8f5; border-radius: 7px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.7 Consolas, monospace; }
+@media (max-width: 700px) {
+  .dispersion-diagnostics { padding: 16px; }
+  .dispersion-diagnostics h2 { font-size: 20px; }
+  .dispersion-diagnostics .dd-metrics { grid-template-columns: 1fr; }
+  .dispersion-diagnostics .dd-metric dd { font-size: 18px; }
+}

@@ -4,6 +4,37 @@
   "description": "Local connector registry inspired by scientific AI workbenches. Entries may be local, planned, or external.",
   "connectors": [
     {
+      "id": "wsl-bioinformatics",
+      "kind": "analysis_runtime",
+      "status": "local_configuration_required",
+      "purpose": "Typed Chat and MCP adapters for GATK Mutect2, samtools, bcftools, LUMPY, SnpEff, CNVkit, Prokka, DESeq2 and nucmer in local WSL environments.",
+      "tools": ["proto_bioinformatics_catalog", "proto_bioinformatics_run"],
+      "documentation": "docs/bioinformatics-environment.md",
+      "artifacts": ["build/bioinformatics/<run-id>/manifest.json", "build/bioinformatics/<run-id>/result.json"],
+      "safety_notes": [
+        "Implementation metadata does not assert a running environment. Catalogue probe=true checks the actual installed executables.",
+        "Only fixed typed operations accept bounded workspace inputs; caller-supplied command strings are rejected.",
+        "Each run stages immutable input copies and records versions, hashes, logs and output artifacts. Cancellation terminates the owned Linux process group.",
+        "Shares the optional analysis.biomni module and canonical bioinformatics.catalog/run capabilities."
+      ]
+    },
+    {
+      "id": "biomni-compute",
+      "kind": "local_scientific_compute",
+      "status": "available",
+      "purpose": "One hundred twenty-seven bounded local statistics, biological, sequence, clinical, structural, imaging, comparative-study, structure-result and RNA-seq tools (one hundred nine reviewed Biomni adaptations and eighteen Proto-native companions), with binary and frame-sequence file inputs and a separate disabled-by-default remote connector tier.",
+      "commands": ["proto-agent compute catalog", "proto-agent compute run <workspace-request.json>"],
+      "tools": ["proto_compute_catalog", "proto_compute_run"],
+      "documentation": "docs/biomni-compute.md",
+      "artifacts": ["build/compute/<run-id>/result.json", "build/compute/<run-id>/manifest.json", "build/compute/<run-id>/provenance.json"],
+      "safety_notes": [
+        "Availability describes implemented integration; compute catalog reports missing optional runtime dependencies per tool.",
+        "Inputs select fixed implementations only. No Biomni agent, arbitrary code, remote database or model download is invoked. RNA-seq fit mode explicitly calls the existing local fixed DESeq2 bioinformatics adapter; validation mode does not start R.",
+        "Results preserve the request snapshot, source attribution and library versions. Biological interpretation and statistical assumptions require human review.",
+        "Workbench exposure is controlled by the optional Biomni scientific computing module. Source provenance and catalog analysis confer no design eligibility."
+      ]
+    },
+    {
       "id": "lm-studio",
       "kind": "local_model_service",
       "status": "available",
@@ -439,7 +470,7 @@
       "id": "jupyter",
       "kind": "analysis_runtime",
       "status": "sandbox_required",
-      "purpose": "Run bounded Python cells from workspace-local .ipynb notebooks through a configured execution broker.",
+      "purpose": "Execute workspace-local Python or R .ipynb notebooks with Jupyter kernels in the configured isolated execution broker, preserving cell outputs and errors.",
       "path": "notebooks",
       "commands": [
         "proto-agent notebook run"
@@ -448,7 +479,7 @@
         "proto_run_notebook"
       ],
       "safety_notes": [
-        "Lightweight runner only; does not start a full Jupyter server.",
+        "Uses nbclient with Python or R kernels and saves executed.ipynb plus HTML; no public Jupyter server is started.",
         "Only notebooks inside the workspace are accepted.",
         "Execution is denied by default and requires a digest-pinned OCI sandbox for normal operation.",
         "Runs are captured under build/notebooks by default."

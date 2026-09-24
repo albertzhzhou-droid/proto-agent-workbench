@@ -6,6 +6,13 @@
   "label": "Governance and run ledger",
   "resourceTier": "required",
   "tools": [
-    "proto_connectors_check"
+    "harness_discover_tools",
+    "harness_finish",
+    "harness_plan",
+    "harness_read_result",
+    "harness_report_blocked",
+    "proto_connectors_check",
+    "proto_skills_list",
+    "proto_skills_resolve"
   ]
 }

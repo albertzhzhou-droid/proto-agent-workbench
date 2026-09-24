@@ -51,7 +51,7 @@ test("Stage 13 Trust Policy catalog is bounded, handle-stable, and read-only", a
 test("Stage 13 main process owns policy preview, digest-CAS export, and strict IPC schemas", async () => {
   const main = await source("src/main/index.ts");
   const preload = await source("src/preload/index.ts");
-  const ipcSecurity = await source("src/main/ipc-security.ts");
+  const ipcSecurity = await source("src/shared/ipc-channel-contracts.ts");
 
   assert.match(main, /handlePrivileged\(IPC\.harnessTrustPolicyPreview/);
   assert.match(main, /handlePrivileged\(IPC\.harnessTrustPolicyExport/);

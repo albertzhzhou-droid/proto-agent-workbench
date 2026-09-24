@@ -12,6 +12,7 @@ from .compiler import compile_design
 from .compiler import validate_design
 from .exporters import export_ir
 from .models import Diagnostic
+from .evidence_standing import evidence_standing, library_data_origin
 from .parser import parse_design
 from .parts import DEFAULT_PARTS_PATH
 from .json_validation import JsonValidationError, strict_json_loads
@@ -223,6 +224,11 @@ def run_design_review(
         step["ok"] for step in manifest["steps"] if not step.get("skipped") and step.get("required", True)
     ) and not any(item.get("severity") == "error" for item in manifest["diagnostics"])
     manifest["ok"] = software_steps_ok and skill_compatibility["status"] == "resolved"
+    manifest["evidence_standing"] = evidence_standing(
+        method_maturity="not-established",
+        data_origin=library_data_origin(strict_json_loads(parts_bytes.decode("utf-8"), max_bytes=MAX_JSON_FILE_BYTES)),
+        execution_status="completed" if manifest["ok"] else "error",
+    )
     manifest["summary"] = _summary(manifest)
 
     manifest_path = run_dir / "manifest.json"

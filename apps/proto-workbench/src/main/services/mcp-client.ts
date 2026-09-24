@@ -1,12 +1,19 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, createHmac, randomBytes } from "node:crypto";
+import { closeSync, fstatSync, lstatSync, openSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { minimalChildEnvironment, terminateOwnedProcessTree } from "./process-security.ts";
 import { RuntimeFailure, cancelled } from "./runtime-control.ts";
+import { ToolExecutionJournal, type ToolExecutionRecord } from "./tool-execution-journal.ts";
+import { contractDeadlineMs, requireToolContract } from "../../shared/tool-contracts.ts";
+import type { PolicyDecision } from "../../shared/tool-policy.ts";
+import type { ExecutionScope } from "./execution-scope.ts";
+import { invokeJournaledTool, recordPolicyDenial } from "./execution-kernel.ts";
 
 const MAX_PENDING_REQUESTS = 32;
 const MAX_REQUEST_BYTES = 512 * 1024;
-const MAX_RESPONSE_LINE_BYTES = 4 * 1024 * 1024;
+// The contract's result budget is 8 MiB; reserve framing for the JSON-RPC id.
+const MAX_RESPONSE_LINE_BYTES = 8 * 1024 * 1024 + 1024;
 const MAX_STDOUT_LINES = 10_000;
 const MAX_STDERR_BYTES = 64 * 1024;
 export const MCP_MAX_TOOL_TIMEOUT_MS = 630_000;
@@ -70,14 +77,19 @@ export interface McpProgress {
 }
 
 export interface McpCallOptions {
+  scope: ExecutionScope;
   timeoutMs?: number;
   onProgress?: (progress: McpProgress) => void;
+  operationId?: string;
+  decisionId?: string;
+  decision?: PolicyDecision;
 }
 
 export interface McpClientOptions {
   cancellationGraceMs?: number;
   controlTimeoutMs?: number;
   startupTimeoutMs?: number;
+  journal?: ToolExecutionJournal;
 }
 
 interface PendingRequest {
@@ -104,13 +116,15 @@ export class McpClient {
   private stopped = false;
   private readonly options: McpClientOptions;
   private readonly cancelledRequests = new Map<number, NodeJS.Timeout>();
+  private readonly cancellationDrainWaiters = new Set<() => void>();
   private readonly terminatingChildren = new Map<ChildProcessWithoutNullStreams, Promise<void>>();
   private cleanupFailure?: Error;
 
   constructor(paths: McpPaths, options: McpClientOptions = {}) {
     this.paths = paths;
-    for (const [key, value] of Object.entries(options)) {
-      if (!Number.isSafeInteger(value) || value! < 1 || value! > MCP_MAX_TOOL_TIMEOUT_MS) throw new Error(`Invalid MCP ${key}.`);
+    for (const key of ["cancellationGraceMs", "controlTimeoutMs", "startupTimeoutMs"] as const) {
+      const value = options[key];
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < 1 || value > MCP_MAX_TOOL_TIMEOUT_MS)) throw new Error(`Invalid MCP ${key}.`);
     }
     this.options = options;
   }
@@ -118,6 +132,22 @@ export class McpClient {
   /** Dedicated per-run stdio process and pending-request namespace. */
   fork(): McpClient { return new McpClient({ ...this.paths }, this.options); }
   createSession(): McpClient { return this.fork(); }
+  executionRecord(operationId: string): ToolExecutionRecord | undefined { return this.options.journal?.get(operationId); }
+  executionJournal(): ToolExecutionJournal | undefined { return this.options.journal; }
+  reconcileExecution(operationId:string,verdict:"applied"|"not-applied",actor:string,evidenceRef:string):ToolExecutionRecord {
+    if(!this.options.journal)throw new Error("TOOL_EXECUTION_JOURNAL_REQUIRED");
+    return this.options.journal.reconcile(operationId,verdict,actor,evidenceRef);
+  }
+  invokeLocal(name:string,arguments_:Record<string,unknown>,dispatch:(markDispatched:()=>void)=>Promise<Record<string,unknown>>,options:McpCallOptions&{operationId:string}):Promise<Record<string,unknown>> {
+    return invokeJournaledTool({journal:this.options.journal,operationId:options.operationId,scope:options.scope,tool:name,arguments:arguments_,decision:options.decision,decisionId:options.decisionId},dispatch);
+  }
+  executionRecords(scope: ExecutionScope): ToolExecutionRecord[] { return this.options.journal?.list(scope) ?? []; }
+  /** Journal a refusal so an audit can tell a denied call from one never made. */
+  recordPolicyDenial(name: string, arguments_: Record<string, unknown>,
+    options: { operationId: string; scope: ExecutionScope; decisionId?: string; decision: PolicyDecision }): void {
+    recordPolicyDenial({ journal: this.options.journal, operationId: options.operationId, scope: options.scope,
+      tool: name, arguments: arguments_, decisionId: options.decisionId, decision: options.decision });
+  }
 
   async tools(refresh = false): Promise<McpTool[]> {
     if (!refresh && this.toolsCache) return this.toolsCache;
@@ -140,20 +170,40 @@ export class McpClient {
     arguments_: Record<string, unknown>,
     signal?: AbortSignal,
     authorization?: McpCallAuthorization,
-    options: McpCallOptions = {},
+    options?: McpCallOptions,
   ): Promise<Record<string, unknown>> {
-    await this.start();
-    const capability = authorization
-      ? this.createNetworkCapability(name, arguments_, authorization)
-      : undefined;
-    const result = (await this.request(
-      "tools/call",
-      { name, arguments: arguments_, ...(capability ? { capability } : {}) },
-      signal,
-      options.timeoutMs ?? toolDeadlineMs(name, arguments_),
-      options.onProgress,
-    )) as { structuredContent?: Record<string, unknown>; isError?: boolean };
-    return result.structuredContent ?? { ok: !result.isError };
+    const envelope = await this.callEnvelope(name, arguments_, signal, authorization, options);
+    const structured = envelope.structuredContent;
+    if (structured && typeof structured === "object" && !Array.isArray(structured)) {
+      return { ...structured as Record<string, unknown>, ...(envelope.isError === true ? { isError: true, ok: false } : {}),
+        ...(envelope.content !== undefined ? { content: envelope.content } : {}) };
+    }
+    // Legacy v1 receipts already contain the structured result. Text-only MCP
+    // results remain full envelopes, never replaced by a fabricated {ok:true}.
+    return envelope;
+  }
+
+  async callEnvelope(name: string, arguments_: Record<string, unknown>, signal?: AbortSignal,
+    authorization?: McpCallAuthorization, options?: McpCallOptions): Promise<Record<string, unknown>> {
+    const contract = requireToolContract(name);
+    if (contract.surface !== "mcp") throw Object.assign(new Error("The tool is not an MCP capability."), { code: "UNKNOWN_CAPABILITY", effectState: "none" });
+    if (this.options.journal && !options?.scope) throw new Error("TOOL_EXECUTION_SCOPE_REQUIRED");
+    const operationId = options?.operationId ?? randomBytes(16).toString("hex");
+    return invokeJournaledTool({ journal: this.options.journal, operationId,
+      scope: options?.scope ?? { surface: "system", scopeId: operationId }, tool: name, arguments: arguments_,
+      decisionId: options?.decisionId, decision: options?.decision }, async markDispatched => {
+      await this.start();
+      const capability = authorization
+        ? this.createNetworkCapability(name, arguments_, authorization)
+        : undefined;
+      return (await this.request(
+        "tools/call",
+        { name, arguments: arguments_, ...(capability ? { capability } : {}) },
+        signal,
+        options?.timeoutMs ?? toolDeadlineMs(name, arguments_),
+        options?.onProgress, markDispatched,
+      )) as Record<string, unknown>;
+    });
   }
 
   async stop(): Promise<void> {
@@ -161,6 +211,10 @@ export class McpClient {
     this.toolsCache = undefined;
     this.capabilitiesCache = undefined;
     this.startPromise = undefined;
+    // A caller abort rejects its promise before the sidecar finishes cancelling
+    // Docker/WSL descendants. Preserve that bounded cleanup opportunity when the
+    // caller's finally block closes its per-run worker immediately afterwards.
+    if (this.cancelledRequests.size) await new Promise<void>(resolve => this.cancellationDrainWaiters.add(resolve));
     await this.terminateCurrent(new Error("MCP sidecar stopped before the request completed."));
   }
 
@@ -264,6 +318,8 @@ export class McpClient {
       PROTO_WORKBENCH_WORKSPACE_ROOT: this.paths.workspacePath,
       PROTO_WORKBENCH_WORKSPACE_CAPABILITY: this.paths.workspaceCapability,
       PROTO_WORKBENCH_ALLOWED_OUTPUT_ROOT: join(this.paths.workspacePath, "build"),
+      ...sandboxEnvironment(process.env, this.paths.workspacePath),
+      ...bioinformaticsEnvironment(process.env),
       ...(this.paths.materialsRoot ? { PROTO_AGENT_MATERIALS_ROOT: this.paths.materialsRoot } : {}),
     };
     if (this.paths.packaged) {
@@ -296,6 +352,7 @@ export class McpClient {
     signal?: AbortSignal,
     timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
     onProgress?: (progress: McpProgress) => void,
+    onDispatch?: () => void,
   ): Promise<unknown> {
     const child = this.child;
     if (!child || child.exitCode !== null) return Promise.reject(new Error("MCP sidecar is not running."));
@@ -318,24 +375,30 @@ export class McpClient {
       if (signal) {
         pending.abort = () => {
           this.removePending(id);
-          reject(cancelled());
+          reject(new RuntimeFailure("USER_CANCELLED", "cancel", "Cancelled by the caller.", { effectState: method === "tools/call" ? "unknown" : "none" }));
           this.cancelWithGrace(id, child);
         };
         signal.addEventListener("abort", pending.abort, { once: true });
       }
       this.pending.set(id, pending);
-      child.stdin.write(payload, (error) => {
-        if (!error) return;
+      try {
+        onDispatch?.();
+        child.stdin.write(payload, (error) => {
+          if (!error) return;
+          this.removePending(id);
+          reject(error);
+        });
+      } catch (error) {
         this.removePending(id);
-        reject(error);
-      });
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
     });
   }
 
   private handleStdout(chunk: string): void {
     this.stdoutBuffer += chunk;
     if (Buffer.byteLength(this.stdoutBuffer, "utf8") > MAX_RESPONSE_LINE_BYTES) {
-      void this.terminateCurrent(new Error("MCP response exceeded the 4 MiB line limit.")).catch(() => {}); // retained by cleanupFailure; stop reports it
+      void this.terminateCurrent(new Error("MCP response exceeded the 8 MiB envelope limit.")).catch(() => {}); // retained by cleanupFailure; stop reports it
       return;
     }
     while (true) {
@@ -348,7 +411,7 @@ export class McpClient {
         return;
       }
       if (Buffer.byteLength(line, "utf8") > MAX_RESPONSE_LINE_BYTES) {
-        void this.terminateCurrent(new Error("MCP response exceeded the 4 MiB line limit.")).catch(() => {});
+        void this.terminateCurrent(new Error("MCP response exceeded the 8 MiB envelope limit.")).catch(() => {});
         return;
       }
       this.handleLine(line);
@@ -357,7 +420,7 @@ export class McpClient {
 
   private handleLine(line: string): void {
     try {
-      const message = JSON.parse(line) as { id?: number; method?: string; params?: Record<string, unknown>; result?: unknown; error?: { message?: string } };
+      const message = JSON.parse(line) as { id?: number; method?: string; params?: Record<string, unknown>; result?: unknown; error?: { message?: string; code?: number; effect_state?: unknown; data?: { effect_state?: unknown; effectState?: unknown } } };
       if (message.method === "notifications/progress") {
         const params = message.params;
         const token = params?.progressToken;
@@ -381,7 +444,11 @@ export class McpClient {
       const pending = this.pending.get(id);
       if (!pending) return;
       this.removePending(id);
-      if (message.error) pending.reject(new Error(message.error.message || "MCP request failed."));
+      if (message.error) {
+        const effectState = message.error.data?.effect_state ?? message.error.data?.effectState ?? message.error.effect_state;
+        pending.reject(Object.assign(new Error(message.error.message || "MCP request failed."), { code: message.error.code,
+          ...(effectState === "none" || effectState === "unknown" ? { effectState } : {}), rpcError: message.error }));
+      }
       else pending.resolve(message.result);
     } catch {
       // Non-protocol stdout is ignored, but it remains subject to the strict line-size limit.
@@ -392,7 +459,7 @@ export class McpClient {
     this.writeCancellation(id);
     const timer = setTimeout(() => {
       this.cancelledRequests.delete(id);
-      if (this.child !== child) return;
+      if (this.child !== child) {this.notifyCancellationDrained();return;}
       void this.terminateCurrent(new RuntimeFailure("TOOL_SESSION_INTERRUPTED", "mcp-cancellation", "The run's MCP worker did not acknowledge cancellation before its grace deadline.", { effectState: "unknown" })).catch(() => {});
     }, this.options.cancellationGraceMs ?? MCP_CANCELLATION_GRACE_MS);
     timer.unref?.();
@@ -403,6 +470,13 @@ export class McpClient {
     const timer = this.cancelledRequests.get(id);
     if (timer) clearTimeout(timer);
     this.cancelledRequests.delete(id);
+    this.notifyCancellationDrained();
+  }
+
+  private notifyCancellationDrained(): void {
+    if (this.cancelledRequests.size) return;
+    for (const resolve of this.cancellationDrainWaiters) resolve();
+    this.cancellationDrainWaiters.clear();
   }
 
   private writeCancellation(id: number): void {
@@ -432,6 +506,7 @@ export class McpClient {
     this.capabilitiesCache = undefined;
     this.rejectAll(error);
     for (const id of [...this.cancelledRequests.keys()]) this.clearCancelledRequest(id);
+    this.notifyCancellationDrained();
     if (child && child.exitCode === null) this.terminateChild(child);
     // A protocol/cancellation failure may already have detached this.child
     // while its owned process tree is still stopping. All callers share that
@@ -459,16 +534,7 @@ export class McpClient {
 }
 
 export function toolDeadlineMs(name: string, args: Record<string, unknown>): number {
-  if (["proto_run_analysis", "proto_run_notebook", "proto_run_r"].includes(name)) {
-    const fallback = name === "proto_run_analysis" ? 60 : 120;
-    const seconds = args.timeout === undefined ? fallback : args.timeout;
-    if (typeof seconds !== "number" || !Number.isSafeInteger(seconds) || seconds < 1 || seconds > 600) throw new Error("Execution timeout must be between 1 and 600 seconds.");
-    return seconds * 1000 + 30_000;
-  }
-  if (["proto_workflow_run", "proto_review_packet"].includes(name)) return MCP_MAX_TOOL_TIMEOUT_MS;
-  if (/materialize|compile/.test(name)) return 210_000;
-  if (/search/.test(name)) return 150_000;
-  return 90_000;
+  return contractDeadlineMs(name, args);
 }
 
 function stableJson(value: unknown): string {
@@ -549,4 +615,54 @@ function optionalString(value: unknown, label: string): string | undefined {
 function booleanValue(value: unknown, label: string): boolean {
   if (typeof value !== "boolean") throw new Error(`MCP capability ${label} is invalid.`);
   return value;
+}
+
+/** Only explicit OCI configuration is inherited; never forward host-execution switches. */
+export function sandboxEnvironment(env:NodeJS.ProcessEnv, workspacePath?:string):NodeJS.ProcessEnv {
+  const names = {provider:"PROTO_AGENT_SANDBOX_PROVIDER",image:"PROTO_AGENT_SANDBOX_IMAGE",wslDistribution:"PROTO_AGENT_SANDBOX_WSL_DISTRIBUTION",wslUser:"PROTO_AGENT_SANDBOX_WSL_USER",wslSocket:"PROTO_AGENT_SANDBOX_WSL_SOCKET",wslDockerPath:"PROTO_AGENT_SANDBOX_WSL_DOCKER_PATH"} as const;
+  let source:Record<string,unknown> = Object.fromEntries(Object.entries(names).flatMap(([key,name])=>env[name] ? [[key,env[name]]] : []));
+  if(!Object.keys(source).length && workspacePath) source = readSandboxProfile(workspacePath);
+  if(!Object.keys(source).length) return {};
+  const {provider,image,wslDistribution,wslUser,wslSocket,wslDockerPath}=source;
+  if(typeof provider!=="string" || !["docker","podman","docker-wsl"].includes(provider) || typeof image!=="string" || !/^[a-z0-9][a-z0-9._/-]*(?::[a-z0-9._-]+)?@sha256:[a-f0-9]{64}$/.test(image)) throw new Error("Configure an OCI provider and a digest-pinned sandbox image together.");
+  if(provider==="docker-wsl" && (typeof wslDistribution!=="string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(wslDistribution) || typeof wslUser!=="string" || !/^[a-z_][a-z0-9_-]{0,31}$/.test(wslUser) || wslUser==="root" || typeof wslSocket!=="string" || !/^unix:\/\/\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.sock$/.test(wslSocket) || wslSocket.includes(".."))) throw new Error("WSL sandbox requires a distribution, non-root user and a local Unix socket.");
+  if(wslDockerPath!==undefined && (typeof wslDockerPath!=="string" || !/^\/(?:[A-Za-z0-9_.-]+\/)*docker$/.test(wslDockerPath) || wslDockerPath.includes(".."))) throw new Error("WSL Docker executable must be an absolute Linux path ending in /docker.");
+  return Object.fromEntries(Object.entries(names).flatMap(([key,name])=>typeof source[key]==="string" && (key==="provider" || key==="image" || provider==="docker-wsl") ? [[name,source[key]]] : []));
+}
+
+function readSandboxProfile(workspacePath:string):Record<string,unknown> {
+  const root=realpathSync(workspacePath), directory=join(root,".proto-agent"), file=join(directory,"sandbox.json");
+  try {
+    const directoryInfo=lstatSync(directory);
+    if(!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink() || realpathSync(directory)!==directory) throw new Error("Sandbox profile directory must be a regular workspace directory.");
+    const info=lstatSync(file);
+    if(!info.isFile() || info.isSymbolicLink() || info.nlink!==1 || info.size>16384 || realpathSync(file)!==file) throw new Error("Sandbox profile must be a regular file of at most 16 KiB.");
+    const descriptor=openSync(file,"r");
+    try {
+      const opened=fstatSync(descriptor);
+      if(opened.dev!==info.dev || opened.ino!==info.ino || opened.size!==info.size) throw new Error("Sandbox profile changed while opening it.");
+      const payload:unknown=JSON.parse(readFileSync(descriptor,"utf8").replace(/^\uFEFF/,""));
+      if(!payload || typeof payload!=="object" || Array.isArray(payload)) throw new Error("Sandbox profile must be an object.");
+      const profile=payload as Record<string,unknown>;
+      if(profile.version!==1 || Object.keys(profile).some(key=>!["version","provider","image","wslDistribution","wslUser","wslSocket","wslDockerPath"].includes(key))) throw new Error("Unsupported sandbox profile schema.");
+      return Object.fromEntries(Object.entries(profile).filter(([key])=>key!=="version"));
+    } finally {closeSync(descriptor);}
+  } catch(error) {
+    if(error && typeof error==="object" && "code" in error && error.code==="ENOENT") return {};
+    throw error;
+  }
+}
+
+/** Bio tools accept only a distro and an absolute userspace installation root. */
+export function bioinformaticsEnvironment(env:NodeJS.ProcessEnv):NodeJS.ProcessEnv {
+  const result:NodeJS.ProcessEnv={};
+  if(env.PROTO_AGENT_BIO_WSL_DISTRO) {
+    if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(env.PROTO_AGENT_BIO_WSL_DISTRO)) throw new Error("Invalid bioinformatics WSL distribution.");
+    result.PROTO_AGENT_BIO_WSL_DISTRO=env.PROTO_AGENT_BIO_WSL_DISTRO;
+  }
+  if(env.PROTO_AGENT_BIO_ROOT) {
+    if(!/^\/(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+$/.test(env.PROTO_AGENT_BIO_ROOT) || env.PROTO_AGENT_BIO_ROOT.includes("..")) throw new Error("Bioinformatics runtime root must be an absolute Linux directory without traversal.");
+    result.PROTO_AGENT_BIO_ROOT=env.PROTO_AGENT_BIO_ROOT;
+  }
+  return result;
 }

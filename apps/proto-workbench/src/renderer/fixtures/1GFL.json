@@ -1,0 +1,20 @@
+{
+  "schema": "proto-workbench.protein-structure.v1",
+  "id": "9c58a5f8626e382a5903815968a34620907ab111dd0dcf2f7c6a258d7cf6bdc1",
+  "proteinId": "uniprot:P42212",
+  "sequenceSha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403",
+  "contentSha256": "5d5a7ce2dd7be9228907902d5cd41ec162c569234bb8bd119eb48874e1dac90b",
+  "format": "mmcif",
+  "bytes": 439739,
+  "label": "PDB 1GFL",
+  "source": {
+    "provider": "pdb",
+    "accession": "1GFL",
+    "url": "https://files.rcsb.org/download/1GFL.cif",
+    "retrievedAt": "2026-09-04T21:40:44.498Z",
+    "classification": "experimental",
+    "license": "CC0-1.0",
+    "attribution": "wwPDB / RCSB PDB; original depositors"
+  },
+  "reviewStatus": "human_review_required"
+}

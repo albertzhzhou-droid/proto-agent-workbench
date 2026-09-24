@@ -1,3 +1,4 @@
+import { readModelSnapshot } from "../shared/model-status.ts";
 import { create } from "zustand";
 import type {
   AgentRunEvent,
@@ -57,7 +58,7 @@ interface WorkbenchState {
   review: ReviewPacketView;
   comments: ReviewComment[];
   patch?: PatchProposal;
-  activeDocument?: { path: string; content: string };
+  activeDocument?: { path: string; content: string;artifactReader?:import("../shared/artifact-readers.ts").ArtifactReaderSelection };
   thread?: AgentThread;
   messages: ChatMessage[];
   streamingText: string;
@@ -89,7 +90,7 @@ interface WorkbenchState {
   navigate(view: AppView): void;
   toggleModels(open?: boolean): void;
   setModelTab(tab: "quick-switch" | "auto-evict"): Promise<void>;
-  refreshModels(): Promise<void>;
+  refreshModels(silent?: boolean): Promise<void>;
   loadModel(modelId: string, options?: Partial<ModelLoadOptions>): Promise<void>;
   unloadModel(modelId: string): Promise<void>;
   pinModel(modelId: string, pinned: boolean): Promise<void>;
@@ -189,7 +190,7 @@ let runSelectionGeneration = 0;
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   ready: false,
   bootstrapPhase: "connecting",
-  currentView: "launchpad",
+  currentView: "designs",
   modelsOpen: false,
   modelTab: "quick-switch",
   settings: structuredClone(EMPTY_SETTINGS),
@@ -335,20 +336,19 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       });
     }
 
-    const [settings, runtime, startupRecovery, moduleIntegrity, moduleAudits, listedModels, listedRuns, operatorCockpit, threads, workspaceEntries] = await Promise.all([
+    const [settings, modelSnapshot, startupRecovery, moduleIntegrity, moduleAudits, listedRuns, operatorCockpit, threads, workspaceEntries] = await Promise.all([
       api.app.getSettings(),
-      api.app.getRuntimeStatus(),
+      readModelSnapshot(() => api.models.scan()),
       api.app.getStartupRecovery(),
       api.app.getModuleIntegrity(),
       api.app.listModuleAudits(10),
-      api.models.list(),
       api.runs.list(false),
       api.runs.cockpit(),
       api.threads.list(),
       api.files.list(),
     ]);
     set({ bootstrapPhase: "session" });
-    const models = listedModels;
+    const {models, runtime} = modelSnapshot;
     const selectedRunId = listedRuns[0]?.runId;
     const detail = selectedRunId ? await api.runs.getDetail(selectedRunId) : undefined;
     let thread = detail?.thread ?? threads.find((item) => item.workspacePath === settings.workspacePath);
@@ -396,7 +396,6 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       pendingApprovals: detail?.approvals.filter((approval) => approval.status === "pending") ?? [],
       toast: detail?.contextWarning,
     });
-    void get().refreshModels();
   },
 
   navigate(currentView) {
@@ -411,19 +410,18 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     await workbenchApi().models.setPolicy(policy);
     set((state) => ({ modelTab, settings: { ...state.settings, residencyPolicy: policy } }));
   },
-  async refreshModels() {
-    if (get().isScanningModels) return;
-    set({ isScanningModels: true, toast: "Synchronizing the LM Studio native model catalog..." });
+  async refreshModels(silent = false) {
+    if (get().isScanningModels || get().busyModelId) return;
+    set({ isScanningModels: true });
     try {
-      const models = await workbenchApi().models.scan();
-      const loaded = models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0);
-      const runtime = await workbenchApi().app.getRuntimeStatus();
-      set({ models, runtime, toast: `Discovered ${models.length} LM Studio model${models.length === 1 ? "" : "s"}; ${loaded} loaded instance${loaded === 1 ? "" : "s"}.` });
-    } catch (error) {
-      set({ toast: friendlyError(error) });
-    } finally {
-      set({ isScanningModels: false });
-    }
+      const snapshot = await readModelSnapshot(() => workbenchApi().models.scan());
+      set(state => ({ ...snapshot,
+        missionPreflight: modelPreflightIdentity(state.models, state.missionPreflight?.modelId)
+          === modelPreflightIdentity(snapshot.models, state.missionPreflight?.modelId) && snapshot.runtime.available
+          ? state.missionPreflight : undefined,
+        ...(!silent ? { toast: snapshot.runtime.detail } : {}),
+      }));
+    } finally { set({ isScanningModels: false }); }
   },
   async loadModel(modelId, options) {
     if (get().isAgentRunning) {
@@ -435,8 +433,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       await workbenchApi().models.load(modelId, options);
       const thread = get().thread;
       if (thread) set({ thread: await workbenchApi().threads.update(thread.id, { modelId }), missionPreflight: undefined });
-      const runtime = await workbenchApi().app.getRuntimeStatus();
-      set({ runtime, toast: "The exact LM Studio instance is connected for Workbench chat." });
+      const snapshot = await readModelSnapshot(() => workbenchApi().models.scan());
+      set({ ...snapshot, toast: snapshot.runtime.available ? "The exact LM Studio instance is connected for Workbench chat." : snapshot.runtime.detail });
     } catch (error) {
       set({ toast: friendlyError(error) });
     } finally {
@@ -450,8 +448,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }
     try {
       await workbenchApi().models.unload(modelId);
-      const runtime = await workbenchApi().app.getRuntimeStatus();
-      set({ runtime, toast: "Workbench disconnected; only a Workbench-owned LM Studio instance was eligible for unload." });
+      const snapshot = await readModelSnapshot(() => workbenchApi().models.scan());
+      set({ ...snapshot, toast: snapshot.runtime.available ? "Workbench disconnected; only a Workbench-owned LM Studio instance was eligible for unload." : snapshot.runtime.detail });
     } catch (error) {
       set({ toast: friendlyError(error) });
     }
@@ -529,7 +527,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   async updateSettings(patch) {
     try {
       const settings = await workbenchApi().app.updateSettings(patch);
-      set({ settings, modelTab: settings.residencyPolicy.mode, toast: "Settings saved." });
+      set({ settings, modelTab: settings.residencyPolicy.mode, missionPreflight: undefined, toast: "Settings saved." });
     } catch (error) {
       set({ toast: friendlyError(error) });
     }
@@ -628,7 +626,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }
     try {
       const document = await workbenchApi().files.read(artifact);
-      set({ activeDocument: { path: document.path, content: document.content }, patch: undefined });
+      set({ activeDocument: { path: document.path, content: document.content, artifactReader:document.artifactReader }, patch: undefined });
     } catch {
       set({ activeDocument: undefined });
     }
@@ -654,7 +652,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   async openEvidenceArtifact(locator) {
     try {
       const document = await workbenchApi().files.read(locator);
-      set({ activeDocument: { path: document.path, content: document.content }, patch: undefined, drawerCollapsed: false, codeMode: "artifact" });
+      set({ activeDocument: { path: document.path, content: document.content, artifactReader:document.artifactReader }, patch: undefined, drawerCollapsed: false, codeMode: "artifact" });
     } catch (error) {
       set({ toast: friendlyError(error) });
     }

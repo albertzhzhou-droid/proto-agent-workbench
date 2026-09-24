@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "periodic-structure.schema.json",
+  "title": "ChemIR v1alpha1 explicit PeriodicStructure payload",
+  "description": "The core alpha profile accepts only explicit configurations. Average occupancy and fictitious vacancy species are intentionally outside this schema.",
+  "type": "object",
+  "required": [
+    "semantics"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "semantics": {
+      "const": "explicit_configuration"
+    },
+    "lattice": {
+      "$ref": "#/$defs/Lattice"
+    },
+    "coordinate_system": {
+      "enum": [
+        "fractional",
+        "cartesian"
+      ]
+    },
+    "sites": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/ExplicitSite"
+      }
+    },
+    "symmetry": {
+      "$ref": "#/$defs/Symmetry"
+    },
+    "basis": {
+      "enum": [
+        "primitive",
+        "conventional",
+        "supercell",
+        "unspecified"
+      ]
+    },
+    "parent_transformation": {
+      "$ref": "#/$defs/ParentTransformation"
+    },
+    "representations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Representation"
+      }
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "lattice",
+        "coordinate_system",
+        "sites"
+      ]
+    },
+    {
+      "required": [
+        "representations"
+      ]
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "LatticeVectors": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "common.schema.json#/$defs/DecimalVector3"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/DecimalVector3"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/DecimalVector3"
+        }
+      ],
+      "items": false
+    },
+    "Lattice": {
+      "type": "object",
+      "required": [
+        "vectors",
+        "unit",
+        "periodic_boundary_conditions"
+      ],
+      "properties": {
+        "vectors": {
+          "$ref": "#/$defs/LatticeVectors"
+        },
+        "unit": {
+          "$ref": "common.schema.json#/$defs/Unit"
+        },
+        "periodic_boundary_conditions": {
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/BooleanVector3"
+            },
+            {
+              "const": [
+                true,
+                true,
+                true
+              ]
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExplicitSite": {
+      "type": "object",
+      "required": [
+        "id",
+        "element",
+        "coordinates",
+        "occupancy"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "element": {
+          "$ref": "common.schema.json#/$defs/ElementSymbol"
+        },
+        "isotope_mass_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 400
+        },
+        "coordinates": {
+          "$ref": "common.schema.json#/$defs/DecimalVector3"
+        },
+        "occupancy": {
+          "const": 1
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SpaceGroup": {
+      "type": "object",
+      "properties": {
+        "international_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 230
+        },
+        "hm_symbol": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "hall_symbol": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "Symmetry": {
+      "type": "object",
+      "required": [
+        "origin"
+      ],
+      "properties": {
+        "origin": {
+          "enum": [
+            "asserted",
+            "imported",
+            "derived"
+          ]
+        },
+        "space_group": {
+          "$ref": "#/$defs/SpaceGroup"
+        },
+        "tool": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "tool_version": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "tolerance": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "if": {
+        "properties": {
+          "origin": {
+            "const": "derived"
+          }
+        },
+        "required": [
+          "origin"
+        ]
+      },
+      "then": {
+        "required": [
+          "tool",
+          "tool_version",
+          "tolerance"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "ParentTransformation": {
+      "type": "object",
+      "required": [
+        "parent_structure_reference",
+        "matrix",
+        "origin_shift"
+      ],
+      "properties": {
+        "parent_structure_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "matrix": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "$ref": "common.schema.json#/$defs/IntegerVector3"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/IntegerVector3"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/IntegerVector3"
+            }
+          ],
+          "items": false
+        },
+        "origin_shift": {
+          "$ref": "common.schema.json#/$defs/Vector3"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

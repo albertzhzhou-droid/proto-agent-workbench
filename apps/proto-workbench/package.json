@@ -20,7 +20,7 @@
     "preview": "vite preview --configLoader runner",
     "build:icon": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task Icon",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test": "node --experimental-strip-types --test --test-concurrency=4 tests/*.test.mjs",
     "verify:visualization": "node --experimental-strip-types --test tests/sha256.test.mjs tests/protein-sequence.test.mjs tests/design-visualization.test.mjs tests/igem-materials-visualization-corpus.test.mjs tests/map-export.test.mjs tests/map-export-service.test.mjs tests/designs-safety-contract.test.mjs tests/cgview-adapter.test.mjs tests/security-boundaries.test.mjs tests/visualization-envelope.test.mjs",
     "sync:workspace-template": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Task SyncTemplate",
     "verify:workspace-template": "node scripts/sync-workspace-template.mjs --check",
@@ -43,14 +43,17 @@
     "ajv": "^8.20.0",
     "cgview": "1.8.2",
     "diff": "^9.0.0",
+    "fast-xml-parser": "5.11.1",
     "lucide-react": "^1.31.0",
     "molstar": "5.11.0",
     "monaco-editor": "^0.56.0",
+    "pdfjs-dist": "6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "seqviz": "3.10.24",
     "svgcanvas": "2.6.0",
     "vite": "7.3.6",
+    "yauzl": "3.4.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
   },
@@ -59,6 +62,7 @@
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@types/yauzl": "3.4.0",
     "@vitest/coverage-v8": "^4.1.10",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
@@ -101,6 +105,37 @@
       "package.json"
     ],
     "extraResources": [
+      {"from":"runtime/chem-workbench","to":"runtime/chem-workbench","filter":["**/*"]},
+      {"from":"runtime/chem-ui","to":"runtime/chem-ui","filter":["**/*"]},
+      {"from":"runtime/chem-integration","to":"runtime/chem-integration","filter":["**/*"]},
+      {
+        "from": "licenses/PDFjs-Apache-2.0.txt",
+        "to": "licenses/PDFjs-Apache-2.0.txt"
+      },
+      {
+        "from": "licenses/yauzl-MIT.txt",
+        "to": "licenses/yauzl-MIT.txt"
+      },
+      {
+        "from": "licenses/fast-xml-parser-MIT.txt",
+        "to": "licenses/fast-xml-parser-MIT.txt"
+      },
+      {
+        "from": "licenses/DeepSeek-Harness-MIT.txt",
+        "to": "licenses/DeepSeek-Harness-MIT.txt"
+      },
+      {
+        "from": "licenses/OpenScience-Apache-2.0.txt",
+        "to": "licenses/OpenScience-Apache-2.0.txt"
+      },
+      {
+        "from": "licenses/OpenScience-NOTICE.txt",
+        "to": "licenses/OpenScience-NOTICE.txt"
+      },
+      {
+        "from": "licenses/Biomni-Apache-2.0.txt",
+        "to": "licenses/Biomni-Apache-2.0.txt"
+      },
       {
         "from": "THIRD_PARTY_NOTICES.md",
         "to": "THIRD_PARTY_NOTICES.md"

@@ -17,3 +17,12 @@
 apps/proto-workbench/runtime/trust/sigstore-public-good/trusted_root.json text eol=lf whitespace=-blank-at-eof
 apps/proto-workbench/tests/fixtures/sigstore/statement.json text eol=lf whitespace=-blank-at-eof
 tests/security_corpus/LICENSE-BLNS.txt text eol=crlf whitespace=-blank-at-eof
+
+# Preserve exact bytes and upstream whitespace of the sealed Chem source snapshot.
+apps/proto-workbench/runtime/chem-workbench/** -text whitespace=-blank-at-eol,-blank-at-eof
+# Frozen evaluation bytes are bound to the adjacent SHA-256 digest.
+apps/proto-workbench/evaluation/software-tasks.v1.json -text
+examples/compute/quantity-counts.data.json -text
+examples/compute/quantity-statistics.data.json -text
+# Preserve the upstream RCSB mmCIF fixture, including its column whitespace.
+apps/proto-workbench/src/renderer/fixtures/1GFL.cif -text whitespace=-blank-at-eol,-blank-at-eof

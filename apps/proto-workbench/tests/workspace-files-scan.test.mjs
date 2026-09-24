@@ -56,7 +56,7 @@ test("workspace startup scan skips generated trees while retaining root build re
   assert.deepEqual(entries, ["build/runs/reviewed/design.ir.json", "docs/overview.md"]);
 });
 
-test("root build scan keeps the real IR, manifest, provenance, and review contract only", async (context) => {
+test("root build scan keeps review contracts and scientific outputs while excluding unrelated generated files", async (context) => {
   const root = await temporaryWorkspace(context, "proto-workspace-build-contract-");
   const fixtures = new Map([
     ["build/design.ir.json", "{}"],
@@ -101,8 +101,10 @@ test("root build scan keeps the real IR, manifest, provenance, and review contra
   const entries = normalizedEntries(await workspace.list());
   assert.deepEqual(entries, [
     "build/analysis/run-1/manifest.json",
+    "build/analysis/run-1/stdout.txt",
     "build/design.ir.json",
     "build/notebooks/run-1/manifest.json",
+    "build/notebooks/run-1/notebook_summary.json",
     "build/reviews/run-1/evidence.cards.json",
     "build/reviews/run-1/human_review_checklist.md",
     "build/reviews/run-1/review_packet.json",
@@ -163,4 +165,27 @@ test("workspace startup scan keeps its fail-closed directory budget for reviewab
 
   const workspace = new WorkspaceFiles(root, { savePatch() {} });
   await assert.rejects(workspace.list(), /Workspace scan exceeded its directory budget/);
+});
+
+test("research tooling, install/QA trees and workspace copies do not hide Chat or scientific results", async context => {
+  const root=await temporaryWorkspace(context,"proto-research-inventory-");
+  const retained=["docs/notes.md","build/chat/conversation/documents/source/extracted.txt","build/analysis/run-1/results.csv","build/r/run-1/statistics.json","build/notebooks/run-1/executed.ipynb","build/compute/run-1/result.json","build/bioinformatics/run-1/manifest.json","tools/project-script.py"];
+  for(const file of retained){await mkdir(join(root,file,".."),{recursive:true});await writeFile(join(root,file),"unique research evidence");}
+  const generated=["build/chat-research/openscience","build/biomni-research/upstream","build/tools/installer","build/chat-preview","build/chat-qa","build/chat-runtime-qa","build/bioinformatics-qa","build/bioinformatics-adapter-qa","build/bioinformatics-chat-qa","build/protein-upgrade-qa","build/public-export-sanitized-20260919","build/materials-bundle-review-20260919","build/0123456789abcdef0123456789abcdef/apps","releases/test/win-unpacked"];
+  for(const directory of generated){for(let index=0;index<40;index++){const child=join(root,directory,`generated-${index}`);await mkdir(child,{recursive:true});await writeFile(join(child,"manifest.json"),"must never enter scientific inventory");}}
+  const workspace=new WorkspaceFiles(root,{savePatch(){}});
+  assert.deepEqual(normalizedEntries(await workspace.list()),retained.sort());
+  assert.equal((await workspace.search("unique research evidence")).length,retained.length);
+  assert.equal((await workspace.search("must never enter")).length,0);
+});
+
+test("scientific artifact directories have a separate finite budget from source directories",async context=>{
+  const root=await temporaryWorkspace(context,"proto-artifact-inventory-");
+  for(let index=0;index<510;index++)await mkdir(join(root,"build","compute",`run-${index}`),{recursive:true});
+  for(let index=0;index<20;index++)await mkdir(join(root,"source",`topic-${index}`),{recursive:true});
+  await writeFile(join(root,"source","topic-0","notes.md"),"source remains discoverable");
+  const workspace=new WorkspaceFiles(root,{savePatch(){}});
+  assert.deepEqual(normalizedEntries(await workspace.list()),["source/topic-0/notes.md"]);
+  for(let index=510;index<1030;index++)await mkdir(join(root,"build","compute",`run-${index}`),{recursive:true});
+  await assert.rejects(workspace.list(),/artifact scan exceeded its directory budget/);
 });

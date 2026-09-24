@@ -1,0 +1,865 @@
+{
+  "catalogVersion": 1,
+  "boundary": "Version routing only. Existing integrity, eligibility, execution and supply-chain validators remain mandatory. IR v1 is actively produced for protein and non-placement DNA. Legacy readers expose metadata only; source bytes are not migrated.",
+  "families": [
+    {
+      "family": "proto-agent.analysis-run",
+      "current": [
+        "proto-agent.analysis-run.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.bioinformatics",
+      "current": [
+        "proto-agent.bioinformatics.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.catalog-promotion-index",
+      "current": [
+        "proto-agent.catalog-promotion-index.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.catalog-selection-attestation",
+      "current": [
+        "proto-agent.catalog-selection-attestation.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.chem-compute",
+      "current": [
+        "proto-agent.chem-compute.v1"
+      ],
+      "legacy": [],
+      "alias": "chem-compute",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.compute",
+      "current": [
+        "proto-agent.compute.v1"
+      ],
+      "legacy": [],
+      "alias": "compute",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.compute-fingerprint",
+      "current": [
+        "proto-agent.compute-fingerprint.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.connectors",
+      "current": [
+        "proto-agent.connectors.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.coordinate-system",
+      "current": [
+        "proto-agent.coordinate-system.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.dataset-manifest",
+      "current": [
+        "proto-agent.dataset-manifest.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.deseq2-analysis",
+      "current": [
+        "proto-agent.deseq2-analysis.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-agent.evidence",
+      "current": [
+        "proto-agent.evidence.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.extension-trust",
+      "current": [
+        "proto-agent.extension-trust.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.extension-trust-receipt",
+      "current": [
+        "proto-agent.extension-trust-receipt.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.ir",
+      "current": [
+        "proto-agent.ir.v1",
+        "proto-agent.ir.v2"
+      ],
+      "legacy": [],
+      "alias": "ir",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.language-reference",
+      "current": [
+        "proto-agent.language-reference.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-agent.materials",
+      "current": [
+        "proto-agent.materials.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.materials-bundle",
+      "current": [
+        "proto-agent.materials-bundle.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.materials-licenses",
+      "current": [
+        "proto-agent.materials-licenses.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.materials-overlay",
+      "current": [
+        "proto-agent.materials-overlay.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.materials-promotion-audit",
+      "current": [
+        "proto-agent.materials-promotion-audit.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.materials-provenance",
+      "current": [
+        "proto-agent.materials-provenance.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.notebook-run",
+      "current": [
+        "proto-agent.notebook-run.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.parts-library",
+      "current": [
+        "proto-agent.parts-library.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.protein-comparison",
+      "current": [
+        "proto-agent.protein-comparison.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-agent.protein-selection",
+      "current": [
+        "proto-agent.protein-selection.v2"
+      ],
+      "legacy": [
+        "proto-agent.protein-selection.v1"
+      ],
+      "alias": "protein-selection",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.provenance",
+      "current": [
+        "proto-agent.provenance.v1"
+      ],
+      "legacy": [],
+      "alias": "provenance",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.provenance_comparison",
+      "current": [
+        "proto-agent.provenance_comparison.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.provenance_verification",
+      "current": [
+        "proto-agent.provenance_verification.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.public-materials-source-lock",
+      "current": [
+        "proto-agent.public-materials-source-lock.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.quantity",
+      "current": [
+        "proto-agent.quantity.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.r-run",
+      "current": [
+        "proto-agent.r-run.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.review_packet",
+      "current": [
+        "proto-agent.review_packet.v1"
+      ],
+      "legacy": [],
+      "alias": "review-packet",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.rnaseq-gene-sets",
+      "current": [
+        "proto-agent.rnaseq-gene-sets.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.rnaseq-study",
+      "current": [
+        "proto-agent.rnaseq-study.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.run",
+      "current": [
+        "proto-agent.run.v1"
+      ],
+      "legacy": [],
+      "alias": "run",
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.security-stress",
+      "current": [
+        "proto-agent.security-stress.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.skill-adapter",
+      "current": [
+        "proto-agent.skill-adapter.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.skill-audit",
+      "current": [
+        "proto-agent.skill-audit.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.skill-catalog",
+      "current": [
+        "proto-agent.skill-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.skill-resolution",
+      "current": [
+        "proto-agent.skill-resolution.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.structure-prediction-import",
+      "current": [
+        "proto-agent.structure-prediction-import.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.tool-contract",
+      "current": [
+        "proto-agent.tool-contract.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.workflow",
+      "current": [
+        "proto-agent.workflow.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-agent.workflow-execution-comparison",
+      "current": [
+        "proto-agent.workflow-execution-comparison.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-agent.workflow-preview",
+      "current": [
+        "proto-agent.workflow-preview.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.context-retention",
+      "current": [
+        "proto-workbench.context-retention.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.decision-bundle",
+      "current": [
+        "proto-workbench.decision-bundle.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.decision-bundle-receipt",
+      "current": [
+        "proto-workbench.decision-bundle-receipt.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.decision-bundle-verification",
+      "current": [
+        "proto-workbench.decision-bundle-verification.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.execution",
+      "current": [
+        "proto-workbench.execution.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.global-evidence",
+      "current": [
+        "proto-workbench.global-evidence.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.global-evidence-catalog",
+      "current": [
+        "proto-workbench.global-evidence-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.harness-reconciliation",
+      "current": [
+        "proto-workbench.harness-reconciliation.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto-workbench.harness-source-operation",
+      "current": [
+        "proto-workbench.harness-source-operation.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.map-export",
+      "current": [
+        "proto-workbench.map-export.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.map-export-verification",
+      "current": [
+        "proto-workbench.map-export-verification.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.mission",
+      "current": [
+        "proto-workbench.mission.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.mission-capabilities",
+      "current": [
+        "proto-workbench.mission-capabilities.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.mission-preflight",
+      "current": [
+        "proto-workbench.mission-preflight.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.mission-recipe",
+      "current": [
+        "proto-workbench.mission-recipe.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.model-evaluation-attempt",
+      "current": [
+        "proto-workbench.model-evaluation-attempt.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.model-tool-probe",
+      "current": [
+        "proto-workbench.model-tool-probe.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.module",
+      "current": [
+        "proto-workbench.module.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.modules",
+      "current": [
+        "proto-workbench.modules.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto-workbench.network-capability",
+      "current": [
+        "proto-workbench.network-capability.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.observed-tool-results",
+      "current": [
+        "proto-workbench.observed-tool-results.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.operator-cockpit",
+      "current": [
+        "proto-workbench.operator-cockpit.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.policy-simulation",
+      "current": [
+        "proto-workbench.policy-simulation.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.protein-figure",
+      "current": [
+        "proto-workbench.protein-figure.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.protein-landscape",
+      "current": [
+        "proto-workbench.protein-landscape.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.protein-landscape-verification",
+      "current": [
+        "proto-workbench.protein-landscape-verification.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.protein-structure",
+      "current": [
+        "proto-workbench.protein-structure.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.protein-view",
+      "current": [
+        "proto-workbench.protein-view.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.research-evidence",
+      "current": [
+        "proto-workbench.research-evidence.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.research-session",
+      "current": [
+        "proto-workbench.research-session.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.resume-contract",
+      "current": [
+        "proto-workbench.resume-contract.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.run-checkpoint",
+      "current": [
+        "proto-workbench.run-checkpoint.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.signature-evidence-catalog",
+      "current": [
+        "proto-workbench.signature-evidence-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.signature-evidence-import",
+      "current": [
+        "proto-workbench.signature-evidence-import.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.sigstore-tuf-checkpoint",
+      "current": [
+        "proto-workbench.sigstore-tuf-checkpoint.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.tool-execution",
+      "current": [
+        "proto-workbench.tool-execution.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.tool-result",
+      "current": [
+        "proto-workbench.tool-result.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-consistency-proof",
+      "current": [
+        "proto-workbench.transparency-consistency-proof.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-inclusion-proof",
+      "current": [
+        "proto-workbench.transparency-inclusion-proof.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-witness-catalog",
+      "current": [
+        "proto-workbench.transparency-witness-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-witness-import",
+      "current": [
+        "proto-workbench.transparency-witness-import.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-witness-policy",
+      "current": [
+        "proto-workbench.transparency-witness-policy.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.transparency-witness-source",
+      "current": [
+        "proto-workbench.transparency-witness-source.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-policy",
+      "current": [
+        "proto-workbench.trust-policy.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-policy-catalog",
+      "current": [
+        "proto-workbench.trust-policy-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-policy-receipt",
+      "current": [
+        "proto-workbench.trust-policy-receipt.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-root-candidate-source",
+      "current": [
+        "proto-workbench.trust-root-candidate-source.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-root-lifecycle-catalog",
+      "current": [
+        "proto-workbench.trust-root-lifecycle-catalog.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.trust-root-lifecycle-import",
+      "current": [
+        "proto-workbench.trust-root-lifecycle-import.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.validation-journal",
+      "current": [
+        "proto-workbench.validation-journal.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto-workbench.workspace-journal-binding",
+      "current": [
+        "proto-workbench.workspace-journal-binding.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.compute-maturity",
+      "current": [
+        "proto.compute-maturity.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto.compute-value-evidence",
+      "current": [
+        "proto.compute-value-evidence.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto.compute-value-index",
+      "current": [
+        "proto.compute-value-index.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
+      "family": "proto.protein-landscape",
+      "current": [
+        "proto.protein-landscape.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.protein-metrics",
+      "current": [
+        "proto.protein-metrics.v2"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.research-figure-data",
+      "current": [
+        "proto.research-figure-data.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.research-figure-export",
+      "current": [
+        "proto.research-figure-export.v1"
+      ],
+      "legacy": [],
+      "alias": "research-figure",
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.research-figure-methods",
+      "current": [
+        "proto.research-figure-methods.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.research-figure-render",
+      "current": [
+        "proto.research-figure-render.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    }
+  ]
+}

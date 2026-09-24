@@ -1,0 +1,27 @@
+chem 0.1
+
+molecule aspirin {
+  structure smiles "CC(=O)Oc1ccccc1C(=O)O"
+}
+
+conditions aspirin_gas_zero_kelvin {
+  target aspirin
+  phase gas
+  temperature 0
+  temperature_unit kelvin
+}
+
+electronic_state aspirin_ground_state {
+  target aspirin
+  finite charge 0 multiplicity 1
+}
+
+calculation aspirin_single_point {
+  target aspirin
+  state aspirin_ground_state
+  conditions aspirin_gas_zero_kelvin
+  task single_point
+  properties [energy]
+  method "hf"
+  basis "sto-3g"
+}

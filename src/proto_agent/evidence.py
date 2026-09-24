@@ -6,6 +6,7 @@ from typing import Any
 
 from .literature import DEFAULT_LITERATURE_PATH, search_literature
 from .security import write_text_bounded
+from .evidence_standing import standing_from_manifest
 
 
 EVIDENCE_SCHEMA_VERSION = "proto-agent.evidence.v1"
@@ -60,6 +61,7 @@ def build_evidence_cards(
         "schema_version": EVIDENCE_SCHEMA_VERSION,
         "run_id": manifest.get("run_id", ""),
         "manifest_path": manifest.get("manifest_path", ""),
+        "evidence_standing": standing_from_manifest(manifest),
         "cards": cards,
         "summary": _summarize_cards(cards),
     }

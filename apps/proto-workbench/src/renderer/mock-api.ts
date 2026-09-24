@@ -1,3 +1,4 @@
+import type { IpcWorkbenchApi } from "../shared/ipc-channel-contracts.ts";
 import type {
   AgentRunEvent,
   AgentThread,
@@ -65,6 +66,8 @@ import type {
   WorkbenchApi,
 } from "../shared/contracts.ts";
 import { CORE_MODULES, OPTIONAL_MODULES } from "../shared/modules.ts";
+import { previewResearchChat, configurePreviewChatModules } from "./research-chat-api.ts";
+import { previewJournal } from "./journal-preview.ts";
 import {
   emptyReview,
   lifecycleEventStatus,
@@ -87,7 +90,6 @@ const previewDataModule = import.meta.env.DEV
   ? Object.values(import.meta.glob<DemoDataModule>("./demo-data.ts", { eager: true }))[0]
   : undefined;
 const DEMO_EVENTS = (previewDataModule?.DEMO_EVENTS ?? []) as DemoDataModule["DEMO_EVENTS"];
-const DEMO_MODELS = (previewDataModule?.DEMO_MODELS ?? []) as DemoDataModule["DEMO_MODELS"];
 const DEMO_PATCH = previewDataModule?.DEMO_PATCH as DemoDataModule["DEMO_PATCH"];
 const DEMO_REVIEW = previewDataModule?.DEMO_REVIEW as DemoDataModule["DEMO_REVIEW"];
 const DEMO_RUNS = (previewDataModule?.DEMO_RUNS ?? []) as DemoDataModule["DEMO_RUNS"];
@@ -189,9 +191,14 @@ const DEMO_PROVENANCE = {
   policy: { digest: "sha256", signature: "none" },
 };
 
+import { readPreviewModels } from "./live-model-preview.ts";
+import { previewCompute } from "./compute-preview.ts";
+import { PREVIEW_PROTEIN_PATH, previewProteinAttachments, readPreviewStructure, readPreviewProtein } from "./protein-preview.ts";
+
 function createMockWorkbench(): WorkbenchApi {
-let models = structuredClone(DEMO_MODELS);
+let models: ModelDescriptor[] = [];
 let settings = structuredClone(DEMO_SETTINGS);
+configurePreviewChatModules(()=>settings.modules);
 let review = structuredClone(DEMO_REVIEW);
 let patch = structuredClone(DEMO_PATCH);
 let patchOperation: PatchOperation | undefined;
@@ -1415,7 +1422,10 @@ async function previewTransparencyWitnessCatalog(): Promise<TransparencyWitnessC
   return { ...body, digest: await browserSha256(JSON.stringify(body)), issuedAt: new Date().toISOString() };
 }
 
-const mockWorkbench: WorkbenchApi = {
+const mockWorkbench: IpcWorkbenchApi = {
+  journal: previewJournal,
+  chat: previewResearchChat,
+  compute: previewCompute,
   app: {
     async getSettings() {
       return structuredClone(settings);
@@ -1425,18 +1435,12 @@ const mockWorkbench: WorkbenchApi = {
       return structuredClone(settings);
     },
     async getRuntimeStatus() {
-      return {
-        available: true,
-        provider: "lmstudio" as const,
-        endpoint: "http://127.0.0.1:1234",
-        modelCount: models.length,
-        loadedModelCount: models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0),
-        degraded: false,
-        detail: "LM Studio native API is available at the fixed loopback endpoint.",
-      };
+      return (await readPreviewModels()).runtime;
     },
     async getStartupRecovery() {
+      const journal=await previewJournal.list({limit:1}).catch(()=>undefined);
       return {
+        executionJournal:journal?{total:journal.total,unknownEffects:journal.unknownEffects}:undefined,
         checkedAt: new Date().toISOString(),
         recoveredRuns: 0,
         recoveredEvents: 0,
@@ -1451,7 +1455,7 @@ const mockWorkbench: WorkbenchApi = {
     async getModuleIntegrity() {
       return {
         ok: true,
-        enforced: true,
+        enforced: false,
         auditId: "demo-audit",
         manifestPath: "out/module-manifest.json",
         checkedAt: new Date().toISOString(),
@@ -1474,10 +1478,22 @@ const mockWorkbench: WorkbenchApi = {
   },
   models: {
     async scan() {
+      const snapshot = await readPreviewModels();
+      models = snapshot.models;
+      notifyModels();
+      if (!snapshot.runtime.available) throw new Error(snapshot.runtime.detail);
       return structuredClone(models);
     },
     async list() {
+      const snapshot = await readPreviewModels();
+      models = snapshot.models;
       return structuredClone(models);
+    },
+    async probeTools() {
+      throw new Error("A tool capability probe requires the desktop host and the exact connected model instance.");
+    },
+    async evaluationSummaries() {
+      return [];
     },
     async estimate(modelId, options) {
       const model = models.find((item) => item.id === modelId);
@@ -1526,43 +1542,11 @@ const mockWorkbench: WorkbenchApi = {
         source: "calculated" as const,
       };
     },
-    async load(modelId) {
-      models = models.map((model) => {
-        if (model.id === modelId) {
-          const instanceId = model.loadedInstances?.[0]?.id ?? `${model.id}-mock-workbench`;
-          const loadedInstances = model.loadedInstances?.length
-            ? model.loadedInstances
-            : [{ id: instanceId, contextLength: Math.min(model.contextLength, 32_768), evalBatchSize: 512, flashAttention: true, offloadKvCacheToGpu: true }];
-          return {
-            ...model,
-            loadedInstances,
-            workbenchInstance: { id: instanceId, ownedByWorkbench: model.loadedInstances?.length ? false : true },
-            loadState: "active",
-            lastUsedAt: new Date().toISOString(),
-          };
-        }
-        if (settings.residencyPolicy.mode === "quick-switch") return { ...model, workbenchInstance: undefined, loadState: model.loadedInstances?.length ? "warm" : "unloaded" };
-        return model.loadState === "active" ? { ...model, workbenchInstance: undefined, loadState: model.loadedInstances?.length ? "warm" : "unloaded" } : model;
-      });
-      notifyModels();
-      return {
-        modelId,
-        state: "active",
-        contextLength: models.find((model) => model.id === modelId)?.contextLength ?? 32768,
-        gpuLayers: 999,
-        startedAt: new Date().toISOString(),
-      };
+    async load() {
+      throw new Error("Live model control requires the desktop Workbench. This preview observes LM Studio only.");
     },
-    async unload(modelId) {
-      models = models.map((model) => (model.id === modelId
-        ? {
-            ...model,
-            loadedInstances: model.workbenchInstance?.ownedByWorkbench ? [] : model.loadedInstances,
-            workbenchInstance: undefined,
-            loadState: model.workbenchInstance?.ownedByWorkbench || !model.loadedInstances?.length ? "unloaded" : "warm",
-          }
-        : model));
-      notifyModels();
+    async unload() {
+      throw new Error("Live model control requires the desktop Workbench. This preview observes LM Studio only.");
     },
     async setPolicy(policy: ResidencyPolicy) {
       settings.residencyPolicy = structuredClone(policy);
@@ -1595,7 +1579,7 @@ const mockWorkbench: WorkbenchApi = {
       const requirements: MissionPreflight["requirements"] = [
         { id: "integrity", title: "Core integrity", state: "ready", detail: "Preview module manifest passed its audit." },
         { id: "workspace", title: "Workspace binding", state: "ready", detail: "Preview sidecar is bound to this workspace." },
-        { id: "runtime", title: "Local runtime", state: "ready", detail: "CUDA inference runtime is available." },
+        { id: "runtime", title: "Inference", state: "blocked", detail: "Browser preview observes LM Studio; native inference requires the desktop Workbench." },
         {
           id: "model",
           title: "Model capability",
@@ -1724,11 +1708,11 @@ const mockWorkbench: WorkbenchApi = {
     async commitEdit() { throw new Error("Source edits require the desktop bridge and a bound material library."); },
   },
   proteinStructures: {
-    async list() { return []; },
+    async list(target) { return previewProteinAttachments(target); },
     async search() { throw new Error("Official structure retrieval requires the desktop bridge."); },
     async fetch() { throw new Error("Official structure retrieval requires the desktop bridge."); },
     async importFile() { throw new Error("Structure import requires the desktop bridge."); },
-    async read() { throw new Error("Structure cache requires the desktop bridge."); },
+    async read(input) { return readPreviewStructure(input); },
   },
   visualization: {
     async exportMap(input) {
@@ -1886,6 +1870,14 @@ const mockWorkbench: WorkbenchApi = {
           modifiedAt: new Date().toISOString(),
         },
         {
+          path: PREVIEW_PROTEIN_PATH,
+          relativePath: PREVIEW_PROTEIN_PATH,
+          name: "gfp-reference.ir.json",
+          mediaType: "application/json",
+          sizeBytes: new TextEncoder().encode(await readPreviewProtein()).length,
+          modifiedAt: "2026-09-04T21:40:44.498Z",
+        },
+        {
           path: "build/runs/preview-toggle-switch/provenance.json",
           relativePath: "build/runs/preview-toggle-switch/provenance.json",
           name: "provenance.json",
@@ -1907,6 +1899,10 @@ const mockWorkbench: WorkbenchApi = {
     async reveal() {},
     async read(path) {
       const lower = path.toLocaleLowerCase();
+      if(lower.replaceAll("\\", "/").endsWith("gfp-reference.ir.json")) {
+        const content=await readPreviewProtein();
+        return {path,content,sha256:await browserSha256(content)};
+      }
       const content = lower.endsWith(".ir.json")
         ? DEMO_DESIGN_IR_CONTENT
         : lower.endsWith("validation_report.json")
@@ -2056,7 +2052,7 @@ const mockWorkbench: WorkbenchApi = {
           vision: activeModel.vision,
           active: true,
         } : undefined,
-        runtime: { available: true, backend: "cuda", degraded: false },
+        runtime: { available: false, degraded: false },
         integrity: { ok: true, enforced: false, moduleSetSha256: previewDigest(6) },
         tools: { names: ["proto_check", "proto_review_packet", "workspace_read", "workspace_search"], digest: previewDigest(7) },
         network: { enabled: true, authorization: "per-call-hmac-capability" },
@@ -2098,7 +2094,7 @@ const mockWorkbench: WorkbenchApi = {
         schema: "proto-workbench.mission-capabilities.v1" as const,
         digest: previewDigest(11),
         workspaceIdentity: checkpoint.workspaceIdentity,
-        runtime: { available: true, backend: "cuda" as const, degraded: false },
+        runtime: { available: false, degraded: false },
         integrity: { ok: true, enforced: false, moduleSetSha256: previewDigest(6) },
         tools: { names: ["proto_check", "workspace_read"], digest: previewDigest(13) },
         network: { enabled: true, authorization: "per-call-hmac-capability" as const },
@@ -2118,13 +2114,13 @@ const mockWorkbench: WorkbenchApi = {
         checkpointSnapshotDigest: checkpoint.snapshotDigest,
         recipeDigest: checkpoint.missionRecipe?.digest,
         state: "review-required",
-        launchable: true,
+        launchable: false,
         currentCapabilities,
         drift: [
           { id: "workspace", title: "Workspace identity", state: "stable", before: "aaaaaaaa", now: "aaaaaaaa", detail: "The canonical workspace identity still matches." },
           { id: "integrity", title: "Module integrity", state: "stable", before: "trusted · 66666666", now: "trusted · 66666666", detail: "Core module identity still matches the saved recipe." },
-          { id: "model", title: "Model identity", state: "stable", before: "GPT-OSS 20B", now: "GPT-OSS 20B · active", detail: "The saved local model remains active." },
-          { id: "runtime", title: "Inference runtime", state: "stable", before: "CUDA · ready", now: "CUDA · ready", detail: "Runtime availability is unchanged." },
+          { id: "model", title: "Model identity", state: "blocked", before: "Preview checkpoint", now: "No execution binding", detail: "Connect an exact live instance in the desktop Workbench before resuming." },
+          { id: "runtime", title: "Inference runtime", state: "blocked", before: "Preview checkpoint", now: "Observation only", detail: "This browser does not execute model inference." },
           { id: "tools", title: "Tool surface", state: "changed", before: "4 tools · 77777777", now: "5 tools · dddddddd", detail: "Crossref is newly available. Replayed reasoning may choose a different evidence path." },
           { id: "network", title: "Network authorization", state: "stable", before: "available · per-call approval", now: "available · per-call approval", detail: "No prior network approval is inherited." },
           { id: "filesystem", title: "Filesystem safety", state: "stable", before: "contained · atomic", now: "contained · atomic", detail: "Path containment and atomic replacement remain enforced." },

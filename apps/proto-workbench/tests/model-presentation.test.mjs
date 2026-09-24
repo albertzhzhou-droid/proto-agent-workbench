@@ -4,12 +4,12 @@ import { connectedContext, modelContextLabel, modelPreflightIdentity } from "../
 
 const model = { id:"qwen", fingerprint:"a", contextLength:262144, loadState:"active", toolCapability:"agent-ready", vision:false,
   workbenchInstance:{ id:"owned-qwen", ownedByWorkbench:true, contextLength:32768 },
-  loadedInstances:[{id:"other-qwen",contextLength:4096}] };
+  loadedInstances:[{id:"other-qwen",contextLength:4096},{id:"owned-qwen",contextLength:32768}] };
 
 test("connected context is the exact actual instance, never the catalog maximum or another instance", () => {
   assert.equal(connectedContext(model),32768);
   assert.equal(modelContextLabel(model),"32,768 loaded");
-  const uncached={...model,workbenchInstance:{id:"owned-qwen",ownedByWorkbench:true}};
+  const uncached={...model,loadedInstances:[{id:"other-qwen",contextLength:4096}],workbenchInstance:{id:"owned-qwen",ownedByWorkbench:true}};
   assert.equal(connectedContext(uncached),undefined);
   assert.equal(modelContextLabel(uncached),"Loaded context awaiting refresh");
   assert.equal(modelContextLabel({...model,loadState:"unloaded",workbenchInstance:undefined}),"262,144 max context");

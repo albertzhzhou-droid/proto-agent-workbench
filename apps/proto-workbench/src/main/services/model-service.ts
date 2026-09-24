@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { createHash, randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { freemem, totalmem } from "node:os";
 import { promisify } from "node:util";
@@ -6,6 +7,8 @@ import type {
   ModelDescriptor,
   ModelInstance,
   ModelLoadOptions,
+  ModelToolCapabilityProbe,
+  ModelToolProbeStatus,
   ResidencyPolicy,
   VramEstimate,
 } from "../../shared/contracts.ts";
@@ -73,7 +76,7 @@ export class ModelService {
     this.runtime = runtime;
     this.gpuMemoryProbe = gpuMemoryProbe;
     this.systemMemoryProbe = systemMemoryProbe;
-    this.catalog = database.listModels().map((model) => {
+    this.catalog = (catalogService.authoritativeEndpoint ? [] : database.listModels()).map((model) => {
       if (model.provider === "lmstudio") return { ...model, loadState: "unloaded" as const, vramEstimate: undefined, measuredVramBytes: undefined, workbenchInstance: undefined };
       const saved = model.vramEstimate;
       const estimate = estimateModelVram(model, saved ? {
@@ -90,6 +93,7 @@ export class ModelService {
         vramEstimate: estimate,
       };
     });
+    this.applyLatestToolProbes();
     this.policy = database.getSetting<ResidencyPolicy>("residencyPolicy", {
       mode: "quick-switch",
       budgetBytes: 20 * GIB,
@@ -113,12 +117,12 @@ export class ModelService {
   }
 
   list(): ModelDescriptor[] {
-    return this.catalog.map((model) => ({ ...model }));
+    return this.catalog.map((model) => ({ ...this.syncToolCapability(model) }));
   }
 
   get(modelId: string): ModelDescriptor | undefined {
     const model = this.catalog.find((candidate) => candidate.id === modelId);
-    return model ? { ...model } : undefined;
+    return model ? { ...this.syncToolCapability(model) } : undefined;
   }
 
   getActiveModel(): ModelDescriptor | undefined {
@@ -136,13 +140,13 @@ export class ModelService {
       const instance = this.instances.get(modelId);
       if (instance?.instanceId && instance.instanceId !== binding.instanceId) throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The model instance changed; reconnect its exact instance before execution.");
       if (instance) instance.contextLength = binding.contextLength;
-      return binding;
+      return {...binding,modelFingerprint:this.requireModel(modelId).fingerprint};
     }
     const instance = this.instances.get(modelId);
     if (!this.runtime.has(modelId) || !instance || !Number.isSafeInteger(instance.contextLength) || instance.contextLength < 1) {
       throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The selected model has no observed loaded context.");
     }
-    return { modelId, instanceId: instance.instanceId ?? `legacy:${modelId}`, contextLength: instance.contextLength,
+    return { modelId, modelFingerprint:this.requireModel(modelId).fingerprint, instanceId: instance.instanceId ?? `legacy:${modelId}`, contextLength: instance.contextLength,
       ownedByWorkbench: instance.ownedByWorkbench === true, observedAt: new Date().toISOString() };
   }
 
@@ -214,12 +218,133 @@ export class ModelService {
     finally { this.generations.delete(generation); }
   }
 
-  setToolCapability(modelId: string, capability: ModelDescriptor["toolCapability"]): void {
-    const model = this.catalog.find((candidate) => candidate.id === modelId);
-    if (!model) return;
-    model.toolCapability = capability;
-    this.database.saveModels(this.catalog);
-    this.emitChanged();
+  async probeToolCapability(modelId: string, signal?: AbortSignal): Promise<ModelToolCapabilityProbe> {
+    const model = this.requireModel(modelId);
+    const startedAt = new Date().toISOString();
+    const provider = model.provider ?? "llama.cpp";
+    const probe: ModelToolCapabilityProbe = {
+      schema: "proto-workbench.model-tool-probe.v1",
+      probeId: randomUUID(),
+      modelId,
+      modelFingerprint: model.fingerprint,
+      provider,
+      providerModelId: model.providerModelId,
+      status: "unavailable",
+      startedAt,
+      finishedAt: startedAt,
+      requestedTool: "proto_probe_echo",
+      observedToolNames: [],
+    };
+    const persist = (): ModelToolCapabilityProbe => {
+      probe.finishedAt = new Date().toISOString();
+      const saved = this.database.appendModelToolCapabilityProbe(probe);
+      model.toolCapabilityProbe = saved;
+      this.syncToolCapability(model);
+      this.database.saveModels(this.catalog);
+      this.emitChanged();
+      return saved;
+    };
+
+    if (provider !== "lmstudio") {
+      probe.status = "unsupported";
+      probe.failureCode = "PROVIDER_PROBE_NOT_IMPLEMENTED";
+      return persist();
+    }
+    if (!this.runtime.has(modelId)) {
+      probe.status = "unavailable";
+      probe.failureCode = "MODEL_NOT_CONNECTED";
+      return persist();
+    }
+
+    const timeoutSignal = AbortSignal.timeout(75_000);
+    const probeSignal = signal ? AbortSignal.any([signal, timeoutSignal, this.shutdownController.signal])
+      : AbortSignal.any([timeoutSignal, this.shutdownController.signal]);
+    const nonce = randomUUID();
+    const expectedArguments = { marker: "proto-tool-probe-v1", nonce };
+    const expectedArgumentsJson = JSON.stringify(expectedArguments);
+    const tool = {
+      type: "function",
+      function: {
+        name: probe.requestedTool,
+        description: "Return the supplied probe marker and nonce without changing anything.",
+        parameters: {
+          type: "object",
+          properties: {
+            marker: { type: "string" },
+            nonce: { type: "string" },
+          },
+          required: ["marker", "nonce"],
+          additionalProperties: false,
+        },
+      },
+    };
+    const messages = [
+      { role: "system", content: "This is a protocol capability check. Return exactly the requested function call and its required arguments. Do not answer in prose." },
+      { role: "user", content: `Call ${probe.requestedTool} with marker ${expectedArguments.marker} and nonce ${nonce}.` },
+    ];
+    const payload: Record<string, unknown> = {
+      messages,
+      tools: [tool],
+      tool_choice: { type: "function", function: { name: probe.requestedTool } },
+      parallel_tool_calls: false,
+      temperature: 0,
+      max_tokens: 96,
+    };
+
+    try {
+      const before = await this.getExecutionBinding(modelId, probeSignal);
+      probe.instanceId = before.instanceId;
+      probe.expectedArgumentsSha256 = sha256(expectedArgumentsJson);
+      probe.requestSha256 = sha256(JSON.stringify({ ...payload, model: before.instanceId, stream: true, stream_options: { include_usage: true } }));
+      const calls = new Map<number, { name: string; arguments: string }>();
+      let finishReason: string | undefined;
+      await this.chat(modelId, payload, (chunk) => {
+        for (const choice of chunk.choices ?? []) {
+          if (choice.finish_reason) finishReason = choice.finish_reason;
+          for (const delta of choice.delta?.tool_calls ?? []) {
+            const current = calls.get(delta.index) ?? { name: "", arguments: "" };
+            if (delta.function?.name) current.name += delta.function.name;
+            if (delta.function?.arguments) current.arguments += delta.function.arguments;
+            calls.set(delta.index, current);
+          }
+        }
+      }, probeSignal);
+      const after = await this.getExecutionBinding(modelId, probeSignal);
+      if (after.instanceId !== before.instanceId || this.requireModel(modelId).fingerprint !== probe.modelFingerprint) {
+        throw new RuntimeFailure("MODEL_UNAVAILABLE", "binding", "The exact model instance changed during its capability probe.");
+      }
+      probe.finishReason = finishReason;
+      const observed = [...calls.values()];
+      probe.observedToolNames = observed.map((call) => call.name.slice(0, 256));
+      probe.responseSha256 = sha256(JSON.stringify({ observedToolNames: probe.observedToolNames, observedArguments: observed.map((call) => call.arguments), finishReason }));
+      if (observed.length !== 1 || observed[0]?.name !== probe.requestedTool || finishReason !== "tool_calls") {
+        probe.status = "failed";
+        probe.failureCode = "FORCED_TOOL_CALL_NOT_RETURNED";
+        return persist();
+      }
+      const rawArguments = observed[0].arguments;
+      let parsed: unknown;
+      try { parsed = JSON.parse(rawArguments); }
+      catch {
+        probe.observedArgumentsSha256 = sha256(rawArguments);
+        probe.status = "malformed";
+        probe.failureCode = "TOOL_ARGUMENTS_INVALID_JSON";
+        return persist();
+      }
+      if (!isProbeArguments(parsed) || parsed.marker !== expectedArguments.marker || parsed.nonce !== nonce) {
+        probe.observedArgumentsSha256 = sha256(rawArguments);
+        probe.status = "malformed";
+        probe.failureCode = "TOOL_ARGUMENTS_SCHEMA_MISMATCH";
+        return persist();
+      }
+      probe.observedArgumentsSha256 = sha256(JSON.stringify({ marker: parsed.marker, nonce: parsed.nonce }));
+      probe.status = "passed";
+      return persist();
+    } catch (error) {
+      probe.status = classifyToolProbeFailure(error, signal, timeoutSignal, this.shutdownController.signal);
+      probe.failureCode = safeProbeFailureCode(error, probe.status);
+      return persist();
+    }
   }
 
   getPolicy(): ResidencyPolicy {
@@ -254,6 +379,10 @@ export class ModelService {
       scanned = await this.catalogService.scan(root);
     } catch (error) {
       if (generation !== this.scanGeneration && isAbortError(error)) return this.list();
+      if (generation === this.scanGeneration && this.catalogService.authoritativeEndpoint) {
+        this.catalog = [];
+        this.emitChanged();
+      }
       throw error;
     }
     if (generation !== this.scanGeneration) return this.list();
@@ -267,6 +396,8 @@ export class ModelService {
       const old = previous.get(model.id);
       const instance = this.instances.get(model.id);
       if (model.provider === "lmstudio") {
+        const observed = model.loadedInstances?.find(loaded => loaded.id === instance?.instanceId);
+        if (instance && observed) instance.contextLength = observed.contextLength;
         return {
           ...model,
           pinned: this.policy.pinnedModelIds.includes(model.id) || old?.pinned || false,
@@ -294,6 +425,7 @@ export class ModelService {
         vramEstimate: estimate,
       };
     });
+    this.applyLatestToolProbes();
     this.database.saveModels(this.catalog);
     this.emitChanged();
     return this.list();
@@ -640,6 +772,7 @@ export class ModelService {
       model.workbenchInstance = instance?.instanceId && (state === "active" || state === "warm")
         ? { id: instance.instanceId, ownedByWorkbench: instance.ownedByWorkbench === true, contextLength: instance.contextLength }
         : undefined;
+      this.syncToolCapability(model);
       this.database.saveModels(this.catalog);
     }
     this.emitChanged();
@@ -719,6 +852,25 @@ export class ModelService {
     return model;
   }
 
+  private applyLatestToolProbes(): void {
+    const latest = new Map((this.database.listLatestModelToolCapabilityProbes?.() ?? []).map((probe) => [probe.modelId, probe]));
+    for (const model of this.catalog) {
+      model.toolCapabilityProbe = latest.get(model.id);
+      this.syncToolCapability(model);
+    }
+  }
+
+  private syncToolCapability(model: ModelDescriptor): ModelDescriptor {
+    const probe = model.toolCapabilityProbe;
+    model.toolCapability = probe?.status === "passed"
+      && probe.modelFingerprint === model.fingerprint
+      && typeof probe.instanceId === "string"
+      && probe.instanceId === model.workbenchInstance?.id
+      ? "agent-ready"
+      : "unknown";
+    return model;
+  }
+
   private emitChanged(): void {
     this.emitter.emit("changed", this.list());
   }
@@ -742,6 +894,43 @@ class ModelLoadSupersededError extends Error {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function isProbeArguments(value: unknown): value is { marker: string; nonce: string } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return Object.keys(record).length === 2
+    && Object.hasOwn(record, "marker") && Object.hasOwn(record, "nonce")
+    && typeof record.marker === "string" && typeof record.nonce === "string";
+}
+
+function classifyToolProbeFailure(
+  error: unknown,
+  callerSignal: AbortSignal | undefined,
+  timeoutSignal: AbortSignal,
+  shutdownSignal: AbortSignal,
+): ModelToolProbeStatus {
+  if (callerSignal?.aborted || shutdownSignal.aborted) return "cancelled";
+  if (timeoutSignal.aborted) return "timeout";
+  if (error instanceof RuntimeFailure) {
+    if (["PREFILL_TIMEOUT", "STREAM_STALLED", "GENERATION_TIMEOUT", "PROVIDER_TIMEOUT"].includes(error.code)) return "timeout";
+    if (error.code === "USER_CANCELLED") return "cancelled";
+    if (error.code === "MODEL_UNAVAILABLE") return "unavailable";
+  }
+  if (isAbortError(error)) return "cancelled";
+  return "error";
+}
+
+function safeProbeFailureCode(error: unknown, status: ModelToolProbeStatus): string {
+  if (error instanceof RuntimeFailure) return error.code;
+  const code = status === "timeout" ? "PROBE_TIMEOUT"
+    : status === "cancelled" ? "PROBE_CANCELLED"
+      : status === "unavailable" ? "MODEL_INSTANCE_UNAVAILABLE" : "PROBE_RUNTIME_ERROR";
+  return code;
 }
 
 function safeRuntimeError(error: unknown): string {

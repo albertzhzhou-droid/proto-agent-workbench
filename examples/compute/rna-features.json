@@ -1,0 +1,7 @@
+{
+  "tool": "analyze_rna_secondary_structure_features",
+  "arguments": {
+    "dot_bracket_structure": "(((...)))",
+    "sequence": "GGGAAACCC"
+  }
+}

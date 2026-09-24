@@ -1,0 +1,55 @@
+.xdl-workspace { color: var(--text); background: var(--canvas); min-width: 0; min-height: 0; padding: 28px 30px; font-family: var(--font-sans); }
+.xdl-workspace[hidden] { display: none !important; }
+.xdl-heading { display: flex; justify-content: space-between; align-items: center; gap: 22px; margin-bottom: 23px; }
+.xdl-heading h1 { margin: 7px 0 9px; font-family: var(--font-serif); font-size: 32px; font-weight: 500; letter-spacing: -.7px; }
+.xdl-heading p { margin: 0; color: var(--text-soft); font-size: 12px; line-height: 1.65; }
+.xdl-heading .xdl-eyebrow { color: var(--text-faint); font-family: var(--font-sans); font-size: 9px; letter-spacing: 1.7px; }
+.xdl-runtime { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 10px; color: var(--text-soft); white-space: nowrap; }
+.xdl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 12px; }
+.xdl-toolbar button, .xdl-toolbar select { margin: 0; min-height: 32px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface); font: 11px var(--font-sans); cursor: pointer; }
+.xdl-toolbar button:hover, .xdl-toolbar select:hover { background: var(--surface-selected); border-color: var(--line-strong); }
+.xdl-toolbar button:disabled { color: var(--text-faint); cursor: default; opacity: .65; background: var(--surface-soft); }
+.xdl-toolbar .xdl-primary { color: var(--surface); background: var(--text); border-color: var(--text); }
+.xdl-toolbar .xdl-primary:hover { color: var(--surface); background: var(--text-soft); }
+.xdl-toolbar :is(button, select):focus-visible, .xdl-source-panel textarea:focus-visible { outline: 2px solid var(--text-soft); outline-offset: 2px; }
+.xdl-format-label { display: flex; align-items: center; gap: 7px; color: var(--text-soft); font-size: 11px; }
+.xdl-toolbar-spacer { flex: 1; }
+.xdl-panels { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(280px, .86fr); gap: 15px; min-height: 420px; }
+.xdl-source-panel, .xdl-inspector { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+.xdl-source-panel { display: flex; flex-direction: column; }
+.xdl-panel-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 15px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.xdl-panel-title strong { min-width: 0; overflow-wrap: anywhere; font-weight: 550; }
+.xdl-panel-title span { color: var(--text-faint); font-size: 10px; }
+.xdl-editor-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.xdl-source-panel textarea { resize: vertical; display: block; width: 100%; box-sizing: border-box; flex: 1; min-height: 355px; padding: 19px 18px; margin: 0; border: 0; border-radius: 0; background: var(--surface); color: var(--text); font: 12px/1.85 var(--font-mono); tab-size: 2; }
+.xdl-source-panel textarea::placeholder { color: var(--text-faint); font-family: var(--font-sans); }
+.xdl-editor-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; padding: 10px 13px; border-top: 1px solid var(--line); background: var(--surface-soft); color: var(--text-faint); font-size: 9px; }
+.xdl-result { padding: 18px; max-height: 640px; overflow: auto; }
+.xdl-empty { padding: 30px 5px; }
+.xdl-empty h2, .xdl-error h2 { margin: 0 0 12px; font-family: var(--font-serif); font-size: 23px; font-weight: 500; }
+.xdl-empty p { color: var(--text-soft); font-family: var(--font-reading); font-size: 15px; line-height: 1.65; }
+.xdl-empty p:last-child { margin-top: 22px; font: 11px/1.6 var(--font-sans); color: var(--text-faint); }
+.xdl-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+.xdl-summary div { display: flex; flex-direction: column; gap: 5px; }
+.xdl-summary strong { font: 21px var(--font-mono); color: var(--text); }
+.xdl-summary span { font-size: 10px; color: var(--text-soft); }
+.xdl-boundary { margin: 13px 0; color: var(--text-soft); font-size: 10px; line-height: 1.6; }
+.xdl-roundtrips { display: flex; flex-wrap: wrap; gap: 7px; }
+.xdl-roundtrips span { padding: 5px 7px; border: 1px solid var(--line); background: var(--surface-soft); border-radius: 4px; color: var(--text-soft); font-size: 10px; }
+.xdl-section-heading { margin: 23px 0 12px; font-family: var(--font-serif); font-size: 20px; font-weight: 500; }
+.xdl-step { padding: 12px 0; border-top: 1px solid var(--line); }
+.xdl-step h3 { margin: 0 0 10px; font: 12px var(--font-mono); }
+.xdl-properties { display: grid; grid-template-columns: minmax(80px, auto) minmax(0, 1fr); column-gap: 15px; row-gap: 7px; margin: 0; font-size: 11px; }
+.xdl-properties dt { color: var(--text-soft); overflow-wrap: anywhere; }
+.xdl-properties dd { margin: 0; color: var(--text); font: 11px/1.55 var(--font-mono); overflow-wrap: anywhere; }
+.xdl-child-steps { font: 10px/1.6 var(--font-mono); max-height: 180px; overflow: auto; background: var(--surface-soft); padding: 10px; }
+.xdl-identity { margin-top: 20px; padding-top: 13px; border-top: 1px solid var(--line); color: var(--text-soft); font-size: 11px; }
+.xdl-identity summary { cursor: pointer; margin-bottom: 12px; }
+.xdl-identity .xdl-properties { grid-template-columns: 1fr; }
+.xdl-identity dd { margin-bottom: 8px; font-size: 10px; }
+.xdl-muted { color: var(--text-soft); font-size: 12px; }
+.xdl-error { padding: 12px 0; }
+.xdl-error code { font: 11px var(--font-mono); }
+.xdl-error pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-soft); font: 11px/1.7 var(--font-mono); padding: 13px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 5px; }
+@media (max-width: 1050px) { .xdl-workspace { padding: 22px 20px; } .xdl-panels { grid-template-columns: minmax(0, 1fr); } .xdl-source-panel textarea { min-height: 300px; } .xdl-result { max-height: none; } }
+@media (max-width: 650px) { .xdl-workspace { padding: 18px 12px; } .xdl-heading { align-items: flex-start; flex-direction: column; gap: 12px; } .xdl-heading h1 { font-size: 28px; } .xdl-toolbar-spacer { display: none; } .xdl-toolbar button { font-size: 10px; padding-inline: 8px; } }

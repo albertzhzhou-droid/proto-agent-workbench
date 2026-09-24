@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "review-packet.schema.json",
+  "title": "Chem Workbench review packet v1alpha1",
+  "description": "Closed schema for unsigned, self-consistency-only review packets emitted by the current software-only alpha. Observations are not RFC-0002 claims.",
+  "type": "object",
+  "required": [
+    "packet_version",
+    "operation",
+    "verification_scope",
+    "signature_status",
+    "compiler",
+    "canonicalization",
+    "normalization_profile",
+    "source_hashes",
+    "chemir_semantic_hash",
+    "chemir_artifact_hash",
+    "observations",
+    "not_claimed",
+    "diagnostics",
+    "chemir"
+  ],
+  "properties": {
+    "packet_version": {
+      "const": "review/v1alpha1"
+    },
+    "operation": {
+      "const": "review-compile"
+    },
+    "verification_scope": {
+      "const": "self_consistency"
+    },
+    "signature_status": {
+      "const": "unsigned"
+    },
+    "compiler": {
+      "enum": [
+        "chem-workbench/0.1.0a1",
+        "chem-workbench/0.1.0a2"
+      ]
+    },
+    "canonicalization": {
+      "const": "chem-c14n-json-v1alpha1"
+    },
+    "normalization_profile": {
+      "const": "source-preserving/v1alpha1"
+    },
+    "source_hashes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/SourceSha256"
+      },
+      "uniqueItems": true
+    },
+    "chemir_semantic_hash": {
+      "$ref": "#/$defs/SemanticHash"
+    },
+    "chemir_artifact_hash": {
+      "$ref": "#/$defs/ArtifactSha256"
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/Observation"
+      }
+    },
+    "not_claimed": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/NotClaimed"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      }
+    },
+    "chemir": {
+      "$ref": "chemir.schema.json"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SourceCompilationPacket"
+    },
+    {
+      "$ref": "#/$defs/ExistingChemIRPacket"
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "SourceSha256": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "source_sha256"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/Sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SemanticHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "semantic_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/Sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ArtifactSha256": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "artifact_sha256"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/Sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Observation": {
+      "type": "object",
+      "required": [
+        "observation_type",
+        "producer",
+        "evidence_hashes"
+      ],
+      "properties": {
+        "observation_type": {
+          "const": "SOURCE_PARSE_ACCEPTED"
+        },
+        "producer": {
+          "enum": [
+            "chem-workbench/0.1.0a1",
+            "chem-workbench/0.1.0a2"
+          ]
+        },
+        "evidence_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/SourceSha256"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotClaimed": {
+      "type": "object",
+      "required": [
+        "claim",
+        "reason"
+      ],
+      "properties": {
+        "claim": {
+          "enum": [
+            "PARSE_VALID",
+            "STRUCTURE_MODEL_CONSISTENT",
+            "CHEMISTRY_CHECKED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "additionalProperties": false
+    },
+    "Diagnostic": {
+      "type": "object",
+      "required": [
+        "severity",
+        "code",
+        "message",
+        "file",
+        "line",
+        "column",
+        "suggestion",
+        "evidence_references"
+      ],
+      "properties": {
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "review_required"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^CHM[0-9]{4}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "suggestion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "chemir_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^/"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SourceCompilationPacket": {
+      "type": "object",
+      "properties": {
+        "observations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/Observation"
+            }
+          ],
+          "items": false
+        },
+        "not_claimed": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/NotClaimed"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "PARSE_VALID"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "STRUCTURE_MODEL_CONSISTENT"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "CHEMISTRY_CHECKED"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
+        }
+      }
+    },
+    "ExistingChemIRPacket": {
+      "type": "object",
+      "properties": {
+        "observations": {
+          "const": []
+        },
+        "not_claimed": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/NotClaimed"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "PARSE_VALID"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "STRUCTURE_MODEL_CONSISTENT"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "claim": {
+                    "const": "CHEMISTRY_CHECKED"
+                  }
+                },
+                "required": [
+                  "claim"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
+        }
+      }
+    }
+  }
+}

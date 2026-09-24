@@ -1,3 +1,4 @@
+import { applySchemaMigrations, type SchemaMigrationReport } from "./schema-migrations.ts";
 import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type {
@@ -53,8 +54,8 @@ export interface AppendRunEventResult extends RunHistoryHead {
 }
 
 /** Install the additive history schema and import pre-history projections verbatim. */
-export function installRunHistorySchema(db: DatabaseSync): void {
-  db.exec(`
+export function installRunHistorySchema(db: DatabaseSync): SchemaMigrationReport {
+  const report=applySchemaMigrations(db,"run-history",[{version:1,sql:`
     CREATE TABLE IF NOT EXISTS run_event_history (
       history_id TEXT PRIMARY KEY,
       run_id TEXT NOT NULL,
@@ -74,11 +75,18 @@ export function installRunHistorySchema(db: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_run_event_history_event
       ON run_event_history(run_id, event_id, event_revision);
-  `);
-  const columns = db.prepare("PRAGMA table_info(run_events)").all() as Array<{ name: string }>;
-  if (!columns.some((column) => column.name === "history_sequence")) {
-    db.exec("ALTER TABLE run_events ADD COLUMN history_sequence INTEGER");
-  }
+
+    CREATE TRIGGER IF NOT EXISTS run_event_history_no_update
+    BEFORE UPDATE ON run_event_history
+    BEGIN
+      SELECT RAISE(ABORT, 'run_event_history is append-only');
+    END;
+    CREATE TRIGGER IF NOT EXISTS run_event_history_no_delete
+    BEFORE DELETE ON run_event_history
+    BEGIN
+      SELECT RAISE(ABORT, 'run_event_history is append-only');
+    END;
+  `,columns:[{table:"run_events",name:"history_sequence",definition:"INTEGER"}]}]);
 
   const migrate = (): void => {
     const projections = db
@@ -111,19 +119,7 @@ export function installRunHistorySchema(db: DatabaseSync): void {
   };
   if (db.isTransaction) migrate();
   else immediateTransaction(db, migrate);
-
-  db.exec(`
-    CREATE TRIGGER IF NOT EXISTS run_event_history_no_update
-    BEFORE UPDATE ON run_event_history
-    BEGIN
-      SELECT RAISE(ABORT, 'run_event_history is append-only');
-    END;
-    CREATE TRIGGER IF NOT EXISTS run_event_history_no_delete
-    BEFORE DELETE ON run_event_history
-    BEGIN
-      SELECT RAISE(ABORT, 'run_event_history is append-only');
-    END;
-  `);
+  return report;
 }
 
 /** Caller must already own the surrounding write transaction. */

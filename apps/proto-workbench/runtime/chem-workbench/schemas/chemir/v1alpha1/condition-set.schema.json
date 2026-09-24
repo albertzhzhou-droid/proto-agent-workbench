@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "condition-set.schema.json",
+  "title": "ChemIR v1alpha1 ConditionSet payload",
+  "description": "Declared environmental conditions for a question. Fields are assertions supplied by the requester; the selected workflow profile decides which are required and which are forbidden. No field is ever defaulted by the compiler.",
+  "type": "object",
+  "required": [
+    "phase"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "target_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "phase": {
+      "enum": [
+        "solid",
+        "liquid",
+        "gas",
+        "solution",
+        "gas_solid_interface",
+        "liquid_solid_interface",
+        "solid_solid_interface",
+        "gas_liquid_interface"
+      ]
+    },
+    "temperature": {
+      "$ref": "#/$defs/Temperature"
+    },
+    "pressure": {
+      "$ref": "#/$defs/Pressure"
+    },
+    "solvent": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "total_charge": {
+      "type": "integer",
+      "minimum": -128,
+      "maximum": 128
+    },
+    "spin_multiplicity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 128
+    },
+    "spin_polarized": {
+      "type": "boolean"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Temperature": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unit": {
+          "const": "kelvin"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Pressure": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000
+        },
+        "unit": {
+          "const": "bar"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

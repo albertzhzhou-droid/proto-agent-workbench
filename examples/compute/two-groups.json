@@ -1,0 +1,8 @@
+{
+  "tool": "compare_two_groups",
+  "arguments": {
+    "group_a": [1, 2, 3, 4, 5],
+    "group_b": [2, 3, 4, 5, 6],
+    "method": "welch_t"
+  }
+}

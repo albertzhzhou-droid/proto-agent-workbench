@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .evidence import build_evidence_cards, write_evidence_cards
+from .evidence_standing import evidence_standing, library_data_origin
 from .json_validation import JsonValidationError, strict_json_loads
 from .literature import DEFAULT_LITERATURE_PATH
 from .materials import (
@@ -87,6 +88,14 @@ def build_review_packet(
         workspace=paths.workspace,
     )
     workflow_code = 0 if manifest["ok"] else 1
+    standing = evidence_standing(
+        method_maturity="not-established",
+        data_origin=library_data_origin(strict_json_loads(verified_inputs["parts"].decode("utf-8"), max_bytes=MAX_JSON_FILE_BYTES)),
+        execution_status="completed" if manifest["ok"] else "error",
+    )
+    if governed_parts_library:
+        standing["dataOrigin"] = "governed-snapshot"
+        standing["eligibility"] = "DESIGN_ELIGIBLE"
 
     run_id = manifest.get("run_id") or _fallback_run_id(design_path)
     if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", run_id):
@@ -98,6 +107,7 @@ def build_review_packet(
         literature_query=literature_query,
         literature_registry=literature_source,
     )
+    evidence_payload["evidence_standing"] = standing
     evidence_path = write_evidence_cards(evidence_payload, review_dir / "evidence.cards.json")
     checklist_path = _write_checklist(review_dir / "human_review_checklist.md", manifest, evidence_payload)
     packet_path = review_dir / "review_packet.json"
@@ -121,6 +131,7 @@ def build_review_packet(
             "workflow_provenance": workflow_provenance.relative_to(paths.workspace).as_posix(),
         },
         "review_status": manifest.get("review_status", "human_review_required"),
+        "evidence_standing": standing,
         "summary": manifest.get("summary", ""),
         "skill_compatibility": manifest["skill_compatibility"],
         "skill_catalog_sha256": manifest.get("skill_catalog_sha256", ""),
@@ -602,6 +613,8 @@ def _write_checklist(path: Path, manifest: dict[str, Any], evidence_payload: dic
     lines = [
         "# Human Review Checklist",
         "",
+        *[f"- {axis}: `{value}`" for axis, value in evidence_payload["evidence_standing"].items()],
+        "",
         f"- [ ] Confirm design intent for `{manifest.get('inputs', {}).get('design', '')}`.",
         *(
             ["- [ ] Explicitly adopt a current workflow with governed Skill bindings; preserve the legacy source file."]
@@ -637,6 +650,7 @@ def _render_markdown(packet: dict[str, Any], evidence_payload: dict[str, Any]) -
         f"- Design: `{packet['design_path']}`",
         f"- Manifest: `{packet['manifest_path']}`",
         f"- Review status: `{packet['review_status']}`",
+        *[f"- {axis}: `{value}`" for axis, value in packet["evidence_standing"].items()],
         f"- Summary: {packet['summary']}",
         "",
         "## Evidence Summary",
@@ -672,8 +686,8 @@ def _validate_manifest(
 ) -> None:
     if not isinstance(manifest, dict):
         raise ValueError("Review manifest must be a JSON object.")
-    if manifest.get("schema_version") != "proto-agent.run.v1":
-        raise ValueError("Review manifest schema_version must be proto-agent.run.v1.")
+    from .artifact_readers import require_current_artifact
+    require_current_artifact("run", manifest)
     if not isinstance(manifest.get("ok"), bool):
         raise ValueError("Review manifest ok must be a boolean.")
     run_id = manifest.get("run_id")

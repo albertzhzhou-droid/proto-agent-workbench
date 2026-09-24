@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "calculation-spec.schema.json",
+  "title": "ChemIR v1alpha1 CalculationSpec payload",
+  "description": "Scientific calculation intent only. Machine resources, executable paths, and backend-specific runtime options belong to a resolved execution plan.",
+  "type": "object",
+  "required": [
+    "target_reference",
+    "task",
+    "method",
+    "properties"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "target_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "geometry_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "electronic_state_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "conditions_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "task": {
+      "enum": [
+        "single_point",
+        "geometry_optimization",
+        "frequency",
+        "molecular_dynamics",
+        "cell_optimization",
+        "band_structure",
+        "density_of_states"
+      ]
+    },
+    "method": {
+      "$ref": "#/$defs/RegistryIdentity"
+    },
+    "basis": {
+      "$ref": "#/$defs/RegistryIdentity"
+    },
+    "pseudopotentials": {
+      "type": "array",
+      "maxItems": 118,
+      "items": {
+        "$ref": "#/$defs/PseudopotentialIdentity"
+      }
+    },
+    "properties": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "enum": [
+          "energy",
+          "gradient",
+          "hessian",
+          "forces",
+          "stress",
+          "dipole",
+          "charges",
+          "orbitals",
+          "optimized_geometry",
+          "frequencies",
+          "band_structure",
+          "density_of_states"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "convergence_criteria": {
+      "$ref": "#/$defs/ConvergenceCriteria"
+    },
+    "k_points": {
+      "$ref": "#/$defs/KPoints"
+    },
+    "cutoff": {
+      "$ref": "common.schema.json#/$defs/Quantity"
+    },
+    "scientific_intent": {
+      "$ref": "common.schema.json#/$defs/NonEmptyString"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "RegistryIdentity": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "registry": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "version": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "artifact_sha256": {
+          "$ref": "common.schema.json#/$defs/Sha256"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PseudopotentialIdentity": {
+      "type": "object",
+      "required": [
+        "element",
+        "identity"
+      ],
+      "properties": {
+        "element": {
+          "$ref": "common.schema.json#/$defs/ElementSymbol"
+        },
+        "identity": {
+          "$ref": "#/$defs/RegistryIdentity"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConvergenceCriteria": {
+      "type": "object",
+      "properties": {
+        "energy_change": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "maximum_force": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "density_change": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "maximum_displacement": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "maximum_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "KPoints": {
+      "type": "object",
+      "required": [
+        "scheme"
+      ],
+      "properties": {
+        "scheme": {
+          "enum": [
+            "gamma",
+            "monkhorst_pack",
+            "explicit",
+            "spacing"
+          ]
+        },
+        "grid": {
+          "$ref": "common.schema.json#/$defs/IntegerVector3"
+        },
+        "shift": {
+          "$ref": "common.schema.json#/$defs/Vector3"
+        },
+        "spacing": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/KPoint"
+          }
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scheme": {
+                "const": "monkhorst_pack"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          },
+          "then": {
+            "required": [
+              "grid"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scheme": {
+                "const": "explicit"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          },
+          "then": {
+            "required": [
+              "points"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scheme": {
+                "const": "spacing"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          },
+          "then": {
+            "required": [
+              "spacing"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "KPoint": {
+      "type": "object",
+      "required": [
+        "coordinates",
+        "weight"
+      ],
+      "properties": {
+        "coordinates": {
+          "$ref": "common.schema.json#/$defs/Vector3"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

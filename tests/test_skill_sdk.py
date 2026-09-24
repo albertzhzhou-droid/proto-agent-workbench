@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 from proto_agent.security import SecurityBoundaryError
-from proto_agent.skill_sdk import audit_skill_adapters, list_skill_adapters, resolve_skill_adapter
+from proto_agent.skill_sdk import (
+    audit_skill_adapters,
+    list_skill_adapters,
+    resolve_skill_adapter,
+    trust_skill_adapter,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,14 +145,59 @@ class SkillSdkTests(unittest.TestCase):
         self.assertEqual(audit["pass_count"], 3)
         self.assertEqual(audit["connector_registry_sha256"], catalog["connector_registry_sha256"])
 
+    @staticmethod
+    def _commit(workspace: Path) -> None:
+        """Give the workspace a real source commit so an extension can be pinned."""
+        for command in (
+            ["git", "init", "--quiet"],
+            ["git", "config", "user.email", "tests@example.test"],
+            ["git", "config", "user.name", "Skill SDK Tests"],
+            ["git", "add", "--all"],
+            ["git", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture"],
+        ):
+            subprocess.run(command, cwd=workspace, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     def test_resolver_matches_only_declared_interfaces(self) -> None:
         temporary = self._workspace()
         self.addCleanup(temporary.cleanup)
+        workspace = Path(temporary.name)
+
+        # Declared interfaces resolve on their own merits, but an optional adapter
+        # is not offered until its exact content has been explicitly pinned.
+        untrusted = resolve_skill_adapter("demo-skill", workspace_root=temporary.name)
+        self.assertFalse(untrusted["ok"])
+        self.assertEqual(untrusted["resolution_state"], "blocked_by_extension_trust")
+        self.assertEqual(untrusted["adapter"]["status"], "available")
+        self.assertTrue(all(operation["available"] for operation in untrusted["adapter"]["operations"]))
+        self.assertRegex(untrusted["connector_registry_sha256"], r"^[a-f0-9]{64}$")
+
+        self._commit(workspace)
+        receipt = trust_skill_adapter("demo-skill", workspace_root=temporary.name)
+        self.assertEqual(receipt["state"], "trusted")
+
         result = resolve_skill_adapter("demo-skill", workspace_root=temporary.name)
-        self.assertTrue(result["ok"])
+        self.assertTrue(result["ok"], result["resolution_state"])
+        self.assertEqual(result["resolution_state"], "available_and_trusted")
         self.assertEqual(result["adapter"]["status"], "available")
         self.assertTrue(all(operation["available"] for operation in result["adapter"]["operations"]))
         self.assertRegex(result["connector_registry_sha256"], r"^[a-f0-9]{64}$")
+
+    def test_trust_is_bound_to_content_and_lapses_when_the_adapter_changes(self) -> None:
+        temporary = self._workspace()
+        self.addCleanup(temporary.cleanup)
+        workspace = Path(temporary.name)
+        self._commit(workspace)
+        trust_skill_adapter("demo-skill", workspace_root=temporary.name)
+        self.assertTrue(resolve_skill_adapter("demo-skill", workspace_root=temporary.name)["ok"])
+
+        # Editing the adapter after it was pinned changes its identity, so the
+        # stale pin stops vouching for it instead of carrying over.
+        document = workspace / ".codex" / "skills" / "demo-skill" / "SKILL.md"
+        document.write_text(document.read_text(encoding="utf-8") + "\nAdded after the pin.\n", encoding="utf-8")
+        lapsed = resolve_skill_adapter("demo-skill", workspace_root=temporary.name)
+        self.assertFalse(lapsed["ok"])
+        self.assertEqual(lapsed["resolution_state"], "blocked_by_extension_trust")
+        self.assertNotEqual(lapsed["adapter"]["trust"]["state"], "trusted")
 
     def test_missing_exact_http_route_is_partial(self) -> None:
         temporary = self._workspace(http_route="GET /v1/other")

@@ -1,0 +1,137 @@
+{
+  "provenance": {
+    "case": "retained unsupported identity label, not a numerical failure",
+    "trace_path": "build/science-expansion/chat-expansion.json",
+    "trace_sha256": "58c614f2945792b96dea288eabdcdd8c158c3f546f49f545557673b5812b6c55",
+    "message_pointer": "/session/messages/1/content",
+    "receipt_path": "build/chat/a88460b9-0c72-427b-95a2-281ce80f87ed/tool-results/d18eb6a1-73b4-42e2-9a8f-6978395a2787.json",
+    "receipt_sha256": "88261beb83b794528c53ab7a2fcdeaa93af4f8d3bfad784bd48dcd8e78efde79",
+    "note": "The original trace is unchanged. The receipt is copied; the text is a literal excerpt. New test receipt digests are computed separately."
+  },
+  "observed_text": "| alpha_0（全质子化，H₂A 型） | 0 | 0 | **0.5** |",
+  "requested": {
+    "name": "chemistry.calculate_acid_base_speciation",
+    "arguments": {
+      "pka_values": [
+        4.76
+      ],
+      "ph_values": [
+        4.76
+      ],
+      "fully_protonated_charge": 0
+    }
+  },
+  "receipt": {
+    "ok": true,
+    "data": {
+      "runId": "8250bc6d-a840-4910-a083-72c9990b633f",
+      "operator": "calculate_acid_base_speciation",
+      "status": "completed",
+      "createdAt": "2026-09-19T21:10:51.154Z",
+      "input": {
+        "pka_values": [
+          4.76
+        ],
+        "ph_values": [
+          4.76
+        ],
+        "fully_protonated_charge": 0
+      },
+      "artifacts": {
+        "input": "build/chem-science/8250bc6d-a840-4910-a083-72c9990b633f/input.json",
+        "result": "build/chem-science/8250bc6d-a840-4910-a083-72c9990b633f/result.json",
+        "manifest": "build/chem-science/8250bc6d-a840-4910-a083-72c9990b633f/manifest.json"
+      },
+      "hashes": {
+        "input": "47246e542c3cddb1fe32bcb8caa4e48a10311eb732a628958cc70e8ba332eb62",
+        "result": "559614231fc3d4d0c1dfe6baafe8a74ea0f67027b4bd556a1d9c223ccd6b8ba7"
+      },
+      "finishedAt": "2026-09-19T21:10:52.623Z",
+      "result": {
+        "rows": [
+          {
+            "ph": 4.76,
+            "alpha_0": 0.5,
+            "alpha_1": 0.5,
+            "mean_charge": -0.5,
+            "fraction_sum": 1
+          }
+        ],
+        "species": [
+          {
+            "id": "alpha_0",
+            "protons_lost": 0,
+            "formal_charge": 0
+          },
+          {
+            "id": "alpha_1",
+            "protons_lost": 1,
+            "formal_charge": -1
+          }
+        ],
+        "method": "Sequential polyprotic acid fractions from alpha_i proportional to 10^(i pH - sum(pKa_1..pKa_i)), normalized with logsumexp",
+        "warnings": [
+          "Ideal dilute equilibrium at supplied pH and pKa values; activity coefficients, metal binding and coupled equilibria are not modeled. This calculation does not solve pH from analytical concentration."
+        ],
+        "visualization": {
+          "x_label": "pH",
+          "x_unit": "",
+          "y_label": "Species fraction",
+          "y_unit": "dimensionless",
+          "series": [
+            {
+              "id": "alpha_0",
+              "label": "0 proton(s) lost; charge +0",
+              "x": [
+                4.76
+              ],
+              "y": [
+                0.5
+              ],
+              "style": "line"
+            },
+            {
+              "id": "alpha_1",
+              "label": "1 proton(s) lost; charge -1",
+              "x": [
+                4.76
+              ],
+              "y": [
+                0.5
+              ],
+              "style": "line"
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "worker_version": "chem-science/1.2.0",
+        "dependencies": {
+          "python": "3.13.3",
+          "numpy": "2.5.2",
+          "scipy": "1.18.1",
+          "rdkit": "2026.3.6",
+          "pymatgen": "2026.5.4",
+          "ase": "3.29.0",
+          "sympy": "1.14.0"
+        },
+        "source_sha256": "c4ec08e657f7cb87a3ce206250408932be1a1d0cec07ddbf399c38f08b5ab783",
+        "source_files_sha256": {
+          "chem_science.py": "746ea7f59436f3175ce4e318c747133ed4064909196e6765f9ed43b6c6a24108",
+          "chem_analysis.py": "82a5c8b1e748fe231fe939e8d464a6c2e969cb5426e11119f2007ebc990856c1",
+          "chem_data.py": "629dd050619e745ad39137670cf9e2159b9d7a392060d3930576afe1394367b2",
+          "chem_physical.py": "4f717cc880e15a1f4f79e45569641e4d86391358f74909ea913e3921781f8059"
+        },
+        "input_sha256": "65f4c27a8c389e5e99971e6d771a73421dcea0ef33ee65e30a3043c086a611af",
+        "result_sha256": "dfa0a38b78e218139ec6b8e2e8b183d2632c2c4ac11064675585b267899e28a9"
+      }
+    },
+    "read": {
+      "tool": "chemistry.read",
+      "arguments": {
+        "runId": "8250bc6d-a840-4910-a083-72c9990b633f"
+      }
+    },
+    "note": "Complete input, result and provenance are saved at the artifact paths. workspace_read supports offset/limit for full evidence."
+  }
+}

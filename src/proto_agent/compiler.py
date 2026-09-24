@@ -9,6 +9,7 @@ from .parser import parse_design, parse_design_text
 from .parts import DEFAULT_PARTS_PATH, load_parts, part_index
 from .dna_placement import DNA_IR_V2, dna_sha256, occurrence_ids, placement_record, resolve_annotation, reverse_complement
 from .security import MAX_JSON_FILE_BYTES, read_bytes_bounded
+from .design_evidence import library_standing
 
 
 def validate_design(design: Design | None, parse_diagnostics: list[Diagnostic], parts_path: str | Path = DEFAULT_PARTS_PATH) -> list[Diagnostic]:
@@ -153,9 +154,9 @@ def validate_design(design: Design | None, parse_diagnostics: list[Diagnostic], 
     return diagnostics
 
 
-def compile_design(path: str | Path, parts_path: str | Path = DEFAULT_PARTS_PATH) -> tuple[dict[str, Any] | None, list[Diagnostic]]:
+def compile_design(path: str | Path, parts_path: str | Path = DEFAULT_PARTS_PATH, *, workspace_root: str | Path | None = None) -> tuple[dict[str, Any] | None, list[Diagnostic]]:
     design, parse_diagnostics = parse_design(path)
-    return _compile_parsed_design(design, parse_diagnostics, parts_path)
+    return _compile_parsed_design(design, parse_diagnostics, parts_path, workspace_root=workspace_root)
 
 
 def compile_design_text(text: str, parts_path: str | Path, *, source_path: str = "design.proto") -> tuple[dict[str, Any] | None, list[Diagnostic]]:
@@ -163,8 +164,8 @@ def compile_design_text(text: str, parts_path: str | Path, *, source_path: str =
     return _compile_parsed_design(design, parse_diagnostics, parts_path)
 
 
-def _compile_parsed_design(design: Design | None, parse_diagnostics: list[Diagnostic], parts_path: str | Path) -> tuple[dict[str, Any] | None, list[Diagnostic]]:
-    parts_bytes = read_bytes_bounded(parts_path, MAX_JSON_FILE_BYTES) if design is not None and _uses_placements(design) else None
+def _compile_parsed_design(design: Design | None, parse_diagnostics: list[Diagnostic], parts_path: str | Path, *, workspace_root: str | Path | None = None) -> tuple[dict[str, Any] | None, list[Diagnostic]]:
+    parts_bytes = read_bytes_bounded(parts_path, MAX_JSON_FILE_BYTES) if design is not None else None
     diagnostics = validate_design(design, parse_diagnostics, parts_path)
     if design is None or any(item.severity == "error" for item in diagnostics):
         return None, diagnostics
@@ -230,13 +231,18 @@ def _compile_parsed_design(design: Design | None, parse_diagnostics: list[Diagno
             {"type": constraint.type, **constraint.params}
             for constraint in design.constraints
         ],
+        "evidence_standing": library_standing(parts_bytes, ok=True, workspace=Path(workspace_root) if workspace_root is not None else None),
         "provenance": {
             "source": design.source_path,
-            **({"parts_source": str(parts_path), "source_sha256": design.source_sha256, "parts_sha256": hashlib.sha256(parts_bytes).hexdigest()} if parts_bytes is not None else {}),
+            **({"parts_source": Path(parts_path).resolve().relative_to(Path(workspace_root).resolve()).as_posix() if workspace_root is not None else str(parts_path),
+                "source_sha256": design.source_sha256, "parts_sha256": hashlib.sha256(parts_bytes).hexdigest()} if parts_bytes is not None else {}),
             **({"snapshot_id": library.get("version")} if library.get("version") else {}),
             **({"parts_library_id": library.get("library_id")} if library.get("library_id") else {}),
         },
     }
+    if parts_bytes != read_bytes_bounded(parts_path, MAX_JSON_FILE_BYTES):
+        diagnostics.append(Diagnostic("error", design.source_path, 0, "PARTS_IDENTITY_CHANGED", "Parts library changed during compilation; retry against a stable selection."))
+        return None, diagnostics
     if _uses_placements(design):
         from .exporters import validate_ir_for_export
         try:

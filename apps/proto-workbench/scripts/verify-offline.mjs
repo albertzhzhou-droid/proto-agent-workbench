@@ -112,7 +112,9 @@ export async function buildOfflineVerificationPlan(root) {
     commands: [
       {
         executable: process.execPath,
-        args: [guardArg, "--experimental-strip-types", "--test", ...testPaths],
+        // Bound simultaneous Python workers and large workspace scans. This
+        // preserves every test and its deadline without host-size-dependent load.
+        args: [guardArg, "--experimental-strip-types", "--test", "--test-concurrency=4", ...testPaths],
         cwd: canonicalRoot,
       },
       {

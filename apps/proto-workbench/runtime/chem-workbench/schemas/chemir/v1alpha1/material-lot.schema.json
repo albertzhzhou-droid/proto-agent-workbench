@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "material-lot.schema.json",
+  "title": "ChemIR v1alpha1 MaterialLot payload",
+  "description": "A physical material instance. The referenced identity remains separate from lot-specific quantity, purity, phase, and container facts.",
+  "type": "object",
+  "required": [
+    "lot_identifier"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "lot_identifier": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "substance_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "mixture_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "material_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "quantity": {
+      "$ref": "common.schema.json#/$defs/Quantity"
+    },
+    "concentration": {
+      "$ref": "#/$defs/Concentration"
+    },
+    "purity": {
+      "$ref": "common.schema.json#/$defs/Quantity"
+    },
+    "phase": {
+      "enum": [
+        "solid",
+        "liquid",
+        "gas",
+        "plasma",
+        "multiphase",
+        "unknown"
+      ]
+    },
+    "container": {
+      "$ref": "#/$defs/Container"
+    },
+    "source_description": {
+      "$ref": "#/$defs/LotSource"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "substance_reference"
+      ]
+    },
+    {
+      "required": [
+        "mixture_reference"
+      ]
+    },
+    {
+      "required": [
+        "material_reference"
+      ]
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Concentration": {
+      "type": "object",
+      "required": [
+        "value",
+        "basis"
+      ],
+      "properties": {
+        "value": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "basis": {
+          "enum": [
+            "amount_per_volume",
+            "mass_per_volume",
+            "mass_fraction",
+            "amount_fraction",
+            "volume_fraction",
+            "other"
+          ]
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Container": {
+      "type": "object",
+      "required": [
+        "identifier"
+      ],
+      "properties": {
+        "identifier": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "container_type": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "material": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "closure": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LotSource": {
+      "type": "object",
+      "properties": {
+        "supplier": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "catalog_identifier": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "acquired_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

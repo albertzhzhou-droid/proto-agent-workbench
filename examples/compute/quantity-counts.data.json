@@ -1,0 +1,25 @@
+{
+  "gene_ids": [
+    "gene-a",
+    "gene-b"
+  ],
+  "sample_ids": [
+    "sample-a",
+    "sample-b"
+  ],
+  "counts": [
+    [
+      100,
+      200
+    ],
+    [
+      100,
+      400
+    ]
+  ],
+  "lengths_bp": [
+    1000,
+    2000
+  ],
+  "method": "tpm"
+}

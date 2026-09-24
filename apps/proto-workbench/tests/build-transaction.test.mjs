@@ -63,6 +63,23 @@ test("release input capture includes the exact available literature connector se
   for(const connector of registry.connectors.filter(item=>item.status==="available"&&item.path))assert.ok(BUILD_INPUT_ROOTS.some(path=>connector.path===path||connector.path.startsWith(path+"/")),`Available connector input missing: ${connector.path}`);
 });
 
+test("private release inputs preserve Chem science and integration bytes and detect mutations", async t => {
+  const root = await workspace(t), source = join(root, "source"), stage = join(root, "stage");
+  const roots = ["apps/proto-workbench/runtime/chem-workbench", "apps/proto-workbench/runtime/chem-integration"];
+  for (const path of roots) {
+    assert.ok(BUILD_INPUT_ROOTS.includes(path), `Missing Chem release input: ${path}`);
+    await mkdir(join(source, path), { recursive: true });
+    await writeFile(join(source, path, "fixture.py"), "# exact scientific input\r\n");
+  }
+  const snapshot = await createBuildInputSnapshot({ sourceRoot: source, destinationRoot: stage, roots });
+  assertSameBuildInputs(snapshot, await captureBuildInputs(stage, roots), "Chem release capture");
+  for (const path of roots) assert.equal(await readFile(join(stage, path, "fixture.py"), "utf8"), "# exact scientific input\r\n");
+  await writeFile(join(source, roots[1], "fixture.py"), "# changed integration\n");
+  assert.throws(() => assertSameBuildInputs(snapshot, {}, "Chem mutation"), /publication is blocked/);
+  assert.notEqual((await captureBuildInputs(source, roots)).treeSha256, snapshot.treeSha256);
+  assertSameBuildInputs(snapshot, await captureBuildInputs(stage, roots), "immutable Chem copy");
+});
+
 test("failed sidecar bytes move only to a fresh validated build evidence directory", {skip:process.platform!=="win32"}, async t => {
   const root = await workspace(t), runtime = join(root,"runtime"), build = join(root,"build"), stage = join(runtime,"staging"), failed = join(build,"failed-runtime");
   await mkdir(stage,{recursive:true});await mkdir(build);await writeFile(join(stage,"failure.bin"),"preserved bytes");

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "geometry.schema.json",
+  "title": "ChemIR v1alpha1 Geometry payload",
+  "type": "object",
+  "required": [
+    "target_reference",
+    "coordinate_system",
+    "unit",
+    "coordinates",
+    "generation_method"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "target_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "coordinate_system": {
+      "enum": [
+        "cartesian",
+        "internal"
+      ]
+    },
+    "unit": {
+      "$ref": "common.schema.json#/$defs/Unit"
+    },
+    "coordinates": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/Coordinate"
+      }
+    },
+    "generation_method": {
+      "$ref": "#/$defs/GenerationMethod"
+    },
+    "energy": {
+      "$ref": "common.schema.json#/$defs/Quantity"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Coordinate": {
+      "type": "object",
+      "required": [
+        "atom_reference",
+        "position"
+      ],
+      "properties": {
+        "atom_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "position": {
+          "$ref": "common.schema.json#/$defs/Vector3"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GenerationMethod": {
+      "type": "object",
+      "required": [
+        "origin"
+      ],
+      "properties": {
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "tool": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "tool_version": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -44,7 +44,7 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
   const latest = events.at(-1);
   const controller = [...events].reverse().find((event) => event.stage === "plan" && ["Agent plan started", "Autonomous mission", "Mission resumed"].includes(event.title));
   const harnessEvent = [...events].reverse().find((event) => typeof event.payload?.harness === "object" && event.payload.harness !== null);
-  const harness = harnessEvent?.payload?.harness as {state?: string; error?: {message?: string}} | undefined;
+  const harness = harnessEvent?.payload?.harness as {state?: string; error?: {message?: string}; abstention?: {reason?: string}} | undefined;
   const pendingApprovalCount = approvals.filter((approval) => approval.status === "pending").length;
   const activePatch = patches.find((patch) => patch.status === "pending");
   const activeOperation = selectActiveOperation(operations, validationJournals);
@@ -104,12 +104,14 @@ export function projectRunLifecycle(input: RunLifecycleInput): RunLifecycleProje
   // Scientific review and historical tool events cannot override the durable
   // execution checkpoint. A valid intermediate artifact is not task completion.
   if (harness && harness.state !== "completed") {
-    const detail = harness.error?.message || harnessEvent?.summary || "Execution is saved for continuation.";
+    const detail = harness.abstention?.reason || harness.error?.message || harnessEvent?.summary || "Execution is saved for continuation.";
     switch (harness.state) {
       case "effect-unknown": return lifecycle("effect-unknown", "recovery", "Effect needs reconciliation", detail, false);
       case "paused": return lifecycle("interrupted", "recovery", "Task paused", detail, false);
       case "incomplete": return lifecycle("interrupted", "recovery", "Task incomplete", detail, false);
       case "blocked": return lifecycle("interrupted", "recovery", "Task blocked", detail, false);
+      case "abstained": return lifecycle("interrupted", "human-review", "Task stopped for human review", detail, true);
+      case "needs-human": return lifecycle("interrupted", "human-review", "Verification needs human review", detail, true);
       case "failed": return lifecycle("failed", "failure", "Task failed", detail, true);
       case "cancelled": return lifecycle("cancelled", "none", "Task cancelled", detail, true);
       case "validating": return lifecycle("validating", "validation", "Verifying deliverables", detail, false);

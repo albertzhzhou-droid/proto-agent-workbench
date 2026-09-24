@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adapter-registry.schema.json",
+  "title": "Chem Workbench static adapter registry v1alpha1",
+  "type": "object",
+  "required": [
+    "registry_version",
+    "product",
+    "discovery",
+    "adapters"
+  ],
+  "properties": {
+    "registry_version": {
+      "const": "adapter-registry/v1alpha1"
+    },
+    "product": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "const": "chem-workbench"
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:(?:a|b|rc)[0-9]+)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "discovery": {
+      "type": "object",
+      "required": [
+        "mode",
+        "python_entry_points",
+        "module_scan",
+        "path_scan",
+        "executable_path_probe",
+        "network_probe"
+      ],
+      "properties": {
+        "mode": {
+          "const": "static_only"
+        },
+        "python_entry_points": {
+          "const": false
+        },
+        "module_scan": {
+          "const": false
+        },
+        "path_scan": {
+          "const": false
+        },
+        "executable_path_probe": {
+          "const": false
+        },
+        "network_probe": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "adapters": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/Registration"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ManifestHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "adapter_manifest_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FormatCapabilityHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "format_capability_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FormatCapabilityRecord": {
+      "type": "object",
+      "required": [
+        "capability",
+        "capability_hash"
+      ],
+      "properties": {
+        "capability": {
+          "$ref": "format-capability.schema.json"
+        },
+        "capability_hash": {
+          "$ref": "#/$defs/FormatCapabilityHash"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Registration": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "manifest_hash",
+        "format_capabilities",
+        "implementation_status",
+        "conformance_status",
+        "enabled"
+      ],
+      "properties": {
+        "manifest": {
+          "$ref": "adapter-capability.schema.json"
+        },
+        "manifest_hash": {
+          "$ref": "#/$defs/ManifestHash"
+        },
+        "format_capabilities": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/FormatCapabilityRecord"
+          }
+        },
+        "implementation_status": {
+          "enum": [
+            "not_installed",
+            "installed_unverified",
+            "installed_verified"
+          ]
+        },
+        "conformance_status": {
+          "enum": [
+            "unqualified",
+            "experimental",
+            "normative"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

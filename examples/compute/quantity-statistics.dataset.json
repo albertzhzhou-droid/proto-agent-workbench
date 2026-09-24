@@ -1,0 +1,59 @@
+{
+  "schema_version": "proto-agent.dataset-manifest.v1",
+  "dataset_id": "fixture:statistics",
+  "display_name": "Synthetic unit-binding fixture; no biological validation",
+  "files": [
+    {
+      "id": "source",
+      "path": "examples/compute/quantity-statistics.data.json",
+      "role": "measurement",
+      "sha256": "e5452821e14dc9d6fe5ca249e82370a73eda351387afe1c3fd7a8a2aca06b3c8",
+      "bytes": 56
+    }
+  ],
+  "entities": [
+    {
+      "id": "series:example",
+      "type": "measurement-series"
+    }
+  ],
+  "references": [],
+  "quantities": [
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "series:example",
+      "value": 1,
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    },
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "series:example",
+      "value": 2,
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    },
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "series:example",
+      "value": 3,
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    },
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "series:example",
+      "value": 4,
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    },
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "series:example",
+      "value": 5,
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    }
+  ],
+  "coordinate_systems": []
+}

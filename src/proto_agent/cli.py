@@ -11,10 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from .analysis import DEFAULT_ANALYSIS_OUT_DIR, run_python_analysis
+from .compute import compute_catalog, run_compute
+from .figure_export import render_research_figure_file
+from .remote_tools import RemoteError, remote_catalog, remote_run
 from .compiler import compile_design, validate_design
 from .design_edits import prepare_design_edit
 from .connectors import DEFAULT_CONNECTORS_PATH, connector_summary
 from .exporters import export_ir, load_ir
+from .design_evidence import checked_library_standing, export_standing
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
 from .materials import (
     MAX_RESOURCE_ID_CHARS,
@@ -43,6 +47,7 @@ from .skill_sdk import (
     audit_skill_adapters,
     list_skill_adapters,
     resolve_skill_adapter,
+    trust_skill_adapter,
 )
 from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
 from .mcp_server import TOOLS, main as mcp_main
@@ -74,6 +79,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--parts", default=str(DEFAULT_PARTS_PATH), help="Path to JSON parts library.")
     parser.add_argument("--materials-root", help="External materials catalog root (defaults to the project sibling).")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    compute_parser = subparsers.add_parser("compute", help="Bounded offline Biomni adaptations and statistical analysis.")
+    compute_subparsers = compute_parser.add_subparsers(dest="compute_command", required=True)
+    compute_list = compute_subparsers.add_parser("catalog", help="List tools, availability, and source attribution as JSON.")
+    compute_list.add_argument("--tool", help="Include the input schema and example for one computation.")
+    compute_run = compute_subparsers.add_parser("run", help="Compute a workspace JSON request and publish evidence under build/compute/.")
+    compute_run.add_argument("path")
+
+    figure_parser = subparsers.add_parser("figure", help="Data-only scientific SVG/PDF exports with retained source records.")
+    figure_subparsers = figure_parser.add_subparsers(dest="figure_command", required=True)
+    figure_render = figure_subparsers.add_parser("render", help="Render a bounded workspace figure request under build/research-figures/exports/.")
+    figure_render.add_argument("path")
+
+    remote_parser = subparsers.add_parser("remote", help="Connector-gated network, executable, and data-lake capabilities.")
+    remote_subparsers = remote_parser.add_subparsers(dest="remote_command", required=True)
+    remote_list = remote_subparsers.add_parser("catalog", help="List remote tools and connector status as JSON.")
+    remote_list.add_argument("--tool", help="Include the input schema for one remote tool.")
+    remote_run_parser = remote_subparsers.add_parser("run", help="Run a {tool, arguments} JSON request through its enabled connector.")
+    remote_run_parser.add_argument("path")
 
     check_parser = subparsers.add_parser("check", help="Validate a Proto-like design file.")
     check_parser.add_argument("path")
@@ -292,6 +316,11 @@ def main(argv: list[str] | None = None) -> int:
     skills_subparsers.add_parser("list", help="List installed Skill adapters and resolved capabilities.")
     skills_resolve = skills_subparsers.add_parser("resolve", help="Resolve one Skill adapter against the connector registry.")
     skills_resolve.add_argument("skill_id")
+    skills_trust = skills_subparsers.add_parser(
+        "trust",
+        help="Explicitly pin the exact current declarative Skill adapter identity in this workspace.",
+    )
+    skills_trust.add_argument("skill_id")
     skills_subparsers.add_parser("audit", help="Run schema, vendor-neutrality, and capability-risk audit passes.")
 
     analysis_parser = subparsers.add_parser("analysis", help="Run local analysis scripts with an audit manifest.")
@@ -385,6 +414,18 @@ def main(argv: list[str] | None = None) -> int:
 
 def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
 
+    if args.command == "figure":
+        result = render_research_figure_file(args.path)
+        _print_json(result)
+        return 0
+    if args.command == "compute":
+        result = compute_catalog(args.tool) if args.compute_command == "catalog" else run_compute(args.path)
+        _print_json(result)
+        return 0 if result["ok"] else 2
+    elif args.command == "remote":
+        result = remote_catalog(args.tool) if args.remote_command == "catalog" else _run_remote_file(args.path)
+        _print_json(result)
+        return 0 if result["ok"] else 2
     if args.command == "check":
         return _check(args.path, args.parts, args.as_json)
     if args.command == "compile":
@@ -468,11 +509,12 @@ def _check(path: str, parts_path: str, as_json: bool) -> int:
     paths = WorkspacePaths.create()
     design_path = paths.workspace_file(path, extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
     parts_source = paths.workspace_file(parts_path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+    parts_bytes = read_bytes_bounded(parts_source, MAX_JSON_FILE_BYTES)
     design, parse_diagnostics = parse_design(design_path)
     diagnostics = validate_design(design, parse_diagnostics, parts_source)
     ok = not any(item.severity == "error" for item in diagnostics)
     payload = public_workspace_payload(
-        _diagnostics_payload(ok, diagnostics, []),
+        {**_diagnostics_payload(ok, diagnostics, []), "evidence_standing": checked_library_standing(parts_source, parts_bytes, ok=ok, workspace=paths.workspace)},
         paths.workspace,
     )
     if as_json:
@@ -486,12 +528,13 @@ def _compile(path: str, parts_path: str, out: str) -> int:
     paths = WorkspacePaths.create()
     design_path = paths.workspace_file(path, extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
     parts_source = paths.workspace_file(parts_path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+    parts_bytes = read_bytes_bounded(parts_source, MAX_JSON_FILE_BYTES)
     output_path = paths.build_file(out, extensions={".json"})
-    ir, diagnostics = compile_design(design_path, parts_source)
+    ir, diagnostics = compile_design(design_path, parts_source, workspace_root=paths.workspace)
     if ir is None:
         _print_json(
             public_workspace_payload(
-                _diagnostics_payload(False, diagnostics, []),
+                {**_diagnostics_payload(False, diagnostics, []), "evidence_standing": checked_library_standing(parts_source, parts_bytes, ok=False, workspace=paths.workspace)},
                 paths.workspace,
             ),
             stderr=True,
@@ -501,11 +544,11 @@ def _compile(path: str, parts_path: str, out: str) -> int:
     write_text_bounded(output_path, json.dumps(ir, indent=2) + "\n", boundary=paths.build)
     _print_json(
         public_workspace_payload(
-            _diagnostics_payload(
+            {**_diagnostics_payload(
                 True,
                 diagnostics,
                 [output_path.relative_to(paths.workspace).as_posix()],
-            ),
+            ), "evidence_standing": ir["evidence_standing"]},
             paths.workspace,
         )
     )
@@ -574,11 +617,12 @@ def _export(ir_path: str, output_format: str, out: str) -> int:
     paths = WorkspacePaths.create()
     input_path = paths.workspace_file(ir_path, extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
     ir = load_ir(input_path)
+    standing = export_standing(ir, workspace=paths.workspace)
     output = export_ir(ir, output_format)
     extension = {"sbol": ".ttl", "genbank": ".gb", "fasta": ".fasta"}[output_format]
     output_path = paths.build_file(out, extensions={extension})
     write_text_bounded(output_path, output, boundary=paths.build)
-    _print_json({"ok": True, "diagnostics": [], "artifacts": [output_path.relative_to(paths.workspace).as_posix()]})
+    _print_json({"ok": True, "diagnostics": [], "artifacts": [output_path.relative_to(paths.workspace).as_posix()], "evidence_standing": standing})
     return 0
 
 
@@ -964,6 +1008,10 @@ def _skills(command: str, skills_root: str, registry_path: str, skill_id: str | 
         if skill_id is None:
             raise ValueError("Skill id is required.")
         payload = resolve_skill_adapter(skill_id, skills_root, registry_path)
+    elif command == "trust":
+        if skill_id is None:
+            raise ValueError("Skill id is required.")
+        payload = trust_skill_adapter(skill_id, skills_root, registry_path)
     elif command == "audit":
         payload = audit_skill_adapters(skills_root, registry_path)
     else:

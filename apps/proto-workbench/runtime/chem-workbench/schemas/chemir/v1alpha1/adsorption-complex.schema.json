@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adsorption-complex.schema.json",
+  "title": "ChemIR v1alpha1 AdsorptionComplex payload",
+  "description": "A surface slab plus an explicitly placed adsorbate. Site, height, and adsorbate identity are assertions, not inferred defaults; the complex carries no geometry until a versioned placement adapter exists. Integer-only lengths are an alpha canonicalization limit, not a physical statement.",
+  "type": "object",
+  "required": [
+    "slab_reference",
+    "adsorbate_elements",
+    "site",
+    "height"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "slab_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "adsorbate_elements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/ElementSymbol"
+      }
+    },
+    "site": {
+      "enum": [
+        "top",
+        "bridge",
+        "fcc_hollow",
+        "hcp_hollow"
+      ]
+    },
+    "height": {
+      "$ref": "#/$defs/AdsorbateHeight"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "AdsorbateHeight": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "unit": {
+          "const": "angstrom"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

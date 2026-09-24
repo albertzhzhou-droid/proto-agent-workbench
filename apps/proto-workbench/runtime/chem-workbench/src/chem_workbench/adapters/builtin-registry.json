@@ -1,0 +1,329 @@
+{
+  "adapters": [
+    {
+      "conformance_status": "experimental",
+      "enabled": true,
+      "format_capabilities": [
+        {
+          "capability": {
+            "adapter": {
+              "id": "chem.cif.probe",
+              "manifest_hash": {
+                "algorithm": "sha256",
+                "type": "adapter_manifest_hash",
+                "value": "4c49856b25a6cb21719c8481916f44d0956fcd56b505d87db4414eb4a576bf2f"
+              },
+              "version": "0.1.0"
+            },
+            "allowed_loss_codes": [
+              "CIF_DUPLICATE_ITEM",
+              "CIF_LOOP_ROW_INCOMPLETE",
+              "CIF_OCCUPANCY_DEFAULTED",
+              "CIF_SYNTAX_ERROR",
+              "MISSING_CELL_PARAMETER",
+              "MISSING_FRACTIONAL_SITES",
+              "MISSING_TYPE_SYMBOL",
+              "MULTIPLE_DATA_BLOCKS",
+              "NON_NUMERIC_SITE_VALUE",
+              "NO_DATA_BLOCK",
+              "PARTIAL_OCCUPANCY",
+              "STANDARD_UNCERTAINTY_STRIPPED",
+              "SYMMETRY_EXPANSION_REQUIRED",
+              "UNKNOWN_ELEMENT",
+              "UNKNOWN_SITE_VALUE",
+              "UNMAPPED_CIF_ITEMS_PRESERVED"
+            ],
+            "aromaticity_policy": "not_applicable",
+            "capability_id": "chem.cif.probe.cif-p1-explicit.import",
+            "capability_version": "format-capability/v1alpha1",
+            "chemir_schema_version": "chemir/v1alpha1",
+            "classification": "QUERY_ONLY",
+            "direction": "import",
+            "format": {
+              "dialect": "cif1.1-explicit-p1-subset",
+              "media_type": "chemical/x-cif",
+              "name": "cif"
+            },
+            "loss_report_version": "loss/v1alpha1",
+            "normalization_profile": "source-preserving/v1alpha1",
+            "numeric_tolerance_policy": "exact_only",
+            "operations": [
+              "import_bytes"
+            ],
+            "profile": "cif-p1-explicit-v1",
+            "stereochemistry_policy": "not_applicable",
+            "supported_fields": [
+              "/_atom_site_fract_x",
+              "/_atom_site_fract_y",
+              "/_atom_site_fract_z",
+              "/_atom_site_label",
+              "/_atom_site_occupancy",
+              "/_atom_site_type_symbol",
+              "/_cell_angle_alpha",
+              "/_cell_angle_beta",
+              "/_cell_angle_gamma",
+              "/_cell_length_a",
+              "/_cell_length_b",
+              "/_cell_length_c",
+              "/_space_group_IT_number",
+              "/_space_group_name_H-M_alt",
+              "/_space_group_symop_operation_xyz",
+              "/_symmetry_equiv_pos_as_xyz",
+              "/_symmetry_space_group_name_H-M"
+            ]
+          },
+          "capability_hash": {
+            "algorithm": "sha256",
+            "type": "format_capability_hash",
+            "value": "b1531fba9137f52df8d1f5d1b474ee1f49fb6d1bdc38f15220c1c0980a47a070"
+          }
+        },
+        {
+          "capability": {
+            "adapter": {
+              "id": "chem.cif.probe",
+              "manifest_hash": {
+                "algorithm": "sha256",
+                "type": "adapter_manifest_hash",
+                "value": "4c49856b25a6cb21719c8481916f44d0956fcd56b505d87db4414eb4a576bf2f"
+              },
+              "version": "0.1.0"
+            },
+            "allowed_loss_codes": [
+              "ATOM_SITE_LABELS_PRESERVED",
+              "CIF_DUPLICATE_ITEM",
+              "CIF_LOOP_ROW_INCOMPLETE",
+              "CIF_OCCUPANCY_DEFAULTED",
+              "CIF_SYNTAX_ERROR",
+              "MISSING_CELL_PARAMETER",
+              "MISSING_FRACTIONAL_SITES",
+              "MISSING_TYPE_SYMBOL",
+              "MULTIPLE_DATA_BLOCKS",
+              "NON_NUMERIC_SITE_VALUE",
+              "NON_ORTHOGONAL_CELL",
+              "NON_POSITIVE_CELL_LENGTH",
+              "NO_DATA_BLOCK",
+              "PARTIAL_OCCUPANCY",
+              "STANDARD_UNCERTAINTY_STRIPPED",
+              "SYMMETRY_EXPANSION_REQUIRED",
+              "UNKNOWN_ELEMENT",
+              "UNKNOWN_SITE_VALUE",
+              "UNMAPPED_CIF_ITEMS_PRESERVED"
+            ],
+            "aromaticity_policy": "not_applicable",
+            "capability_id": "chem.cif.probe.cif-p1-explicit.structure-import",
+            "capability_version": "format-capability/v1alpha1",
+            "chemir_schema_version": "chemir/v1alpha1",
+            "classification": "SEMANTIC_EQUIVALENT_UNDER_PROFILE",
+            "direction": "import",
+            "format": {
+              "dialect": "cif1.1-explicit-p1-subset",
+              "media_type": "chemical/x-cif",
+              "name": "cif"
+            },
+            "loss_report_version": "loss/v1alpha1",
+            "normalization_profile": "source-preserving/v1alpha1",
+            "numeric_tolerance_policy": "exact_only",
+            "operations": [
+              "import_bytes"
+            ],
+            "profile": "cif-p1-explicit-typed-v1",
+            "stereochemistry_policy": "not_applicable",
+            "supported_fields": [
+              "/objects/*/payload/coordinate_system",
+              "/objects/*/payload/lattice/vectors",
+              "/objects/*/payload/sites/*/coordinates",
+              "/objects/*/payload/sites/*/element",
+              "/objects/*/payload/sites/*/label",
+              "/objects/*/payload/sites/*/occupancy"
+            ]
+          },
+          "capability_hash": {
+            "algorithm": "sha256",
+            "type": "format_capability_hash",
+            "value": "fe90ce8cd45d7aae6095175cac75a2d010bfbbd19395536b928c8e1fb144caac"
+          }
+        }
+      ],
+      "implementation_status": "installed_verified",
+      "manifest": {
+        "adapter_id": "chem.cif.probe",
+        "adapter_type": "FormatAdapter",
+        "adapter_version": "0.1.0",
+        "environment_allowlist": [],
+        "expected_loss_codes": [
+          "ATOM_SITE_LABELS_PRESERVED",
+          "CIF_DUPLICATE_ITEM",
+          "CIF_LOOP_ROW_INCOMPLETE",
+          "CIF_OCCUPANCY_DEFAULTED",
+          "CIF_SYNTAX_ERROR",
+          "MISSING_CELL_PARAMETER",
+          "MISSING_FRACTIONAL_SITES",
+          "MISSING_TYPE_SYMBOL",
+          "MULTIPLE_DATA_BLOCKS",
+          "NON_NUMERIC_SITE_VALUE",
+          "NON_ORTHOGONAL_CELL",
+          "NON_POSITIVE_CELL_LENGTH",
+          "NO_DATA_BLOCK",
+          "PARTIAL_OCCUPANCY",
+          "STANDARD_UNCERTAINTY_STRIPPED",
+          "SYMMETRY_EXPANSION_REQUIRED",
+          "UNKNOWN_ELEMENT",
+          "UNKNOWN_SITE_VALUE",
+          "UNMAPPED_CIF_ITEMS_PRESERVED"
+        ],
+        "licenses": [
+          "MIT"
+        ],
+        "manifest_version": "adapter-capability/v1alpha1",
+        "network_policy": "deny",
+        "operations": [
+          "import_bytes"
+        ],
+        "package_hash": {
+          "algorithm": "sha256",
+          "type": "adapter_package_hash",
+          "value": "9fca1710aab10ca37eb1a4bcfdf0ec776227fd6955da3d8606a50de018b59135"
+        },
+        "permission_class": "local_pure",
+        "required_backends": [],
+        "resource_ceilings": {
+          "artifact_bytes": 16777216,
+          "memory_bytes": 268435456,
+          "stderr_bytes": 65536,
+          "stdout_bytes": 16777216,
+          "wall_time_seconds": 30
+        },
+        "schema_versions": [
+          "chemir/v1alpha1",
+          "loss/v1alpha1"
+        ],
+        "supported_profiles": [
+          "cif-p1-explicit-typed-v1",
+          "cif-p1-explicit-v1"
+        ]
+      },
+      "manifest_hash": {
+        "algorithm": "sha256",
+        "type": "adapter_manifest_hash",
+        "value": "4c49856b25a6cb21719c8481916f44d0956fcd56b505d87db4414eb4a576bf2f"
+      }
+    },
+    {
+      "conformance_status": "experimental",
+      "enabled": true,
+      "format_capabilities": [],
+      "implementation_status": "installed_verified",
+      "manifest": {
+        "adapter_id": "chem.compute.governed",
+        "adapter_type": "ComputeAdapter",
+        "adapter_version": "0.1.0",
+        "environment_allowlist": [],
+        "expected_loss_codes": [],
+        "licenses": [
+          "MIT"
+        ],
+        "manifest_version": "adapter-capability/v1alpha1",
+        "network_policy": "deny",
+        "operations": [
+          "resolve",
+          "validate"
+        ],
+        "package_hash": {
+          "algorithm": "sha256",
+          "type": "adapter_package_hash",
+          "value": "61be7bb19476c61ca4387f46b765c6eee556879bdb3de690e7a6e1eb293783ad"
+        },
+        "permission_class": "compute_descriptor",
+        "required_backends": [
+          "ase.emt",
+          "qcengine.psi4"
+        ],
+        "resource_ceilings": {
+          "artifact_bytes": 10000000,
+          "memory_bytes": 3221225472,
+          "stderr_bytes": 10000000,
+          "stdout_bytes": 10000000,
+          "wall_time_seconds": 600
+        },
+        "schema_versions": [
+          "chemir/v1alpha1"
+        ],
+        "supported_profiles": [
+          "ase.emt.cu.scan.v1",
+          "qcengine.psi4.hf_sto3g.organic.v1",
+          "qcengine.psi4.hf_sto3g.smoke.v1"
+        ]
+      },
+      "manifest_hash": {
+        "algorithm": "sha256",
+        "type": "adapter_manifest_hash",
+        "value": "f4d2a09b1d26cfb42e3fd0e64fb9152cf3c6a2041c32542d3e9942cff3648e5e"
+      }
+    },
+    {
+      "conformance_status": "experimental",
+      "enabled": true,
+      "format_capabilities": [],
+      "implementation_status": "installed_verified",
+      "manifest": {
+        "adapter_id": "chem.compute.refinement",
+        "adapter_type": "ComputeAdapter",
+        "adapter_version": "0.1.0",
+        "environment_allowlist": [],
+        "expected_loss_codes": [],
+        "licenses": [
+          "MIT"
+        ],
+        "manifest_version": "adapter-capability/v1alpha1",
+        "network_policy": "deny",
+        "operations": [
+          "resolve",
+          "validate"
+        ],
+        "package_hash": {
+          "algorithm": "sha256",
+          "type": "adapter_package_hash",
+          "value": "11f690f716ec7d6e04746beec185c50c86720ecd455e410eceecf7b455c87801"
+        },
+        "permission_class": "compute_descriptor",
+        "required_backends": [
+          "psi4.optking",
+          "qcengine.psi4",
+          "s-dftd3"
+        ],
+        "resource_ceilings": {
+          "cpu_threads": 8,
+          "memory_bytes": 17179869184,
+          "stderr_bytes": 20971520,
+          "stdout_bytes": 20971520,
+          "wall_time_seconds": 86400
+        },
+        "schema_versions": [
+          "chemir/v1alpha1"
+        ],
+        "supported_profiles": [
+          "psi4.wb97x_d3bj.def2_tzvppd.optimize.v1"
+        ]
+      },
+      "manifest_hash": {
+        "algorithm": "sha256",
+        "type": "adapter_manifest_hash",
+        "value": "cae9da8c4f0b1726ae89ea0c690f4fd7c658f85255e0162318d772d4bcc65912"
+      }
+    }
+  ],
+  "discovery": {
+    "executable_path_probe": false,
+    "mode": "static_only",
+    "module_scan": false,
+    "network_probe": false,
+    "path_scan": false,
+    "python_entry_points": false
+  },
+  "product": {
+    "name": "chem-workbench",
+    "version": "0.1.0a2"
+  },
+  "registry_version": "adapter-registry/v1alpha1"
+}

@@ -49,6 +49,8 @@ export function buildMissionCapabilitySnapshot(input: MissionCapabilityInputs): 
       id: input.model.id,
       fingerprint: input.model.fingerprint,
       toolCapability: input.model.toolCapability,
+      instanceId: input.model.workbenchInstance?.id,
+      toolProbeId: input.model.toolCapabilityProbe?.probeId,
       vision: input.model.vision,
       active: input.model.loadState === "active",
     } : undefined,
@@ -141,8 +143,8 @@ export function buildResumeContract(
     compare(
       "model",
       "Model identity",
-      source?.model ? `${source.model.id}:${source.model.fingerprint}:${source.model.active}` : source ? "none" : undefined,
-      currentCapabilities.model ? `${currentCapabilities.model.id}:${currentCapabilities.model.fingerprint}:${currentCapabilities.model.active}` : "none",
+      source?.model ? `${source.model.id}:${source.model.fingerprint}:${source.model.instanceId ?? "no-instance"}:${source.model.toolProbeId ?? "no-probe"}:${source.model.active}` : source ? "none" : undefined,
+      currentCapabilities.model ? `${currentCapabilities.model.id}:${currentCapabilities.model.fingerprint}:${currentCapabilities.model.instanceId ?? "no-instance"}:${currentCapabilities.model.toolProbeId ?? "no-probe"}:${currentCapabilities.model.active}` : "none",
       source?.model ? `${source.model.id} · ${shortHash(source.model.fingerprint)}` : source ? "No model" : "Not captured",
       currentCapabilities.model ? `${currentCapabilities.model.id} · ${currentCapabilities.model.active ? "active" : "not active"}` : "No active model",
       "Model changes do not mutate the checkpoint, but the resumed mission must pass a fresh launch preflight.",
@@ -295,6 +297,8 @@ export function assertCapabilitySnapshot(value: unknown): asserts value is Missi
   if (snapshot.model && (!snapshot.model.id
     || !sha256String(snapshot.model.fingerprint)
     || !["agent-ready", "chat-only", "unknown"].includes(snapshot.model.toolCapability)
+    || (snapshot.model.instanceId !== undefined && (typeof snapshot.model.instanceId !== "string" || snapshot.model.instanceId.length > 512))
+    || (snapshot.model.toolProbeId !== undefined && (typeof snapshot.model.toolProbeId !== "string" || snapshot.model.toolProbeId.length > 128))
     || typeof snapshot.model.vision !== "boolean"
     || typeof snapshot.model.active !== "boolean")) {
     throw new Error("Stored mission capability snapshot model identity is malformed.");

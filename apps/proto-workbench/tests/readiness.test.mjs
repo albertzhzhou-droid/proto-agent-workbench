@@ -34,6 +34,7 @@ const model = {
   name: "Local model",
   loadState: "active",
   workbenchInstance: { id: "instance-1", ownedByWorkbench: true },
+  loadedInstances: [{ id: "instance-1", contextLength: 8192 }],
 };
 
 test("readiness becomes operational only when every real prerequisite is ready", () => {

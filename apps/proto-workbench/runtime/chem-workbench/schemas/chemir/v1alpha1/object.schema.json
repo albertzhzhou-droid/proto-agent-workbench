@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "object.schema.json",
+  "title": "ChemIR v1alpha1 core object union",
+  "$ref": "#/$defs/ChemIRObject",
+  "$defs": {
+    "ChemIRObject": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MoleculeEnvelope"
+        },
+        {
+          "$ref": "#/$defs/GeometryEnvelope"
+        },
+        {
+          "$ref": "#/$defs/ElectronicStateEnvelope"
+        },
+        {
+          "$ref": "#/$defs/ChemicalSubstanceEnvelope"
+        },
+        {
+          "$ref": "#/$defs/MaterialLotEnvelope"
+        },
+        {
+          "$ref": "#/$defs/CoordinationComplexEnvelope"
+        },
+        {
+          "$ref": "#/$defs/PeriodicStructureEnvelope"
+        },
+        {
+          "$ref": "#/$defs/SurfaceSlabEnvelope"
+        },
+        {
+          "$ref": "#/$defs/AdsorptionComplexEnvelope"
+        },
+        {
+          "$ref": "#/$defs/InterfaceReactionStepEnvelope"
+        },
+        {
+          "$ref": "#/$defs/ConditionSetEnvelope"
+        },
+        {
+          "$ref": "#/$defs/ComparisonSpecEnvelope"
+        },
+        {
+          "$ref": "#/$defs/CalculationSpecEnvelope"
+        },
+        {
+          "$ref": "#/$defs/EvidenceEnvelope"
+        }
+      ]
+    },
+    "MoleculeEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "Molecule"
+            },
+            "payload": {
+              "$ref": "molecule.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "GeometryEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "Geometry"
+            },
+            "payload": {
+              "$ref": "geometry.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "ElectronicStateEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "ElectronicState"
+            },
+            "payload": {
+              "$ref": "electronic-state.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "ChemicalSubstanceEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "ChemicalSubstance"
+            },
+            "payload": {
+              "$ref": "chemical-substance.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "MaterialLotEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "MaterialLot"
+            },
+            "payload": {
+              "$ref": "material-lot.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "CoordinationComplexEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "CoordinationComplex"
+            },
+            "payload": {
+              "$ref": "coordination-complex.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "PeriodicStructureEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "PeriodicStructure"
+            },
+            "payload": {
+              "$ref": "periodic-structure.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "SurfaceSlabEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "SurfaceSlab"
+            },
+            "payload": {
+              "$ref": "surface-slab.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "AdsorptionComplexEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "AdsorptionComplex"
+            },
+            "payload": {
+              "$ref": "adsorption-complex.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "InterfaceReactionStepEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "InterfaceReactionStep"
+            },
+            "payload": {
+              "$ref": "interface-reaction-step.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "ConditionSetEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "ConditionSet"
+            },
+            "payload": {
+              "$ref": "condition-set.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "ComparisonSpecEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "ComparisonSpec"
+            },
+            "payload": {
+              "$ref": "comparison-spec.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "CalculationSpecEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "CalculationSpec"
+            },
+            "payload": {
+              "$ref": "calculation-spec.schema.json"
+            }
+          }
+        }
+      ]
+    },
+    "EvidenceEnvelope": {
+      "allOf": [
+        {
+          "$ref": "envelope.schema.json#/$defs/Envelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "Evidence"
+            },
+            "payload": {
+              "$ref": "evidence.schema.json"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

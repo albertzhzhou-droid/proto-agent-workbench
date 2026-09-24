@@ -90,6 +90,9 @@ test("privileged IPC requires the exact main webContents, top frame, URL, and bo
 
   assert.deepEqual(validateIpcArguments(IPC.modelsScan, []), []);
   assert.throws(() => validateIpcArguments(IPC.modelsScan, ["C:\\arbitrary"]), /Invalid arguments/);
+  assert.deepEqual(validateIpcArguments(IPC.modelsProbeTools, ["lmstudio:fixture-model"]), ["lmstudio:fixture-model"]);
+  assert.throws(() => validateIpcArguments(IPC.modelsProbeTools, ["lmstudio:fixture-model", { force: true }]), /Invalid arguments/);
+  assert.deepEqual(validateIpcArguments(IPC.modelsEvaluationSummaries, []), []);
   const activationEvidence = {
     operator: "operator-supplied-label",
     approval_reference: "change-record:MAT-18",

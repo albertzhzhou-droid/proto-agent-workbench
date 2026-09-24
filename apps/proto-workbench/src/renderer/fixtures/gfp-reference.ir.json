@@ -1,0 +1,198 @@
+{
+  "schema_version": "proto-agent.ir.v1",
+  "domain": "protein",
+  "design_id": "protein-observatory-gfp",
+  "chassis": "protein_sequence",
+  "proteins": [
+    {
+      "id": "uniprot:P42212",
+      "resource_id": "uniprot:P42212",
+      "type": "protein_sequence",
+      "name": "GFP_AEQVI",
+      "sequence": "MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK",
+      "sequence_kind": "PROTEIN",
+      "sequence_sha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403",
+      "description": "Green fluorescent protein sequence from Aequorea victoria, retained as a reviewed reporter-protein reference for software-level design composition.",
+      "description_zh": "\u6765\u81ea\u7ef4\u591a\u5229\u4e9a\u6c34\u6bcd\u7684\u7eff\u8272\u8367\u5149\u86cb\u767d\u5e8f\u5217\uff1b\u4f5c\u4e3a\u5df2\u5ba1\u67e5\u7684\u62a5\u544a\u86cb\u767d\u53c2\u8003\uff0c\u7528\u4e8e\u8f6f\u4ef6\u5c42\u8bbe\u8ba1\u7ec4\u5408\u3002",
+      "source": {
+        "provider": "UniProtKB/Swiss-Prot",
+        "record_id": "P42212",
+        "revision": "entry-version-195;sequence-version-1",
+        "release": "2026_03",
+        "url": "https://rest.uniprot.org/uniprotkb/P42212.json",
+        "retrieved_at": "2026-09-03T18:42:28Z",
+        "content_sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
+        "sequence_sha256": "44f2688342a00e4b01e82be5e655b26499f981515d5da9a6076315627355b403"
+      },
+      "license": {
+        "id": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0",
+        "attribution": "UniProt Consortium",
+        "rights_notes": "UniProt applies CC BY 4.0 to copyrightable database content and notes that patent or other third-party rights may still apply.",
+        "redistribution_status": "REDISTRIBUTABLE"
+      },
+      "review_status": "DESIGN_ELIGIBLE",
+      "safety_status": "NO_FLAG",
+      "safety_flags": [],
+      "design_eligibility": true,
+      "evidence_refs": [
+        "https://rest.uniprot.org/uniprotkb/P42212.json",
+        "https://www.uniprot.org/help/license"
+      ],
+      "organism": {
+        "name": "Aequorea victoria",
+        "strain": "",
+        "tax_id": 6100
+      },
+      "role_terms": [
+        "fluorescent protein",
+        "reporter protein",
+        "visualization"
+      ],
+      "metadata": {
+        "eligibility_basis": "controlled software-catalog review 2026-09; exact accession and sequence digest locked",
+        "entry_length": 238,
+        "reviewed_record": true
+      },
+      "metrics": {
+        "length_aa": 238,
+        "molecular_weight_da_approx": 26885.995,
+        "composition": {
+          "A": 8,
+          "C": 2,
+          "D": 18,
+          "E": 16,
+          "F": 13,
+          "G": 22,
+          "H": 10,
+          "I": 12,
+          "K": 20,
+          "L": 19,
+          "M": 6,
+          "N": 13,
+          "P": 10,
+          "Q": 8,
+          "R": 6,
+          "S": 11,
+          "T": 15,
+          "V": 17,
+          "W": 1,
+          "Y": 11
+        },
+        "hydrophobic_fraction": 0.365546,
+        "charged_fraction": 0.252101,
+        "ambiguous_or_special_fraction": 0.0,
+        "algorithm": "proto.protein-metrics.v2",
+        "mass_status": "available",
+        "mass_reason": null
+      }
+    }
+  ],
+  "constructs": [],
+  "constraints": [],
+  "provenance": {
+    "source": "build/protein-upgrade-qa/gfp.selection.json",
+    "snapshot_id": "public-reviewed-2026.09",
+    "selection_digest": "2bf7ac81f526546fb5e92f371fd029bb76d6661e7841e35cecca975e69ded063",
+    "selection_schema_version": "proto-agent.protein-selection.v2",
+    "resource_ids": [
+      "uniprot:P42212"
+    ],
+    "catalog_attestation": {
+      "attestation_kind": "catalog-issued-content-binding",
+      "authenticity": "NOT_ESTABLISHED",
+      "binding_sha256": "7fa4a3ec0bdd8dc4428e3218d6209313108dfe646539ac58ecaa64224d5a2c67",
+      "cryptographic_signature": false,
+      "issuer": "proto-agent-materials-catalog",
+      "records": [
+        {
+          "promotion_attestation": {
+            "decision": "PASS",
+            "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+            "record_sha256": "f7835725e73acaecf492b8a474c9300cfffbd233731fc722218bf4f110c783b8",
+            "resource_id": "uniprot:P42212",
+            "rounds": [
+              {
+                "reason_codes": [
+                  "EVIDENCE_LINKS_VERIFIED",
+                  "LICENSE_RESPONSE_VERIFIED",
+                  "PROVIDER_LICENSE_POLICY_MATCHED",
+                  "SOURCE_RESPONSE_HASH_VERIFIED",
+                  "SOURCE_VERSIONED"
+                ],
+                "round_id": "provenance_rights",
+                "status": "PASS"
+              },
+              {
+                "reason_codes": [
+                  "DERIVED_SAFETY_NO_FLAG",
+                  "ONTOLOGY_SUPPORTED",
+                  "SEQUENCE_HASH_VERIFIED",
+                  "SOFTWARE_DOMAIN_COMPATIBLE"
+                ],
+                "round_id": "sequence_ontology_safety",
+                "status": "PASS"
+              },
+              {
+                "reason_codes": [
+                  "CATALOG_ELIGIBILITY_ROUNDTRIP_VERIFIED",
+                  "MATERIALIZATION_ROUNDTRIP_VERIFIED",
+                  "NORMALIZATION_ROUNDTRIP_VERIFIED",
+                  "RESOURCE_ID_UNIQUE",
+                  "SEQUENCE_UNIQUE"
+                ],
+                "round_id": "duplicate_roundtrip_visibility",
+                "status": "PASS"
+              }
+            ],
+            "source_evidence": {
+              "license_response": {
+                "byte_count": 914,
+                "declared_license_id": "CC-BY-4.0",
+                "declared_license_url": "https://creativecommons.org/licenses/by/4.0",
+                "path": "materials/reviewed/source_responses/2026-09/uniprot/license.json",
+                "retrieved_at": "2026-09-02T21:56:51Z",
+                "sha256": "5960c22bf17f22286504b927dbb3ca41713c571ed91a10fe7a88ddd964b416ce",
+                "url": "https://rest.uniprot.org/help/license"
+              },
+              "record_response": {
+                "byte_count": 244843,
+                "path": "materials/reviewed/source_responses/2026-09/uniprot/entries/P42212.json",
+                "retrieved_at": "2026-09-03T18:42:28Z",
+                "sha256": "9808303592b6644d614d7e048230f7279051ab5db171e3a1d9c5977a9e7bf383",
+                "url": "https://rest.uniprot.org/uniprotkb/P42212.json"
+              }
+            }
+          },
+          "promotion_attestation_sha256": "acf685a9b096ba8490bd34d00ae5db05e87596763c259c8fbf0deb6569729423",
+          "promotion_audit_sha256": "e151adc857ccbe8aca36e3accc150c77cbe7c444ec033a46c4c304e1acf2b52d",
+          "resource_id": "uniprot:P42212",
+          "selection_record_sha256": "22cd9cc5d973505106dd7f034db6f3d18cb5575e6caeeb92a31d21bf28862d84"
+        }
+      ],
+      "schema_version": "proto-agent.catalog-selection-attestation.v1",
+      "selection_digest": "2bf7ac81f526546fb5e92f371fd029bb76d6661e7841e35cecca975e69ded063",
+      "signature_status": "UNSIGNED",
+      "snapshot_manifest": {
+        "catalog_sha256": "8580ec7289ab80a2216c4f21ec228b1f57c2a611b3a7c6463fa1f05ef405a9f0",
+        "created_at": "2026-09-03T19:14:17Z",
+        "license_catalog_sha256": "7cab85fe60bc218ac70eedbf96f5bca5d2b567a3cf604f20edcc97f130301230",
+        "manifest_sha256": "e2df495ccf938adae7c5ef87325c43a06a5e39c010ceb13be11eb683a4223af7",
+        "promotion_audit": {
+          "policy_version": "proto-agent.materials-promotion-policy.2026-09",
+          "schema_version": "proto-agent.materials-promotion-audit.v1",
+          "sha256": "e151adc857ccbe8aca36e3accc150c77cbe7c444ec033a46c4c304e1acf2b52d",
+          "source": "snapshot-manifest-locked-audit"
+        },
+        "record_count": 1066,
+        "schema_version": "proto-agent.materials.v1",
+        "snapshot_id": "public-reviewed-2026.09"
+      },
+      "trust_statement": "Content-addressed catalogue receipt only; no cryptographic author identity or external trust anchor is established."
+    },
+    "catalog_binding_sha256": "7fa4a3ec0bdd8dc4428e3218d6209313108dfe646539ac58ecaa64224d5a2c67",
+    "catalog_signature_status": "UNSIGNED"
+  },
+  "review_status": "human_review_required",
+  "safety_boundary": "Software-level protein sequence compilation only; no wet-lab, orderability, biosafety, or regulatory claim."
+}

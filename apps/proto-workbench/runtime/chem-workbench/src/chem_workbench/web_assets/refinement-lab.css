@@ -1,0 +1,83 @@
+/* Scoped refinement result presentation. Shared Workbench components are untouched. */
+.refinement-workflow { margin: 24px 0; padding: 24px; border: 1px solid #d6e2dc; border-radius: 12px; background: #fff; color: #263e46; min-width: 0; }
+.refinement-workflow .rw-heading { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.refinement-workflow h3 { margin: 3px 0 12px; }
+.refinement-workflow .rw-state { font-size: 12px; padding: 6px 12px; background: #eef6f2; border-radius: 20px; }
+.refinement-workflow .rw-subject { font-weight: 600; overflow-wrap: anywhere; }
+.refinement-workflow .rw-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.refinement-workflow .rw-actions button, .refinement-workflow > label select { padding: 9px 13px; border: 1px solid #9cbdb7; border-radius: 7px; background: #fff; color: #24594f; font: 12px/1.4 LocalUI, "Segoe UI", sans-serif; }
+.refinement-workflow .rw-actions button.primary { background: #277a65; border-color: #277a65; color: #fff; }
+.refinement-workflow .rw-limits { color: #365e50; font-size: 12px; line-height: 1.7; }
+.refinement-workflow > label { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; margin-top: 16px; }
+.refinement-workflow > label select { width: auto; max-width: 100%; min-width: 190px; }
+.refinement-workflow .rw-status { padding: 14px; background: #f3f7f5; border-left: 3px solid #54947c; overflow-wrap: anywhere; }
+.refinement-workflow .rl-note, .refinement-workflow .rl-empty { font-size: 12px; color: #60767b; }
+.refinement-workflow .rw-plan > .rl-detail { margin: 12px 0; font-size: 12px; }
+.refinement-workflow .rw-plan pre { max-height: 440px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; background: #f4f7f6; font: 11px/1.65 Consolas, monospace; }
+.refinement-workflow :is(button,select,summary):focus-visible { outline: 3px solid #258d78; outline-offset: 3px; }
+@media (max-width: 650px) { .refinement-workflow { padding: 16px; } .refinement-workflow .rw-actions button { flex: 1 1 45%; } }
+.refinement-lab-panel {
+  --rl-ink: #263e46;
+  --rl-muted: #60767b;
+  --rl-line: #dce7e5;
+  min-width: 0;
+  color: var(--rl-ink);
+  background: #fff;
+  border: 1px solid var(--rl-line);
+  border-radius: 12px;
+  font: 14px/1.6 LocalUI, "Segoe UI", sans-serif;
+}
+.refinement-lab-panel .rl-body { padding: 24px; max-height: none; overflow: visible; }
+.refinement-lab-panel .rl-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+.refinement-lab-panel h2 { margin: 3px 0 0; font-size: 21px; font-weight: 600; line-height: 1.35; }
+.refinement-lab-panel h3 { margin: 0 0 10px; font-size: 16px; font-weight: 600; }
+.refinement-lab-panel p { margin: 9px 0; overflow-wrap: anywhere; }
+.refinement-lab-panel .rl-origin { margin: 0; color: var(--rl-muted); font-size: 12px; }
+.refinement-lab-panel .rl-state { padding: 5px 10px; border: 1px solid #ccdeda; border-radius: 20px; background: #f1f7f5; color: #335e51; font-size: 12px; white-space: nowrap; }
+.refinement-lab-panel:is([data-state="failed"], [data-state="cancelled"], [data-state="resource_limit"]) .rl-state { color: #87452f; background: #fff3ec; border-color: #ecd0bf; }
+.refinement-lab-panel .rl-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin: 0 0 12px; }
+.refinement-lab-panel .rl-metric { min-width: 0; padding: 13px 15px; background: #f5f8f7; border: 1px solid #e4ece9; border-radius: 8px; }
+.refinement-lab-panel .rl-metric dt { color: var(--rl-muted); font-size: 11px; }
+.refinement-lab-panel .rl-metric dd { margin: 7px 0 0; font-size: 18px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.refinement-lab-panel .rl-note { color: var(--rl-muted); font-size: 12px; line-height: 1.65; }
+.refinement-lab-panel .rl-failure { margin: 18px 0; padding: 14px 16px; border: 1px solid #ecd6c8; border-left: 3px solid #bd7956; border-radius: 8px; background: #fff9f4; font-size: 12px; }
+.refinement-lab-panel .rl-failure .rl-failure-title { margin: 0; font-size: 13px; font-weight: 600; color: #79452f; }
+.refinement-lab-panel .rl-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; padding: 18px 0; }
+.refinement-lab-panel label { color: var(--rl-muted); font-size: 12px; }
+.refinement-lab-panel .rl-evaluation-label { display: flex; flex: 1 1 230px; flex-direction: column; gap: 6px; min-width: 0; margin-right: 6px; }
+.refinement-lab-panel button, .refinement-lab-panel select { width: auto; max-width: 100%; min-height: 38px; margin: 0; padding: 8px 12px; color: #285d50; background: #fff; border: 1px solid #adc8c0; border-radius: 7px; font: 12px/1.4 LocalUI, "Segoe UI", sans-serif; }
+.refinement-lab-panel button { flex: 0 0 auto; cursor: pointer; }
+.refinement-lab-panel select { min-width: 0; }
+.refinement-lab-panel button.rl-show { background: #277a65; border-color: #277a65; color: #fff; }
+.refinement-lab-panel button:disabled, .refinement-lab-panel select:disabled { opacity: .5; cursor: not-allowed; }
+.refinement-lab-panel :is(button, select, summary):focus-visible { outline: 3px solid #258d78; outline-offset: 3px; }
+.refinement-lab-panel .rl-notice { margin: 0 0 12px; color: #456b5e; font-size: 12px; }
+.refinement-lab-panel .rl-notice:empty, .refinement-lab-panel .rl-chart:empty { display: none; }
+.refinement-lab-panel .rl-selected { min-width: 0; }
+.refinement-lab-panel .rl-selected > p { font-size: 12px; }
+.refinement-lab-panel .rl-empty { padding: 14px 16px; color: var(--rl-muted); background: #f5f8f7; border: 1px dashed #cbdcd6; border-radius: 8px; }
+.refinement-lab-panel .rl-axis-label { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 20px 0 12px; }
+.refinement-lab-panel .rl-chart { margin-bottom: 12px; border: 1px solid #dce7e5; border-radius: 9px; background: #f7faf9; }
+.refinement-lab-panel .rl-chart svg { display: block; width: 100%; height: auto; }
+.refinement-lab-panel .rl-chart text { font: 11px LocalUI, "Segoe UI", sans-serif; }
+.refinement-lab-panel .rl-chart circle { cursor: pointer; }
+.refinement-lab-panel .rl-coordinate-wrap { max-width: 100%; overflow-x: auto; margin: 16px 0; border: 1px solid var(--rl-line); border-radius: 8px; }
+.refinement-lab-panel table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }
+.refinement-lab-panel caption { padding: 12px; color: var(--rl-muted); text-align: left; font-size: 12px; }
+.refinement-lab-panel th, .refinement-lab-panel td { padding: 10px 12px; border-top: 1px solid #e5ece9; white-space: nowrap; }
+.refinement-lab-panel th { background: #f0f6f3; font-weight: 500; }
+.refinement-lab-panel td { font-family: Consolas, monospace; font-variant-numeric: tabular-nums; }
+.refinement-lab-panel .rl-detail { margin: 12px 0 0; border-top: 1px solid var(--rl-line); color: var(--rl-muted); font-size: 12px; }
+.refinement-lab-panel .rl-detail summary { padding: 12px 0; cursor: pointer; }
+.refinement-lab-panel .rl-detail pre { max-height: none; overflow: visible; margin: 0 0 12px; padding: 14px; background: #f4f7f6; border: 1px solid #e4ece8; border-radius: 7px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.7 Consolas, monospace; }
+.refinement-lab-panel .rl-failure-detail { border-color: #ead8cc; }
+.refinement-lab-panel .rl-failure-detail pre { background: #fffdfb; }
+.refinement-lab-panel [hidden] { display: none; }
+@media (max-width: 650px) {
+  .refinement-lab-panel .rl-body { padding: 16px; }
+  .refinement-lab-panel h2 { font-size: 18px; }
+  .refinement-lab-panel .rl-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .refinement-lab-panel .rl-metric { padding: 11px; }
+  .refinement-lab-panel .rl-metric dd { font-size: 16px; }
+  .refinement-lab-panel .rl-evaluation-label { flex-basis: 100%; margin-right: 0; }
+}

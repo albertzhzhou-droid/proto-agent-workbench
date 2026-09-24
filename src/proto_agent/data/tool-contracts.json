@@ -1,0 +1,750 @@
+{
+  "schema_version": "proto-agent.tool-contract.v1",
+  "tools": [
+    {
+      "name": "proto_data_read",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "research.data.read",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "result-page"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_compute_catalog",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "compute.catalog",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_bioinformatics_catalog",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "bioinformatics.catalog",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_bioinformatics_run",
+      "effect": "write",
+      "network": false,
+      "access": "grant-execution",
+      "capability_id": "bioinformatics.run",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_compute_run",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "compute.run",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_compute_fingerprint",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "compute.fingerprint",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "provenance-verification"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_compute_value_read",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "compute.value.read",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "result-page"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_research_figure_render",
+      "effect": "write",
+      "network": false,
+      "access": "denied",
+      "capability_id": "research.figure.render",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-export"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_remote_catalog",
+      "effect": "read",
+      "network": false,
+      "access": "denied",
+      "capability_id": "remote.catalog",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_remote_run",
+      "effect": "write",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "remote.run",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_language_reference",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.language_reference",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_design_edit",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.edit",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "design-source"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_protein_validate",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.protein_validate",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "design-validation"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_check",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.check",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "design-validation"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_compile",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.compile",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "compiled-design"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_protein_compile",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.protein_compile",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "compiled-design"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_export",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.export",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-export"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_validate_sbol",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.validate_sbol",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "design-validation"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_score",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.score",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "design-validation"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_validate_sequences",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.validate_sequences",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "design-validation"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_optimize_sequences",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.optimize_sequences",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "design-source"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_search_parts",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.search_parts",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "governed-materials"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_materials_search",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "materials.search",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "governed-materials"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_materials_get",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "materials.get",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "governed-materials"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_materials_facets",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "materials.facets",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_materials_materialize",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "materials.materialize",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "governed-materials",
+        "materialized-parts"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_materials_materialize_proteins",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "materials.materialize_proteins",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "governed-materials",
+        "protein-materialization"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_workflow_run",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.workflow_run",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "workflow-manifest",
+        "compiled-design",
+        "design-validation",
+        "scientific-export"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_review_packet",
+      "effect": "write",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.review_packet",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget",
+        "material-binding"
+      ],
+      "produces": [
+        "review-packet"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_provenance_verify",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "design.provenance_verify",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "provenance-verification"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_literature_search",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "literature.local",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_pubmed_search",
+      "effect": "read",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "literature.pubmed",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_europe_pmc_search",
+      "effect": "read",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "literature.europe_pmc",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_crossref_search",
+      "effect": "read",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "literature.crossref",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_uniprot_search",
+      "effect": "read",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "database.uniprot",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_rhea_search",
+      "effect": "read",
+      "network": true,
+      "access": "grant-network",
+      "capability_id": "database.rhea",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "literature-evidence"
+      ],
+      "idempotent": true,
+      "cost_class": "external",
+      "max_calls_per_run": 12
+    },
+    {
+      "name": "proto_run_analysis",
+      "effect": "write",
+      "network": false,
+      "access": "grant-execution",
+      "capability_id": "code.python",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_run_notebook",
+      "effect": "write",
+      "network": false,
+      "access": "grant-execution",
+      "capability_id": "code.notebook",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_r_status",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "code.r_status",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "runtime-status"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_run_r",
+      "effect": "write",
+      "network": false,
+      "access": "grant-execution",
+      "capability_id": "code.r",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "scientific-compute"
+      ],
+      "idempotent": false,
+      "cost_class": "metered",
+      "max_calls_per_run": 24
+    },
+    {
+      "name": "proto_connectors_check",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "connectors.check",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "runtime-status"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_skills_list",
+      "effect": "read",
+      "network": false,
+      "access": "auto",
+      "capability_id": "skills.catalog",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    },
+    {
+      "name": "proto_skills_resolve",
+      "effect": "read",
+      "network": false,
+      "access": "denied",
+      "capability_id": "skills.resolve",
+      "preconditions": [
+        "schema-validated",
+        "within-run-budget"
+      ],
+      "produces": [
+        "catalog"
+      ],
+      "idempotent": true,
+      "cost_class": "cheap",
+      "max_calls_per_run": 64
+    }
+  ]
+}

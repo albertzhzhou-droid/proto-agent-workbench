@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "proto-workbench.module.v1",
+  "moduleId": "analysis.biomni",
+  "version": 2,
+  "core": false,
+  "label": "Biomni scientific computing",
+  "resourceTier": "standard",
+  "tools": [
+    "proto_bioinformatics_catalog",
+    "proto_bioinformatics_run",
+    "proto_compute_catalog",
+    "proto_compute_fingerprint",
+    "proto_compute_run",
+    "proto_compute_value_read",
+    "proto_data_read",
+    "proto_remote_catalog",
+    "proto_remote_run",
+    "proto_research_figure_render"
+  ]
+}

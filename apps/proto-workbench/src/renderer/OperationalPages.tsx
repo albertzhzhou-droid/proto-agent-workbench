@@ -1,3 +1,5 @@
+import { DesignExtensions } from "./DesignExtensions.tsx";
+import { isModelConnected } from "../shared/model-status.ts";
 import {
   Archive,
   BookOpen,
@@ -41,6 +43,7 @@ import type {
   MaterialsReviewInput,
   MaterialsSearchResult,
   MaterialsStatus,
+  ModelEvaluationSummary,
   ModelDescriptor,
   ModelLoadOptions,
   MissionLibraryEntry,
@@ -60,7 +63,7 @@ import {
   type OptionalModuleId,
   type WorkbenchModuleDescriptor,
 } from "../shared/modules.ts";
-import { workbenchApi } from "./mock-api.ts";
+import { workbenchApi, workbenchDataMode } from "./mock-api.ts";
 import {
   MAX_MATERIALS_DESIGN_SELECTION,
   createMaterialsDesignSelection,
@@ -86,7 +89,7 @@ export function OperationalPage({ view }: { view: Exclude<AppView, "runs"> }) {
   if (view === "launchpad") return <LaunchpadPage />;
   if (view === "workspaces") return <WorkspacesPage />;
   if (view === "designs") return <Suspense fallback={<div className="designs-page designs-loading" role="status"><LoaderCircle className="spin" size={22} /><div><strong>Opening Design Explorer</strong><span>Loading the local sequence renderer.</span></div></div>}><DesignsPage /></Suspense>;
-  if (view === "models") return <LmStudioModelsPage />;
+  if (view === "models") return <ModelsAndExtensionsPage />;
   if (view === "materials") return <MaterialsPage />;
   if (view === "sources") return <SourcesPage />;
   if (view === "reviews") return <ReviewsPage />;
@@ -127,8 +130,8 @@ function LaunchpadPage() {
     }),
     [settings, runtime, integrity, models, entries, thread?.modelId],
   );
-  const activeModel = models.find((model) => model.id === thread?.modelId && model.loadState === "active")
-    ?? (!thread?.modelId ? models.find((model) => model.loadState === "active") : undefined);
+  const activeModel = models.find((model) => runtime.available && model.id === thread?.modelId && model.loadState === "active" && isModelConnected(model))
+    ?? (!thread?.modelId ? models.find((model) => runtime.available && model.loadState === "active" && isModelConnected(model)) : undefined);
 
   const runAction = async (action: ReadinessAction) => {
     if (action === "choose-workspace") return chooseWorkspace();
@@ -165,7 +168,9 @@ function LaunchpadPage() {
   };
   const reconciledValidationJournals = recovery.reconciledValidationJournals ?? 0;
   const validationStepsNeedingReplay = recovery.validationStepsNeedingReplay ?? 0;
+  const journalUnknownEffects=recovery.executionJournal?.unknownEffects??0;
   const hasRecoveryNotice = Boolean(
+    journalUnknownEffects > 0 || (recovery.harnessJournalDisagreements??0) > 0 ||
     recovery.workspaceFallback
     || recovery.recoveredRuns > 0
     || recovery.invalidatedApprovals > 0
@@ -174,7 +179,7 @@ function LaunchpadPage() {
     || reconciledValidationJournals > 0
     || validationStepsNeedingReplay > 0
   );
-  const recoveryHeadline = recovery.conflictedPatchOperations > 0
+  const recoveryHeadline = journalUnknownEffects > 0 ? `${journalUnknownEffects} workspace operation${journalUnknownEffects===1?"":"s"} need effect review` : recovery.conflictedPatchOperations > 0
     ? `${recovery.conflictedPatchOperations} file effect${recovery.conflictedPatchOperations === 1 ? "" : "s"} need reconciliation`
     : validationStepsNeedingReplay > 0
       ? `${validationStepsNeedingReplay} validation step${validationStepsNeedingReplay === 1 ? "" : "s"} need explicit resume`
@@ -210,8 +215,9 @@ function LaunchpadPage() {
           <span><RotateCcw size={18} /></span>
           <div>
             <strong>{recoveryHeadline}</strong>
-            <p>{recovery.workspaceFallback ? `The saved workspace was unavailable, so Proto opened the safe default at ${recovery.workspaceFallback.activePath}. ` : ""}{recovery.recoveredEvents} unfinished ledger event{recovery.recoveredEvents === 1 ? " was" : "s were"} marked interrupted or effect unknown without replaying model, network, or write side effects. {recovery.invalidatedApprovals} stale approval{recovery.invalidatedApprovals === 1 ? " was" : "s were"} invalidated. {recovery.reconciledPatchOperations} patch operation{recovery.reconciledPatchOperations === 1 ? " was" : "s were"} matched to disk; {recovery.conflictedPatchOperations} still require explicit reconciliation. {reconciledValidationJournals} validation journal{reconciledValidationJournals === 1 ? " was" : "s were"} rebuilt from durable evidence; {validationStepsNeedingReplay} step{validationStepsNeedingReplay === 1 ? "" : "s"} require an explicit resume decision.</p>
+            <p>{recovery.workspaceFallback ? `The saved workspace was unavailable, so Proto opened the safe default at ${recovery.workspaceFallback.activePath}. ` : ""}{journalUnknownEffects} workspace journal operation{journalUnknownEffects===1?"":"s"} need effect review. {recovery.harnessJournalDisagreements??0} legacy Harness projection disagreement{recovery.harnessJournalDisagreements===1?"":"s"} recorded. {recovery.recoveredEvents} unfinished ledger event{recovery.recoveredEvents === 1 ? " was" : "s were"} marked interrupted or effect unknown without replaying model, network, or write side effects. {recovery.invalidatedApprovals} stale approval{recovery.invalidatedApprovals === 1 ? " was" : "s were"} invalidated. {recovery.reconciledPatchOperations} patch operation{recovery.reconciledPatchOperations === 1 ? " was" : "s were"} matched to disk; {recovery.conflictedPatchOperations} still require explicit reconciliation. {reconciledValidationJournals} validation journal{reconciledValidationJournals === 1 ? " was" : "s were"} rebuilt from durable evidence; {validationStepsNeedingReplay} step{validationStepsNeedingReplay === 1 ? "" : "s"} require an explicit resume decision.</p>
           </div>
+          <button className="secondary-button" type="button" onClick={()=>window.dispatchEvent(new Event("proto:execution-recovery"))}>Review execution journal</button>
           <button className="secondary-button" type="button" onClick={() => recovery.workspaceFallback ? void chooseWorkspace() : void openRecovery()}>{recovery.workspaceFallback ? "Choose workspace" : recovery.runIds.length ? "Review affected run" : "Review runs"}</button>
         </section>
       )}
@@ -287,7 +293,7 @@ function LaunchpadPage() {
           <button className="secondary-button guided-mode" type="button" disabled={!readiness.operational} onClick={() => void startRun("plan")}><LockKeyhole size={16} /><span><strong>Plan</strong><small>Explore and prepare without file writes</small></span></button>
           <button className="primary-button guided-mode" type="button" disabled={!readiness.operational} onClick={() => void startRun("act")}><ShieldCheck size={16} /><span><strong>Act within scope</strong><small>Apply and validate authorized workspace changes</small></span></button>
         </div>
-        <dl className="readiness-facts"><div><dt>Workspace</dt><dd>{entries.length} indexed files</dd></div><div><dt>Runtime</dt><dd>{runtime.available ? runtime.backend?.toUpperCase() ?? "Available" : "Not ready"}</dd></div><div><dt>Model</dt><dd>{activeModel?.name ?? "Not loaded"}</dd></div><div><dt>Safety</dt><dd>Human review required</dd></div></dl>
+        <dl className="readiness-facts"><div><dt>Workspace</dt><dd>{entries.length} indexed files</dd></div><div><dt>Runtime</dt><dd>{runtime.available ? "Server reachable" : "Not ready"}</dd></div><div><dt>Model</dt><dd>{activeModel?.name ?? "Not loaded"}</dd></div><div><dt>Safety</dt><dd>Human review required</dd></div></dl>
       </section>
     </div>
   );
@@ -354,6 +360,25 @@ function WorkspacesPage() {
   );
 }
 
+function ModelsAndExtensionsPage() {
+  const [section, setSection] = useState<"models" | "extensions">("models");
+  return <div className="models-hub">
+    <div className="models-section-switch" role="tablist" aria-label="Models and Design extensions" onKeyDown={event => {
+      if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const next = event.key === "Home" ? "models" : event.key === "End" ? "extensions" : section === "models" ? "extensions" : "models";
+        setSection(next); document.getElementById(`${next}-tab`)?.focus();
+      }
+    }}>
+      <span className={`models-section-slider is-${section}`} aria-hidden="true"/>
+      <button id="models-tab" role="tab" tabIndex={section === "models" ? 0 : -1} aria-selected={section === "models"} aria-controls="models-panel" onClick={() => setSection("models")}><Boxes size={15}/>Models</button>
+      <button id="extensions-tab" role="tab" tabIndex={section === "extensions" ? 0 : -1} aria-selected={section === "extensions"} aria-controls="extensions-panel" onClick={() => setSection("extensions")}><BookOpen size={15}/>Design plugins & Skills</button>
+    </div>
+    <section id="models-panel" role="tabpanel" aria-labelledby="models-tab" hidden={section !== "models"}><LmStudioModelsPage /></section>
+    <section id="extensions-panel" role="tabpanel" aria-labelledby="extensions-tab" hidden={section !== "extensions"}><DesignExtensions /></section>
+  </div>;
+}
+
 function LmStudioModelsPage() {
   const models = useWorkbenchStore((state) => state.models);
   const settings = useWorkbenchStore((state) => state.settings);
@@ -373,6 +398,19 @@ function LmStudioModelsPage() {
   const [kvCachePlacement, setKvCachePlacement] = useState<"gpu" | "cpu">("gpu");
   const [numExperts, setNumExperts] = useState<number>();
   const [instanceId, setInstanceId] = useState<string>();
+  const [probeRunning, setProbeRunning] = useState(false);
+  const [probeError, setProbeError] = useState<string>();
+  const [evaluationSummaries, setEvaluationSummaries] = useState<ModelEvaluationSummary[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void workbenchApi().models.evaluationSummaries().then((summaries) => {
+      if (active) setEvaluationSummaries(summaries);
+    }).catch(() => {
+      if (active) setEvaluationSummaries([]);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!selected) return;
@@ -385,10 +423,10 @@ function LmStudioModelsPage() {
     setKvCachePlacement(loaded?.offloadKvCacheToGpu === false ? "cpu" : "gpu");
     setNumExperts(loaded?.numExperts);
     setInstanceId(loaded?.id);
-  }, [selected?.id]);
+  }, [selected?.id, JSON.stringify(selected?.loadedInstances), selected?.workbenchInstance?.id]);
 
   const loadedCount = selected?.loadedInstances?.length ?? 0;
-  const connected = Boolean(selected?.workbenchInstance && selected.loadState === "active");
+  const connected = Boolean(runtime.available && selected && isModelConnected(selected));
   const busy = selected?.id === busyModelId;
   const modelOptions: Partial<ModelLoadOptions> = {
     contextLength,
@@ -402,6 +440,19 @@ function LmStudioModelsPage() {
     ? [8_192, 32_768, 131_072, 262_144, 524_288, 1_048_576]
       .filter((value) => value <= selected.contextLength)
     : [];
+  const probeTools = async () => {
+    if (!selected) return;
+    setProbeRunning(true);
+    setProbeError(undefined);
+    try {
+      await workbenchApi().models.probeTools(selected.id);
+      await refreshModels();
+    } catch (cause) {
+      setProbeError(cause instanceof Error ? cause.message : "Tool capability probe failed.");
+    } finally {
+      setProbeRunning(false);
+    }
+  };
 
   return (
     <div className="operational-page">
@@ -421,6 +472,7 @@ function LmStudioModelsPage() {
         <Metric label="Catalog models" value={String(runtime.modelCount ?? models.length)} icon={Boxes} />
         <Metric label="Loaded instances" value={String(runtime.loadedModelCount ?? models.reduce((sum, model) => sum + (model.loadedInstances?.length ?? 0), 0))} icon={Gauge} />
       </section>
+      <p className="model-sync-note" role="status">{runtime.checkedAt ? `Checked ${new Date(runtime.checkedAt).toLocaleTimeString()} · refreshes every 5 seconds while visible` : "Checking LM Studio Server"}{workbenchDataMode() === "preview" ? " · Live inventory; instance control is available in the desktop Workbench." : ""}</p>
       <div className="model-page-layout">
         <section className="model-catalog-panel">
           <div className="model-catalog-heading"><span>Model</span><span>Type</span><span>State</span></div>
@@ -429,15 +481,15 @@ function LmStudioModelsPage() {
               <EmptyState busy icon={LoaderCircle} title="Synchronizing LM Studio" detail="Reading native model metadata and loaded_instances from /api/v1/models." />
             )}
             {models.length === 0 && !isScanningModels && (
-              <EmptyState icon={Boxes} title="No LM Studio models discovered" detail={`Start LM Studio's local server at ${settings.inference.baseUrl}, then refresh.`} />
+              <EmptyState icon={Boxes} title="No LM Studio models discovered" detail={runtime.available ? "LM Studio Server returned an empty catalog." : runtime.detail} />
             )}
             {models.map((model) => {
               const instances = model.loadedInstances?.length ?? 0;
-              const state = model.workbenchInstance
+              const state = isModelConnected(model)
                 ? "Connected"
                 : instances
                   ? `${instances} loaded`
-                  : "Available";
+                  : "Not loaded";
               return (
                 <button
                   className={`catalog-model-row ${selected?.id === model.id ? "is-selected" : ""}`}
@@ -445,13 +497,13 @@ function LmStudioModelsPage() {
                   key={model.id}
                   onClick={() => setSelectedId(model.id)}
                 >
-                  <span className={`model-dot is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`} />
+                  <span className={`model-dot is-${isModelConnected(model) ? "active" : instances ? "warm" : "unloaded"}`} />
                   <span className="catalog-model-copy">
                     <strong>{model.name}</strong>
                     <small>{model.publisher || "Local"} · {model.quantization} · {modelContextLabel(model)}</small>
                   </span>
                   <span>{model.modelKind ?? "llm"}</span>
-                  <span className={`model-state is-${model.workbenchInstance ? "active" : instances ? "warm" : "unloaded"}`}>{state}</span>
+                  <span className={`model-state is-${isModelConnected(model) ? "active" : instances ? "warm" : "unloaded"}`}>{state}</span>
                 </button>
               );
             })}
@@ -464,11 +516,16 @@ function LmStudioModelsPage() {
                 <h2>{selected.name}</h2>
                 <p title={selected.providerModelId}>{selected.providerModelId}</p>
               </div>
-              <span className={`runtime-status-line is-${runtime.available ? "cuda" : "missing"}`}><span />{runtime.available ? "LM Studio connected" : "LM Studio unavailable"}</span>
+              <span className={`runtime-status-line is-${runtime.available ? "cuda" : "missing"}`}><span />{runtime.available ? "Server reachable" : "LM Studio unavailable"}</span>
             </div>
             <div className="data-list">
               <div className="data-row"><strong>Architecture</strong><span>{selected.architecture}</span><strong>Format</strong><span>{selected.format ?? "unknown"}</span></div>
-              <div className="data-row"><strong>Capabilities</strong><span>{[selected.vision ? "vision" : undefined, selected.toolCapability === "agent-ready" ? "tools" : undefined, selected.reasoning ? `reasoning:${selected.reasoning.default}` : undefined].filter(Boolean).join(" · ") || "chat"}</span></div>
+              <div className="data-row"><strong>Capabilities</strong><span>{[(selected.providerVisionAdvertised ?? selected.vision) ? "vision advertised (unprobed)" : undefined, selected.providerToolUseAdvertised ? "provider advertises tools (unverified)" : undefined, selected.toolCapability === "agent-ready" ? "probe passed for this instance" : undefined, selected.reasoning ? `reasoning:${selected.reasoning.default}` : undefined].filter(Boolean).join(" · ") || "tool behavior unknown"}</span></div>
+              <div className="data-row"><strong>Tool probe</strong><span>{selected.toolCapabilityProbe
+                ? selected.toolCapability === "agent-ready"
+                  ? `Passed for ${selected.toolCapabilityProbe.instanceId}`
+                  : `${selected.toolCapabilityProbe.status} · not verified for the current instance${selected.toolCapabilityProbe.failureCode ? ` · ${selected.toolCapabilityProbe.failureCode}` : ""}`
+                : "Not run · provider metadata is not a probe"}</span></div>
               <div className="data-row"><strong>LM Studio instances</strong><span>{loadedCount || "None"}</span><strong>Workbench</strong><span>{selected.workbenchInstance ? `${selected.workbenchInstance.ownedByWorkbench ? "Owned" : "Attached"}: ${selected.workbenchInstance.id}` : "Not connected"}</span></div>
             </div>
             {selected.modelKind === "embedding" ? (
@@ -506,17 +563,33 @@ function LmStudioModelsPage() {
                 <input className="number-field" type="number" min={1} max={1_024} placeholder="Default" value={numExperts ?? ""} onChange={(event) => setNumExperts(event.target.value ? Number(event.target.value) : undefined)} />
               </div>
               <p>Load is always explicit. Before every chat, Workbench re-reads loaded_instances and refuses inference if this exact instance is absent. Disconnect only unloads instances created by Workbench.</p>
+              <p>A probe sends one forced function call to this exact connected instance. It does not execute the returned tool and measures protocol behavior only, not scientific correctness.</p>
+              {probeError && <div className="model-load-error" role="status"><CircleAlert size={14} /><span>{probeError}</span></div>}
               {selected.error && <div className="model-load-error" role="status"><CircleAlert size={14} /><span>{selected.error}</span></div>}
               <div className="model-load-actions">
-                {connected && <button className="secondary-button danger" type="button" disabled={isAgentRunning || busy} onClick={() => void unloadModel(selected.id)}>{selected.workbenchInstance?.ownedByWorkbench ? "Unload owned instance" : "Disconnect"}</button>}
-                {!connected && <button className="primary-button" type="button" disabled={isAgentRunning || busy || Boolean(loadedCount && !instanceId) || contextLength < 256 || contextLength > selected.contextLength} onClick={() => void loadModel(selected.id, modelOptions)}>{busy ? <LoaderCircle className="spin" size={14} /> : <Gauge size={14} />}{loadedCount ? "Connect loaded instance" : "Load in LM Studio"}</button>}
+                {selected.provider === "lmstudio" && connected && <button className="secondary-button" type="button" disabled={workbenchDataMode() === "preview" || isAgentRunning || busy || probeRunning} onClick={() => void probeTools()}>{probeRunning ? <LoaderCircle className="spin" size={14} /> : <CheckCircle2 size={14} />}{probeRunning ? "Probing exact instance" : "Probe tool calling"}</button>}
+                {connected && <button className="secondary-button danger" type="button" disabled={isAgentRunning || busy || probeRunning} onClick={() => void unloadModel(selected.id)}>{selected.workbenchInstance?.ownedByWorkbench ? "Unload owned instance" : "Disconnect"}</button>}
+                {!connected && <button className="primary-button" type="button" disabled={workbenchDataMode() === "preview" || !runtime.available || isAgentRunning || busy || Boolean(loadedCount && !instanceId) || contextLength < 256 || contextLength > selected.contextLength} onClick={() => void loadModel(selected.id, modelOptions)}>{busy ? <LoaderCircle className="spin" size={14} /> : <Gauge size={14} />}{loadedCount ? "Connect loaded instance" : "Load in LM Studio"}</button>}
               </div>
             </>}
           </>}
         </section>
       </div>
+      <section className="page-section" aria-label="Scientific model evaluation records">
+        <div className="section-heading"><div><h2>Evaluation record ledger</h2><p>Tool choice, execution and recovery, and scientific-answer evidence use separate attempt counts.</p></div></div>
+        {evaluationSummaries.length === 0
+          ? <p>No evaluation attempts recorded. A versioned case pack and independent references must be frozen before scientific scores can be reported.</p>
+          : <div className="data-list">{evaluationSummaries.map((summary) => <div className="data-row evaluation-ledger-row" key={summary.evaluationId}>
+            <div className="data-row-copy"><strong>{summary.evaluationId}</strong><span>{summary.attempts} total attempts · {summary.statuses.success} completed · {summary.statuses.error} errors · {summary.statuses.timeout} timeouts · {summary.statuses.cancelled} cancelled · {summary.statuses.refused} refused · {summary.statuses.unsupported} unsupported · {summary.statuses.interrupted} interrupted</span></div>
+            <span className="evaluation-ledger-counts">Tools {formatEvaluationCounts(summary.toolSelection)}<br />Execution {formatEvaluationCounts(summary.execution)}<br />Science {formatEvaluationCounts(summary.scientificAnswer)}</span>
+          </div>)}</div>}
+      </section>
     </div>
   );
+}
+
+function formatEvaluationCounts(counts: ModelEvaluationSummary["toolSelection"] | ModelEvaluationSummary["scientificAnswer"]): string {
+  return `${counts.pass} pass / ${counts.attempts} attempts · ${counts.fail} fail · ${counts.unscored} unscored · ${counts.notRun} not run`;
 }
 
 function SourcesPage() {
@@ -1025,7 +1098,7 @@ function SettingsPage() {
       mode,
       warmTtlMinutes: ttl,
     },
-    modules: { profile: moduleProfile, enabledOptional },
+    modules: { ...settings.modules, profile: moduleProfile, enabledOptional },
   });
   return (
     <div className="operational-page settings-page">

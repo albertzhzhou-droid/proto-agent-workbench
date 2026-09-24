@@ -1,3 +1,4 @@
+import { artifactReaders } from "./artifact-reader-registry.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { constants as fsConstants, type Stats } from "node:fs";
 import { lstat, open, opendir, realpath, rename, stat, unlink } from "node:fs/promises";
@@ -6,11 +7,13 @@ import { createTwoFilesPatch } from "diff";
 import type { FileCheckpoint, PatchOperation, PatchProposal, WorkspaceEntry } from "../../shared/contracts.ts";
 import type { AppDatabase } from "./database.ts";
 import { inspectArtifactFormat, type ArtifactFormat } from "./artifact-format.ts";
+import { computeResultByteLimit } from "../../shared/compute-limits.ts";
 
 const MAX_TEXT_BYTES = 2 * 1024 * 1024;
 const MAX_VISUALIZATION_IR_BYTES = 8 * 1024 * 1024;
 const MAX_SCAN_FILES = 2_000;
 const MAX_SCAN_DIRECTORIES = 512;
+const MAX_SCAN_ARTIFACT_DIRECTORIES = 1_024;
 const MAX_SCAN_ENTRIES = 10_000;
 const MAX_SCAN_DEPTH = 16;
 const MAX_SCAN_BYTES = 128 * 1024 * 1024;
@@ -34,6 +37,8 @@ const SEARCHABLE_EXTENSIONS = new Set([
 const LISTABLE_EXTENSIONS = new Set([
   ...SEARCHABLE_EXTENSIONS,
   ".pdf",
+  ".docx",
+  ".xlsx",
   ".png",
   ".jpg",
   ".jpeg",
@@ -73,7 +78,20 @@ const ROOT_BUILD_IGNORED_DIRECTORIES = new Set([
   // diagnostics are QA evidence for the workbench itself. They are not Proto
   // review artifacts and can contain hundreds of nested runtime directories.
   "visualization-qa",
+  "biomni-research",
+  "chat-research",
+  "chat-preview",
+  "chat-qa",
+  "chat-runtime-qa",
+  "bioinformatics-qa",
+  "bioinformatics-adapter-qa",
+  "bioinformatics-chat-qa",
+  "protein-upgrade-qa",
+  "tools",
 ]);
+const ROOT_BUILD_IGNORED_PREFIXES = ["public-export-sanitized", "materials-bundle-review-"];
+const ROOT_BUILD_SCIENTIFIC_OUTPUTS = new Set(["chat", "analysis", "r", "notebooks", "compute", "bioinformatics"]);
+const WORKSPACE_COPY_SOURCE_DIRECTORIES = new Set([".codex", "apps", "connectors", "literature", "parts", "schemas", "src", "workflows"]);
 const ROOT_BUILD_REVIEW_ARTIFACTS = new Set([
   "evidence.cards.json",
   "human_review_checklist.md",
@@ -95,14 +113,26 @@ export class WorkspaceFiles {
     this.database = database;
   }
 
-  async read(inputPath: string): Promise<{ path: string; content: string; sha256: string }> {
+  async read(inputPath: string): Promise<{ path: string; content: string; sha256: string;artifactReader?:import("../../shared/artifact-readers.ts").ArtifactReaderSelection }> {
     const root = await this.getCanonicalRoot();
     const path = await this.resolveInside(inputPath, false);
     const artifactPath = relative(root, path).replaceAll("\\", "/");
-    const limit = /^build\/.+\.ir\.json$/i.test(artifactPath) ? MAX_VISUALIZATION_IR_BYTES : MAX_TEXT_BYTES;
+    let limit = /^build\/.+\.ir\.json$/i.test(artifactPath) ? MAX_VISUALIZATION_IR_BYTES : MAX_TEXT_BYTES;
+    const computeResult = /^build\/compute\/([a-f0-9]{32})\/result\.json$/.exec(artifactPath);
+    if (computeResult) {
+      const metadata = await readRegularContainedFile(root, join(dirname(path), "manifest.json"), 1024 * 1024);
+      if (metadata === undefined) throw new Error("Compute result requires a bounded regular manifest.");
+      const manifest: unknown = JSON.parse(metadata);
+      if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)
+        || (manifest as Record<string, unknown>).schema_version !== "proto-agent.compute.v1"
+        || (manifest as Record<string, unknown>).run_id !== computeResult[1]) throw new Error("Compute artifact identity is invalid.");
+      limit = computeResultByteLimit((manifest as Record<string, unknown>).tool);
+    }
     const content = await readRegularContainedFile(root, path, limit);
     if (content === undefined) throw new Error("Only bounded single-link workspace files can be read.");
-    return { path, content, sha256: sha256(content) };
+    let artifactReader;
+    if(/\.json$/i.test(path)){try{artifactReader=artifactReaders.inspect(JSON.parse(content));}catch{/* Raw bytes remain readable when JSON is malformed. */}}
+    return { path, content, sha256: sha256(content),...(artifactReader?{artifactReader}:{}) };
   }
 
   /** Hash artifact bytes without decoding PNG/PDF/structure data as UTF-8. */
@@ -406,12 +436,17 @@ async function collectFiles(root: string, extensionHint?: string, includeBinary 
   const queue: Array<{ path: string; depth: number }> = [{ path: root, depth: 0 }];
   const deadline = Date.now() + MAX_SCAN_MILLISECONDS;
   let directories = 0;
+  let artifactDirectories = 0;
   let entriesScanned = 0;
   let totalBytes = 0;
   while (queue.length) {
     if (Date.now() > deadline) throw new Error("Workspace scan exceeded its time budget.");
-    if (++directories > MAX_SCAN_DIRECTORIES) throw new Error("Workspace scan exceeded its directory budget.");
     const { path: directory, depth } = queue.shift() as { path: string; depth: number };
+    // A growing collection of real research runs must not consume the source
+    // tree's budget. Both inventories remain independently bounded.
+    if (isInsideRootBuild(root, directory)) {
+      if (++artifactDirectories > MAX_SCAN_ARTIFACT_DIRECTORIES) throw new Error("Workspace artifact scan exceeded its directory budget.");
+    } else if (++directories > MAX_SCAN_DIRECTORIES) throw new Error("Workspace scan exceeded its directory budget.");
     const directoryInfo = await lstat(directory);
     if (directoryInfo.isSymbolicLink()) continue;
     const canonicalDirectory = await realpath(directory);
@@ -449,7 +484,7 @@ async function collectFiles(root: string, extensionHint?: string, includeBinary 
       const extension = dot >= 0 ? entry.name.slice(dot).toLocaleLowerCase() : "";
       if (!(includeBinary ? LISTABLE_EXTENSIONS : SEARCHABLE_EXTENSIONS).has(extension)) continue;
       if (extensionHint && !entry.name.toLocaleLowerCase().endsWith(extensionHint.toLocaleLowerCase())) continue;
-      if (isInsideRootBuild(root, path) && !isRootBuildReviewArtifact(entry.name)) continue;
+      if (isInsideRootBuild(root, path) && !isRootBuildScientificOutput(root, path) && !isRootBuildReviewArtifact(entry.name)) continue;
       info ??= await lstat(path);
       if (info.isSymbolicLink() || !info.isFile() || info.nlink !== 1) continue;
       totalBytes += info.size;
@@ -479,9 +514,14 @@ function isIgnoredScanDirectory(root: string, parent: string, name: string, pare
   // application, not to the user's reviewable workspace inventory. Keeping
   // this path-specific avoids hiding a legitimate top-level runtime/ or qa/.
   if (parentFromRoot === "apps/proto-workbench" && GENERATED_APP_DIRECTORIES.has(normalized)) return true;
-  if (parentFromRoot === "build" && ROOT_BUILD_IGNORED_DIRECTORIES.has(normalized)) {
+  if (parentFromRoot === "build" && (ROOT_BUILD_IGNORED_DIRECTORIES.has(normalized) || ROOT_BUILD_IGNORED_PREFIXES.some(prefix => normalized.startsWith(prefix)))) {
     return true;
   }
+  // Legacy staging copied whole workspaces under build/<run hash>. Their
+  // duplicated source/runtime trees are not new user research artifacts.
+  if (/^build\/[a-f0-9]{32}$/.test(parentFromRoot) && WORKSPACE_COPY_SOURCE_DIRECTORIES.has(normalized)) return true;
+  // Keep release records visible without indexing their unpacked application.
+  if (parentFromRoot.startsWith("releases/") && normalized === "win-unpacked") return true;
   // A root-level build/ directory is part of the Proto workspace contract and
   // contains reviewable IR/provenance. Nested build/ trees are application or
   // dependency output and must not consume the bounded startup scan.
@@ -492,6 +532,11 @@ function isInsideRootBuild(root: string, candidate: string): boolean {
   const pathFromRoot = relative(root, candidate);
   const [first] = pathFromRoot.split(sep);
   return first?.toLocaleLowerCase() === "build";
+}
+
+function isRootBuildScientificOutput(root: string, candidate: string): boolean {
+  const [first, area] = relative(root, candidate).split(sep).map(part => part.toLocaleLowerCase());
+  return first === "build" && ROOT_BUILD_SCIENTIFIC_OUTPUTS.has(area);
 }
 
 function isRootBuildReviewArtifact(name: string): boolean {

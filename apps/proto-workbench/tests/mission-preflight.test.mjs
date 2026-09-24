@@ -132,6 +132,16 @@ test("goal, mode, and attachment mutations invalidate the launch digest", () => 
   assert.notEqual(base.digest, attachment.digest);
 });
 
+test("image attachments report that provider vision metadata has not been probed", () => {
+  const report = buildMissionPreflight(inputs({
+    model: { ...inputs().model, vision: true },
+    visionModuleEnabled: true,
+    attachments: [{ path: "C:\\workspace\\figure.png", name: "figure.png", mediaType: "image/png", sizeBytes: 128 }],
+  }));
+  assert.equal(report.requirements.find((item) => item.id === "attachments")?.state, "ready");
+  assert.ok(report.warnings.some((warning) => warning.includes("has not been verified with an exact-instance image probe")));
+});
+
 test("Plan mode explicitly defers writes and code execution", () => {
   const report = buildMissionPreflight(inputs({
     thread: { ...inputs().thread, mode: "plan" },

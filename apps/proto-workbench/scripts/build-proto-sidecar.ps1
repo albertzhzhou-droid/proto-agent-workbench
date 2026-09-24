@@ -166,6 +166,10 @@ function Build-Sidecar {
     "--onedir",
     "--name", $Name,
     "--paths", (Join-Path $RepoRoot "src"),
+    "--collect-data", "proto_agent",
+    "--add-data", ((Join-Path $RepoRoot "src/proto_agent/bioinformatics_worker.py") + ";proto_agent"),
+    "--copy-metadata", "numpy",
+    "--copy-metadata", "scipy",
     "--distpath", $Staging,
     "--workpath", (Join-Path $BuildRoot $Name),
     "--specpath", $BuildRoot,
@@ -193,9 +197,9 @@ try {
     Assert-BuildManagedPath -Path $ManagedPath -Boundary $RuntimeRoot
   }
   Assert-BuildManagedPath -Path $Failed -Boundary $BuildRoot
-  & $Python -c "import PyInstaller"
+  & $Python -c "import PyInstaller; import numpy; import scipy"
   if ($LASTEXITCODE -ne 0) {
-    throw "PyInstaller is not installed in the project-local .venv."
+    throw "PyInstaller or the compute extra is not installed in the project-local .venv. Install .[workbench,compute]."
   }
 
   [IO.File]::WriteAllText(

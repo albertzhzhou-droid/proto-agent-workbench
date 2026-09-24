@@ -12,10 +12,17 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .analysis import DEFAULT_ANALYSIS_OUT_DIR, run_python_analysis
+from .compute import compute_catalog, prepare_compute_runtime, read_compute_value, run_compute
+from .tool_contracts import DATABASE_NETWORK_TOOLS, UnknownCapabilityError, export_contracts, verify_tool_contracts
+from .compute_identity import compute_fingerprint
+from .figure_export import prepare_figure_runtime, render_research_figure_file
+from .bioinformatics import bioinformatics_catalog, run_bioinformatics
 from .compiler import compile_design, validate_design
 from .design_edits import prepare_design_edit
 from .connectors import connector_summary
+from .data_access import read_array_chunk, read_dataset_page
 from .exporters import export_ir, load_ir
+from .design_evidence import checked_library_standing, export_standing
 from .literature import DEFAULT_LITERATURE_PATH, DEFAULT_PUBMED_CACHE_DIR, search_literature, search_pubmed
 from .language_reference import language_reference
 from .models import Diagnostic
@@ -66,15 +73,10 @@ NETWORK_CAPABILITY_VERSION = "proto-workbench.network-capability.v1"
 NETWORK_CAPABILITY_MAX_TTL_MS = 60_000
 NETWORK_CAPABILITY_CLOCK_SKEW_MS = 5_000
 MAX_CONSUMED_NETWORK_NONCES = 4_096
-NETWORK_TOOLS = frozenset(
-    {
-        "proto_pubmed_search",
-        "proto_europe_pmc_search",
-        "proto_crossref_search",
-        "proto_uniprot_search",
-        "proto_rhea_search",
-    }
-)
+# The per-call network capability covers exactly the tools whose contract row
+# declares an external database read. Deriving it removes the hand-kept set that
+# used to disagree with the host's own network list.
+NETWORK_TOOLS = DATABASE_NETWORK_TOOLS
 
 
 class NetworkCapabilityError(ValueError):
@@ -113,6 +115,78 @@ def _secure_tool_schema(schema: dict[str, Any]) -> None:
 
 
 TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "proto_data_read",
+        "description": "Read one bounded local data page from a Parquet table or one regular unsharded Zarr v3 array chunk. Paths stay inside the workspace. Returns schema, source version, and page hashes; preserves NULL and numeric precision; and reports absent or unreadable chunks explicitly. No arbitrary SQL, writes, network, or fill-value substitution.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["kind", "path"],
+            "properties": {
+                "kind": {"type": "string", "enum": ["table_page", "array_chunk"]},
+                "path": {"type": "string"},
+                "offset": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807, "default": 0},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 40},
+                "columns": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+                "expected_source_version": {"type": "string", "minLength": 1, "maxLength": 128},
+                "expected_metadata_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "maxLength": 64},
+                "chunk_indices": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"type": "integer", "minimum": 0, "maximum": 2147483647}},
+            },
+        },
+    },
+    {
+        "name": "proto_bioinformatics_catalog",
+        "description": "Discover installed WSL bioinformatics operations: GATK Mutect2, samtools, bcftools, LUMPY, SnpEff, CNVkit, Prokka, DESeq2 and nucmer. Returns exact typed arguments and example. Set probe:true to check actual installed executable versions; unprobed availability is unknown.",
+        "inputSchema": {"type": "object", "properties": {"operation": {"type": "string", "maxLength": 128}, "probe": {"type": "boolean", "default": False}}},
+    },
+    {
+        "name": "proto_bioinformatics_run",
+        "description": "Execute a fixed WSL bioinformatics operation from a workspace JSON file containing {operation, arguments}. Discover exact arguments using proto_bioinformatics_catalog first. Stages bounded workspace files, runs installed tools and saves logs, output files, hashes and provenance under build/bioinformatics. No arbitrary command strings.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
+    {
+        "name": "proto_compute_catalog",
+        "description": "Discover 119 offline Biomni adaptations and Proto-native calculations: statistics, sequence and cloning analysis (ORFs, PCR, restriction, primers, Golden Gate), ODE and stochastic simulations, assay and instrument-data fitting (growth curves, ITC, CD, release kinetics, waveforms), clinical and pharmacometric analyses, plus genomics matrix tools. With tool, return its JSON input schema and example; availability checks optional dependencies. Read-only; no LLM or network.",
+        "inputSchema": {"type": "object", "properties": {"tool": {"type": "string", "maxLength": 128}}},
+    },
+    {
+        "name": "proto_remote_catalog",
+        "description": "List connector-gated remote capabilities (network APIs, external executables, data-lake lookups) and their connector status. Every connector ships disabled in connectors/remote_apis.json. Read-only, no network.",
+        "inputSchema": {"type": "object", "properties": {"tool": {"type": "string", "maxLength": 128}}},
+    },
+    {
+        "name": "proto_compute_fingerprint",
+        "description": "Read-only preflight identity for a fixed Compute request file. Validates the existing tool schema and contained inputs, hashes input/code/default identities, and identifies installed dependency versions. RNA-seq fit preflight probes the existing local R package environment without fitting. Returns explicit cacheability reasons; does not execute the computation, certify cached outputs, or assert scientific reproducibility.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
+    {
+        "name": "proto_compute_run",
+        "description": "Run a fixed local computation from a workspace JSON file containing exactly {tool, arguments}. Discover its schema with proto_compute_catalog. Writes result, input snapshot, manifest and unsigned provenance under build/compute/. No arbitrary code or network execution. RNA-seq fit mode explicitly invokes the registered local DESeq2 bioinformatics adapter; validation mode does not start R. Scientific interpretation requires human review.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
+    {
+        "name": "proto_compute_value_read",
+        "description": "Read one numeric or explicitly typed quantity from a saved Compute result using its JSON Pointer. The host verifies the result artifact SHA-256, run manifest and indexed value hash; the response carries method maturity and review status. This locates recorded output only; it does not establish scientific validity, infer units, or read arbitrary files.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["path", "pointer", "expected_result_sha256", "expected_manifest_sha256"],
+            "properties": {
+                "path": {"type": "string"},
+                "pointer": {"type": "string", "maxLength": 2048},
+                "expected_result_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "minLength": 64, "maxLength": 64},
+                "expected_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "minLength": 64, "maxLength": 64},
+            },
+        },
+    },
+    {
+        "name": "proto_research_figure_render",
+        "description": "Render a fixed data-only research figure request from a workspace JSON file. Produces vector SVG/PDF, exact plotted-value table, methods and unsigned hash manifest under build/research-figures/exports/. Host supplies source-bound values; this renderer does not authenticate source claims or infer scientific validity. No arbitrary code, style, output path, network or model execution.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
+    {
+        "name": "proto_remote_run",
+        "description": "Run one connector-gated remote capability from a workspace JSON file with exactly {tool, arguments}. Requires the connector to be explicitly enabled in connectors/remote_apis.json; performs network requests or whitelisted program execution with timeouts and size caps. Human review required.",
+        "inputSchema": {"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
+    },
     {
         "name": "proto_language_reference",
         "description": "Read supported DNA .proto syntax, protein selection workflow, typed edit commands, identity rules and coordinates. All template part IDs are placeholders; real IDs must come from governed materialization and parts search. This tool is read-only.",
@@ -475,7 +549,7 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "proto_run_notebook",
-        "description": "Execute bounded notebook code cells only in an explicitly configured digest-pinned OCI sandbox; otherwise fail closed.",
+        "description": "Execute a Python or R Jupyter notebook through its real kernel in a digest-pinned OCI sandbox. Saves executed.ipynb with cell outputs, execution counts and errors, plus HTML and a provenance manifest. Discover runtime availability first; unavailable runtimes fail closed.",
         "inputSchema": {
             "type": "object",
             "required": ["path"],
@@ -552,7 +626,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="proto-agent-mcp")
     parser.add_argument("--once", help="Handle one JSON-RPC request passed as a JSON string, useful for tests.")
     parser.add_argument("--once-file", help="Handle one JSON-RPC request loaded from a file.")
+    parser.add_argument(
+        "--print-tool-contracts",
+        action="store_true",
+        help="Print the tool contract table as JSON and exit. The host uses it to check both tables agree.",
+    )
     args = parser.parse_args(argv)
+
+    if args.print_tool_contracts:
+        # Printed before constructing the server so the export stays available on a
+        # machine where optional runtimes are missing.
+        print(json.dumps(export_contracts(), sort_keys=True))
+        return 0
 
     server = McpServer()
     if args.once or args.once_file:
@@ -580,7 +665,7 @@ def main(argv: list[str] | None = None) -> int:
 class McpServer:
     def __init__(self, workspace_root: str | Path | None = None) -> None:
         self.paths = WorkspacePaths.create(workspace_root)
-        self.execution_broker = ExecutionBroker.from_environment(caller="mcp")
+        self.execution_broker = ExecutionBroker.from_environment(caller="mcp", workspace_root=self.paths.workspace)
         self._network_capability_key = _network_capability_key_from_environment()
         self._consumed_network_nonces: dict[str, int] = {}
         self._network_nonce_lock = threading.Lock()
@@ -589,6 +674,16 @@ class McpServer:
         self._active_lock = threading.Lock()
         self._output_lock = threading.Lock()
         self._tool_handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
+            "proto_data_read": self._tool_data_read,
+            "proto_compute_catalog": lambda arguments: compute_catalog(arguments.get("tool")),
+            "proto_bioinformatics_catalog": lambda arguments: bioinformatics_catalog(arguments.get("operation"), probe=arguments.get("probe", False)),
+            "proto_bioinformatics_run": self._tool_bioinformatics_run,
+            "proto_compute_run": self._tool_compute_run,
+            "proto_compute_fingerprint": lambda arguments: compute_fingerprint(_required_string(arguments, "path"), workspace_root=self.paths.workspace),
+            "proto_compute_value_read": self._tool_compute_value_read,
+            "proto_research_figure_render": self._tool_research_figure_render,
+            "proto_remote_catalog": self._tool_remote_catalog,
+            "proto_remote_run": self._tool_remote_run,
             "proto_language_reference": lambda arguments: language_reference(arguments.get("topic", "all")),
             "proto_design_edit": self._tool_design_edit,
             "proto_protein_validate": self._tool_protein_validate,
@@ -623,6 +718,9 @@ class McpServer:
             "proto_skills_list": self._tool_skills_list,
             "proto_skills_resolve": self._tool_skills_resolve,
         }
+        # A callable tool with no contract row would fall back to a guessed effect
+        # on the host, so the mismatch stops the sidecar instead of being logged.
+        verify_tool_contracts([tool["name"] for tool in TOOLS], list(self._tool_handlers))
 
     def serve(self) -> int:
         stream = sys.stdin.buffer
@@ -655,6 +753,22 @@ class McpServer:
                 self._cancel_request(message["params"]["requestId"])
                 continue
             if method == "tools/call" and "id" in message:
+                runtime_tool = message.get("params", {}).get("name")
+                if runtime_tool in {"proto_compute_run", "proto_research_figure_render"}:
+                    try:
+                        if runtime_tool == "proto_compute_run":
+                            prepare_compute_runtime()
+                        else:
+                            prepare_figure_runtime()
+                    except ValueError as exc:
+                        self._emit_response(_success_response(message["id"], _tool_result({"ok": False, "diagnostics": [{
+                            "severity": "error", "code": getattr(exc, "code", "COMPUTE_RUNTIME_UNAVAILABLE" if runtime_tool == "proto_compute_run" else "FIGURE_RENDERER_UNAVAILABLE"),
+                            "file": "", "line": 0, "message": str(exc),
+                        }]})))
+                        self._emit_response({"jsonrpc": "2.0", "method": "notifications/proto-request-finished", "params": {
+                            "requestId": message["id"], "status": "completed",
+                        }})
+                        continue
                 self._start_tool_request(message)
                 continue
             response = self.handle_message(message)
@@ -892,18 +1006,20 @@ class McpServer:
     def _tool_check(self, arguments: dict[str, Any]) -> dict[str, Any]:
         path = self.paths.workspace_file(_required_string(arguments, "path"), extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
         parts_path = self.paths.workspace_file(arguments.get("parts_path", str(DEFAULT_PARTS_PATH)), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        parts_bytes = read_bytes_bounded(parts_path, MAX_JSON_FILE_BYTES)
         design, parse_diagnostics = parse_design(path)
         diagnostics = validate_design(design, parse_diagnostics, parts_path)
         ok = not any(item.severity == "error" for item in diagnostics)
-        return _diagnostics_payload(ok, diagnostics, [])
+        return {**_diagnostics_payload(ok, diagnostics, []), "evidence_standing": checked_library_standing(parts_path, parts_bytes, ok=ok, workspace=self.paths.workspace)}
 
     def _tool_compile(self, arguments: dict[str, Any]) -> dict[str, Any]:
         path = self.paths.workspace_file(_required_string(arguments, "path"), extensions={".proto"}, max_bytes=MAX_TEXT_FILE_BYTES)
         parts_path = self.paths.workspace_file(arguments.get("parts_path", str(DEFAULT_PARTS_PATH)), extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        parts_bytes = read_bytes_bounded(parts_path, MAX_JSON_FILE_BYTES)
         out = arguments.get("out") or str(Path("build") / "mcp" / f"{path.stem}.ir.json")
-        ir, diagnostics = compile_design(path, parts_path)
+        ir, diagnostics = compile_design(path, parts_path, workspace_root=self.paths.workspace)
         if ir is None:
-            return _diagnostics_payload(False, diagnostics, [])
+            return {**_diagnostics_payload(False, diagnostics, []), "evidence_standing": checked_library_standing(parts_path, parts_bytes, ok=False, workspace=self.paths.workspace)}
         ir = public_workspace_payload(ir, self.paths.workspace)
         output_path = self.paths.build_file(out, extensions={".json"})
         write_text_bounded(output_path, json.dumps(ir, indent=2) + "\n", boundary=self.paths.build)
@@ -913,6 +1029,7 @@ class McpServer:
             [output_path.relative_to(self.paths.workspace).as_posix()],
         )
         payload["ir"] = ir
+        payload["evidence_standing"] = ir["evidence_standing"]
         return payload
 
     def _tool_design_edit(self, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -954,6 +1071,7 @@ class McpServer:
         output_format = _required_string(arguments, "format")
         out = _required_string(arguments, "out")
         ir = load_ir(ir_path)
+        standing = export_standing(ir, workspace=self.paths.workspace)
         extension = {"sbol": ".ttl", "genbank": ".gb", "fasta": ".fasta"}[output_format]
         output_path = self.paths.build_file(out, extensions={extension})
         write_text_bounded(output_path, export_ir(ir, output_format), boundary=self.paths.build)
@@ -961,6 +1079,7 @@ class McpServer:
             "ok": True,
             "diagnostics": [],
             "artifacts": [output_path.relative_to(self.paths.workspace).as_posix()],
+            "evidence_standing": standing,
         }
 
     def _tool_validate_sbol(self, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -1249,6 +1368,61 @@ class McpServer:
             self.paths.workspace,
         )
 
+    def _tool_research_figure_render(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return render_research_figure_file(_required_string(arguments, "path"), workspace_root=self.paths.workspace)
+
+    def _tool_data_read(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        kind = arguments["kind"]
+        if kind == "table_page":
+            return read_dataset_page(
+                paths=self.paths,
+                path=_required_string(arguments, "path"),
+                offset=arguments.get("offset", 0),
+                limit=arguments.get("limit", 40),
+                columns=arguments.get("columns"),
+                expected_source_version=arguments.get("expected_source_version"),
+                cancel_event=getattr(self._request_context, "cancel_event", None),
+            )
+        if kind == "array_chunk":
+            return read_array_chunk(
+                paths=self.paths,
+                path=_required_string(arguments, "path"),
+                chunk_indices=arguments.get("chunk_indices", []),
+                expected_metadata_sha256=arguments.get("expected_metadata_sha256"),
+            )
+        raise ValueError("kind must be table_page or array_chunk")
+
+    def _tool_compute_run(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return run_compute(_required_string(arguments, "path"), workspace_root=self.paths.workspace,
+                           cancel_event=getattr(self._request_context, "cancel_event", None))
+
+    def _tool_compute_value_read(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return read_compute_value(
+            _required_string(arguments, "path"),
+            _required_string(arguments, "pointer"),
+            _required_string(arguments, "expected_result_sha256"),
+            _required_string(arguments, "expected_manifest_sha256"),
+            workspace_root=self.paths.workspace,
+        )
+
+    def _tool_bioinformatics_run(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return run_bioinformatics(_required_string(arguments, "path"), workspace_root=self.paths.workspace,
+                                 cancel_event=getattr(self._request_context, "cancel_event", None))
+
+    def _tool_remote_catalog(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return remote_catalog(arguments.get("tool") if isinstance(arguments.get("tool"), str) else None)
+
+    def _tool_remote_run(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        import json as _json
+
+        path = _required_string(arguments, "path")
+        source = self.paths.workspace_file(path, extensions={".json"}, max_bytes=2 * 1024 * 1024)
+        request = _json.loads(source.read_text(encoding="utf-8-sig"))
+        try:
+            return remote_run(request, workspace_root=self.paths.workspace)
+        except RemoteError as error:
+            raise ValueError(f"{error.code}: {error}") from None
+
     def _tool_run_analysis(self, arguments: dict[str, Any]) -> dict[str, Any]:
         script = _required_string(arguments, "script")
         args = arguments.get("args") or []
@@ -1282,7 +1456,8 @@ class McpServer:
         return manifest
 
     def _tool_r_status(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        return r_status()
+        return r_status(broker=self.execution_broker, workspace_root=self.paths.workspace,
+                        cancel_event=getattr(self._request_context, "cancel_event", None))
 
     def _tool_run_r(self, arguments: dict[str, Any]) -> dict[str, Any]:
         script = _required_string(arguments, "script")

@@ -1,0 +1,1026 @@
+{
+  "version": "chem-source-snapshot/v1",
+  "sourceRoot": "C:\\Users\\pc\\Documents\\Chem CLI",
+  "sourceCommit": "3543c91330ac2017d0ca9543e1e5ea1dd71efad7",
+  "capturedAt": "2026-09-19T18:41:07.341Z",
+  "includesUncommittedWorkingTree": true,
+  "sourceManifestHash": "4fab5293651958bc7763b74f510d341e2f5951538a77546b611735d6d95f655d",
+  "files": {
+    "LICENSE": {
+      "sha256": "5385cc30f56e660c89423ea98fb9a8e2198c46eaed98e9579ffb006c975ea259",
+      "bytes": 1105
+    },
+    "README.md": {
+      "sha256": "447de6a42bc5e8eb40d1385f8656f59e5cd09d53fdc4e688a67acbfb310414bc",
+      "bytes": 10462
+    },
+    "docs/DESIGN_PROMOTION_EVIDENCE.md": {
+      "sha256": "3f9287f9cc3bd3531daa542f0bb24d034b01d93a6d539aabede29c4fd5f5d94a",
+      "bytes": 7465
+    },
+    "docs/NEXT_STEPS.md": {
+      "sha256": "073e4f45e50a2ded2c700a70e203e429ebb76ac5e6ca19f94f84f9c87154ce74",
+      "bytes": 7461
+    },
+    "docs/acceptance-2026-09-05-execution.md": {
+      "sha256": "a6f294679b9d21cedefa55efc969cba9a5be2132f604bb21e50504cac2316e13",
+      "bytes": 5769
+    },
+    "docs/acceptance-2026-09-05-roadmap.md": {
+      "sha256": "63c1512167b144d146e66918683fd31fa8072424c7c7507913a8a7d9746cc8a1",
+      "bytes": 6493
+    },
+    "docs/acceptance-2026-09-05-structure-studio.md": {
+      "sha256": "00b982e0c4559c45d17bb4bb91e86be0515437e00b927161443795ec0ab30148",
+      "bytes": 4761
+    },
+    "docs/acceptance-2026-09-05-ui.md": {
+      "sha256": "837cb62820b53fb98e445c5691429635339673cb41df2214b7c34faaee651c7e",
+      "bytes": 4950
+    },
+    "docs/architecture.md": {
+      "sha256": "ddef0d0e2e6fda8ce911c2196f3b119035cd461521cc607e838138b978ce063e",
+      "bytes": 14752
+    },
+    "docs/chemistry-environment.md": {
+      "sha256": "98e16b8919508917cf0b3870105e93d8f50f2267685bf72388f7c27f99235ad8",
+      "bytes": 6419
+    },
+    "docs/compatibility-spikes/2026-09-02-local-capability-probe.md": {
+      "sha256": "ce05a1a4547453ae3c5b11cf5c950955a12bd57053ad49756ed8cb01a790d041",
+      "bytes": 1450
+    },
+    "docs/compatibility-spikes/2026-09-05-m0-backend-acceptance.md": {
+      "sha256": "433abe2face610ee70895375388abd1b07818ed3f9e6b95f6cff108ae57ab50d",
+      "bytes": 4620
+    },
+    "docs/conformance-profiles.md": {
+      "sha256": "ea899e18d29e37663cf0e5fe62ccdfc69820020dc17c46361c435d54b5aa9259",
+      "bytes": 10655
+    },
+    "docs/decisions/0001-package-name-and-license.md": {
+      "sha256": "e6d7b078b6d72fe75c5f6663f783639e51297c00ec96383408f901138d8b577e",
+      "bytes": 2646
+    },
+    "docs/decisions/0002-static-adapter-registry.md": {
+      "sha256": "671b39cc2f13b48c330e241a70635449c94da51340f0845b89840fc55938161e",
+      "bytes": 6555
+    },
+    "docs/decisions/0003-first-format-adapter-cif-probe.md": {
+      "sha256": "c72c6619d41dadc263398e5b9cd6af3b234ea77e6aca812f515f22b6c9f8c10c",
+      "bytes": 3481
+    },
+    "docs/decisions/0004-canonical-decimals-and-structure-import.md": {
+      "sha256": "bc3f16045566e5cdfcf4527b56e4adfe64703fe04a2b1e9975c3be7e32cfbdb8",
+      "bytes": 3421
+    },
+    "docs/decisions/0005-resolved-structure-imports-in-compilation.md": {
+      "sha256": "cf2a605ce51af789b0d296680bcd2b09660019024f37b0e1af1636978007dc6c",
+      "bytes": 2934
+    },
+    "docs/decisions/0006-m0-backend-pinning-and-execution-route.md": {
+      "sha256": "a14f99bb1e723a4edd8ff869ba83e79b1e3d5845a70c4b4caa064e191924667d",
+      "bytes": 3756
+    },
+    "docs/decisions/0007-governed-execution.md": {
+      "sha256": "2a4551b8b9f4491edee504fc25c20d3c554d2264ba9bccc8c5125c4faacfdb83",
+      "bytes": 5408
+    },
+    "docs/dependency-license-register.md": {
+      "sha256": "68ea1f4dce02a285edd36128927a1397e9afdc7c5f55b30829973726a2664686",
+      "bytes": 10113
+    },
+    "docs/design-and-interface-stage.md": {
+      "sha256": "39e81017e1ea0737a47a7728b7e1e1413312442ada5bddfe26564b9fb4c095d5",
+      "bytes": 24729
+    },
+    "docs/desktop-preview.md": {
+      "sha256": "8dd4aff0fd4dacbfb475cafe19bba14007a563189b6b44bb92260e6ddc107fc9",
+      "bytes": 2118
+    },
+    "docs/implementation-status.md": {
+      "sha256": "d4e25e99ad047d9b01a1458febecc1845475b331ca98174f6ec903b8bce7748d",
+      "bytes": 29523
+    },
+    "docs/model-evaluation-2026-09-05.md": {
+      "sha256": "8453d0a1b9f7c2b4fa20d070c8d99230495b7292b848d79ee5c82f8a8eecd977",
+      "bytes": 5489
+    },
+    "docs/model-stage-2026-09-10.md": {
+      "sha256": "47c036ec95f9f5a8863939f5868fe988a39d4480f30780ebb40caae26c1f3dfc",
+      "bytes": 12132
+    },
+    "docs/molecular-refinement-stage.md": {
+      "sha256": "bd410805d521dc8b985cf0ecf719796f9982cb01d3f19ba298c11059f395b950",
+      "bytes": 21751
+    },
+    "docs/portable-windows-plan.md": {
+      "sha256": "ebbe69e696a8caf326ddcffcf68543e1de8ae08d47254b1e504eb44ebd1c03ec",
+      "bytes": 22007
+    },
+    "docs/psi4-win-64.explicit.txt": {
+      "sha256": "0921a7dc641816616fb52157dae769b3ca145b58ba6ddf02ff26f36e933edf5e",
+      "bytes": 8639
+    },
+    "docs/reviews/model-suite-20260910.md": {
+      "sha256": "090ab0782d45e5ee6bee95724d61ee2a5c67ae5487b17b384d006f706612055c",
+      "bytes": 6512
+    },
+    "docs/reviews/model-suite-20260910b.md": {
+      "sha256": "72e129af7a297ff279ed3d8034115a16b1b8f21bd1d3f5894d01dc02449bc35d",
+      "bytes": 12894
+    },
+    "docs/rfcs/RFC-0001.md": {
+      "sha256": "e200a902f29987475b5d27b916231ae6592e03d9641d21a1fc7ebcc670244e17",
+      "bytes": 24868
+    },
+    "docs/rfcs/RFC-0002.md": {
+      "sha256": "1fa725cc3b8633018807b105a255a145d3251c181dd58c5a138eaea4404cb348",
+      "bytes": 21901
+    },
+    "docs/rfcs/RFC-0003.md": {
+      "sha256": "062d22a814e5bdfcede9abdcd079f0b9aaa3c30be9c1ac64c165bf62090e7b24",
+      "bytes": 17268
+    },
+    "docs/rfcs/RFC-0004.md": {
+      "sha256": "4b875393c9a4d684b380e113c4b1c6eb4d3d54a93bd2ca61e1cf729b911478f3",
+      "bytes": 20056
+    },
+    "docs/rfcs/RFC-0005.md": {
+      "sha256": "f6f1f22bbabc540bae7cdee7757a07393b0193c006f98d6da572e115788777e5",
+      "bytes": 34392
+    },
+    "docs/rfcs/RFC-0006-surface-and-interface-reaction-representation.md": {
+      "sha256": "71ecb63945b845cbf573a8ef041c050e3fb1d9c2fd870b5fadad978b8fa55a3a",
+      "bytes": 6241
+    },
+    "docs/rfcs/RFC-0007-conditions-and-task-semantics.md": {
+      "sha256": "47086d40db3c22f9473a9bc487a5a6633de090013f20b58d12a0e2ef171c3e2c",
+      "bytes": 7337
+    },
+    "docs/security-and-trust.md": {
+      "sha256": "5d37caf366a9e201458ecbfe6a8a81b3da6872cec7759e3e417710ad41d51e3f",
+      "bytes": 13077
+    },
+    "docs/structure-studio-roadmap.md": {
+      "sha256": "78fd6d463335846354852827f0d6856357dfff36a80ed2664b87a51078bc4dcb",
+      "bytes": 2766
+    },
+    "docs/tool-catalog.md": {
+      "sha256": "1a4bdeb56cb56289c410f5ab65db9e0c1a12155e3b37e7942cb91b1ccc18fcb4",
+      "bytes": 7285
+    },
+    "docs/viewer-dependency.md": {
+      "sha256": "71598f1c0144a426402b3a9eeb5dd99f3916d01ea89d28256bf0c3b1c2309480",
+      "bytes": 1133
+    },
+    "docs/visual-workbench-stage.md": {
+      "sha256": "f2a46672c72523029a07ccd8b5992e660b30d79aecabaebdba711979b95afb10",
+      "bytes": 18954
+    },
+    "docs/xdl-environment.md": {
+      "sha256": "34b5af8e5ec1ec4e5ba5081b8ce39488fcfdff08bf27d212ffc3642d6c9598f4",
+      "bytes": 3683
+    },
+    "docs/xdl-requirements.in": {
+      "sha256": "dfd2e5fdca41f1f9ca938eee896800b02ee64e4c30767a60a102f4369158898d",
+      "bytes": 322
+    },
+    "docs/xdl-requirements.lock.txt": {
+      "sha256": "214c4fa1e930adcb9bef1e290171d78b3db84550ad36bd73d411af04a6563bd9",
+      "bytes": 945
+    },
+    "evaluations/design-fresh-independent-20260911b.json": {
+      "sha256": "26e8a8847e035cf585fecbe9459de9273972abd2bcae045d5c736613df8ed0fa",
+      "bytes": 470989
+    },
+    "evaluations/gemma-e2b-next-cycle-01.json": {
+      "sha256": "16750b31f7e09f329337331e29ab1e1c908a213e6567e1e03b71004ec69820b6",
+      "bytes": 56605
+    },
+    "evaluations/gemma-e4b-stage-review-20260910.json": {
+      "sha256": "a47c20ebb1d631866a43ce65594f717c90949cbdc2c89cb04e61f44df322fd53",
+      "bytes": 87989
+    },
+    "evaluations/gemma-promotion-heldout-20260910b.json": {
+      "sha256": "d95e5457a360150499d874b5fb456c4608ebb7947353f4cbf5de8c90bf896c8f",
+      "bytes": 252109
+    },
+    "evaluations/gemma-promotion-runtime-heldout-20260910b.json": {
+      "sha256": "29d6f16526cd9689efbbb106b4bf4a057ff004c9ea8d69a6feb16c4d987e88d3",
+      "bytes": 52509
+    },
+    "examples/coordination/ferrocene.preview.chem": {
+      "sha256": "78827c3aaa38cd3bb19f6b3e47235a7449b8ee165dc8245d2702a7fa9ec0be6f",
+      "bytes": 215
+    },
+    "examples/crystals/fcc-copper.chem": {
+      "sha256": "00bd4b74305eccb4f606e8bd8641da49d28551d31f4e124ef1b5087aa09d3173",
+      "bytes": 393
+    },
+    "examples/crystals/silicon.chem": {
+      "sha256": "84ab423b7a40fb3f35029b2edaf007af4798e844ccf5f4d8f86fa71f953a2ab2",
+      "bytes": 107
+    },
+    "examples/crystals/structures/fcc-copper.cif": {
+      "sha256": "bd2f1f39c007521b274dc554b59650a2cdaffa14937c02333eb2da9971d527de",
+      "bytes": 553
+    },
+    "examples/crystals/structures/silicon.cif": {
+      "sha256": "579136b060ae61aae46d561d2427c8f455878d242c6863fa17bc4a3ba859b299",
+      "bytes": 679
+    },
+    "examples/molecules/aspirin.chem": {
+      "sha256": "acbdffec292ca921a168190e4ed00f21c5bb5c50533dab6b92c0d4d29024119c",
+      "bytes": 499
+    },
+    "examples/molecules/caffeine.chem": {
+      "sha256": "5226c861c15fe769c542ea06c437f787b2ae12d2d1bc68ced122700a89a718e8",
+      "bytes": 513
+    },
+    "examples/molecules/chiral.chem": {
+      "sha256": "6710d55c152fe2adf78190b75018c35cfef78a5c82796105d072b036f530886f",
+      "bytes": 154
+    },
+    "examples/molecules/water-hf-sto3g-geometry.json": {
+      "sha256": "18505a909737f8c4e3a9c536ac9d0c8c65254bcb3a530e57f3b1a94afdf9334d",
+      "bytes": 358
+    },
+    "examples/molecules/water.chem": {
+      "sha256": "c9cfca8e50fe7755f600b17166d781a3b8cd1086be08c3da3945b84efd407e5f",
+      "bytes": 434
+    },
+    "examples/surfaces/cu111-adatom-diffusion.chem": {
+      "sha256": "afc01a260bb8300ffae85df2097e613ed739856ddc88d033e750871d7d5281cd",
+      "bytes": 1647
+    },
+    "pyproject.toml": {
+      "sha256": "6404895e929ea88fc7b920962c66ffc97bc7d926c9dd162a61e3137027bceaae",
+      "bytes": 2076
+    },
+    "schemas/adapters/v1alpha1/adapter-capability.schema.json": {
+      "sha256": "65ffb55b0e438765da1cb921db791f0d12dd8ca8238587a9c237da293b38cd20",
+      "bytes": 6677
+    },
+    "schemas/adapters/v1alpha1/adapter-registry.schema.json": {
+      "sha256": "640d145e219fb1d5906a2b7440c1531e0ca0721a2878498cdd2c687e7280cbc4",
+      "bytes": 3960
+    },
+    "schemas/adapters/v1alpha1/format-capability.schema.json": {
+      "sha256": "c69bf8b64991c745b5d083ee20e03dd0e0fdb28bdc439f8b7d7b18dc19b300b4",
+      "bytes": 6719
+    },
+    "schemas/adapters/v1alpha1/loss-report.schema.json": {
+      "sha256": "abf35508928fd033fae6c9cd6697bcca0a913f821194a27a04eb59fc9e00e84b",
+      "bytes": 9157
+    },
+    "schemas/chemir/v1alpha1/adsorption-complex.schema.json": {
+      "sha256": "364f87a09d62afab8ed804871f4c7d8b9027cfbe3124761e0bf5cfc7f4f5634b",
+      "bytes": 1651
+    },
+    "schemas/chemir/v1alpha1/calculation-spec.schema.json": {
+      "sha256": "61438d132bba401327ff83f65b5cd7259f31ce05d4363951f91a438714fdc5c9",
+      "bytes": 6505
+    },
+    "schemas/chemir/v1alpha1/chemical-substance.schema.json": {
+      "sha256": "08f5f08881717a1bcbec35e683200852b41f0608bfdda6819f462dd2d62e5c79",
+      "bytes": 4369
+    },
+    "schemas/chemir/v1alpha1/chemir.schema.json": {
+      "sha256": "20f98a3ebe01f777e2690a440a9654540a1108c1b60bc677121a9848118fc70d",
+      "bytes": 902
+    },
+    "schemas/chemir/v1alpha1/common.schema.json": {
+      "sha256": "394209210eea3b8623378520ee552e49b03fcc388e5e558ca31098d534bceabf",
+      "bytes": 8989
+    },
+    "schemas/chemir/v1alpha1/comparison-spec.schema.json": {
+      "sha256": "53b6b96c1e21578bc41913ccc10ed04a92402824884b85824bcaf03a6ebfc701",
+      "bytes": 1639
+    },
+    "schemas/chemir/v1alpha1/condition-set.schema.json": {
+      "sha256": "1dea677cd72eb2e6f418e341e64fd40d87d54d7eddf9c82b2e00a4a630a09238",
+      "bytes": 2163
+    },
+    "schemas/chemir/v1alpha1/coordination-complex.schema.json": {
+      "sha256": "84a88044d1bbba420e53614cb6596fd09129e2ccd39cd8a88735ed7c8dd0b315",
+      "bytes": 11474
+    },
+    "schemas/chemir/v1alpha1/electronic-state.schema.json": {
+      "sha256": "d9d634ea71a916916615f1f997d3bb66f4f70571a995ec640107ba590855832b",
+      "bytes": 3654
+    },
+    "schemas/chemir/v1alpha1/envelope.schema.json": {
+      "sha256": "f3ea891426696b4b6275322938b6f7ce239665a27f5b2286f5e6b169bfcd1d05",
+      "bytes": 1672
+    },
+    "schemas/chemir/v1alpha1/evidence.schema.json": {
+      "sha256": "b2afde3822ceaa10134cc08713a58498ddeac5df009dda82111bfce91de889e5",
+      "bytes": 6360
+    },
+    "schemas/chemir/v1alpha1/geometry.schema.json": {
+      "sha256": "e0b5822be47eb2cd3ae325318354f1aaf4d79487a4042e86f922e35c0a81fe5e",
+      "bytes": 2304
+    },
+    "schemas/chemir/v1alpha1/interface-reaction-step.schema.json": {
+      "sha256": "a37e4826aa734d0aa10d262ee7da97ced776a8978f21ffc4eb8c16127810cafb",
+      "bytes": 1346
+    },
+    "schemas/chemir/v1alpha1/material-lot.schema.json": {
+      "sha256": "e90bcc6a3f581830816010d050f2f9e6d2de568d17b3851139f8afa614f30f43",
+      "bytes": 3527
+    },
+    "schemas/chemir/v1alpha1/molecule.schema.json": {
+      "sha256": "c957a5703c69a50361ffb983c05eeef6879bfde62a9e1aaeccadd433ea4e063c",
+      "bytes": 7637
+    },
+    "schemas/chemir/v1alpha1/object.schema.json": {
+      "sha256": "e9bd760fa1f2700b973902f4b3a8bec816a8f1b9e4987d2876d63628180212e4",
+      "bytes": 6785
+    },
+    "schemas/chemir/v1alpha1/periodic-structure.schema.json": {
+      "sha256": "b74d01b6b66f060c930e98b45819e23df8f9560cb011da999425296dd8a3e052",
+      "bytes": 6586
+    },
+    "schemas/chemir/v1alpha1/surface-slab.schema.json": {
+      "sha256": "24f4f1befa8ba7a06bec65efdf675496ae4a2692b0ace4e721c0a81372cd8003",
+      "bytes": 2275
+    },
+    "schemas/review/v1alpha1/review-packet.schema.json": {
+      "sha256": "5b3d229d83bddebd6ae5f9f9d11070eb50ef1f48a31d13eb33975e4ea16d908e",
+      "bytes": 9170
+    },
+    "scripts/assess_design_promotion.py": {
+      "sha256": "2f5f199e6b6cc6b4c9a2e259791e97cfe15bdb808517abefb55425db047b4fb5",
+      "bytes": 30994
+    },
+    "scripts/assess_model_promotion.py": {
+      "sha256": "c46fb3b6232fee223d23f3203b36e2a1cccbf1e4279775e9c65cf9d9338e09f6",
+      "bytes": 5956
+    },
+    "scripts/build_registry.py": {
+      "sha256": "343d498b1a426f2582ffeb92a8228754273b2a07ced047cede5b780c080940a5",
+      "bytes": 7603
+    },
+    "scripts/capture_model_identity.py": {
+      "sha256": "bcce625be9b4d55c65b74aa0b44e76ddef2d19d5582d328bcbf83ff237832427",
+      "bytes": 9089
+    },
+    "scripts/develop_design_router.py": {
+      "sha256": "6f19a88ce74e2a59f50290ddd87268cf1e0a64db7426e3b3c9497fcf53ebae35",
+      "bytes": 4834
+    },
+    "scripts/develop_design_workflows.py": {
+      "sha256": "1a17d51f6da6080155ace5676b19615d045a92dc51d18bc488543ed59dc97453",
+      "bytes": 6034
+    },
+    "scripts/develop_model_intent.py": {
+      "sha256": "5d6e33df9b3f777c21b2cdb282ffcfd76d8b24ff60e34b1a1ecd09a50083c9f5",
+      "bytes": 1837
+    },
+    "scripts/evaluate_local_model.py": {
+      "sha256": "0a369bcdd638fd17302470643c07ea6f782845418eb9568b3570d7f1a60fcdc4",
+      "bytes": 5480
+    },
+    "scripts/inspect_model_evaluation.py": {
+      "sha256": "50a232fa75553006e432bf304bd9ca9c7ecb6a1cde6c6afb395b5822c92b72ec",
+      "bytes": 8315
+    },
+    "scripts/inspect_model_evaluation_v4.py": {
+      "sha256": "c39bc0caae42ba785debe720054730c874f9a184ef571a6ee1c4ecea801bf34a",
+      "bytes": 6893
+    },
+    "scripts/model_process_identity.py": {
+      "sha256": "cef649de420385b2873670689ad575c019af4e438e59b1f98a2a5c4518a1e58f",
+      "bytes": 10617
+    },
+    "scripts/model_resource_monitor.py": {
+      "sha256": "13272cc8016f4f135915848a52cd75945a0bb3f6107010f8ee55d390e49a88a7",
+      "bytes": 15615
+    },
+    "scripts/observe_lmstudio_processes.ps1": {
+      "sha256": "dc223b3712b31e678cab93e9ff8f0648c08abc4e9829e2028a3e463a2fb5a3a9",
+      "bytes": 2647
+    },
+    "scripts/package_desktop.py": {
+      "sha256": "9f396113e4964817590e429f2bfec7269efc0fac1cd999e6a3a81cedc4ba2f2d",
+      "bytes": 3700
+    },
+    "scripts/run_design_evaluation.py": {
+      "sha256": "d2c1d80d09ed7c8da1306f95b5cef0584ee10f9b06e817c1595b0159cbe32e1d",
+      "bytes": 23375
+    },
+    "scripts/run_model_evaluation.py": {
+      "sha256": "bad36fecf6f083d593443d3b18fdcbbdf8820495d9e80d2c80d9be907f7f747c",
+      "bytes": 14571
+    },
+    "scripts/run_psi4_python.ps1": {
+      "sha256": "7aeebca5393688f5ebe8b6c56cba8ee5fffc5ada65f4b06bec0118697b2ffc6f",
+      "bytes": 1240
+    },
+    "scripts/start-workbench.ps1": {
+      "sha256": "6494fc2de5a3a5886dc2b65bfd49402f2a2fdc6f556cde2324f3d2aeb8ad0470",
+      "bytes": 185
+    },
+    "scripts/summarize_model_acceptance_costs.py": {
+      "sha256": "bff8a3ad2d4f5e1abca627c96e10fd4c840f0bd53822b59d95d82094d8d7246f",
+      "bytes": 15724
+    },
+    "scripts/summarize_model_comparison.py": {
+      "sha256": "848f35e7017534517ad7d9e057c222d919aa153a285ef2b01832de2a1b9e43fd",
+      "bytes": 8939
+    },
+    "scripts/summarize_model_evaluations_v4.py": {
+      "sha256": "1dd9da6477f49a98f2a6ce2ef7eba60863f50962bf59e819fcb0731f04c0eb75",
+      "bytes": 5888
+    },
+    "scripts/verify.ps1": {
+      "sha256": "9067f3fa2476cdd6a94c6168621677c1ce57214246f63deae42d8b53c5c67331",
+      "bytes": 974
+    },
+    "scripts/verify_chemistry_environment.py": {
+      "sha256": "1e5808cfb8be4fa6483f967a3af40e6d98614e26f5e2e190b3bef2c55e66c6c5",
+      "bytes": 4751
+    },
+    "scripts/verify_complex_desktop.cjs": {
+      "sha256": "1851bcd0c13f92a2de4fc0bc5310cfaa8f241abb3172ec143098fadd6c66758f",
+      "bytes": 6202
+    },
+    "scripts/verify_complex_model_execution.py": {
+      "sha256": "215b0bfbb22ff8d342cd74751df0726b3f7905ea790d294ef55e909756fac6b1",
+      "bytes": 17366
+    },
+    "scripts/verify_design_runtime_faults.py": {
+      "sha256": "7f8be274e4b210f5bb0a67a4697314572734adc2c6a274e4074c1beca48a264f",
+      "bytes": 19099
+    },
+    "scripts/verify_design_studio_ui.cjs": {
+      "sha256": "f013d52902c6fff5473eb2195681f462ad19c0837bbce36985e0a40240e178fd",
+      "bytes": 38330
+    },
+    "scripts/verify_desktop.cjs": {
+      "sha256": "4afcc52ea5ae87f8c6fb1ab357c0a3e20ab690414eea1a469b34b38eb1bacd57",
+      "bytes": 7464
+    },
+    "scripts/verify_geometry_view_model.cjs": {
+      "sha256": "3c464f1690dad9848f53bec0b9ba0b30a6f82ed73ab04018e7b46c3dcfe5cfb8",
+      "bytes": 4208
+    },
+    "scripts/verify_model_compute_contention.py": {
+      "sha256": "da847cc304a669478b682811bd6a9951a8951c05d32d8a04a24109a0f9134817",
+      "bytes": 32186
+    },
+    "scripts/verify_model_execution.py": {
+      "sha256": "c5abd4efecb353b4a9b828a481947097a5d8445cd14a4982916e19c970fa9267",
+      "bytes": 4100
+    },
+    "scripts/verify_model_runtime_faults.py": {
+      "sha256": "2887305b7963261bafc354da1e4b6cb61442793ae021bd2c5d364c5d3b8867ef",
+      "bytes": 11010
+    },
+    "scripts/verify_refinement_workflow_ui.cjs": {
+      "sha256": "43a5bd8196cdc915bf155313a834b52cf4c97d9e1f16f98370a23eca578c527b",
+      "bytes": 24936
+    },
+    "scripts/verify_workflow_ui.cjs": {
+      "sha256": "de58116910bb5828e9946c6aa7095f905ab447b8f0ee5030b72781661d4a2152",
+      "bytes": 40028
+    },
+    "scripts/verify_xdl_environment.py": {
+      "sha256": "32b87d1c78e4f50f68878a8256f9f41ef3170e372bc8e88def9cb1172103f274",
+      "bytes": 1873
+    },
+    "scripts/worker_ase_emt.py": {
+      "sha256": "d47c56b77029748005487b1128de94836dd953fecc199eb8f2d9b060379e615a",
+      "bytes": 2752
+    },
+    "scripts/worker_mock.py": {
+      "sha256": "acb060365abe3fdc0bebf49c839e5fe831dcb9a4766b9e7a30440d1d7a4fbaa4",
+      "bytes": 964
+    },
+    "scripts/worker_molecular_psi4.py": {
+      "sha256": "fabc64a7e507386f05566f89e62fa9bc3052a485b4592ab86ae5e8a87505538b",
+      "bytes": 2986
+    },
+    "scripts/worker_refinement_psi4.py": {
+      "sha256": "9b946f360b7d46d01a5617acae2bb4c866fecc4356f5184df80b6f382c0e2a9e",
+      "bytes": 1735
+    },
+    "scripts/worker_water_psi4.py": {
+      "sha256": "a481ec66650c5e88b21ac44dc3e332a9bd00c183ee68b0fb074f4db0ee1a9a29",
+      "bytes": 2457
+    },
+    "src/chem_workbench/__init__.py": {
+      "sha256": "a92be600bbb052749c436145dbbbcc1698e6ab0759aa3189dcc41a0e3a931865",
+      "bytes": 219
+    },
+    "src/chem_workbench/__main__.py": {
+      "sha256": "f715a0873a7017cf9281e04b9d8a535dfe12d52e816c0fa4dc67e8c3e929b558",
+      "bytes": 62
+    },
+    "src/chem_workbench/adapters/__init__.py": {
+      "sha256": "20dff17c3009374416dc3022543d738df1ef4e3b2d6c421712669fe04e436e20",
+      "bytes": 1943
+    },
+    "src/chem_workbench/adapters/builtin-registry.json": {
+      "sha256": "80315b460893145f2f2e83c2df06daac97db31c66e5b8431e722c178804279d9",
+      "bytes": 11445
+    },
+    "src/chem_workbench/adapters/cif_import.py": {
+      "sha256": "3725cfac81a947c663fe59c90d8878552b77c5a5b9fc4346543d4a354f3da59d",
+      "bytes": 11597
+    },
+    "src/chem_workbench/adapters/cif_probe.py": {
+      "sha256": "eb2254928cbf6c8d4a75ed3b3fe490f8cc023b49202f1dab5578945d1a5c084e",
+      "bytes": 35313
+    },
+    "src/chem_workbench/adapters/governed_compute.py": {
+      "sha256": "b853faa689a35d76ce1d8b558b01d9af124b34ae9a70e6ffe428f57d8ad15166",
+      "bytes": 10441
+    },
+    "src/chem_workbench/adapters/model.py": {
+      "sha256": "65f4913044f60653ee866290cc6ba420956ce0701e6f124bdaddbda53545d8f6",
+      "bytes": 2757
+    },
+    "src/chem_workbench/adapters/registry.py": {
+      "sha256": "04f0d699813b0a5d74545d2b4f3b1a26afcf76dc044faa49b58d6e2c82616002",
+      "bytes": 13304
+    },
+    "src/chem_workbench/adapters/validation.py": {
+      "sha256": "1398df039d14b147c523cfaec52109bf389cae5f40e1ed4ec6ab5ed573c411c0",
+      "bytes": 15743
+    },
+    "src/chem_workbench/chemir/__init__.py": {
+      "sha256": "3e3e13a469158427522d54f198324407216fa1a41db3e1e8f2fbba59b688261f",
+      "bytes": 497
+    },
+    "src/chem_workbench/chemir/canonical.py": {
+      "sha256": "572c5edf6ca4d1d0c078ad265bc10f339c82a4454c2021dc48679f29e7faa082",
+      "bytes": 5092
+    },
+    "src/chem_workbench/chemir/constraints.py": {
+      "sha256": "80f1b786c70d316ba66043b8fec023f0711cf3ae2cfd850408d8c11924bb99bd",
+      "bytes": 6971
+    },
+    "src/chem_workbench/chemir/profile.py": {
+      "sha256": "0d67be15bb4d8a4339c902fa19c85e7c33f429c5997eec80ca1ed9bc2320537c",
+      "bytes": 272
+    },
+    "src/chem_workbench/chemir/schema_validation.py": {
+      "sha256": "cd77aa56a5109c362ede5f6b04ca09eadeb3808fad1ab3c9905c0d3707896691",
+      "bytes": 4819
+    },
+    "src/chem_workbench/chemir/validation.py": {
+      "sha256": "c8da529286d280614a1fa3cc89d8462a47591029cddc902e1691c97d7deb4ec0",
+      "bytes": 39212
+    },
+    "src/chem_workbench/cli.py": {
+      "sha256": "5f1dbc3956da310e566f135ad4ae33b0fa09b5ea535a753004e8277977fa823f",
+      "bytes": 45864
+    },
+    "src/chem_workbench/compiler.py": {
+      "sha256": "2b85115773197dd9b2d8fe2eb3e9996e91e636d90c17034e0b8c6a569d700b21",
+      "bytes": 16648
+    },
+    "src/chem_workbench/design_candidates.py": {
+      "sha256": "bf6bc11d7dc289aac3f152b42603faaf238d57010c8f168fb362d41dca40934b",
+      "bytes": 26631
+    },
+    "src/chem_workbench/design_evaluation.py": {
+      "sha256": "3ae04f2cdc26dfc3f2c79a98cf195ec47219f1c6ecbdd2daa0cd2fd9cca38a57",
+      "bytes": 36771
+    },
+    "src/chem_workbench/design_records.py": {
+      "sha256": "1c6219172f136f3b4d146cadf402b77b2ed1540f504a2bd3271fdffb65c27478",
+      "bytes": 5565
+    },
+    "src/chem_workbench/design_studio.py": {
+      "sha256": "ed1c8b80e5c59d3b77d86a77aa65adac922b2541f0e29736117c034d2bac2192",
+      "bytes": 58392
+    },
+    "src/chem_workbench/diagnostics/__init__.py": {
+      "sha256": "3f53137753546384f269acd16026921014acbaf3ff92e9d0b5920b419d934881",
+      "bytes": 138
+    },
+    "src/chem_workbench/diagnostics/model.py": {
+      "sha256": "8733c4e69e4ef8c2f6adbd89b5821e372ce7705af8a75db65615efd7b5fd8d34",
+      "bytes": 1610
+    },
+    "src/chem_workbench/evaluation.py": {
+      "sha256": "aebb8db2982611da8de46bda2322f2eb64186797766d9d57fcf304cb049eb006",
+      "bytes": 44685
+    },
+    "src/chem_workbench/execution.py": {
+      "sha256": "8257643319089fa053dd19e21f725c12c1474965c5a1e599579f10697b3d6b3d",
+      "bytes": 58192
+    },
+    "src/chem_workbench/execution_validation.py": {
+      "sha256": "38322fd0dc237b280aed3d63ce128a53a795c8277d19653ce617b58ff452ba8c",
+      "bytes": 10954
+    },
+    "src/chem_workbench/intent.py": {
+      "sha256": "60a8028eccf2acd64206f95ceea6f193b1eb964b7456cf370e11fdffa8d15832",
+      "bytes": 12395
+    },
+    "src/chem_workbench/interface_mechanisms.py": {
+      "sha256": "c4aa7d7826b6acf3ce55d95fe348de5ee4b81ca91c90ea668472bf70e175a69c",
+      "bytes": 21789
+    },
+    "src/chem_workbench/interface_screening.py": {
+      "sha256": "70f82752959a7a8456ae5d61a5b4b8538783ce67a1fa0367206774165fc4b1bc",
+      "bytes": 6080
+    },
+    "src/chem_workbench/interface_simulation.py": {
+      "sha256": "52c6e398911723695b8c26d72797d27d6c4a7f4fe5aebfb8983047ebeee9d960",
+      "bytes": 26875
+    },
+    "src/chem_workbench/method_profiles.py": {
+      "sha256": "083e8f80fa9e55fb39cd6516dc6050d17fe2a50325446e79375cb9bd32b12473",
+      "bytes": 6775
+    },
+    "src/chem_workbench/model_context.py": {
+      "sha256": "9fa048d58fda6fdf75531790a9fd1d00305b060e52f721397c0dc445cb09e3f5",
+      "bytes": 8091
+    },
+    "src/chem_workbench/molecular_compute.py": {
+      "sha256": "ad12ae797f42f9ee5368658eecc4977a14b21f30fbb8c32896cb7aaa8f306e09",
+      "bytes": 15807
+    },
+    "src/chem_workbench/molecular_refinement.py": {
+      "sha256": "c400a2afd72857c924f59cb102c95d2894cc226d16b80392fd67c7c0e6d51488",
+      "bytes": 46303
+    },
+    "src/chem_workbench/orchestrator.py": {
+      "sha256": "85b226a036ee7571fcb13089255f302074fce91a93936cb08d196c0c4b06a574",
+      "bytes": 22810
+    },
+    "src/chem_workbench/parser/__init__.py": {
+      "sha256": "e5dc55eb5e02f91fd88ed5bbc527d6ef4d5206266bc79fce0f8ccbc803039e1f",
+      "bytes": 240
+    },
+    "src/chem_workbench/parser/model.py": {
+      "sha256": "a1746bfb099f11cf9cf9c3b2f2884bdee48faf44367dbe2466ee2d5657e82347",
+      "bytes": 822
+    },
+    "src/chem_workbench/parser/source_parser.py": {
+      "sha256": "b59e21795b50cfaae692edaecf49895a1062a8d276d18eb770260ea77ec69078",
+      "bytes": 17962
+    },
+    "src/chem_workbench/paths.py": {
+      "sha256": "0fa4a3278129d67f73a32ad4774678e14a82a749d3b28306f278576f3c48d95f",
+      "bytes": 567
+    },
+    "src/chem_workbench/readiness.py": {
+      "sha256": "744b8f1bceb7640ffaa89c9c91437392e5269794cf7c947baa304db756aaec0e",
+      "bytes": 2099
+    },
+    "src/chem_workbench/refinement_backend.py": {
+      "sha256": "3019ad9c0ecd6f3c49da091a50e533017333b27f434e661b13938b2f7422462e",
+      "bytes": 33869
+    },
+    "src/chem_workbench/refinement_execution/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "src/chem_workbench/refinement_execution/contract_result_evidence.py": {
+      "sha256": "e6d32fa16d8969377342f08e627dfb043347f1ab6770e74b899c9bc6c344dd7b",
+      "bytes": 38373
+    },
+    "src/chem_workbench/refinement_execution/disk_budget.py": {
+      "sha256": "e4086f8a656459a97f3350743a4d298f7432475071226bbf780f7903fc56c632",
+      "bytes": 10665
+    },
+    "src/chem_workbench/refinement_execution/execution_contract.py": {
+      "sha256": "22bcd22d5a193ce313b4acf71658dbb315e7cbfe5f7b6f4ddf27e8ce0571d229",
+      "bytes": 7625
+    },
+    "src/chem_workbench/refinement_execution/governed_execution.py": {
+      "sha256": "851a393abff532471b80d42d1d9ead960bc7f4fcb39a68bd3e0d828ccce7073f",
+      "bytes": 16587
+    },
+    "src/chem_workbench/refinement_execution/governed_plan.py": {
+      "sha256": "45a2163eddffbe6ce2d32321df287a9b9557c1990748d06a80d0cd37d89b5ac2",
+      "bytes": 10491
+    },
+    "src/chem_workbench/refinement_execution/host_evidence.py": {
+      "sha256": "c3215ccee74ef1908f327c11d97320562b89295b4e6c78354a4ff20aecb4356a",
+      "bytes": 31325
+    },
+    "src/chem_workbench/refinement_execution/host_subject_admission.py": {
+      "sha256": "855965cd6f078fe6d44417261b66f4d14d46adc1de65758f771bd168a113e18b",
+      "bytes": 3798
+    },
+    "src/chem_workbench/refinement_execution/launch_context.py": {
+      "sha256": "21b40c7936016e13c25239a527eed3892010c576ed6a3a8ca282251f3054929e",
+      "bytes": 22249
+    },
+    "src/chem_workbench/refinement_execution/native_dispersion_records.py": {
+      "sha256": "1f14c31fe20d37ea1e8b1369ba227fad8f2aab94245b1c0316ce51071a30056d",
+      "bytes": 11779
+    },
+    "src/chem_workbench/refinement_execution/native_options.py": {
+      "sha256": "666952c6bbefd674517eab87d5b5dce66efd88705e4d70c6a8a609b387b87af9",
+      "bytes": 12944
+    },
+    "src/chem_workbench/refinement_execution/nested_dispersion_observer.py": {
+      "sha256": "3fa42aab92983e94e67dc17013ccbf0bd0838db0c5c857929866dd7530d0947b",
+      "bytes": 16474
+    },
+    "src/chem_workbench/refinement_execution/observed_dispatch.py": {
+      "sha256": "61ac104519a97b260c156e0075970f6334cd639370f8fdb2f095e29cbf7c916f",
+      "bytes": 12421
+    },
+    "src/chem_workbench/refinement_execution/optimizer_evidence.py": {
+      "sha256": "5d464d7be79e3708a21c4b7ad887d68c67c48f0dbdc82104cb548b6ff1a47033",
+      "bytes": 17996
+    },
+    "src/chem_workbench/refinement_execution/optimizer_loop.py": {
+      "sha256": "50dd65c88289548a099bfe10f70095dd5d1e98b918ba3a530b049099e14056ef",
+      "bytes": 12103
+    },
+    "src/chem_workbench/refinement_execution/optimizer_policy.py": {
+      "sha256": "62f0d9057a3a3e8534dbb2ab17f8b1a4978b14cb3897a80f5b8b53ea5fcde560",
+      "bytes": 8950
+    },
+    "src/chem_workbench/refinement_execution/preparation.py": {
+      "sha256": "078d5a0504a33d2a3cb2031a6e3987646c07c6588df6e47f3e92a53d25542b7b",
+      "bytes": 27898
+    },
+    "src/chem_workbench/refinement_execution/refinement_plan.py": {
+      "sha256": "06d60ca796eb0350fa79329898f4a40c39f8c1e3f75a57230e44ed60888fe0c9",
+      "bytes": 15257
+    },
+    "src/chem_workbench/refinement_execution/refinement_recorder.py": {
+      "sha256": "d00695d61d1fbc5a6698919cef34d25d4e2a98164c959abf09c7af0f7863f269",
+      "bytes": 15934
+    },
+    "src/chem_workbench/refinement_execution/refinement_subject.py": {
+      "sha256": "4785d15180b4918b28d863f1e2da04fdc48707307f90f5a978e3c4f888f7ed7f",
+      "bytes": 15812
+    },
+    "src/chem_workbench/refinement_execution/runtime_preflight.py": {
+      "sha256": "d588e63798ee7a74da3b4addf2cfd41eef52b7b680cd6efd5e594e8c50265a9f",
+      "bytes": 24119
+    },
+    "src/chem_workbench/refinement_execution/workbench_preparation.py": {
+      "sha256": "f850af27bc0516805a3e6777d8b241210a5e6081864ddd478b168426523fdb4d",
+      "bytes": 4584
+    },
+    "src/chem_workbench/refinement_execution/worker_entry.py": {
+      "sha256": "d90ebf91adbb09d1923303fee8b8e801ba03f766e007a5454bfa1a5f9a4e3dad",
+      "bytes": 3149
+    },
+    "src/chem_workbench/refinement_execution/worker_lifecycle.py": {
+      "sha256": "351439c0f5ce95065fd1f21b2545029f2e87b31e808fcd347d561708c05784b7",
+      "bytes": 20967
+    },
+    "src/chem_workbench/refinement_execution/worker_subject_replay.py": {
+      "sha256": "eba821674adec6d12e905ce269116518d3954c9d7362c584c775ad7f609cec35",
+      "bytes": 19709
+    },
+    "src/chem_workbench/refinement_isotopes.py": {
+      "sha256": "103b9a883b463b0a5f2a46b58da9167d5759306d92ce8bbc12666c5c4740a261",
+      "bytes": 7258
+    },
+    "src/chem_workbench/refinement_supervision.py": {
+      "sha256": "1d850155457c61da10604dd404ff80dd634d38884d6ba1d4cb61ceef4949e554",
+      "bytes": 6955
+    },
+    "src/chem_workbench/refinement_visualization.py": {
+      "sha256": "0a07d2273faca0b0653dc606daeeab82c9b058abcd71618cc07ae1cbfb9c3cff",
+      "bytes": 11212
+    },
+    "src/chem_workbench/runtime_identity.py": {
+      "sha256": "51e6a0c9bf85cb9e76af40c8816b8a411346a34074c1af362fff0af56c346162",
+      "bytes": 8714
+    },
+    "src/chem_workbench/structure_lab.py": {
+      "sha256": "63c6cf1b1553bebc8fbef7f12a3a1ee08cafc62525ff4fb716c26cd3d4866427",
+      "bytes": 11467
+    },
+    "src/chem_workbench/tool_gateway.py": {
+      "sha256": "2a55bd46849f6a7d3f73d8e79f9110a97ece27b4467a1d13c4af35a2d045a78f",
+      "bytes": 11389
+    },
+    "src/chem_workbench/validators/__init__.py": {
+      "sha256": "f2743b065fb90d5421b576c47e8fb3399a517955f88c1600ffdee5b1c0676868",
+      "bytes": 140
+    },
+    "src/chem_workbench/validators/core.py": {
+      "sha256": "df8d24d16e42f1d1af0f99e0a8648c2985690a5a00ceccd6a962d779120a8a6f",
+      "bytes": 52978
+    },
+    "src/chem_workbench/version.py": {
+      "sha256": "d09bdedac5733f96af0064ff290a51b50c8303ba2b305a2ba66273e82c062e19",
+      "bytes": 252
+    },
+    "src/chem_workbench/visualization.py": {
+      "sha256": "f7e0e3ae298ecfad9e3d2b0f840b65767cddf813054a7c458c271b28c6599abe",
+      "bytes": 7350
+    },
+    "src/chem_workbench/web.py": {
+      "sha256": "01a4fc13b860db2c74cdbb9971d2cf26655bf6d24ee1a0f802fe1670b20d8ca0",
+      "bytes": 16985
+    },
+    "src/chem_workbench/web_assets/app.js": {
+      "sha256": "efdc8208f5e4840edda9315f55c5008b0008c43fe2d5bd74ae5ea2c62af199ca",
+      "bytes": 17166
+    },
+    "src/chem_workbench/web_assets/design-studio.css": {
+      "sha256": "70a1077922863fa2d3cf10020e5a8e92d6ebe4c94ee985e34f93248dd38ee59c",
+      "bytes": 19163
+    },
+    "src/chem_workbench/web_assets/design-studio.js": {
+      "sha256": "3d05373e2c6917f9fe77c8f4157b92893f87fcb6dd72d0f6c3342a11426b5d3f",
+      "bytes": 37319
+    },
+    "src/chem_workbench/web_assets/dispersion-diagnostics.css": {
+      "sha256": "fa266f3e96dbe758f7bec355d8be495eab98d47f74c24aedcb0235047784ed2f",
+      "bytes": 4002
+    },
+    "src/chem_workbench/web_assets/dispersion-diagnostics.js": {
+      "sha256": "6a978c188e862af4dd7f1fc596812af7c476d2c8517b81fd0fb6f3d4a01ba3c5",
+      "bytes": 15483
+    },
+    "src/chem_workbench/web_assets/geometry-view-model.js": {
+      "sha256": "9424c26d81f33634a8073b14d19cb69fa6d08f6e6ea8619742fe9e5f0eab4ad0",
+      "bytes": 4306
+    },
+    "src/chem_workbench/web_assets/index.html": {
+      "sha256": "441ef86821738808fc18738cb9307cd943c793b5ae642008c7db23019c5fc3cd",
+      "bytes": 12630
+    },
+    "src/chem_workbench/web_assets/interface-workbench.js": {
+      "sha256": "33ed500276a0a16667908052cc285ed0077af8cc8511186fa63b83b56255fae5",
+      "bytes": 38737
+    },
+    "src/chem_workbench/web_assets/refinement-lab.css": {
+      "sha256": "d272fa2c731d985b2ef406cc1877c92e830077a27a4895b12854980144864b7d",
+      "bytes": 7966
+    },
+    "src/chem_workbench/web_assets/refinement-lab.js": {
+      "sha256": "91d999e5652ac819b492d02270c8c6eb7d94dc6d32d750350f91bab8d81a81b9",
+      "bytes": 42715
+    },
+    "src/chem_workbench/web_assets/structure-lab.js": {
+      "sha256": "71693fce4d96e4bc9603ec222f7be3f89d135efde3c11eb05b2aeaa17d3ee39f",
+      "bytes": 8791
+    },
+    "src/chem_workbench/web_assets/style.css": {
+      "sha256": "5bbdfa3728a2d3e235000f2b8fa70fdda568b372d26e387514059105ba9e9c05",
+      "bytes": 21114
+    },
+    "src/chem_workbench/web_assets/vendor/3Dmol-2.5.5.min.js": {
+      "sha256": "f7cc78921ae72e7623e89cdd111434f58c2efddd2ffda1cd212644b406fb8016",
+      "bytes": 537792
+    },
+    "src/chem_workbench/web_assets/vendor/3Dmol-LICENSE.txt": {
+      "sha256": "4c6eaaed856f3f28a3b1a98e74f4a8a71618de7d51ea4155c29f6f793bcef861",
+      "bytes": 4283
+    },
+    "src/chem_workbench/web_assets/vendor/3Dmol-min.js.LICENSE.txt": {
+      "sha256": "ae3bfc688d0c9687b76e0ecc7fece0b393bcb4acf2aee09e19dda697eaa10b16",
+      "bytes": 120
+    },
+    "src/chem_workbench/web_assets/viewer.js": {
+      "sha256": "2ae736a449052c0e4b3851916e17b63e82fbfe01e0c01cbaca8be42fb6dd8783",
+      "bytes": 20596
+    },
+    "src/chem_workbench/web_assets/workflow.js": {
+      "sha256": "051983bb07a9915fdf22e73a72c37b46491303e59be24939577928741a06dd3c",
+      "bytes": 27129
+    },
+    "src/chem_workbench/worker_supervision.py": {
+      "sha256": "2a38863429047c3b3e509be75c345dae0c34bfe747bf80ffe96178d7bd36b5b7",
+      "bytes": 2702
+    },
+    "src/chem_workbench/workflows.py": {
+      "sha256": "6630ae7052a8d5ea3417962566687c2e563860d0e86559698caf9c138aa47663",
+      "bytes": 28616
+    },
+    "third_party/ase/licenses/LICENSE": {
+      "sha256": "8ca76f9c8c2293e7563ac648d94770c2319d56be588eb190c5f0f9564c92d663",
+      "bytes": 609
+    },
+    "third_party/attrs/licenses/LICENSE": {
+      "sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f",
+      "bytes": 1109
+    },
+    "third_party/basis-set-exchange/licenses/LICENSE": {
+      "sha256": "14b5a1c21a9e0966e295b9e3d66c0cee9475ffe5931e74d063c3713e2ae9a496",
+      "bytes": 1505
+    },
+    "third_party/jsonschema-specifications/licenses/COPYING": {
+      "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+      "bytes": 1057
+    },
+    "third_party/jsonschema/licenses/COPYING": {
+      "sha256": "4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439",
+      "bytes": 1057
+    },
+    "third_party/manifest.json": {
+      "sha256": "608a8c49729202623d4b18ad5039122b5c2f61cd9b174af26c8c571f911684f8",
+      "bytes": 58791
+    },
+    "third_party/numpy/licenses/LICENSE.txt": {
+      "sha256": "a804dff0ead9fadc5293456410bcbfc32bf024be9c4513459663fb7b442d2341",
+      "bytes": 45831
+    },
+    "third_party/numpy/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt": {
+      "sha256": "d544761558b510866c21f7e8a2d5716fca76e0b98117e3b6b86314db7244d150",
+      "bytes": 1039
+    },
+    "third_party/numpy/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING": {
+      "sha256": "aea41976c720f91bd19725c16916a1ace40eb1ea42620d340e587a5de4bbcea0",
+      "bytes": 704
+    },
+    "third_party/numpy/licenses/numpy/_core/src/highway/LICENSE": {
+      "sha256": "d208152e2777ffd0126eacc1bd21c0320d69e4e6b622d21a2a12a47e8ef73763",
+      "bytes": 21155
+    },
+    "third_party/numpy/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt": {
+      "sha256": "b0fd592d4ead563148e3977e7b589169d46a5ef2ff133c755a81af880a3fc919",
+      "bytes": 1441
+    },
+    "third_party/numpy/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md": {
+      "sha256": "a732977853530066790c42817087f4829b518dd98d340c916acbfd227e39d3cb",
+      "bytes": 1542
+    },
+    "third_party/numpy/licenses/numpy/_core/src/umath/svml/LICENSE": {
+      "sha256": "585483905b13d4b42f800c55ba99e89d6e2e33ccd5f503e201c07531d148ff41",
+      "bytes": 1573
+    },
+    "third_party/numpy/licenses/numpy/fft/pocketfft/LICENSE.md": {
+      "sha256": "8db000e158c162e7249787852d8c69764706502ccee725c06641b31c1e95c8af",
+      "bytes": 1523
+    },
+    "third_party/numpy/licenses/numpy/linalg/lapack_lite/LICENSE.txt": {
+      "sha256": "19060ef465e1797d682ee0fc3081bd25ab1395e995e43d25c9d13c95d9a3cd6b",
+      "bytes": 2314
+    },
+    "third_party/numpy/licenses/numpy/ma/LICENSE": {
+      "sha256": "d78dbb208b80d92b4d333e41a4baae50d12444f46e53199fa7726a91de6e2da7",
+      "bytes": 1616
+    },
+    "third_party/numpy/licenses/numpy/random/LICENSE.md": {
+      "sha256": "b4bc2f4fa1c95778f1ed3dd8f14706bece399475b978f9f34b5d3cd72521b48a",
+      "bytes": 3582
+    },
+    "third_party/numpy/licenses/numpy/random/src/distributions/LICENSE.md": {
+      "sha256": "cf5619f25b112d5ce7c896efffc8e610bcb345dfadcc19f2c1460aa48fff2c9e",
+      "bytes": 2805
+    },
+    "third_party/numpy/licenses/numpy/random/src/mt19937/LICENSE.md": {
+      "sha256": "92c10699884321f1c2947fe2a70ab23b0fbf1507f756d89dd08f38c61fc3d4fa",
+      "bytes": 2986
+    },
+    "third_party/numpy/licenses/numpy/random/src/pcg64/LICENSE.md": {
+      "sha256": "41190663b77bee5302386495a07b7eabfbfa571aa0ae2f11da6764162062fc4f",
+      "bytes": 1176
+    },
+    "third_party/numpy/licenses/numpy/random/src/philox/LICENSE.md": {
+      "sha256": "322ac46d870c8aeead6c53adcccc839296fb3c8e456eae155081297daf7f8013",
+      "bytes": 1540
+    },
+    "third_party/numpy/licenses/numpy/random/src/sfc64/LICENSE.md": {
+      "sha256": "28cad82ce1379dc529df30da78ec012d7d0d1d576b03ddcb93388aee53659f59",
+      "bytes": 1253
+    },
+    "third_party/numpy/licenses/numpy/random/src/splitmix64/LICENSE.md": {
+      "sha256": "454ec7350e478e037061850b67395753b425b1cb0a34bbc26290b020bf89d763",
+      "bytes": 340
+    },
+    "third_party/pymatgen/licenses/LICENSE": {
+      "sha256": "7e8f24f9b40be59291c7d82819edb8e93fb344f1d53997880e7db80bbc4f5d89",
+      "bytes": 1167
+    },
+    "third_party/qcelemental/licenses/LICENSE": {
+      "sha256": "9eeea6197607893a71fc9536ce8f322112b15cee7de429f4bebefc5eba06966c",
+      "bytes": 1546
+    },
+    "third_party/qcengine/licenses/LICENSE": {
+      "sha256": "bf5327acded2519969f61d32fd1058d360b8388b838c2e5e0a8e8ed4ab2feb1b",
+      "bytes": 1546
+    },
+    "third_party/rdkit/LICENSE.md": {
+      "sha256": "f4845fb8a7907beff122616d398e936d0ff1c7b915e173c92fa4928270b2db08",
+      "bytes": 1098
+    },
+    "third_party/referencing/licenses/COPYING": {
+      "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+      "bytes": 1057
+    },
+    "third_party/rpds-py/licenses/LICENSE": {
+      "sha256": "8bcb72c82ea8ae74802293c41d93ad7d51434001b0ae45a603a5af0f507aee0a",
+      "bytes": 1076
+    },
+    "third_party/scipy/LICENSE.txt": {
+      "sha256": "f0f5c56b298ec9795df1199edc328a987242716d14a1bde6813112e22dc15f99",
+      "bytes": 45881
+    },
+    "uv.lock": {
+      "sha256": "abe20e69950620279f092b668d33d4ec27dc08c7d1135ed870216a74a0a3b362",
+      "bytes": 571758
+    }
+  }
+}

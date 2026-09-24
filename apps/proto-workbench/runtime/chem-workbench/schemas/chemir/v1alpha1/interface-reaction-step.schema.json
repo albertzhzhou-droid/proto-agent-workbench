@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "interface-reaction-step.schema.json",
+  "title": "ChemIR v1alpha1 InterfaceReactionStep payload",
+  "description": "A declared surface or interface reaction step binding explicit reactant and product subject revisions. The step owns computed energy differences under a reviewed comparison profile only; barriers, rates, equilibrium constants, and catalytic-activity claims are outside this object and require separately reviewed method profiles.",
+  "type": "object",
+  "required": [
+    "reactant_references",
+    "product_references",
+    "claim_scope"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "reactant_references": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Reference"
+      }
+    },
+    "product_references": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Reference"
+      }
+    },
+    "claim_scope": {
+      "const": "computed_energy_difference_only"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false
+}

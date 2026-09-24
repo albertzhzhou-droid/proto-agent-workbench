@@ -30,6 +30,7 @@ export interface ChatCompletionChunk {
 
 /** An observed instance, never the catalogue's advertised maximum context. */
 export interface ExecutionBinding {
+  modelFingerprint?: string;
   modelId: string;
   instanceId: string;
   contextLength: number;
@@ -49,6 +50,7 @@ export interface InstanceTokenizer {
 
 /** A provider-backed catalog. The root argument is retained for IPC compatibility. */
 export interface ModelCatalogSource {
+  readonly authoritativeEndpoint?: string;
   scan(root: string, signal?: AbortSignal): Promise<ModelDescriptor[]>;
   cancel?(): void;
 }

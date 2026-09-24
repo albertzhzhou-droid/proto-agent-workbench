@@ -9,7 +9,8 @@ export const BUILD_INPUT_ROOTS = Object.freeze([
   "src", "parts", "schemas", "connectors", "workflows", "literature/seed_sources.json", ".codex/skills", "pyproject.toml", "uv.lock", "LICENSE", "README.md",
   ...["src", "scripts", "licenses", "node_modules", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc",
     "electron.vite.config.ts", "vite.config.mjs", "tsconfig.json", "index.html", "THIRD_PARTY_NOTICES.md",
-    "runtime/workspace-template", "runtime/trust", "runtime/proto-agent/README.md"].map(path => `${APP}/${path}`),
+    "runtime/workspace-template", "runtime/trust", "runtime/proto-agent/README.md",
+    "runtime/chem-workbench", "runtime/chem-integration"].map(path => `${APP}/${path}`),
 ]);
 export const DESKTOP_QA_INPUT_ROOTS = Object.freeze([...BUILD_INPUT_ROOTS.filter(path => path !== `${APP}/node_modules`),
   `${APP}/runtime/proto-agent/proto-agent`, `${APP}/runtime/proto-agent/proto-agent-mcp`,
@@ -64,7 +65,7 @@ async function stableRecord(path, relativePath) {
   return { path: relativePath, kind: "file", sizeBytes: Number(after.size), sha256 };
 }
 
-export async function captureBuildInputs(root, roots = BUILD_INPUT_ROOTS) {
+export async function captureBuildInputs(root, roots = BUILD_INPUT_ROOTS, { includeIgnored = false } = {}) {
   const canonicalRoot = resolve(root);
   const records = [];
   const files = [];
@@ -86,7 +87,7 @@ export async function captureBuildInputs(root, roots = BUILD_INPUT_ROOTS) {
     totalBytes: records.reduce((sum, record) => sum + (record.sizeBytes ?? 0), 0), treeSha256: hash(JSON.stringify(records)), records };
 
   async function visit(absolute, path) {
-    if (ignored(path)) return;
+    if (!includeIgnored && ignored(path)) return;
     const metadata = await lstat(absolute);
     if (metadata.isSymbolicLink()) {
       // pnpm junctions are allowed only inside the copied dependency tree. They

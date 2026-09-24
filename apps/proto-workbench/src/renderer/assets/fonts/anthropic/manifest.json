@@ -1,0 +1,416 @@
+[
+  {
+    "file": "Anthropic Mono Web.otf",
+    "family": "Anthropic Mono Web",
+    "style": "normal",
+    "weight": 400,
+    "sha256": "14880eecc93a223e733040af2e6374ea8ad4ec562f10ca2005ca2304696aee43",
+    "source_archive": "Anthropic Mono-fontiko.zip",
+    "copyright": "Copyright 2025-2026 Anthropic PBC"
+  },
+  {
+    "file": "Anthropic Mono Web Regular Italic.otf",
+    "family": "Anthropic Mono Web",
+    "style": "italic",
+    "weight": 400,
+    "sha256": "d9378990ada086a799e4cc617a10c2c047e5ed9e957f7c34187a22f16d896037",
+    "source_archive": "Anthropic Mono-fontiko.zip",
+    "copyright": "Copyright 2025-2026 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Bold-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 700,
+    "sha256": "d6543a31c7289b33852da5e31e95b82e1b2f7219531be9ebc9c1aed39441eab0",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-BoldItalic-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "italic",
+    "weight": 700,
+    "sha256": "ff36c7a73545d346405364be6c6c3d09996dbddfe4c8750c4a1aa16a69c35021",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Extrabold-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 800,
+    "sha256": "2ed1259ac1724d4a8faeb7f8a038408545bb43f633bcd3305d50bdc0a995d178",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-ExtraboldItalic-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "italic",
+    "weight": 800,
+    "sha256": "02bb52b1e8a1aee8f6784b31f7e5f0a982fa6d86bc13423d5319edbfdf820976",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Light-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 300,
+    "sha256": "8faa900a08c209e24992232a462253e41d611ca11e7680a1d1b80597edb4612b",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Medium-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 500,
+    "sha256": "bda1ca125fcbac44c01cabd13506fdd501077131d0f34a7be49c99baaf549b51",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-MediumItalic-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "italic",
+    "weight": 500,
+    "sha256": "a4e5439bf04614058d1a5ba14355c4c1dc61b7f131ec1db519de0609f4af0e4e",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Regular-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 400,
+    "sha256": "73f33491bd522ba07b343a0e75eccf3274eeb49ebb4a3e69faab50256ce3c67f",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-RegularItalic-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "italic",
+    "weight": 400,
+    "sha256": "a627aadbe03dcceb28212f1d008d169ecb3aa58b7a821e00c3913593c3cda743",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Display-Semibold-Static.otf",
+    "family": "Anthropic Sans Display",
+    "style": "normal",
+    "weight": 600,
+    "sha256": "8318e405fa5f056a699c259b7e5bf35812a476b0fb03113514fc0ce03610b537",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Bold-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 700,
+    "sha256": "ef085735405bedaca759c98bc90ee853d34f3aeca28a915dcfa4759e6b69dd7d",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-BoldItalic-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "italic",
+    "weight": 700,
+    "sha256": "b133dbe10e803df178b9abed50f6323f0dd68c566cd1464aaa08d8ec0575dd84",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Extrabold-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 800,
+    "sha256": "2b583c36db0b78fffdec62bcc407c9a1bbb26966162d3e9e6db889ec640ed135",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-ExtraboldItalic-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "italic",
+    "weight": 800,
+    "sha256": "cb5832bc27f07de8b1a9438ec385902c3af1ba8563e11e65e2278ec399fa1abd",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Light-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 300,
+    "sha256": "72a856ae76d0201d7561194d124c22c3db35bb88a4f560b5554252cfa728abb6",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Medium-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 500,
+    "sha256": "9286e181e9de7bd65bbeec68c5e88159abd89cd0750ea97b6af31da6212c6023",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-MediumItalic-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "italic",
+    "weight": 500,
+    "sha256": "44b14caef53f0aab297df2baa1522846b181724fc985f34cc35e0774a78d4340",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Regular-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 400,
+    "sha256": "9fdf9048587cf014deb4d6e049b92f5c1689bd3a14f12d18c4c7a3b77da6fcdb",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-RegularItalic-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "italic",
+    "weight": 400,
+    "sha256": "29a790aad6780e330dc63f9319e7d2f321333348c3d4362172c80342439e57c9",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSans-Text-Semibold-Static.otf",
+    "family": "Anthropic Sans Text",
+    "style": "normal",
+    "weight": 600,
+    "sha256": "96131bc98138a7f0e0af1367e06cbe08099386025ab84cd5a8a113c5510816af",
+    "source_archive": "Anthropic Sans-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Bold-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 700,
+    "sha256": "20855395a3f331f44730681690757515057c2e8c7710c0355ecb12d3d5556be8",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-BoldItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 700,
+    "sha256": "6c1464248ce7c60d18c4560b22cb511933230d24973151a35a94e27b82037af8",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Extrabold-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 800,
+    "sha256": "61b1ce30391bd81e51a21bb4977120175ffcf3fbba4e8ce89ff971c516bb5fdc",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-ExtraboldItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 800,
+    "sha256": "994fbe39f8a15349f83559ec9e1cbee6e16d2d5c5928f76ee4304e0ffe43974a",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Light-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 300,
+    "sha256": "624ee6ed6b3374e764b1271fcc45732cf628e58aafa1cebc7bcddeb33779a1ce",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-LightItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 300,
+    "sha256": "7a7c528cc2dd837793002379f82f3ff7a04e3887c77df0070127dd2dfd456c1b",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Medium-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 500,
+    "sha256": "75ce24aa279a670538aeeafa0a537c572575c26628f8237bf01d140e4bcf84ec",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-MediumItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 500,
+    "sha256": "3dce150da97ab3a6d96751f1f54b824458aaf5e60334ddf9affba44c383bb2cb",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Regular-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 400,
+    "sha256": "f90d31564307c521d8284d6cc91f3063d4ab7501355b81b6353f05141ac7e680",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-RegularItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 400,
+    "sha256": "f3b5e5f761440cd1f2183d3c730ebb13977be9a66eceaefda931a1cdd62e9430",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-Semibold-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "normal",
+    "weight": 600,
+    "sha256": "44d9adee0e998cd16136e8380a08ceabcd7f98c3f3013292c684b38485be8a43",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Display-SemiboldItalic-Static.otf",
+    "family": "Anthropic Serif Display",
+    "style": "italic",
+    "weight": 600,
+    "sha256": "e428b2effb4218c6935f23d874f380f3081ddf37b6744b226874dfcfd90ed9e9",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Bold-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 700,
+    "sha256": "86bc0a17f9081b272549519ed6ef1fc1553bd199b3e3085ac1324462048d9b99",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-BoldItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 700,
+    "sha256": "4745d773232ae0cdf58e4d7a84a0ebdb78fefcd8b6c8baa018e07546d1e4e142",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Extrabold-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 800,
+    "sha256": "51c0b94efd0e00aac9e89c769acb6b88590786d7876b894dd9aa93f22f0c47a7",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-ExtraboldItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 800,
+    "sha256": "dc1801e13c50cac70acdcff8e1ad321784e9c5e69c7b93b4a73575e6cd16abda",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Light-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 300,
+    "sha256": "d2efac16c7b670e8e0db7a979995bb97822f08f1b782b81f654aa947c3b958ea",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-LightItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 300,
+    "sha256": "31e304ecb896003b8221844c062a977ec00794307e433709b142c4286bfeab5a",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Medium-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 500,
+    "sha256": "87b49d2a1582a4d309b4fbcbbb8b6d7dca5e23a8a7519812012896bc02a72582",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-MediumItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 500,
+    "sha256": "94c84e5702479c96254dd8fbfc0de5a643becf06e3524a8a49faef3a22824084",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Regular-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 400,
+    "sha256": "255ca18a938adc37aa8fb47e9fbfb82562820ee1237a7b6c5bdf2fe6a54b729e",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-RegularItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 400,
+    "sha256": "37ff475d587c0adc5875b1426c2a2afc20ece664516c227bc48a4f62689579e1",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-Semibold-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "normal",
+    "weight": 600,
+    "sha256": "2b5d01e6281cf6186b27c7857ac0392aed36a991d05aba1a26dd95a77182beb1",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  },
+  {
+    "file": "AnthropicSerif-Text-SemiboldItalic-Static.otf",
+    "family": "Anthropic Serif Text",
+    "style": "italic",
+    "weight": 600,
+    "sha256": "5261d2490937f6c3419b2c7b6e87959ff11db8aeae61aa317cc76b99036f9ff2",
+    "source_archive": "Anthropic Serif-fontiko.zip",
+    "copyright": "Copyright 2025 Anthropic PBC"
+  }
+]

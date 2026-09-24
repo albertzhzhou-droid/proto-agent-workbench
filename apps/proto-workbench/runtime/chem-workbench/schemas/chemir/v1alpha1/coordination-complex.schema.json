@@ -1,0 +1,483 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "coordination-complex.schema.json",
+  "title": "ChemIR v1alpha1 bounded CoordinationComplex payload",
+  "description": "A bounded coordination model in which interaction topology and asserted interaction models are independent facts.",
+  "type": "object",
+  "required": [
+    "atoms",
+    "interactions",
+    "metal_centers"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "atoms": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": {
+        "$ref": "#/$defs/ComplexAtom"
+      }
+    },
+    "interactions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/Interaction"
+      }
+    },
+    "metal_centers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/MetalCenter"
+      }
+    },
+    "total_charge": {
+      "type": "integer",
+      "minimum": -128,
+      "maximum": 128
+    },
+    "oxidation_state_model": {
+      "$ref": "#/$defs/OxidationStateModel"
+    },
+    "electronic_state_references": {
+      "$ref": "common.schema.json#/$defs/ReferenceArray"
+    },
+    "stereochemistry": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/ComplexStereochemistry"
+      }
+    },
+    "representations": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "allOf": [
+          {
+            "$ref": "common.schema.json#/$defs/Representation"
+          },
+          {
+            "if": {
+              "properties": {
+                "format": {
+                  "enum": [
+                    "smiles",
+                    "inchi"
+                  ]
+                }
+              },
+              "required": [
+                "format"
+              ]
+            },
+            "then": {
+              "properties": {
+                "role": {
+                  "const": "derived"
+                }
+              },
+              "required": [
+                "loss_report_reference"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ComplexAtom": {
+      "type": "object",
+      "required": [
+        "id",
+        "element"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "element": {
+          "$ref": "common.schema.json#/$defs/ElementSymbol"
+        },
+        "isotope_mass_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 400
+        },
+        "formal_charge": {
+          "type": "integer",
+          "minimum": -16,
+          "maximum": 16
+        },
+        "participant_role": {
+          "enum": [
+            "metal_center",
+            "ligand",
+            "counterion",
+            "other",
+            "unknown"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InteractionParticipant": {
+      "type": "object",
+      "required": [
+        "atom_reference",
+        "role"
+      ],
+      "properties": {
+        "atom_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "role": {
+          "enum": [
+            "donor",
+            "acceptor",
+            "metal_center",
+            "bridging",
+            "other",
+            "unknown"
+          ]
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InteractionModel": {
+      "type": "object",
+      "required": [
+        "model",
+        "origin"
+      ],
+      "properties": {
+        "model": {
+          "enum": [
+            "covalent",
+            "coordinate",
+            "ionic",
+            "unknown"
+          ]
+        },
+        "bond_order": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Interaction": {
+      "type": "object",
+      "required": [
+        "id",
+        "topology",
+        "participants",
+        "interaction_models",
+        "direction"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "topology": {
+          "enum": [
+            "pairwise",
+            "haptic",
+            "multicenter",
+            "unknown"
+          ]
+        },
+        "participants": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/InteractionParticipant"
+          }
+        },
+        "donor_atom_references": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "common.schema.json#/$defs/Reference"
+          },
+          "uniqueItems": true
+        },
+        "acceptor_atom_references": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "common.schema.json#/$defs/Reference"
+          },
+          "uniqueItems": true
+        },
+        "direction": {
+          "enum": [
+            "donor_to_acceptor",
+            "acceptor_to_donor",
+            "bidirectional",
+            "undirected",
+            "unknown"
+          ]
+        },
+        "interaction_models": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/InteractionModel"
+          }
+        },
+        "hapticity": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 16
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "topology": {
+                "const": "pairwise"
+              }
+            },
+            "required": [
+              "topology"
+            ]
+          },
+          "then": {
+            "properties": {
+              "participants": {
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "topology": {
+                "const": "haptic"
+              }
+            },
+            "required": [
+              "topology"
+            ]
+          },
+          "then": {
+            "required": [
+              "donor_atom_references",
+              "acceptor_atom_references",
+              "hapticity"
+            ],
+            "properties": {
+              "donor_atom_references": {
+                "minItems": 2
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "OxidationStateAssertion": {
+      "type": "object",
+      "required": [
+        "kind",
+        "origin"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "exact",
+            "fractional",
+            "averaged",
+            "candidate",
+            "unknown"
+          ]
+        },
+        "value": {
+          "type": "number",
+          "minimum": -16,
+          "maximum": 16
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "else": {
+        "required": [
+          "value"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "MetalCenter": {
+      "type": "object",
+      "required": [
+        "atom_reference"
+      ],
+      "properties": {
+        "atom_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "oxidation_state_assertions": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/OxidationStateAssertion"
+          }
+        },
+        "coordination_number": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "coordination_geometry": {
+          "enum": [
+            "linear",
+            "trigonal_planar",
+            "tetrahedral",
+            "square_planar",
+            "trigonal_bipyramidal",
+            "square_pyramidal",
+            "octahedral",
+            "trigonal_prismatic",
+            "pentagonal_bipyramidal",
+            "other",
+            "unknown"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OxidationStateModel": {
+      "type": "object",
+      "required": [
+        "completeness",
+        "origin"
+      ],
+      "properties": {
+        "completeness": {
+          "enum": [
+            "complete_formal_model",
+            "incomplete",
+            "unknown"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ComplexStereochemistry": {
+      "type": "object",
+      "required": [
+        "kind",
+        "configuration",
+        "origin"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "metal_center",
+            "helical",
+            "geometric",
+            "other"
+          ]
+        },
+        "center_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "configuration": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

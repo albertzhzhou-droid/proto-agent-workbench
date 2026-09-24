@@ -294,6 +294,9 @@ test("discovers rich native model metadata from the one fixed LM Studio endpoint
   assert.equal(models[0].provider, "lmstudio");
   assert.equal(models[0].providerModelId, "fixture/model@q4_k_m");
   assert.equal(models[0].metadataSource, "lmstudio");
+  assert.equal(models[0].providerVisionAdvertised, true);
+  assert.equal(models[0].providerToolUseAdvertised, true);
+  assert.equal(models[0].toolCapability, "unknown", "provider metadata is not an observed tool-call result");
   assert.equal(models[0].loadState, "warm");
   assert.deepEqual(models[0].loadedInstances?.[0], {
     id: "fixture-instance",
@@ -685,4 +688,25 @@ test("rejects oversized catalogs and duplicate model keys", async () => {
     environment: {},
   });
   await assert.rejects(duplicateProvider.scan("ignored"), /duplicate key/);
+});
+
+
+test("a failed catalog clears observed residency and recovers from the next live response", async () => {
+  let mode = "loaded";
+  const provider = new LmStudioProvider({fetchImpl: async () => {
+    if (mode === "failed") throw new Error("server stopped");
+    return jsonResponse({models: mode === "empty" ? [] : [nativeModel({loaded_instances: [loadedInstance() ]})]});
+  }});
+  const [model] = await provider.scan("");
+  await provider.load(model, {instanceId: "fixture-instance"});
+  assert.equal(provider.has(model.id), true);
+  mode = "failed";
+  await assert.rejects(provider.scan(""), /server stopped/);
+  assert.equal(provider.has(model.id), false);
+  assert.equal(provider.peekExecutionBinding(model.id), undefined);
+  mode = "empty";
+  assert.deepEqual(await provider.scan(""), []);
+  mode = "loaded";
+  assert.equal((await provider.scan("")).length, 1);
+  assert.equal(provider.has(model.id), false, "a removed binding is not silently reattached");
 });

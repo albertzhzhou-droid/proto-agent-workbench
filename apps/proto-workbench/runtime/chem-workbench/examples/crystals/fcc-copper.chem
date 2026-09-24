@@ -1,0 +1,21 @@
+chem 0.1
+
+crystal fcc_copper {
+  structure cif "structures/fcc-copper.cif"
+  semantics explicit_configuration
+}
+
+conditions fcc_copper_solid_zero_kelvin {
+  target fcc_copper
+  phase solid
+  temperature 0
+  temperature_unit kelvin
+}
+
+calculation fcc_copper_single_point {
+  target fcc_copper
+  conditions fcc_copper_solid_zero_kelvin
+  task single_point
+  properties [energy]
+  method "emt"
+}

@@ -61,13 +61,31 @@ test("a worker without cancellation acknowledgement is terminated only after gra
   assert.equal(terminated[0].code, "TOOL_SESSION_INTERRUPTED");
 });
 
+test("immediate per-run stop preserves sidecar cancellation cleanup until its acknowledgement", async () => {
+  const {client,sent,terminated}=connected({cancellationGraceMs:100});
+  const controller=new AbortController();
+  const call=client.call("proto_run_analysis",{},controller.signal);
+  const rejected=assert.rejects(call,error=>error.code==="USER_CANCELLED");
+  await new Promise(resolve=>setImmediate(resolve));
+  const request=sent.find(message=>message.method==="tools/call");
+  controller.abort();await rejected;
+  let stopped=false;
+  const stopping=client.stop().then(()=>{stopped=true;});
+  await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(stopped,false,"worker teardown waits for Docker/WSL cleanup");
+  assert.equal(terminated.length,0,"sidecar remains alive to remove its descendants");
+  client.handleLine(JSON.stringify({method:"notifications/proto-request-finished",params:{requestId:request.id}}));
+  await stopping;
+  assert.equal(stopped,true);assert.equal(terminated.length,1);
+});
+
 test("tool deadline returns structured timeout and a late result clears forced cleanup", async () => {
   const { client, sent, terminated } = connected({ cancellationGraceMs: 30 });
   const call = client.call("proto_check", {}, undefined, undefined, { timeoutMs: 10 });
   // The keepalive represents the owning task; production timers are deliberately unref'ed.
   const hold = setTimeout(() => {}, 100);
   try {
-    await assert.rejects(call, (error) => error.code === "TOOL_TIMEOUT" && error.effectState === "unknown");
+    await assert.rejects(call, (error) => error.code === "TOOL_TIMEOUT" && error.effectState === "none");
     const request = sent.find((message) => message.method === "tools/call");
     client.handleLine(JSON.stringify({ id: request.id, result: { structuredContent: { ok: true } } }));
     await new Promise((resolve) => setTimeout(resolve, 40));

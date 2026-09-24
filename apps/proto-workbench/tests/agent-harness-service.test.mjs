@@ -131,7 +131,9 @@ test("material finish rejects a transcribed hash and lets the model repair the s
   assert.deepEqual(checkpoint.contract.evidenceRequirements, [{kind: "materials", minimumRecords: 3, fields: ["sequence_sha256", "source", "license"], recordKind: "catalogue"}]);
   const finishes = r.results(checkpoint).filter(result => result.tool === "harness_finish");
   assert.equal(finishes.length, 2); assert.equal(finishes[0].ok, false); assert.equal(finishes[1].ok, true);
-  assert.ok(finishes[0].data.diagnostics.some(value => value.includes("MATERIAL_HASH_MISMATCH") && value.includes(records[0].resource_id)));
+  assert.ok(finishes[0].data.diagnostics.some(item => item.message.includes("MATERIAL_HASH_MISMATCH") && item.message.includes(records[0].resource_id)));
+  // The failure stayed repairable, which is why the model was given another round.
+  assert.ok(finishes[0].data.diagnostics.every(item => item.blockingClass === "repairable"));
   assert.equal(await readFile(join(r.root, path), "utf8"), good);
   const writes = r.results(checkpoint).filter(result => result.tool === "workspace_propose_patch");
   assert.equal(writes.length, 2); assert.ok(writes.every(result => result.ok));
@@ -175,7 +177,7 @@ test("out-of-scope network calls produce a durable denial and never reach MCP", 
   await r.start("Inspect available sources.");
   const {checkpoint} = await r.complete();
   assert.equal(r.calls.length, 0);
-  assert.equal(r.results(checkpoint).find(item => item.tool === "proto_pubmed_search").data.code, "MISSION_SCOPE_REQUIRED");
+  assert.equal(r.results(checkpoint).find(item => item.tool === "proto_pubmed_search").data.code, "POLICY_DENIED");
 });
 
 test("plan-mode attempted writes leave no filesystem effect", {timeout: 10000}, async t => {
@@ -192,7 +194,9 @@ test("an unbound DNA check does not fall back to the toy parts library", {timeou
   await r.start("Inspect available DNA software checks.");
   const {checkpoint} = await r.complete();
   assert.equal(r.calls.length, 0);
-  assert.equal(r.results(checkpoint).find(item => item.tool === "proto_check").data.code, "MATERIAL_BINDING_REQUIRED");
+  const denied = r.results(checkpoint).find(item => item.tool === "proto_check").data;
+  assert.equal(denied.code, "TOOL_PRECONDITION_FAILED");
+  assert.deepEqual(denied.missing, ["material-binding"]);
 });
 
 test("MCP session startup failures emit a terminal error and a failed execution event", {timeout: 10000}, async t => {

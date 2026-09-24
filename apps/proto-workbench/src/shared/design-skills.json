@@ -1,0 +1,247 @@
+[
+  {
+    "id": "evidence-first-literature-review",
+    "name": "Evidence-First Literature Review",
+    "description": "Source-grounded literature search and synthesis through Proto's bounded local and capability-gated evidence interfaces.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/evidence-first-literature-review/SKILL.md",
+    "sourceSha256": "dd3f6190dc889d25a11a804b3b455dc736435218906ff721a4cfb3db597a43c7",
+    "manifestSha256": "3dbcaa6b144ddf7b2bf6bc6d91a6eb0f752504261cf143febf273b4a1fda405f",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Mapped literature discovery and identity verification to Proto MCP tools and retained explicit evidence limits.",
+      "upstream": [
+        {
+          "id": "literature-review",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+        }
+      ]
+    },
+    "tools": [
+      "proto_crossref_search",
+      "proto_europe_pmc_search",
+      "proto_literature_search",
+      "proto_pubmed_search",
+      "proto_review_packet"
+    ],
+    "instructions": "---\nname: evidence-first-literature-review\ndescription: Find, verify, and synthesize biological literature with retrieved identifiers, multi-source metadata checks, claim-level evidence, and explicit uncertainty. Use for design rationale, resource review, or review packets; never invent citations or treat bibliographic identity as scientific validation.\n---\n\n# Evidence-First Literature Review\n\nStart with the local source registry, then use the least broad approved external search needed. Corroborate publication identity across PubMed or Europe PMC and Crossref before relying on a citation.\n\nBuild a claim-evidence matrix containing the claim, source identifier, source type, support or contradiction, limitations, retrieval date, and confidence. Separate established findings, contested findings, hypotheses, and missing evidence. Retractions, corrections, inconsistent metadata, inaccessible full text, and negative searches remain visible.\n\nNetwork-backed searches require the MCP network capability. Search results are evidence inputs, not proof that a biological component is safe, functional, orderable, or design-eligible. Feed supported claims and unresolved gaps into the Proto review packet.\n"
+  },
+  {
+    "id": "governed-materials-review",
+    "name": "Governed Materials Review",
+    "description": "Three-pass evidence and policy review for safely expanding Proto's design-eligible materials.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/governed-materials-review/SKILL.md",
+    "sourceSha256": "6a4322a2a29228299c2313d28947802d80701c0693976bbeb2d408290f2fdcee",
+    "manifestSha256": "c024b33e4afc5e3ddadd69c89def62a099bc3eb26f6595440b9715bdf74f838f",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Combined evidence-first review and biological sequence validation with Proto's immutable catalog and activation boundary.",
+      "upstream": [
+        {
+          "id": "literature-review",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+        },
+        {
+          "id": "biopython",
+          "url": "https://github.com/K-Dense-AI/scientific-agent-skills/tree/1dd0fccf46fc3c9855c4a0c313a0c57fe4319883/skills/biopython",
+          "license": "MIT",
+          "revision": "1dd0fccf46fc3c9855c4a0c313a0c57fe4319883",
+          "content_sha256": "81eab1bd7db605635dc94bfc97e7264657325db5b220b40edf48ec178392c668"
+        }
+      ]
+    },
+    "tools": [
+      "proto_materials_get",
+      "proto_materials_materialize",
+      "proto_materials_materialize_proteins",
+      "proto_materials_search"
+    ],
+    "instructions": "---\nname: governed-materials-review\ndescription: Audit candidate biological resources through independent provenance-rights, sequence-semantics, and safety-consistency passes, then materialize only records that pass every gate. Use to increase DESIGN_ELIGIBLE coverage without weakening evidence or human activation boundaries.\n---\n\n# Governed Materials Review\n\nRun three independent passes for every candidate and retain a machine-readable decision:\n\n1. Provenance and rights: stable source identifier, retrievable revision, response and content digests, license URL, attribution, rights notes, and explicit redistributable status.\n2. Sequence and semantics: supported domain and part ontology, permitted alphabet, bounded length, source sequence digest, and no cross-domain coercion.\n3. Safety and consistency: derived and explicit safety agreement, duplicate and collision checks, normalized-record validation, catalogue round-trip, model visibility, and materialization.\n\nReject self-asserted eligibility, missing evidence, license ambiguity, safety overrides, or review identity ambiguity. Promotion creates a new immutable inactive snapshot; activation remains a separate human action. Report before and after counts and rejection reasons. `DESIGN_ELIGIBLE` remains a software policy state, not a real-world readiness claim.\n"
+  },
+  {
+    "id": "lm-studio-model-endpoint",
+    "name": "LM Studio Model Endpoint",
+    "description": "Vendor-neutral HTTP adaptation for LM Studio catalogue, lifecycle, and chat operations.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/lm-studio-model-endpoint/SKILL.md",
+    "sourceSha256": "9b180af455e6d93636e43169460a2afdcea87544b9dcca2f512814bb38d94b06",
+    "manifestSha256": "42e88de07325116c79df86e53faae53d7d0b13d10244545b39eb11cec6adf945",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Replaced the vendor lifecycle SDK with explicit loopback REST operations and ownership-safe state reconciliation.",
+      "upstream": [
+        {
+          "id": "managed-model-endpoints",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/managed-model-endpoints",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "48cb2bf810b3c54d43ab8384effe019c725e1faf14161464eb8fabf7e8d8d47a"
+        },
+        {
+          "id": "using-model-endpoint",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/using-model-endpoint",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "2ee613c4530f85e21db322b4e15d510a1800c228dee4c010a2849e55f852af00"
+        }
+      ]
+    },
+    "tools": [],
+    "instructions": "---\nname: lm-studio-model-endpoint\ndescription: Use the project LM Studio provider for live model discovery, explicit loading, bounded chat, and ownership-safe unloading through the loopback API. Use for model configuration, connection verification, or local inference; never substitute a static model list or process health check for a real response.\n---\n\n# LM Studio Model Endpoint\n\nUse `http://127.0.0.1:1234` as the single inference authority. Discover exact model keys from the live native catalogue, retain capabilities and loaded-instance state, and require an explicit load before generation.\n\nFor each request:\n\n1. Reconcile the live catalogue immediately before acting.\n2. Load the exact selected key through the native lifecycle route.\n3. Generate through the OpenAI-compatible chat route with bounded input and output.\n4. Read an optional token only from the documented environment variables; never persist or log it.\n5. Unload only an instance created and tracked by this Workbench session.\n\nA successful proof includes discovery, explicit load, a returned chat completion, and owned unload as separate observations. An externally loaded instance is observable but never owned.\n"
+  },
+  {
+    "id": "proto-science-workflow",
+    "name": "Proto Science Workflow",
+    "description": "Route governed materials, local inference, sequence validation, provenance, and human review through Proto's declared interfaces.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/proto-science-workflow/SKILL.md",
+    "sourceSha256": "531fdeafc9120ff8e1bca4b432dd57855ac0ac4e5e281155dfb80ab974bad660",
+    "manifestSha256": "0fb11ded26457214158c055a3aa73c2b4d6822fe0261adfe543c1229012f4893",
+    "references": [
+      {
+        "path": ".codex/skills/proto-science-workflow/references/acceptance.md",
+        "sha256": "5b6e87ee933f06655fdf74ebeec784c786f93751188af83dd05485154677e6dc"
+      }
+    ],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Project-specific orchestration distilled into vendor-neutral policy and existing Proto interfaces.",
+      "upstream": [
+        {
+          "id": "literature-review",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/literature-review",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "d5c5e780369ab9e2d342c6fca025339c92f78d2128e344a28a158cd3ebc651f8"
+        },
+        {
+          "id": "figure-style",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-style",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "7bd8416f1abc9d520d99e5b5c2a13fb816af5ea9ef6d0a695fde42d9b2b5348d"
+        },
+        {
+          "id": "managed-model-endpoints",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/managed-model-endpoints",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "48cb2bf810b3c54d43ab8384effe019c725e1faf14161464eb8fabf7e8d8d47a"
+        }
+      ]
+    },
+    "tools": [
+      "proto_connectors_check",
+      "proto_materials_search",
+      "proto_review_packet",
+      "proto_workflow_run"
+    ],
+    "instructions": "---\nname: proto-science-workflow\ndescription: Run source-grounded, software-only Proto workflows for governed biological materials, DNA or protein visualization, literature evidence, and LM Studio-backed analysis. Use when auditing or materializing Proto resources, inspecting or processing sequence artifacts, or preparing workflow and review evidence; do not use for wet-lab execution instructions or readiness claims.\n---\n\n# Proto Science Workflow\n\nKeep scientific claims, software validation, and human decisions visibly separate. Read [acceptance.md](references/acceptance.md) before changing model-provider, materials-eligibility, sequence-visualization, or review behavior.\n\n## Route the work\n\n1. Read `connectors/proto_workbench.json` and report unavailable or conditional connectors instead of inventing substitutes.\n2. For inference, use the configured LM Studio provider at `http://127.0.0.1:1234`. Prove model discovery with the native model endpoint and prove generation with a real bounded response; a weight scan, process check, or health response is not generation evidence.\n3. For DNA parts, search governed materials, materialize an eligible snapshot, and then search the materialized parts. Never invent part identifiers.\n4. For proteins, use `materials materialize-proteins`, then `protein validate` and `protein compile`. Do not coerce protein records into DNA parts.\n5. For design edits, follow the repository `AGENTS.md`: check, compile into `build/`, then prefer `workflow run` and `review run` for final evidence.\n\n## Preserve the review boundary\n\n- `DESIGN_ELIGIBLE` means the record passed the local provenance, rights, sequence, ontology, and safety-policy gates. It does not establish function, orderability, experimental readiness, biosafety, or regulatory approval.\n- Keep source snapshots immutable and inactive until an explicit human activation. Quarantine stays physically isolated and unavailable to model-facing search.\n- Do not provide wet-lab parameters or procedures. Summarize software-derived results, assumptions, evidence gaps, and the human review still required.\n\n## Produce auditable evidence\n\nUse structured JSON diagnostics for machine-facing failures. Bind every claim to a retrieved source or generated artifact, retain source/license/hash metadata, and record negative results instead of filling gaps with plausible text. A final handoff states which checks were run, which artifacts were produced, and what remains unverified.\n\n\n# Acceptance contracts\n\n## LM Studio provider\n\n- Treat `GET /api/v1/models` as the authoritative rich catalog and retain the exact model key, capabilities, maximum context, quantization, size, and loaded-instance state.\n- Require explicit model loading before chat. Reconcile loaded instances immediately before a request so an external LM Studio change cannot be mistaken for Workbench state.\n- Send chat through the loopback OpenAI-compatible API, bound to the selected exact model key. An optional API token is read only from the configured environment variable and is never persisted or logged.\n- Unload only an instance created and tracked by Workbench. Never eject an instance merely observed in LM Studio.\n- Verify discovery, explicit load, one bounded response, and owned unload independently.\n\n## Materials promotion audit\n\nRun at least three independent passes and retain a machine-readable decision for every candidate.\n\n1. Provenance and rights: stable namespaced ID; retrievable source record and revision; response/content SHA-256; license URL, attribution, rights notes, and explicit redistributable status.\n2. Sequence and scientific semantics: supported domain and part ontology; permitted alphabet and bounded length; source sequence hash; no unsupported conversion between DNA, protein, reaction, or computational-model records.\n3. Safety and consistency: no hard safety flag; duplicate and collision checks; normalized-record validation; catalog round-trip; model-visibility and materialization checks.\n\nPromote only records passing every pass. Report counts before and after, rejection reasons, exact source snapshot, and whether the new snapshot remains inactive.\n\n## DNA and protein visualization\n\n- Validate the artifact schema and recompute sequence digests before rendering a success state. Missing provenance, rights, eligibility, or safety metadata remains visible as a failure or gap.\n- Keep source coordinates canonical and non-mutating. Coordinate transforms, circular-origin rotation, selections, annotations, primers, ORFs, motifs, and exports must round-trip to the same source interval.\n- Bound rendering, search results, selections, and derived analyses. Large inputs enter an explicit summary or windowed mode rather than freezing the renderer.\n- Make each visible glyph identifiable without relying on red/green contrast. Use stable entity colors, legible labels, keyboard-operable controls, and explicit derived-data labels.\n- Export metadata must enumerate every active rendered layer and bind the exact artifact digest, dimensions, and software-derived settings.\n- Render and inspect representative linear DNA, circular DNA, large-sequence, malformed-artifact, and protein cases after automated tests pass.\n\n## Public inspiration and license boundary\n\nThis project-specific contract was informed by the public AcademicForge catalogue and its Apache-2.0 Claude Science entries `figure-style`, `managed-model-endpoints`, and `using-model-endpoint`. It adapts only product-level workflow principles to Proto's existing local architecture; it does not copy Claude-specific host SDK behavior or imply those external tools are installed.\n"
+  },
+  {
+    "id": "research-provenance",
+    "name": "Research Provenance",
+    "description": "Content-addressed workflow evidence and faithful human-review boundaries for Proto research iterations.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/research-provenance/SKILL.md",
+    "sourceSha256": "72c15ee7cee3205a06b6ffe293234d99d9b04cd14963c896aa109298cfd0a7d3",
+    "manifestSha256": "43eac60b3f14ae211250bf9b33cf3e20f78c17514c833a872fad484884fd882d",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Mapped session provenance concepts to immutable Proto workflow, review, and verification artifacts instead of conversation scraping.",
+      "upstream": [
+        {
+          "id": "research-manager",
+          "url": "https://github.com/Orchestra-Research/AI-Research-SKILLs/tree/773a52944ba4747a18bd4ae9ade53fff041adcbc/22-agent-native-research-artifact/research-manager",
+          "license": "MIT",
+          "revision": "773a52944ba4747a18bd4ae9ade53fff041adcbc",
+          "content_sha256": "f78da7627ac09a4be398ea4363fc7b8753b2dcb22bc961c5059395e33ef3ef2c"
+        }
+      ]
+    },
+    "tools": [
+      "proto_provenance_verify",
+      "proto_review_packet",
+      "proto_workflow_run"
+    ],
+    "instructions": "---\nname: research-provenance\ndescription: Record software checks, inputs, artifacts, evidence, decisions, failed paths, and human-review boundaries in content-addressed workflow and review manifests. Use at the end of a design or research iteration; do not rewrite history or promote unsupported claims.\n---\n\n# Research Provenance\n\nRun the workflow first, preserve structured diagnostics including negative results, and create the review packet from the verified workflow manifest. Content-address the workflow manifest and review packet together with the input and artifact paths each manifest explicitly declares, and record connector assumptions, the Skill catalogue digest, and unresolved evidence gaps.\n\nVerification recomputes each bounded digest claim declared in the supplied provenance statement. It does not scan or attest every file under `build/`, prove that unlisted artifacts are complete, or establish author identity. Distinguish user decisions, software-derived observations, external-source claims, and hypotheses. The final record must say what was executed, what merely resolved as available, what failed, and which decisions remain human-only.\n"
+  },
+  {
+    "id": "scientific-sequence-visualization",
+    "name": "Scientific Sequence Visualization",
+    "description": "Production-grade sequence reading and figure QA adapted to Proto's DNA and protein artifacts.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/scientific-sequence-visualization/SKILL.md",
+    "sourceSha256": "a5bc3c11023458ee84107b1c804138dea8cddc31d9f253626f8d3ed6c6367d90",
+    "manifestSha256": "4b63306551fc63bea87fcde4a73712c7c71ea5d34de93d2805fbe02c66cafc4c",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Applied data-fidelity, accessibility, and render-then-verify rules to canonical sequence coordinates and artifact digests.",
+      "upstream": [
+        {
+          "id": "figure-style",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-style",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "7bd8416f1abc9d520d99e5b5c2a13fb816af5ea9ef6d0a695fde42d9b2b5348d"
+        },
+        {
+          "id": "figure-composer",
+          "url": "https://github.com/HughYau/AcademicForge/tree/01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c/skills/claude-science/figure-composer",
+          "license": "Apache-2.0",
+          "revision": "01b6d90c5b50ba0aa48b6564e45ee4a0ade9487c",
+          "content_sha256": "14bc9dc9a5b1718e5ae8f672b4c7de83b080f467ec4eb2c5fa02c2b043f666ec"
+        }
+      ]
+    },
+    "tools": [
+      "proto_compile",
+      "proto_protein_compile",
+      "proto_validate_sequences"
+    ],
+    "instructions": "---\nname: scientific-sequence-visualization\ndescription: Read, inspect, search, select, and export DNA maps or protein sequence views with schema validation, digest checking or explicit unverified status, canonical coordinates, bounded rendering, accessible encoding, and render-then-verify QA. Use whenever sequence visualization or export behavior changes.\n---\n\n# Scientific Sequence Visualization\n\nTreat data fidelity as a correctness requirement. Reject malformed DNA or protein schemas. For protein IR, recompute each record's sequence digest and enforce its governed source, rights, eligibility, and safety fields. For DNA artifacts, compute the current file digest and show whether a matching provenance claim is present, mismatched, or unverified. Missing provenance remains a visible gap rather than proof of integrity; a known mismatch or an invalid provenance inventory blocks export.\n\nKeep source coordinates canonical and immutable. Rotation, strand direction, circular-origin crossing, selections, annotations, primers, motifs, ORFs, and exported intervals must round-trip to the same source span. Search DNA or protein by identifiers, labels, metadata, or sequence while bounding results and derived work. Large inputs use windowed or summary rendering.\n\nUse colorblind-safe redundant encodings, stable colors for the same entity, legible labels, keyboard-operable controls, and explicit labels for derived data. Export metadata records the current artifact digest status, enumerates map layers included in the export, and explicitly lists UI or sequence layers excluded from it. For release QA, render representative linear DNA, circular DNA, large-sequence, malformed-artifact, and protein cases and inspect the result perceptually when a GUI runtime is available.\n"
+  },
+  {
+    "id": "sequence-resource-analysis",
+    "name": "Sequence Resource Analysis",
+    "description": "Governed DNA and protein sequence inspection through Proto's typed materialization and validation interfaces.",
+    "version": "1.0.0",
+    "sourcePath": ".codex/skills/sequence-resource-analysis/SKILL.md",
+    "sourceSha256": "d100f1f8262ce6fb063e342749818ece1e21218a097ce93438d0fa4deb8cc0e7",
+    "manifestSha256": "395c9af4cac97ca2f6699ba5579b5eb6a8697da85dc08f34349e2376cdac2ee3",
+    "references": [],
+    "source": {
+      "catalog": "AcademicForge",
+      "adaptation": "Reduced a broad package-oriented bioinformatics skill to Proto's governed, dependency-light sequence contracts.",
+      "upstream": [
+        {
+          "id": "biopython",
+          "url": "https://github.com/K-Dense-AI/scientific-agent-skills/tree/1dd0fccf46fc3c9855c4a0c313a0c57fe4319883/skills/biopython",
+          "license": "MIT",
+          "revision": "1dd0fccf46fc3c9855c4a0c313a0c57fe4319883",
+          "content_sha256": "81eab1bd7db605635dc94bfc97e7264657325db5b220b40edf48ec178392c668"
+        }
+      ]
+    },
+    "tools": [
+      "proto_materials_materialize",
+      "proto_materials_materialize_proteins",
+      "proto_protein_compile",
+      "proto_search_parts",
+      "proto_validate_sequences"
+    ],
+    "instructions": "---\nname: sequence-resource-analysis\ndescription: Inspect and process governed DNA or protein sequence resources through typed, bounded Proto interfaces with exact identifiers, hashes, alphabets, and domain separation. Use for dry-lab sequence search, validation, statistics, or materialization; never invent parts or provide wet-lab execution steps.\n---\n\n# Sequence Resource Analysis\n\nBegin with the governed materials catalogue. For DNA, materialize selected eligible records before parts search or design validation. For protein, materialize a protein selection and validate and compile it with the protein pipeline. Never coerce protein, DNA, reaction, or computational-model records across domains.\n\nRecompute digests before derived analysis. Preserve accession and revision, source and license metadata, canonical coordinates, alphabet, exact length, and the eligibility and safety decision. Keep searches, motifs, windows, statistics, and outputs bounded. Report derived results as software observations with assumptions and review gaps, not biological function or real-world readiness.\n"
+  }
+]

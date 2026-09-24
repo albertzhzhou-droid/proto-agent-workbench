@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { resolveToolContract } from "../../shared/tool-contracts.ts";
 import type {
   MissionPreflight,
   MissionRequirement,
@@ -237,8 +238,9 @@ function cloneInputs(input: MissionPreflightInputs): MissionPreflightInputs {
   };
 }
 
+/** Contract-driven so a new external tool cannot escape a network-off simulation. */
 function isNetworkTool(tool: string): boolean {
-  return /(?:pubmed|europe_pmc|crossref|uniprot|rhea)/u.test(tool);
+  return resolveToolContract(tool)?.network === true;
 }
 
 function disabledExecution(reason: string): MissionPreflightInputs["capabilities"]["execution"] {

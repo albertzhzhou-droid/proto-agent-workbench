@@ -1,0 +1,208 @@
+/* The chemistry port retains its scientific components and state contracts.
+   This last-loaded layer shares the parent Workbench's paper/ink UI vocabulary. */
+:root, :root[data-theme="light"] {
+  --font-sans:"Anthropic Sans Text","Microsoft YaHei UI",sans-serif;
+  --font-sans-display:"Anthropic Sans Display","Microsoft YaHei UI",sans-serif;
+  --font-serif:"Anthropic Serif Display","Songti SC","SimSun",serif;
+  --font-reading:"Anthropic Serif Text","Songti SC","SimSun",serif;
+  --font-mono:"Anthropic Mono Web","Cascadia Mono",Consolas,monospace;
+  --surface:#fdfcf9; --surface-soft:#f3f1ec; --surface-selected:#e8e5df;
+  --canvas:#faf9f6; --line:#e3e0d9; --line-strong:#ccc8bf;
+  --text:#2c2b28; --text-soft:#696760; --text-faint:#79766f;
+  --paper-sidebar:#efede7; --paper-primary:#33322e; --on-primary:#fdfcf9;
+  --focus-ring:#79766f; --amber:#877143; --amber-soft:#f5f1e8;
+  --red:#a04f49; --red-soft:#f7eeeb; --science-canvas:#f3f1ec;
+  --shadow:0 3px 12px #29262106; color-scheme:light;
+}
+:root[data-theme="dark"] {
+  --surface:#292824; --surface-soft:#23221f; --surface-selected:#3d3b35;
+  --canvas:#262521; --line:#403e37; --line-strong:#5c5850;
+  --text:#e8e5dc; --text-soft:#b8b3a7; --text-faint:#a29c90;
+  --paper-sidebar:#201f1c; --paper-primary:#e2ddd1; --on-primary:#262521;
+  --focus-ring:#b8b3a7; --amber:#c5b58d; --amber-soft:#3c362a;
+  --red:#d6a09b; --red-soft:#41312e; --science-canvas:#23221f;
+  --shadow:0 3px 12px #0001; color-scheme:dark;
+}
+html { scroll-behavior:smooth; scroll-padding-top:28px; }
+body { margin:0; background:var(--canvas); color:var(--text); font:13px/1.5 var(--font-sans); }
+[hidden] { display:none!important; }
+::selection { color:var(--text); background:var(--surface-selected); }
+:root[data-theme] :is(button,input,textarea,select,option,summary) { font-family:var(--font-sans); }
+:root[data-theme] :is(button,select,input,textarea,summary,a):focus-visible { outline:2px solid var(--focus-ring); outline-offset:3px; }
+:root[data-theme] :is(button,input,select,textarea) { color:var(--text); background:var(--surface); border-color:var(--line-strong); accent-color:var(--paper-primary); }
+:root[data-theme] button { border-radius:7px; font-size:12px; transition:background-color .14s,border-color .14s; box-shadow:none; }
+:root[data-theme] button:hover:not(:disabled) { background:var(--surface-selected); color:var(--text); border-color:var(--line-strong); }
+:root[data-theme] button:is(.active,.selected,[aria-pressed="true"],[aria-selected="true"],[aria-current="page"]) { background:var(--surface-selected); color:var(--text); border-color:var(--line-strong); }
+:root[data-theme] button:is(.primary,.rl-show,.xdl-primary) { background:var(--paper-primary); color:var(--on-primary); border-color:var(--paper-primary); }
+:root[data-theme] button:is(.primary,.rl-show,.xdl-primary):hover:not(:disabled) { background:color-mix(in srgb,var(--paper-primary),var(--canvas) 12%); color:var(--on-primary); }
+:root[data-theme] :is(input,textarea)::placeholder { color:var(--text-faint); opacity:1; }
+:root[data-theme] :is(h1,h2,h3,h4,strong) { color:var(--text); }
+:root[data-theme] :is(h2,h3,h4) { font-family:var(--font-sans-display); }
+:root[data-theme] :is(h1,.design-results-heading h2,.interface-header h3,.interface-workbench h4,.agent-heading h2,.refinement-lab-panel h2) { font-family:var(--font-serif); font-weight:400; letter-spacing:-.025em; }
+:root[data-theme] :is(code,pre,kbd,.hash,.geometry-strip strong,.atom-inspector,.geometry-provenance code,.candidate-descriptor-grid dd,.candidate-score strong,.candidate-smiles,.iw-readout strong,.iw-timeline-caption,.iw-species-id,.iw-species-values p,.iw-exact,.iw-sample-table,.rl-metric dd,.coordinate-inspector td,.refinement-lab-panel td,.design-export-status,.design-metrics strong,.metrics strong) { font-family:var(--font-mono); font-variant-numeric:tabular-nums; letter-spacing:0; }
+:root[data-theme] :is(#source,#design-study-input,#coordinate-edit,#water-geometry,#molecule-input,#chem-xdl-source) { font-family:var(--font-mono); }
+:root[data-theme] :is(.subtitle,.sidebar-note,.model-draft p,.agent-empty p,.scope p,.iw-scope) { font-family:var(--font-reading); }
+:root[data-theme] :is(.eyebrow,.section-label,.workspace-label) { color:var(--text-faint); font:10px var(--font-sans); letter-spacing:.1em; }
+:root[data-theme] :is(p,label,small,summary,.subtitle,.muted,.text-button,.breadcrumb,.breadcrumb strong,.hash,.hash-label,.object-row span,.scope,.agent-heading p,.agent-heading p span,.agent-body label,.agent-empty,.agent-empty h3,.agent-empty > span,.agent-foot,#agent-output,#agent-progress,.model-draft span,.model-draft p,.candidate-heading,.candidate-heading span,.design-caption,.design-empty,.design-export-status,.design-results details,.candidate-library td small,.candidate-descriptor-grid dt,.candidate-complexity,.candidate-smiles,.candidate-score span,.interface-facts,.interface-mechanism,.iw-field,.iw-readout-name,.iw-readout > span:last-child,.iw-chart-note,.iw-speed,.iw-timeline,.iw-timeline-caption,.iw-export-status,.iw-checkbox,.iw-species-id,.iw-species-role,.iw-graph-metadata,.iw-species-values p,.iw-reaction-step > p,.iw-sample-details > summary,.rl-note,.rl-empty,.rl-origin,.rl-notice,.rw-limits) { color:var(--text-soft); }
+:root[data-theme] :is(.panel,.metrics,.viewport-panel,.candidate-library,.interface-section,.refinement-workflow,.refinement-lab-panel,.iw-response,.iw-species-card,.iw-spatial) { background:var(--surface); color:var(--text); border-color:var(--line); box-shadow:var(--shadow); }
+:root[data-theme] :is(.panel-head,.editor-footer,.result-footer,.geometry-strip,.viewport-footer,.agent-foot,.tool-trace details,.design-results,.design-results details,.iw-species-section,.iw-species-values,.iw-sample-details,.candidate-inspector,.coordinate-inspector,.coordinate-inspector th,.coordinate-inspector td,.iw-reaction-step,.iw-legend,.iw-liquid-values,.refinement-lab-panel .rl-detail) { border-color:var(--line); }
+:root[data-theme] :is(.editor-wrap,.model-bar,.summary,.design-status,.design-pending,.candidate-inspector,.candidate-score,.iw-response,.iw-graph-host,.iw-reaction-step,.rl-metric,.rl-empty,.rl-chart,.rw-status,.agent-policy span,.step-number) { background:var(--surface-soft); color:var(--text-soft); border-color:var(--line); }
+:root[data-theme] :is(pre,.design-results pre,.refinement-lab-panel .rl-detail pre,.refinement-workflow .rw-plan pre,.interface-workbench .iw-details pre,#result pre) { background:var(--surface-soft); color:var(--text-soft); border-color:var(--line); }
+:root[data-theme] :is(.badge,.mint,.dark-badge,.parameter-badge,.iw-pill,.rl-state,.rw-state,#design-module-trace span) { background:var(--surface-soft); color:var(--text-soft); border-color:var(--line); border-radius:5px; }
+:root[data-theme] :is(.iw-warning,.diag,.rl-failure,.design-status[data-state="needs_input"]) { background:var(--amber-soft); color:var(--amber); border-color:var(--line-strong); }
+:root[data-theme] :is(.design-status[data-state="failed"],.design-status[data-state="rejected"],#design-module-trace span[data-status="failed"],.refinement-lab-panel[data-state="failed"] .rl-state) { background:var(--red-soft); color:var(--red); border-color:var(--line-strong); }
+:root[data-theme] .design-status[data-state="running"] { background:var(--surface-selected); color:var(--text); }
+:root[data-theme] :is(.summary strong,.summary p,.metrics strong,.metrics span,.metrics small,.tool-step strong,.tool-step small,.candidate-descriptor-grid dd,.candidate-score strong,.candidate-heading strong,.interface-facts strong,.iw-reaction-step > strong,.iw-reaction-arrow,.iw-timeline-caption strong,.iw-species-heading strong) { color:var(--text); }
+:root[data-theme] :is(th,td,caption) { border-color:var(--line); color:var(--text-soft); }
+:root[data-theme] :is(thead th,.candidate-library th,.coordinate-inspector th,.refinement-lab-panel th,.iw-parameter-table thead th,.iw-sample-table thead th) { background:var(--surface-soft); color:var(--text-soft); }
+:root[data-theme] :is(tr[aria-selected="true"],.iw-sample-table tr[data-current="true"]) { background:var(--surface-selected); outline-color:var(--line-strong); }
+:root[data-theme] :is(.candidate-library button,.iw-reaction-side button,.result-footer button,.viewer-controls button,.viewer-controls select,.viewer-detail-controls select,.viewer-detail-controls > button,.viewport-footer button,.coordinate-inspector button,.coordinate-inspector select,.execution-panel button,.structure-lab-panel button,.project-panel button,.refinement-workflow .rw-actions button,.refinement-workflow > label select,.refinement-lab-panel button,.refinement-lab-panel select,.interface-workbench select,.iw-button,.design-actions button,.study-controls button,.study-controls select,.design-panel select) { font-family:var(--font-sans); color:var(--text); background:var(--surface); border-color:var(--line-strong); }
+:root[data-theme] :is(.execution-panel,.refinement-workflow,.design-actions) button.primary { background:var(--paper-primary); color:var(--on-primary); border-color:var(--paper-primary); }
+:root[data-theme] :is(.candidate-library button,.viewer-controls button,.viewer-detail-controls > button,.coordinate-inspector button,.iw-button,.interface-tabs button,.studio-switch button):is([aria-pressed="true"],[aria-selected="true"],.selected) { background:var(--surface-selected); color:var(--text); border-color:var(--line-strong); }
+:root[data-theme] .interface-tabs button { background:var(--surface-soft); color:var(--text-soft); border-color:var(--line); border-radius:7px; }
+:root[data-theme] .interface-tabs button[aria-selected="true"] { background:var(--surface-selected); color:var(--text); border-color:var(--line-strong); }
+:root[data-theme] :is(.design-panel textarea,#objective,.execution-grid textarea,.execution-grid select,.project-controls input,.project-controls select) { background:var(--surface); color:var(--text); border-color:var(--line-strong); }
+:root[data-theme] .editor-wrap textarea { background:transparent; color:var(--text); }
+:root[data-theme] .editor-wrap pre { color:var(--text-faint); }
+:root[data-theme] .editor-wrap:focus-within { box-shadow:inset 0 0 0 1px var(--focus-ring); }
+:root[data-theme] :is(#objective:focus,.iw-species-card:focus) { outline:2px solid var(--focus-ring); }
+:root[data-theme] .agent-symbol { color:var(--text-soft); background:var(--surface-soft); border-color:var(--line); font-size:23px; border-radius:8px; }
+:root[data-theme] :is(h1 > span,.file-icon,.scope > span:first-child) { color:var(--text-soft); }
+:root[data-theme] .live-dot { background:var(--text-faint); }
+:root[data-theme] .model-ready { color:var(--text); }
+:root[data-theme] .design-pending-orbit { border-color:var(--line); border-top-color:var(--text-soft); }
+:root[data-theme] .model-draft { border-color:var(--line-strong); }
+:root[data-theme] .design-metrics article { border-color:var(--line-strong); }
+:root[data-theme] #candidate-scales button { background:var(--surface); color:var(--text); border-color:var(--line-strong); font-family:var(--font-mono); }
+:root[data-theme] #candidate-scales button.selected { background:var(--surface-selected); }
+
+/* Shared structure viewer: colored atoms retain chemical identity; UI is ink. */
+:root[data-theme] .canvas-wrap { background:var(--science-canvas); }
+:root[data-theme] :is(.viewport-panel,.viewer-detail-controls,.element-chip,.geometry-strip strong,.geometry-strip span,.atom-inspector,.geometry-provenance,.geometry-provenance code,.viewport-footer,.coordinate-inspector,.coordinate-inspector summary,.coordinate-inspector p,.coordinate-inspector caption,.coordinate-inspector th,#viewer-empty,.canvas-hint) { color:var(--text-soft); }
+:root[data-theme] .viewport-header .eyebrow { color:var(--text-faint); }
+:root[data-theme] #unavailable-geometry { color:var(--amber); }
+:root[data-theme] .coordinate-inspector select { background:var(--surface); }
+:root[data-theme] .axis-key { font-family:var(--font-mono); }
+:root[data-theme] .interface-workbench { --iw-ink:var(--text); --iw-muted:var(--text-soft); --iw-line:var(--line); --iw-accent:var(--text); }
+:root[data-theme] .refinement-lab-panel { --rl-ink:var(--text); --rl-muted:var(--text-soft); --rl-line:var(--line); font-family:var(--font-sans); }
+:root[data-theme] :is(.iw-spatial .eyebrow,.iw-spatial h4,.iw-legend-entry,.iw-legend-entry strong,.iw-liquid-entry,.iw-liquid-entry strong,.iw-scene-note) { color:var(--text-soft); }
+:root[data-theme] :is(.iw-legend-entry strong,.iw-liquid-entry strong) { font-family:var(--font-mono); }
+:root[data-theme] :is(.iw-axis-label,.iw-scene-label,.execution-grid svg text,.refinement-lab-panel .rl-chart text) { fill:var(--text-soft); font-family:var(--font-mono); }
+:root[data-theme] .iw-grid-line { stroke:var(--line); }
+:root[data-theme] .iw-series-line { stroke:var(--text); }
+:root[data-theme] .iw-series-dot { fill:var(--text-soft); }
+:root[data-theme] .iw-cursor-line { stroke:var(--text-faint); }
+:root[data-theme] .iw-cursor-dot { fill:var(--surface); stroke:var(--text); }
+:root[data-theme] .execution-grid svg { background:var(--surface-soft); }
+:root[data-theme] :is(.iw-timeline input,.iw-checkbox input) { accent-color:var(--paper-primary); }
+:root[data-theme] .iw-special-species { fill:var(--text-soft); }
+:root[data-theme] .iw-atom-label { font-family:var(--font-mono); }
+:root[data-theme] .iw-scene > polygon { fill:var(--surface-selected); stroke:var(--line-strong); }
+:root[data-theme] .iw-scene > polygon:nth-of-type(2) { fill:var(--line-strong); }
+:root[data-theme] .iw-scene > polygon:nth-of-type(n+5) { fill:transparent; stroke:var(--line-strong); }
+:root[data-theme] .refinement-lab-panel .rl-chart circle { fill:var(--text-faint); }
+:root[data-theme] .refinement-lab-panel .rl-chart circle[aria-pressed="true"] { fill:var(--text); }
+
+/* Navigation uses the same restrained sidebar and segmented controls as Proto. */
+:root { --chem-sidebar-width:228px; }
+:root[data-chem-sidebar="rail"] { --chem-sidebar-width:76px; }
+:root[data-theme] .sidebar { position:fixed; inset:0 auto 0 0; width:var(--chem-sidebar-width); padding:9px 13px 20px; background:var(--paper-sidebar); color:var(--text-soft); border-right:1px solid var(--line); overflow:auto; }
+:root[data-theme] .shell { margin-left:var(--chem-sidebar-width); }
+:root[data-chem-host-navigation="true"] .sidebar { display:none; }
+:root[data-chem-host-navigation="true"] .shell { margin-left:0; }
+:root[data-chem-host-navigation="true"] .shell > header { display:none; }
+.sidebar > :is(.brand,.workspace-label,.project,.section-label,.sidebar-note,.sidebar-bottom) { display:none; }
+.shell > header { height:48px; padding:0 28px; background:var(--canvas); border-color:var(--line); }
+.shell > header .breadcrumb { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.shell > header .badge { flex-shrink:0; font-size:9px; }
+main { padding:25px 28px 20px; }
+.heading { margin-bottom:22px; gap:15px; }
+.heading h1 { font-size:29px; }
+.heading .subtitle { margin-top:8px; max-width:750px; }
+.chem-workspace-name { display:none; }
+.chem-workspace-name small { display:block; margin-top:6px; color:var(--text-faint); font:10px var(--font-sans); letter-spacing:.05em; }
+:root[data-theme] .studio-switch { width:100%; margin:0 0 20px; padding:3px; gap:2px; background:color-mix(in srgb,var(--paper-sidebar),var(--text) 4%); border-color:var(--line); border-radius:8px; }
+:root[data-theme] .studio-switch button { flex:1; min-width:0; padding:8px 5px; font-size:11px; border:1px solid transparent; color:var(--text-soft); background:transparent; }
+:root[data-theme] .studio-switch button[aria-pressed="true"] { background:var(--surface); border-color:var(--line); color:var(--text); box-shadow:0 1px 3px #28251e10; }
+.chem-mode-glyph { display:none; }
+.chem-nav-group { display:flex; flex-direction:column; gap:3px; }
+.chem-nav-title { margin:17px 11px 10px; font-size:10px; letter-spacing:.1em; color:var(--text-faint); }
+:root[data-theme] .sidebar :is(.chem-section-link,.chem-xdl-link) { display:flex; align-items:center; gap:10px; width:100%; min-width:0; min-height:37px; padding:8px 11px; border:0; background:none; color:var(--text-soft); text-align:left; font:12px var(--font-sans); }
+.chem-section-link svg,.chem-xdl-link svg { flex:0 0 auto; width:17px; height:17px; stroke-width:1.6; }
+:root[data-theme] .sidebar :is(.chem-section-link,.chem-xdl-link)[aria-current="page"] { background:var(--surface-selected); color:var(--text); font-weight:600; }
+.chem-sidebar-bottom { margin-top:24px; padding:16px 10px 0; border-top:1px solid var(--line); }
+.chem-sidebar-bottom p { font:12px/1.8 var(--font-reading); margin:0; }
+.chem-sidebar-bottom small { display:block; margin-top:16px; color:var(--text-faint); font-size:10px; }
+.chem-examples { margin-top:19px; border-top:1px solid var(--line); padding:15px 8px 0; }
+.chem-examples summary { font-size:11px; cursor:pointer; }
+.chem-examples nav { margin-top:10px; max-height:35vh; overflow:auto; display:block; }
+:root[data-theme] .chem-examples nav button { border:0; padding:9px 7px; font-size:11px; color:var(--text-soft); background:none; }
+:root[data-theme] .chem-examples nav button.active { background:var(--surface-selected); color:var(--text); border:0; }
+.studio-grid { grid-template-columns:minmax(0,1.4fr) minmax(310px,1fr); gap:20px; align-items:start; }
+.agent-body { max-height:680px; }
+.viewport-panel { scroll-margin-top:24px; }
+.chem-anchor-target { scroll-margin-top:24px; }
+.chem-anchor-target:focus { outline:none; }
+.design-results-heading h2 { font-size:25px; }
+.design-panel .field-row { grid-template-columns:1fr; gap:12px; }
+.design-panel .agent-body { padding-top:12px; }
+.design-panel #design-study-input { font-size:11px; }
+.interface-workbench h4 { font-size:23px; }
+.candidate-library th { letter-spacing:.04em; }
+.shell > footer { color:var(--text-faint); border-color:var(--line); font-size:9px; padding:15px 28px; }
+.shell > footer b { color:var(--line-strong); }
+body[data-chem-view="xdl"] main > :not(#chem-xdl-workspace) { display:none!important; }
+#chem-xdl-workspace { max-width:1300px; margin:0 auto; }
+:root[data-theme] #chem-xdl-workspace { padding:0; }
+:root[data-theme] #chem-xdl-workspace .xdl-heading { height:auto; padding:0; border:0; background:transparent; }
+:root[data-theme] #chem-xdl-workspace .xdl-heading h1 { font-weight:400; }
+:root[data-theme] #chem-xdl-workspace .xdl-primary { background:var(--paper-primary); color:var(--on-primary); border-color:var(--paper-primary); }
+:root[data-theme] #chem-xdl-workspace .xdl-primary:hover:not(:disabled) { background:color-mix(in srgb,var(--paper-primary),var(--canvas) 12%); }
+
+@media(min-width:1600px) { .studio-grid { grid-template-columns:minmax(0,1.7fr) minmax(350px,1fr); } .design-panel .field-row { grid-template-columns:1fr 1fr; } }
+@media(max-width:1150px) { main { padding:23px 20px; } .studio-grid { grid-template-columns:minmax(0,1fr); } .agent-body { max-height:none; } .heading h1 { font-size:27px; } .candidate-libraries { grid-template-columns:1fr; } }
+@media(max-width:750px) { main { padding:21px 16px; } .shell > header { padding:0 16px; } .heading { flex-direction:column; align-items:start; } .heading h1 { font-size:25px; } .heading .subtitle { font-size:12px; } .heading .primary { padding:10px; font-size:11px; } }
+:root[data-chem-sidebar="rail"] .sidebar { padding:9px 8px 20px; }
+:root[data-chem-sidebar="rail"] :is(.chem-workspace-name,.chem-nav-title,.chem-sidebar-bottom,.chem-examples,.chem-mode-label,.chem-section-link > span,.chem-xdl-link > span) { display:none; }
+:root[data-chem-sidebar="rail"] .chem-mode-glyph { display:inline; font:11px var(--font-sans); }
+:root[data-chem-sidebar="rail"] .studio-switch { gap:0; padding:3px 1px; }
+:root[data-chem-sidebar="rail"] .studio-switch button { height:30px; padding:4px 1px; }
+:root[data-chem-sidebar="rail"] .chem-nav-group { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+:root[data-chem-sidebar="rail"] .sidebar :is(.chem-section-link,.chem-xdl-link) { justify-content:center; gap:0; width:44px; height:40px; padding:0; margin:1px auto; }
+:root[data-chem-sidebar="rail"] .sidebar .chem-xdl-link { margin-top:16px; }
+
+/* Design keeps one spatial canvas while source, geometry and calculations live in its inspector. */
+:root[data-theme] .studio-grid.chem-unified-design-grid { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; align-items:start; }
+:root[data-theme] .chem-unified-design-grid > .viewport-panel { min-width:0; display:flex; flex-direction:column; min-height:650px; }
+.chem-unified-design-grid .canvas-wrap { height:clamp(360px,54vh,720px); min-height:360px; }
+.chem-unified-design-grid .viewport-header { padding:17px 18px 13px; }
+.chem-unified-design-grid .viewport-header .dark-badge { margin-left:auto; }
+.chem-unified-design-grid .geometry-provenance { max-height:90px; overflow:auto; }
+.chem-design-inspector { min-width:0; border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:hidden; position:sticky; top:14px; }
+.chem-inspector-heading { display:flex; align-items:center; justify-content:space-between; padding:13px 15px; border-bottom:1px solid var(--line); font:12px var(--font-sans); }
+.chem-inspector-heading button,.chem-show-inspector { background:none; border:1px solid var(--line); border-radius:5px; color:var(--text-soft); padding:5px 8px; font:11px var(--font-sans); }
+.chem-inspector-tabs { display:flex; flex-wrap:wrap; gap:3px; padding:8px; border-bottom:1px solid var(--line); }
+.chem-inspector-tabs button { flex:1 0 auto; padding:7px 9px; border:1px solid transparent; border-radius:5px; background:none; color:var(--text-soft); font:11px var(--font-sans); }
+.chem-inspector-tabs button[aria-selected="true"] { background:var(--surface-selected); border-color:var(--line); color:var(--text); }
+.chem-inspector-page { max-height:calc(100vh - 220px); min-height:350px; overflow:auto; padding:13px; }
+.chem-inspector-page[hidden] { display:none!important; }
+:root[data-theme] .chem-inspector-page > :is(.panel,.refinement-workflow) { border:0; border-radius:0; margin:0; box-shadow:none; }
+.chem-inspector-page :is(.agent-body,.agent-heading) { padding:10px 0; }
+.chem-inspector-page .agent-heading h2 { font-size:20px; }
+.chem-inspector-page .agent-symbol { display:none; }
+.chem-inspector-page .agent-body { max-height:none; overflow:visible; }
+.chem-inspector-page .field-row,.chem-inspector-page .execution-grid { grid-template-columns:1fr; }
+.chem-inspector-page .execution-actions,.chem-inspector-page .design-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.chem-inspector-page .execution-panel > :is(.panel-head,.execution-heading),.chem-inspector-page .structure-lab-panel > .panel-head { padding-left:0; padding-right:0; }
+.chem-inspector-page .editor-wrap { height:400px; }
+.chem-inspector-page .editor-wrap textarea { font-size:11px; }
+.chem-inspector-page .metrics { grid-template-columns:1fr 1fr; padding:8px 0; gap:12px; }
+.chem-source-examples { margin:10px 0; font:11px var(--font-sans); }
+.chem-source-examples nav button { padding:7px; font-size:11px; }
+.chem-runtime-note { font:12px/1.6 var(--font-sans); color:var(--text-soft); padding:10px; border:1px solid var(--line); border-radius:7px; background:var(--surface-soft); }
+.chem-unified-design-grid.chem-inspector-closed { grid-template-columns:minmax(0,1fr); }
+.chem-inspector-closed .chem-design-inspector { display:none; }
+.chem-show-inspector { display:none; }
+.chem-inspector-closed .chem-show-inspector { display:block; }
+@media(max-width:850px){ :root[data-theme] .studio-grid.chem-unified-design-grid { grid-template-columns:minmax(0,1fr); } .chem-design-inspector{position:static;} .chem-inspector-page{max-height:650px;} }
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none!important; } }

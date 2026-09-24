@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence.schema.json",
+  "title": "ChemIR v1alpha1 Evidence payload",
+  "description": "A source-backed fact record. Reviewer identity and review time are intentionally excluded and belong in an external attestation.",
+  "type": "object",
+  "required": [
+    "origin",
+    "source",
+    "rights",
+    "retrieved_at",
+    "digest",
+    "method",
+    "result",
+    "assertion",
+    "confidence"
+  ],
+  "properties": {
+    "origin": {
+      "$ref": "common.schema.json#/$defs/FactOrigin"
+    },
+    "source": {
+      "$ref": "#/$defs/EvidenceSource"
+    },
+    "rights": {
+      "$ref": "#/$defs/Rights"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "digest": {
+      "$ref": "common.schema.json#/$defs/Digest"
+    },
+    "method": {
+      "$ref": "#/$defs/EvidenceMethod"
+    },
+    "result": {
+      "$ref": "#/$defs/EvidenceResult"
+    },
+    "assertion": {
+      "$ref": "#/$defs/Assertion"
+    },
+    "confidence": {
+      "$ref": "#/$defs/Confidence"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "EvidenceSource": {
+      "type": "object",
+      "required": [
+        "source_type",
+        "locator"
+      ],
+      "properties": {
+        "source_type": {
+          "enum": [
+            "publication",
+            "database",
+            "file",
+            "instrument",
+            "software",
+            "human_assertion",
+            "other"
+          ]
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "publisher": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Rights": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "public_domain",
+            "licensed",
+            "permission_granted",
+            "restricted",
+            "unknown"
+          ]
+        },
+        "license_identifier": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "terms_uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 4096
+        },
+        "notes": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EvidenceMethod": {
+      "type": "object",
+      "required": [
+        "kind",
+        "description"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "assertion",
+            "import",
+            "measurement",
+            "derivation",
+            "computation",
+            "human_assessment",
+            "other"
+          ]
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "tool": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "tool_version": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "configuration_digest": {
+          "$ref": "common.schema.json#/$defs/Digest"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Primitive": {
+      "type": [
+        "string",
+        "number",
+        "integer",
+        "boolean",
+        "null"
+      ]
+    },
+    "EvidenceResult": {
+      "type": "object",
+      "required": [
+        "summary"
+      ],
+      "properties": {
+        "summary": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Primitive"
+            },
+            {
+              "type": "array",
+              "maxItems": 100000,
+              "items": {
+                "$ref": "#/$defs/Primitive"
+              }
+            },
+            {
+              "$ref": "common.schema.json#/$defs/Quantity"
+            }
+          ]
+        },
+        "artifact_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Assertion": {
+      "type": "object",
+      "required": [
+        "subject_reference",
+        "predicate"
+      ],
+      "properties": {
+        "subject_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "predicate": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "object_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "object_value": {
+          "$ref": "#/$defs/Primitive"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "object_reference"
+          ]
+        },
+        {
+          "required": [
+            "object_value"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "Confidence": {
+      "type": "object",
+      "required": [
+        "value",
+        "basis"
+      ],
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "basis": {
+          "enum": [
+            "reported",
+            "statistical",
+            "method_specific",
+            "expert_judgment",
+            "unknown"
+          ]
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

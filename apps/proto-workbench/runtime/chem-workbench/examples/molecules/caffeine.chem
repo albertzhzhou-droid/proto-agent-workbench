@@ -1,0 +1,27 @@
+chem 0.1
+
+molecule caffeine {
+  structure smiles "Cn1c(=O)c2c(ncn2C)n(C)c1=O"
+}
+
+conditions caffeine_gas_zero_kelvin {
+  target caffeine
+  phase gas
+  temperature 0
+  temperature_unit kelvin
+}
+
+electronic_state caffeine_ground_state {
+  target caffeine
+  finite charge 0 multiplicity 1
+}
+
+calculation caffeine_single_point {
+  target caffeine
+  state caffeine_ground_state
+  conditions caffeine_gas_zero_kelvin
+  task single_point
+  properties [energy]
+  method "hf"
+  basis "sto-3g"
+}

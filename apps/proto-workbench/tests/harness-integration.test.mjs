@@ -82,11 +82,11 @@ test("real database and filesystem commit a scoped model-authored artifact and r
 test("model cannot substitute an easier deliverable or silently skip a required read", async t => {
   const r = await rig(t, [[plan("build/other.md")], [write("build/other.md")], [finish()]]);
   await r.controller.run(r.c, new AbortController().signal);
-  assert.equal(r.c.state, "incomplete");
+  assert.equal(r.c.state, "needs-human");
   const verified = await r.files.verify(r.c);
   assert.equal(verified.ok, false);
-  assert.ok(verified.diagnostics.some(message => message.includes("input.md")));
-  assert.ok(verified.diagnostics.some(message => message.includes("build/result.md")));
+  assert.ok(verified.diagnostics.some(diagnostic => diagnostic.message.includes("input.md")));
+  assert.ok(verified.diagnostics.some(diagnostic => diagnostic.message.includes("build/result.md")));
 });
 
 test("post-commit crash resumes from real durable result without applying a write twice", async t => {
@@ -113,7 +113,7 @@ test("tampering with a committed deliverable invalidates completion evidence", a
   await writeFile(join(r.root, "build/result.md"), "Changed outside the mission transaction\n");
   const verified = await r.files.verify(r.c);
   assert.equal(verified.ok, false);
-  assert.ok(verified.diagnostics.some(message => message.includes("matching committed artifact digest")));
+  assert.ok(verified.diagnostics.some(diagnostic => diagnostic.message.includes("matching committed artifact digest")));
 });
 
 test("real MCP schemas expose DNA preview and protein validation; absolute host paths normalize before Python", async t => {
@@ -172,12 +172,12 @@ test("binary deliverables use exact byte fingerprints but cannot be forged throu
   const receipt = r.store.record(r.c.contract.runId, "export", "proto_export", {ok: true, artifacts: [fingerprint.path], _harnessArtifacts: [fingerprint]});
   r.c.resultHandles.push(receipt.handle);
   assert.equal(fingerprint.detectedFormat, "png");
-  assert.match((await r.files.verify(r.c)).diagnostics.join("\n"), /trusted renderer\/exporter receipt/);
+  assert.match((await r.files.verify(r.c)).diagnostics.map(diagnostic => diagnostic.message).join("\n"), /trusted renderer\/exporter receipt/);
   bytes[9] = 42;
   await writeFile(join(r.root, "build/figure.png"), bytes);
-  assert.match((await r.files.verify(r.c)).diagnostics.join("\n"), /matching committed artifact digest/);
+  assert.match((await r.files.verify(r.c)).diagnostics.map(diagnostic => diagnostic.message).join("\n"), /matching committed artifact digest/);
   await writeFile(join(r.root, "build/figure.png"), Buffer.alloc(0));
-  assert.match((await r.files.verify(r.c)).diagnostics.join("\n"), /Empty deliverable/);
+  assert.match((await r.files.verify(r.c)).diagnostics.map(diagnostic => diagnostic.message).join("\n"), /Empty deliverable/);
   await writeFile(join(r.root, "build/figure.png"), "This is plain text with a .png suffix.");
-  assert.match((await r.files.verify(r.c)).diagnostics.join("\n"), /not a structurally valid PNG/);
+  assert.match((await r.files.verify(r.c)).diagnostics.map(diagnostic => diagnostic.message).join("\n"), /not a structurally valid PNG/);
 });
