@@ -32,10 +32,10 @@ loader.config({ monaco });
 // Load measuring fonts before mounting canvas and Monaco views. Remaining
 // weights and italics load on demand through the same local @font-face rules.
 void Promise.all([
-  document.fonts.load('400 14px "Anthropic Sans Text"'),
-  document.fonts.load('400 28px "Anthropic Serif Display"'),
-  document.fonts.load('400 14px "Anthropic Serif Text"'),
-  document.fonts.load('400 12px "Anthropic Mono Web"'),
+  document.fonts.load('400 14px "Proto Sans Text"'),
+  document.fonts.load('400 28px "Proto Serif Display"'),
+  document.fonts.load('400 14px "Proto Serif Text"'),
+  document.fonts.load('400 12px "Proto Mono"'),
 ]).catch(() => undefined).then(() => {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode><App /></React.StrictMode>,

@@ -68,7 +68,7 @@ export function SequenceNavigator({
         sequence: { length: construct.length, name: construct.name },
         settings: { backgroundColor: "#fdfcf9", showShading: false, arrowHeadLength: 0.18 },
         backbone: { color: "#7d8d88", thickness: 3 },
-        ruler: { visible: construct.length >= 80, color: "#8a9994", font: "Anthropic Sans Text, plain, 7" },
+        ruler: { visible: construct.length >= 80, color: "#8a9994", font: "Proto Sans Text, plain, 7" },
         annotation: { visible: false },
         legend: { visible: false, items: [...new Map(construct.features.map(feature => [feature.type, {name: feature.type, swatchColor: feature.color, decoration: "arc"}])).values()] },
         highlighter: {

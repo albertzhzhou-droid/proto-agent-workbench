@@ -1,0 +1,261 @@
+{
+  "schema": "proto-workbench.public-source-evidence.v1",
+  "date": "2026-09-23",
+  "dateBasis": "America/Toronto local validation date",
+  "sourceRevision": "a3ff460f6819626f346d61a6cfa12ccf2295d6fd",
+  "scope": "Public summary of retained local checks associated with the September source update. Individual checks have different source scopes; this is not a claim that every suite ran at the published revision. Raw logs, machine state, model conversations and databases remain local. Hashes bind retained bytes; they are not signatures, replay guarantees or scientific validation.",
+  "binaryRelease": {
+    "newInstallerPublished": false,
+    "existingPreview": "0.2.0-rc.1",
+    "existingPreviewEvidenceDate": "2026-09-05",
+    "relationship": "The existing preview binaries predate this source update; their native package evidence is separate."
+  },
+  "sourceChecks": [
+    {
+      "id": "workbench-offline-final-slice-b",
+      "status": "passed-with-skip",
+      "passed": 1405,
+      "failed": 0,
+      "skipped": 1,
+      "testFiles": 200,
+      "typescriptPassed": true,
+      "typescriptVersion": "5.9.3",
+      "sourceScope": "Final Slice B application implementation including the terminal-notification fix, before publication normalization and local-asset exclusions.",
+      "skipScope": "The host also terminates the direct-child-only negative-control descendant; whole-process-tree termination cannot be established on this containment host.",
+      "networkScope": "Node socket and DNS guard; not OS network isolation.",
+      "retainedLogSha256": "e0889c237ade169bbf59c74ddd65ef28dc3330fba3fdc39515c73f3f8fb7f9b5"
+    },
+    {
+      "id": "python-base-architecture-snapshot",
+      "status": "passed-with-skips",
+      "total": 359,
+      "passed": 355,
+      "failed": 0,
+      "skipped": 4,
+      "pythonVersion": "3.12.14",
+      "platform": "win32",
+      "sourceScope": "Earlier September 23 architecture snapshot, before the final Slice B increment. The full base profile was not rerun at the published revision.",
+      "skipScope": "Windows file and directory symlink creation privileges were unavailable.",
+      "retainedLogSha256": "9ac45a2ea4f3850064e05dbd6d3fe35f6f542e8d11678cb34793578934d2bd82"
+    },
+    {
+      "id": "publication-source-focused-tests",
+      "status": "passed",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "sourceScope": "Exported publication source projection: Chemistry bridge boundary and frozen Harness evaluation runner checks. Not a complete suite rerun.",
+      "retainedLogSha256": "87e5895fe5c27010b7627bbf3c006f512eb17187beb2f9e54057e2a83f792b96"
+    },
+    {
+      "id": "publication-desktop-source-build",
+      "status": "passed",
+      "sourceScope": "Exported publication source projection without excluded local font binaries; existing provisioned build dependencies were used.",
+      "fontScope": "Optional local font URLs remain unresolved with build warnings; system fallback fonts apply.",
+      "cleanMachineDependencyInstallation": "not-tested",
+      "packagedRuntimeAcceptance": "not-tested",
+      "retainedLogSha256": "59d506322118c497696031a88d9f60168a9c78901f05d26f522c212ecede33ad"
+    }
+  ],
+  "modelComparison": {
+    "softwareOnly": true,
+    "campaignId": "e3f67717-86ac-4ba4-b53a-2e5ded703f4a",
+    "createdAt": "2026-09-24T01:56:23.628Z",
+    "iterationLabel": "slice-b-and-plan",
+    "taskPackSha256": "29f3e7df6b6556ebc37a12012b63052b5cc9c1266b024c1a8ad7cd594e046d61",
+    "reopenedReportSha256": "b443a40f8725204e43a0cdb8b3e342a695db7206a63948d684a18c5f8a6a51c1",
+    "measuredControllerSha256": "6fc9affa5f46c51cd2c8fbf8440cbab72c070eda44cd57af45c6f221b6bb42d7",
+    "sourceScope": "Frozen pre-terminal-notification-fix snapshot. The later fix has separate deterministic test evidence and was not measured by this campaign.",
+    "provider": "LM Studio",
+    "model": "unsloth/qwen3.8-27b",
+    "quantization": "Q4_K_M",
+    "actualContextTokens": 32768,
+    "casesPerArm": 30,
+    "possibleCasesPerArm": 24,
+    "impossibleCasesPerArm": 6,
+    "plannedAttempts": 60,
+    "retainedAttempts": 60,
+    "budgets": {
+      "attemptMilliseconds": 60000,
+      "maximumRounds": 6,
+      "maximumGeneratedTokens": 8192,
+      "maximumOutputTokensPerCall": 2048,
+      "temperature": 0.2
+    },
+    "arms": {
+      "direct": {
+        "completedAndValidated": {
+          "count": 24,
+          "denominator": 30
+        },
+        "completedPossible": {
+          "count": 24,
+          "denominator": 24
+        },
+        "correctAbstention": {
+          "count": 5,
+          "denominator": 6
+        },
+        "falseAbstention": {
+          "count": 0,
+          "denominator": 24
+        },
+        "errors": 1,
+        "timeouts": 0,
+        "requestedToolCalls": 109,
+        "externalHostInvocations": 80,
+        "tokens": {
+          "observedTotal": 146964,
+          "observedAttempts": 30,
+          "unknownAttempts": 0
+        },
+        "aggregateAttemptWallTimeMilliseconds": 374741
+      },
+      "harness": {
+        "completedAndValidated": {
+          "count": 23,
+          "denominator": 30
+        },
+        "completedPossible": {
+          "count": 23,
+          "denominator": 24
+        },
+        "correctAbstention": {
+          "count": 6,
+          "denominator": 6
+        },
+        "falseAbstention": {
+          "count": 0,
+          "denominator": 24
+        },
+        "errors": 0,
+        "timeouts": 1,
+        "requestedToolCalls": 95,
+        "externalHostInvocations": 63,
+        "tokens": {
+          "observedTotal": 159596,
+          "observedAttempts": 29,
+          "unknownAttempts": 1
+        },
+        "aggregateAttemptWallTimeMilliseconds": 424164
+      }
+    },
+    "scientificAnswerScoring": "not-run",
+    "hostVerificationDiagnosticBranchesExercised": false,
+    "interpretation": "The campaign retains one Harness timeout and one direct-arm error. It does not establish completion or token-cost improvement, isolated Slice A/Slice B causal benefit, general model reliability or scientific correctness. Unknown token usage remains unknown."
+  },
+  "runtimeBoundaries": [
+    "Local model inference requires separately installed LM Studio and model weights.",
+    "Compute and research figures require their optional Python dependencies.",
+    "Chemistry requires configured external Python and, for relevant features, Psi4 or XDL.",
+    "RNA-seq fit and other bioinformatics operations require their configured engines, including separately provisioned WSL environments.",
+    "Large reference databases, model weights and locally supplied non-redistributable fonts are not included."
+  ],
+  "remainingAcceptance": [
+    "No new installer or packaged runtime acceptance follows from the source build.",
+    "Source-browser gallery captures do not establish native installed Electron acceptance.",
+    "Research-figure files were independently reopened; the recorded browser download remains unaccepted.",
+    "Structure-prediction result import does not execute prediction.",
+    "Public scientific benchmarks, broader model acceptance and disposable-Windows installation, upgrade and uninstallation remain separate work.",
+    "Hosted CI status must be read from the workflow runs; this summary makes no current CI success claim."
+  ],
+  "hostedCiSnapshot": {
+    "commit": "a3ff460f6819626f346d61a6cfa12ccf2295d6fd",
+    "url": "https://github.com/albertzhzhou-droid/proto-agent-workbench/actions/runs/35948122466",
+    "conclusion": "failure",
+    "passedJobs": [
+      "Python figures (3.12, ubuntu-latest)",
+      "Python figures (3.12, windows-latest)",
+      "Python heavy (3.12, windows-latest)",
+      "Python linux-worker (3.12, ubuntu-latest)"
+    ],
+    "failedJobs": [
+      "Workbench contracts, typecheck and offline baseline",
+      "Python base (3.10, windows-latest)",
+      "Python base (3.12, windows-latest)",
+      "Python compute (3.12, windows-latest)"
+    ],
+    "observedFailureClasses": [
+      "Windows temporary-path canonicalization and link/provenance checks",
+      "Security corpus checksum mismatch",
+      "Compute profile missing libsbml and jsonschema"
+    ],
+    "scope": "Recorded hosted result for this exact pre-typography source commit. Later commits and local checks do not rewrite this result."
+  },
+  "typographyFollowUp": {
+    "sourceParentCommit": "df376cd5bb85c89acc356b639aa1568206bb21ac",
+    "workingTreeChangesIncluded": true,
+    "profiles": {
+      "defaultDevelopment": "auto",
+      "autoSelectedOnThisMachine": "local",
+      "defaultPublicPackaging": "public",
+      "explicitPersonalPackaging": "local",
+      "localOriginalFontFilesVerifiedUnchanged": 46,
+      "publicFontFiles": 5,
+      "publicFamilies": [
+        "Newsreader",
+        "Hanken Grotesk",
+        "Commit Mono"
+      ],
+      "concurrentPreviewTreesVerified": true
+    },
+    "checks": [
+      {
+        "id": "typography-public-desktop-source-build",
+        "status": "passed",
+        "profile": "public",
+        "sourceScope": "Working tree based on merged main df376cd5bb85c89acc356b639aa1568206bb21ac with the final typography and concurrent-preview implementation; installed dependencies reused. Subsequent presentation-only edits are not included in this content identity.",
+        "contentId": "271c06d02ea2bb356cd17a6bd28641f5e413aaf9a69bee1dbd0d048f9c5e00f0",
+        "outputSha256": "7d639137271019cbb0fa709d1b605bddb771ba03ec3ffb43dd7c2de1632795cb",
+        "retainedLogSha256": "4d37089a088b410e3aa7601cb2104c771b2d1460cf8027bee580df59aee7ee01",
+        "fontFiles": 5,
+        "outputVerification": "Exact selected font digests and profile receipt verified; public output also requires all three original OFL licenses. Monaco icon font is admitted separately by its installed dependency digest.",
+        "packagedRuntimeAcceptance": "not-tested"
+      },
+      {
+        "id": "typography-local-desktop-source-build",
+        "status": "passed",
+        "profile": "local",
+        "sourceScope": "Working tree based on merged main df376cd5bb85c89acc356b639aa1568206bb21ac with the final typography and concurrent-preview implementation; installed dependencies reused. Subsequent presentation-only edits are not included in this content identity.",
+        "contentId": "f41b841062385ea29902a6bc058ae0249dc6b6535356c2fc8070712a1a85b0cf",
+        "outputSha256": "98cd0b3238d14e161a67b4c7339954eee01b6d678da514365fa7be9ea0b06f73",
+        "retainedLogSha256": "5370dd65e3dfefdd1b9c0cca251e8531583c6f6d26819894fe730d611fc747db",
+        "fontFiles": 46,
+        "outputVerification": "Exact selected font digests and profile receipt verified; public output also requires all three original OFL licenses. Monaco icon font is admitted separately by its installed dependency digest.",
+        "packagedRuntimeAcceptance": "not-tested"
+      },
+      {
+        "id": "typography-focused-tests",
+        "status": "passed",
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "typescriptPassed": true,
+        "scope": "Nine typography behavior tests plus two Chem boundary and three package-builder tests."
+      },
+      {
+        "id": "typography-full-offline-regression",
+        "status": "failed",
+        "passed": 1413,
+        "failed": 1,
+        "skipped": 1,
+        "total": 1415,
+        "testFiles": 201,
+        "retainedLogSha256": "dde17a9ef1a2c5041b4952cab7bf80dd02f6eebd49ae7c8f97ee64808c530bac",
+        "failure": "Scientific artifact directory-budget test reached the scan time budget before its expected directory-count rejection while desktop builds were running concurrently. This run remains failed.",
+        "typescriptScope": "The offline verifier stops after the test failure; final TypeScript was checked separately."
+      },
+      {
+        "id": "workspace-scan-isolated-recheck",
+        "status": "passed",
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "retainedLogSha256": "33c2c31410a398021cf0dc63e8bb8e8897af294273ed0d055332f8e2bfc3040b",
+        "scope": "Same scan test file, no concurrent desktop build. This scoped pass does not replace the failed full-suite result."
+      }
+    ],
+    "browserScope": "Source browser previews: public Chat, Compute and the completed bundled reversible demonstration; local auto-profile Chat. Profile stylesheets and computed role aliases inspected, screenshots visually reviewed; no native packaged runtime claimed.",
+    "galleryManifestSha256": "56af120fe9c22e339950fb712bfaed6f31854e95a019da609738947a5f903b9f"
+  }
+}

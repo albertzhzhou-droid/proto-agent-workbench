@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { selectTypography, syncChemTypography } from "./typography-profile.mjs";
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const root = resolve(app, "../..");
@@ -46,14 +47,6 @@ for (const [name,entry] of Object.entries(manifest.files)) {
 }
 
 // UI overlays are deliberately outside the immutable scientific source snapshot.
-const ui = join(app,"runtime/chem-ui"); mkdirSync(ui,{recursive:true});
-for (const file of walk(join(app,"src/chem-ui"))) {
-  const target = join(ui,relative(join(app,"src/chem-ui"),file));
-  mkdirSync(dirname(target),{recursive:true}); copyFileSync(file,target);
-}
-const fonts = join(app,"src/renderer/assets/fonts/anthropic");
-mkdirSync(join(ui,"fonts"),{recursive:true});
-// User-supplied font bytes are optional and excluded from public source control.
-for (const file of existsSync(fonts) ? walk(fonts) : []) if (statSync(file).isFile()) copyFileSync(file,join(ui,"fonts",relative(fonts,file)));
-writeFileSync(join(ui,"fonts.css"),readFileSync(join(app,"src/renderer/fonts.css"),"utf8").replaceAll("./assets/fonts/anthropic/","./fonts/"));
-console.log(JSON.stringify({snapshot,files:Object.keys(manifest.files).length,sourceManifestHash:manifest.sourceManifestHash,ui}));
+const typography = selectTypography(app);
+const ui = syncChemTypography(app, typography);
+console.log(JSON.stringify({snapshot,files:Object.keys(manifest.files).length,sourceManifestHash:manifest.sourceManifestHash,ui,typography:typography.profile}));

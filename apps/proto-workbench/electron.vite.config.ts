@@ -1,9 +1,14 @@
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, externalizeDepsPlugin } from "electron-vite";
+import { typographyPlugin } from "./scripts/typography-vite.mjs";
+import { selectTypography } from "./scripts/typography-profile.mjs";
+
+const typographyProfile = selectTypography(__dirname).profile;
 
 export default defineConfig({
   main: {
+    define: { __PROTO_TYPOGRAPHY_PROFILE__: JSON.stringify(typographyProfile) },
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
@@ -29,7 +34,7 @@ export default defineConfig({
       host: "127.0.0.1",
       watch: { ignored: ["**/build/**", "**/out/**", "**/runtime/**", "**/release*/**", "**/qa/**"] },
     },
-    plugins: [react()],
+    plugins: [typographyPlugin(__dirname, typographyProfile), react()],
     resolve: {
       alias: {
         "@renderer": resolve(__dirname, "src/renderer"),

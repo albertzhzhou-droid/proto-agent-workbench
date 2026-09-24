@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { lstat, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertTypographyOutput } from "./typography-profile.mjs";
 
 const samePath = (left, right) => process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
 function contained(root, path) {
@@ -42,6 +43,9 @@ export async function loadPrivateBuilder({ sourceRoot, privateRoot, releaseRoot 
     await lstat(releaseRoot);
     throw new Error("Builder release staging must not already exist.");
   } catch (error) { if (error.code !== "ENOENT") throw error; }
+  const typographyProfile = process.env.PROTO_PACKAGE_TYPOGRAPHY_PROFILE || "public";
+  const typography = [assertTypographyOutput(appRoot, join(appRoot, "out/renderer"), typographyProfile),
+    assertTypographyOutput(appRoot, join(appRoot, "runtime/chem-ui"), typographyProfile)];
   const appRequire = createRequire(join(appRoot, "package.json"));
   const electronBuilderPackage = await canonical(appRequire.resolve("electron-builder/package.json"));
   contained(join(appRoot, "node_modules"), electronBuilderPackage);
@@ -56,7 +60,7 @@ export async function loadPrivateBuilder({ sourceRoot, privateRoot, releaseRoot 
   const policy = { schemaVersion: "proto-workbench.builder-policy.v1", appRoot, privateRoot, releaseRoot,
     collector: await packager.getPackageManager(), workspaceRoot: await packager.getWorkspaceRoot(),
     workspaceDiscovery: "disabled-by-public-packager-methods", npmRebuild: false, publish: "never",
-    libraryPath, libraryVersion: metadata.version, librarySha256: createHash("sha256").update(await readFile(libraryPath)).digest("hex") };
+    libraryPath, libraryVersion: metadata.version, librarySha256: createHash("sha256").update(await readFile(libraryPath)).digest("hex"), typography };
   return { builder, packager, options, policy };
 }
 

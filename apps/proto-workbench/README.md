@@ -1,12 +1,30 @@
 # Proto Workbench
 
-The `0.2.0-rc.1` candidate adds a durable autonomous Harness, source-based DNA
-editing, and real protein structure inspection. The local candidate passed
-immutable package checks and native scientific checks for the actual Portable
-and extracted installer payload. The user-limited debug campaign passed 15/15
-task samples; full model acceptance and installer OS integration remain untested.
-Candidates are unsigned. See the [native demos and evidence](../../docs/upgrade-verification.md).
-See [execution contracts](../../docs/reliable-harness.md),
+The current source is a local scientific workspace organized around **Chat /
+Design / Compute**, with Proto and Chemistry accessible from one application
+selector. It combines local-model conversations, checked design source,
+scientific operators, research documents and inspectable execution evidence.
+
+| Surface | Current source capabilities |
+| --- | --- |
+| Chat | Research plans, PDF/DOCX/XLSX reading, versioned working documents and canonical tools shared with the scientific workspaces. |
+| Design | Source-based DNA edits, governed materials, real protein structure inspection and the integrated Chem Design workspace. |
+| Compute | Scientific operators, protein comparative studies, RNA-seq studies and saved artifacts that can be associated with research projects. |
+| Execution and evidence | Workspace execution journal, receipt-bound facts, explicit evidence standing, Harness verification diagnostics and bounded repair. |
+
+The package version remains `0.2.0-rc.1`; it does not identify all later source
+changes. The published Portable and Setup preview is historical and does **not**
+contain this entire source upgrade. Its 15-task local debug campaign and native
+package checks are preserved in [the preview evidence](../../docs/upgrade-verification.md).
+Current implementation and validation are recorded separately in
+[the architecture upgrade](../../docs/ARCHITECTURE_UPGRADE_2026-09-23.md) and
+[Harness Slice B](../../docs/HARNESS_ITERATION_IMPLEMENTATION_2026-09-23.md).
+
+See [the unified Chat workflow](../../docs/chat-unified-workflow.md),
+[research projects](../../docs/research-projects.md),
+[protein comparisons](../../docs/protein-comparative-study.md),
+[RNA-seq studies](../../docs/rnaseq-studies.md),
+[execution contracts](../../docs/reliable-harness.md),
 [DNA placement semantics](../../docs/dna-source-editing.md), and
 [protein structures and exports](../../docs/protein-structures.md).
 Use [isolated desktop sessions](../../docs/isolated-desktop-sessions.md) to keep a
@@ -14,18 +32,49 @@ separate profile and workspace, including when checking a Portable candidate.
 
 ## Chem CLI workspace
 
-The far-left application selector switches between **Proto CLI** and **Chem CLI**
-in the same top-bar position. Chem opens its complete existing Design and
-Structure studios, conditional interface models, inorganic candidate tools,
-governed calculations, and XDL document inspection with the same light/dark
-paper theme and user-supplied Anthropic fonts. Its original 3D views, numerical
-results, evidence, imports, exports, and approval workflows are retained.
+The far-left application selector switches between **Proto CLI** and **Chem CLI**.
+Chem uses the shared Chat / Design / Compute navigation. Structure editing lives
+inside Design, alongside the existing conditional interface models, inorganic
+candidate tools, governed calculations and XDL document inspection. Its original
+3D views, numerical results, evidence, imports, exports and approval workflows
+are retained in the shared light/dark paper theme.
 
-The integration uses a verified snapshot of the existing Chem working tree and
-its installed local Python, Psi4, and XDL environments. New work is stored under
+The integration includes a verified source snapshot of Chem. Running it requires
+a configured Python environment; Psi4 calculations and XDL inspection require
+their respective external environments. Those environments are not bundled by
+including the source and UI. New work is stored under
 the selected Proto workspace's `build/chem-workspace`. See
 [Chem integration, runtime configuration, and acceptance](../../docs/chem-workbench-port.md)
 for the preserved scope, migrated history, and actual calculation checks.
+
+## Scientific Chat and research evidence
+
+Chat uses the same computation and database implementations as the dedicated
+workspaces. Module and skill selections apply to new messages. Saved research
+projects connect conversations, datasets, computations and figure boards without
+turning a model response into verified scientific evidence.
+
+Source-bound document extracts retain page, paragraph, sheet or cell locations.
+Receipt-bound facts keep their literal identities, values, units and artifact
+digests; unsupported interpretations remain unreviewed. The workspace journal
+records tool identity, policy, effect state and outcome. Unknown effects require
+evidence-backed review before recovery can treat them as resolved.
+
+General Python, R and Jupyter execution requires a configured rootless OCI
+runtime. WSL bioinformatics engines are separately installed and probed. See
+[execution deployment](../../docs/chat-execution-deployment.md),
+[document reading](../../docs/chat-document-parsing.md),
+[receipt-bound facts](../../docs/research-evidence.md) and
+[bioinformatics environments](../../docs/bioinformatics-environment.md).
+
+Harness Slice B adds typed verification diagnostics, task-wide repair allowances,
+host-enforced tool preconditions and call caps, persisted negative-result memory,
+and per-run diagnostic exports. Unsupported, stale or conflicting evidence can
+stop a run for review rather than spending another repair. The paired software
+fixture campaign recorded 24/24 possible tasks completed by the direct arm and
+23/24 by Harness, with correct abstention on 5/6 and 6/6 impossible tasks
+respectively. It does not demonstrate a completion or token-cost improvement.
+See [the measured snapshot and limits](../../docs/HARNESS_ITERATION_IMPLEMENTATION_2026-09-23.md).
 
 ## Offline verification
 
@@ -102,7 +151,9 @@ only prepare a new reviewable restore diff; they are never treated as task forks
 
 ## Local development
 
-Use Node.js 24 and pnpm 11.19.0, then install the locked dependency tree:
+Use Node.js 24 and pnpm 11.19.0. First prepare the repository Python environment
+and optional development extras using [the source setup](../../docs/getting-started.md#development).
+Then, from this directory:
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -114,10 +165,18 @@ The offline verifier runs the full Node test set and TypeScript check with
 Node-level external DNS/socket guards. It is not an OS-level network sandbox.
 
 The renderer-only preview is built with `pnpm build` and served with
-`pnpm preview`. In a browser-only preview, the app uses realistic local mock data;
-the Electron build replaces it with typed IPC.
+`pnpm preview`. Use `pnpm dev` for the browser development server with selected
+real local service routes for Chat, Chemistry and model discovery; other adapters
+may use fixture data. Static preview does not start those development routes.
+A successful browser preview is not native Electron acceptance.
+`pnpm build:desktop` builds the desktop source bundle.
 
-The primary Qwen Harness acceptance uses the twelve-family protocol in
+Public builds bundle Newsreader, Hanken Grotesk and Commit Mono under their
+upstream OFL terms. Local self-use builds retain the user-supplied Anthropic
+families; their bytes remain Git-ignored. The shared role mapping and explicit
+build profiles are documented in [typography](../../docs/typography.md).
+
+The broader Qwen Harness acceptance target uses the twelve-family protocol in
 [autonomous acceptance](../../docs/harness-acceptance-protocol.md), with the
 exact `qwen3.8-27b@q4_k_m` instance loaded at 32,768 tokens. Its sixty scientific
 measurements, fault cases and native desktop evidence are separate gates.
@@ -166,28 +225,13 @@ latest template.
 
 The packaged app does not contain a model runtime or the legacy model-scanner
 sidecar. LM Studio and its local server must already be installed, running, and
-configured by the operator. Python and Node are still unnecessary for the
-packaged Workbench sidecars.
+configured by the operator. The packaged Proto sidecars do not require a separate
+Python or Node installation. That statement does not cover external Chemistry,
+Psi4, XDL, WSL bioinformatics or OCI scientific runtimes. Their availability and
+packaged execution need their own checks on the target machine. Building a new
+package does not inherit the historical preview's acceptance results.
 
 ## License
 
 Proto Workbench is open source under the repository's
 [MIT License](../../LICENSE).
-
-## Scientific Chat
-
-The top-left workspace switch is Chat / Design / Compute. Chat combines a real
-LM Studio conversation, research plans, unified scientific tools and versioned
-working documents. It calls the same computation and database implementations
-as the dedicated workspaces. Module/skill selections apply to new messages.
-
-See [the unified workflow](../../docs/chat-unified-workflow.md) for adapted
-OpenScience/DeepSeek Harness algorithms, real-model acceptance evidence and
-current runtime limits, and [bioinformatics environments](../../docs/bioinformatics-environment.md)
-for the installed engines and reproducible software checks.
-
-Chat also supports direct PDF/DOCX/XLSX parsing and general Python, R and
-Jupyter kernel execution through a configured rootless OCI runtime. The deployed
-WSL bioinformatics engines share Chat's canonical tool registry. See
-[deployment](../../docs/chat-execution-deployment.md) and
-[document reading](../../docs/chat-document-parsing.md) for current behavior.

@@ -1,4 +1,4 @@
-param([switch]$CandidateOnly, [string]$ArchiveTool = "")
+param([switch]$CandidateOnly, [string]$ArchiveTool = "", [ValidateSet("public", "local")][string]$TypographyProfile = "public")
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -26,6 +26,12 @@ $RetainCandidate = $false
 $BuildFailure = $null
 New-Item -ItemType Directory -Force -Path $BuildRoot | Out-Null
 $Lease = Enter-ProjectBuildLease -AppRoot $OriginalAppRoot
+$PreviousTypographyProfile = $env:PROTO_TYPOGRAPHY_PROFILE
+$PreviousPackageTypographyProfile = $env:PROTO_PACKAGE_TYPOGRAPHY_PROFILE
+# Public redistribution is explicit even when the developer owns local fonts.
+# Personal packages can retain those originals only with -TypographyProfile local.
+$env:PROTO_TYPOGRAPHY_PROFILE = $TypographyProfile
+$env:PROTO_PACKAGE_TYPOGRAPHY_PROFILE = $TypographyProfile
 
 function Invoke-CheckedCommand {
   param(
@@ -200,6 +206,7 @@ try {
     & (Join-Path $StageScripts "build-proto-sidecar.ps1") -Python $Python -BuildLease $Lease
     & (Join-Path $StageScripts "verify-sidecars.ps1")
     & (Join-Path $StageScripts "build-desktop.ps1") -Task Desktop -BuildLease $Lease
+    Invoke-CheckedCommand -Executable $Node -Arguments @("scripts/typography-profile.mjs", "verify", $TypographyProfile) -Label "Packaged typography profile verification"
     Invoke-CheckedCommand -Executable $Node -Arguments @("scripts/sync-workspace-template.mjs", "--check") -Label "Workspace template verification"
     Invoke-CheckedCommand -Executable $Node -Arguments @($SourceSnapshotter, "verify", "--root", $InputRepoRoot, "--manifest", $PrivateInputManifest) -Label "Built private source verification"
 
@@ -256,6 +263,7 @@ try {
         schemaVersion = "proto-workbench.release-candidate.v2"
         status = "payload-verified; native smoke pending"
         version = $PackageMetadata.version
+        typographyProfile = $TypographyProfile
         releaseRoot = $StagingRoot
         inputRoot = $InputRoot
         inputManifest = $InputManifest
@@ -343,6 +351,9 @@ try {
     if ($null -eq $BuildFailure) { throw }
     Write-Warning "Failure-evidence retention also failed; original build error is preserved. Staging remains at its last path. $($_.Exception.Message)"
   } finally {
-    Exit-ProjectBuildLease $Lease
+    try { Exit-ProjectBuildLease $Lease } finally {
+      $env:PROTO_TYPOGRAPHY_PROFILE = $PreviousTypographyProfile
+      $env:PROTO_PACKAGE_TYPOGRAPHY_PROFILE = $PreviousPackageTypographyProfile
+    }
   }
 }

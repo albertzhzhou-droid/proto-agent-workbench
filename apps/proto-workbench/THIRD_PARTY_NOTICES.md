@@ -10,6 +10,33 @@ This distribution includes open-source software. Selected visualization,
 local-model, and verification components are listed below. Dependency versions are
 pinned in `pnpm-lock.yaml`.
 
+## Public typography
+
+The public typography profile bundles unmodified WOFF2 font files under the
+SIL Open Font License 1.1. Source revisions, original filenames, font metadata,
+byte counts and SHA-256 digests are recorded in
+`src/renderer/assets/fonts/public/manifest.json`. The three upstream license
+texts are retained beside their font files.
+
+| Family | Upstream project and pinned revision | Version | Copyright and license file |
+| --- | --- | --- | --- |
+| Newsreader | https://github.com/productiontype/Newsreader at `cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155` | 1.003 | Copyright 2020 The Newsreader Project Authors; `src/renderer/assets/fonts/public/newsreader/OFL.txt` |
+| Hanken Grotesk | https://github.com/marcologous/hanken-grotesk at `eff37d18946b018ad239cf5fd3992db5d19b82a0` | 3.014 | Copyright 2021 The Hanken Grotesk Project Authors; `src/renderer/assets/fonts/public/hanken-grotesk/OFL.txt` |
+| Commit Mono | https://github.com/eigilnikolajsen/commit-mono at `d407cd2bf8e01ca1db70544052fbbb9606406c3b` | 1.143 | Copyright (c) 2023 Eigil Nikolajsen; `src/renderer/assets/fonts/public/commit-mono/LICENSE-FONT` |
+
+Newsreader supplies editorial and reading text; Hanken Grotesk supplies interface
+text; Commit Mono supplies code, sequence and numerical text. Application CSS
+aliases select these roles without modifying font bytes or renaming their
+embedded family metadata. The application's MIT license does not replace the
+font licenses. No endorsement by the font authors is implied.
+
+The optional local Anthropic typography profile uses user-supplied files whose
+archives contain no redistribution license. Those ignored local binaries are
+excluded from public source and default distributable packages; they are not
+licensed by the OFL notices above. Local provenance remains in
+`src/renderer/assets/fonts/anthropic/README.md` and its manifest. See
+`../../docs/typography.md` for profile selection and publication boundaries.
+
 ## Chem Workbench source snapshot
 
 - Package: `chem-workbench` 0.1.0a2

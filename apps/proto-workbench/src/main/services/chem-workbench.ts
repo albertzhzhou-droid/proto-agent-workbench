@@ -10,6 +10,12 @@ const GET_API = new Set(["/api/workspace", "/api/workflows", "/api/projects", "/
 const POST_API = new Set(["/api/compile", "/api/orchestrate", "/api/tool", "/api/export/png", "/api/workflow/prepare", "/api/workflow/approve", "/api/workflow/submit", "/api/workflow/cancel", "/api/workflow/read", "/api/workflow/refinement/prepare", "/api/workflow/refinement/approve", "/api/project/save", "/api/structure/import", "/api/structure/edit", "/api/structure/build", "/api/structure/compare", "/api/design/run", "/api/design/read", "/api/design/import", "/api/design/export", "/api/design/export-interface"]);
 const STATIC = new Set(["/", "/app.js", "/workflow.js", "/structure-lab.js", "/design-studio.js", "/design-studio.css", "/refinement-lab.js", "/refinement-lab.css", "/dispersion-diagnostics.js", "/dispersion-diagnostics.css", "/style.css", "/viewer.js", "/geometry-view-model.js", "/interface-workbench.js", "/vendor/3Dmol-2.5.5.min.js"]);
 const UI_ASSETS = new Set(["paper-chem.css", "paper-chem.js", "fonts.css", "xdl-panel.css", "xdl-panel.js"]);
+export function chemUiResourceType(name: string): string | undefined {
+  if (UI_ASSETS.has(name)) return name.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8";
+  if (/^fonts\/anthropic\/[A-Za-z0-9 ._-]+\.otf$/.test(name)) return "font/otf";
+  if (/^fonts\/public\/(?:newsreader|hanken-grotesk|commit-mono)\/[A-Za-z0-9[\],._ -]+\.woff2$/.test(name)) return "font/woff2";
+  return undefined;
+}
 const hash = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 function chemEnvironment(extra: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   // Chem's existing worker supervisor admits these Windows runtime descriptors.
@@ -209,16 +215,11 @@ export class ChemWorkbenchService {
   }
   private async uiAsset(path: string,res: ServerResponse): Promise<void> {
     let name:string;try{name=decodeURIComponent(path.slice("/chem-ui/".length));}catch{this.json(res,404,{error:"Unknown font."});return;}
-    if(!UI_ASSETS.has(name) && !/^fonts\/[A-Za-z0-9 ._-]+\.otf$/.test(name)){this.json(res,404,{error:"Unknown Chem UI resource."});return;}
-    let target=join(this.uiRoot,name);
-    // Source previews use editable overlays and the same original font files.
-    if(!await exists(target) && this.uiRoot.endsWith(join("src","chem-ui"))){
-      if(name.startsWith("fonts/"))target=join(dirname(this.uiRoot),"renderer/assets/fonts/anthropic",basename(name));
-      else if(name==="fonts.css")target=join(dirname(this.uiRoot),"renderer/fonts.css");
-    }
+    const resourceType=chemUiResourceType(name);
+    if(!resourceType){this.json(res,404,{error:"Unknown Chem UI resource."});return;}
+    const target=await containedPath(this.uiRoot,name);
     let bytes=await readFile(target);
-    if(name==="fonts.css")bytes=Buffer.from(bytes.toString("utf8").replaceAll("./assets/fonts/anthropic/","./fonts/"));
-    this.headers(res,name.endsWith(".otf")?"font/otf":name.endsWith(".css")?"text/css; charset=utf-8":"text/javascript; charset=utf-8");res.end(bytes);
+    this.headers(res,resourceType);res.end(bytes);
   }
   private async xdl(payload: Buffer): Promise<Record<string,unknown>> {
     const manifest=JSON.parse(await readFile(join(this.runtimeRoot,"snapshot-manifest.json"),"utf8")) as Snapshot;

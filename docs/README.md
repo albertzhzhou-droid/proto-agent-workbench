@@ -1,13 +1,19 @@
 # Proto Workbench documentation
 
-**Build a checked design. Understand its evidence. Explore its sequence and structure.**
+**Explore a question. Inspect the calculation. Keep the evidence.**
 
-[Project overview](../README.md) · [Download preview](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1) · [Verification](upgrade-verification.md)
+[Project overview](../README.md) · [Current source showcase](source-showcase-2026-09.md) · [Screenshot gallery](assets/workbench-2026-09/README.md) · [Historical Windows preview](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1)
+
+The current source includes shared Chat / Design / Compute workspaces, Chem,
+saved research studies and Harness Slice B. The downloadable `0.2.0-rc.1`
+preview is older. Source validation and historical package acceptance have
+separate evidence records.
 
 ## Choose your starting point
 
 | Goal | Guide |
 |---|---|
+| Tour the latest capabilities and their evidence | [September source showcase](source-showcase-2026-09.md) |
 | Open the desktop, try the CLI, or build from source | [Getting started](getting-started.md) |
 | Connect an MCP-compatible host | [MCP configuration and tools](mcp_usage.md) |
 | Understand the complete command loop | [CLI and workflow guide](cli-guide.md) |
@@ -15,6 +21,10 @@
 
 ## Explore the workbench
 
+- [Scientific Chat](chat-unified-workflow.md): local-model conversations, shared research tools, document context and persistent work.
+- [Chemistry workspaces](chem-workbench-upgrade.md): shared navigation, molecular views, chemical analysis and recorded computation.
+- [Reaction studies](chem-reaction-studies.md): supplied kinetic models, sensitivity and uncertainty, with explicit assumptions.
+- [Reusable research workflows](research-workflows.md): artifact-bound steps, reuse and recorded execution.
 - [Reliable Harness](reliable-harness.md): mission scope, deadlines, context budgets, complete results and recovery.
 - [Harness iteration implementation](HARNESS_ITERATION_IMPLEMENTATION_2026-09-23.md): typed verification, persisted repairs, tool contracts, conflict handling and acceptance evidence.
 - [Frozen Harness software evaluation](harness_iteration_evaluation.md): paired direct/Harness fixture campaigns, immutable attempts and separate outcome metrics.
@@ -38,6 +48,7 @@
 - [Scientific workflow patterns](claude_science_patterns.md): connectors, source evidence and review packets.
 - [Biomni scientific computing](biomni-compute.md): offline statistics, biological data calculations, and source-bound results.
 - [Design and Compute workbench](workbench-paper-redesign.md): neutral visual design, public references, workspace navigation, and UI verification.
+- [Typography profiles](typography.md): local Anthropic faces, bundled public serif/sans/mono alternatives and explicit distribution selection.
 - [Chem CLI integration](chem-workbench-port.md): switch applications from the far-left selector, use the preserved chemistry workspaces, and inspect migration and execution evidence.
 - [Repository Skills](academicforge_skill_adaptation.md): declared, auditable capability resolution.
 
@@ -45,7 +56,8 @@
 
 | Topic | Reference |
 |---|---|
-| Actual native demos and scoped test results | [Upgrade verification](upgrade-verification.md) · [Evidence manifest](release-evidence/0.2.0-rc.1.json) |
+| Current source tests, publication checks and paired model campaign | [Source evidence](source-showcase-2026-09.md) · [Source manifest](release-evidence/source-2026-09-23.json) |
+| Historical native preview demos and package tests | [0.2.0-rc.1 verification](upgrade-verification.md) · [Release manifest](release-evidence/0.2.0-rc.1.json) |
 | Acceptance tasks and evidence criteria | [Harness acceptance protocol](harness-acceptance-protocol.md) |
 | Durable Harness regression coverage | [Test migration](harness-test-migration.md) |
 | Locked, immutable Windows builds | [Build transactions](build-transactions.md) |
@@ -57,7 +69,7 @@
 
 ## History and next steps
 
-[Changelog](../CHANGELOG.md) · [Visualization roadmap](visualization-product-roadmap.md) · [Current verification limits](upgrade-verification.md#remaining-work-and-limits)
+[Changelog](../CHANGELOG.md) · [Architecture implementation](ARCHITECTURE_UPGRADE_2026-09-23.md) · [Visualization roadmap](visualization-product-roadmap.md) · [Current source evidence](source-showcase-2026-09.md)
 
 The [research upgrade programme](research-upgrade-plan.md) tracks academic,
 engineering and new-feature acceptance separately, including work still pending.

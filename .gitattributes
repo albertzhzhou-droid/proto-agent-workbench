@@ -26,3 +26,6 @@ examples/compute/quantity-counts.data.json -text
 examples/compute/quantity-statistics.data.json -text
 # Preserve the upstream RCSB mmCIF fixture, including its column whitespace.
 apps/proto-workbench/src/renderer/fixtures/1GFL.cif -text whitespace=-blank-at-eol,-blank-at-eof
+# Font licenses are byte-pinned alongside the unmodified upstream WOFF2 files.
+apps/proto-workbench/src/renderer/assets/fonts/public/*/OFL.txt -text whitespace=-blank-at-eol
+apps/proto-workbench/src/renderer/assets/fonts/public/commit-mono/LICENSE-FONT -text whitespace=-blank-at-eol
