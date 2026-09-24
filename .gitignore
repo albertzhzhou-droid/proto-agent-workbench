@@ -70,9 +70,10 @@ apps/proto-workbench/.dev-server.*.log
 
 # Generated Chem UI overlay; rebuilt from source during desktop builds.
 /apps/proto-workbench/runtime/chem-ui/
+/apps/proto-workbench/runtime/chem-ui-profiles/
 
 # User-supplied local font bytes have no redistribution license.
-# Keep the provenance README and manifest; public builds use system fallbacks.
+# Keep provenance metadata; public builds use the bundled OFL font profile.
 /apps/proto-workbench/src/renderer/assets/fonts/anthropic/*.otf
 
 # Downloaded/staged runtimes. Keep the manifests and README files beside them.

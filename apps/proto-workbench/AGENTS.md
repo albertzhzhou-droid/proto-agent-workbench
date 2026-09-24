@@ -23,7 +23,7 @@ Chat is a full scientific workspace, with a conversation list on the left, a cen
 
 ## Chemistry integration (September 19, 2026)
 
-The first control in the top bar switches Proto CLI / Chem CLI. Preserve each workspace's live state when switching. Chem uses the same neutral paper/ink theme and Anthropic typography in light and dark modes, including scientific viewers and secondary controls. The initial source port is complete. The user now authorizes deeper chemical tools and simulation development in the integrated workspace. Keep the imported scientific snapshot immutable; add new operators in the integration layer with source attribution and current verification. Preserve the original sibling Chem workspace. XDL retains the existing isolated parser and XML/JSON roundtrip scope.
+The first control in the top bar switches Proto CLI / Chem CLI. Preserve each workspace's live state when switching. Chem uses the same neutral paper/ink theme and selected typography profile as Proto in light and dark modes, including scientific viewers and secondary controls. The initial source port is complete. The user now authorizes deeper chemical tools and simulation development in the integrated workspace. Keep the imported scientific snapshot immutable; add new operators in the integration layer with source attribution and current verification. Preserve the original sibling Chem workspace. XDL retains the existing isolated parser and XML/JSON roundtrip scope.
 
 Keep the product switch at the same screen position in both editions. Reserve the upper-left sidebar area for the corresponding Proto. / Chem. wordmark. Align the Chem mode slider and navigation with Proto; omit the redundant Chemistry heading and Design, structure & evidence subtitle beneath the Chem wordmark.
 
@@ -45,11 +45,19 @@ Reserve product marks for edition identity: Proto uses DNA and Chem uses the bon
 
 ## Typography and live configuration (September 18, 2026)
 
-Use the user-supplied Anthropic font assets throughout all three workspaces and every secondary menu. Sans Text is for navigation, controls and utility copy; Sans Display is for compact utility headings; Serif Display is for page titles and editorial headings; Serif Text is for reading passages; Mono is for code, sequence text, scientific values and identifiers. Preserve native script fallbacks. Selected, hovered and focused controls use neutral paper/stone/ink in both themes. Audit nested dialogs and short viewports as well as main pages.
+In the local Anthropic profile, use the user-supplied font assets throughout all three workspaces and every secondary menu. Sans Text is for navigation, controls and utility copy; Sans Display is for compact utility headings; Serif Display is for page titles and editorial headings; Serif Text is for reading passages; Mono is for code, sequence text, scientific values and identifiers. Preserve native script fallbacks. Selected, hovered and focused controls use neutral paper/stone/ink in both themes. Audit nested dialogs and short viewports as well as main pages.
 
 Every current model claim must come from LM Studio Server at `http://127.0.0.1:1234`. Never seed current inventory or online/connected status from fixtures, saved MCP-era catalogs, pinned preferences or old run records. Separate reachable server, discovered model, loaded instance and explicit Workbench connection. Clear stale inventory after failures and refresh automatically while visible. Historical evidence remains historical.
 
 The Local Models page has a horizontal Models / Design plugins & Skills switch. Display actual bundled modules and skills with enabled state, permit staged selection and an explicit Apply selection action, and wire the choice to tool exposure and new mission guidance. Core governance remains required. Changes must not silently alter an active mission. Browser previews identify their session-only settings and read-only model inventory; desktop settings persist.
+
+## Public and local typography profiles (September 23, 2026)
+
+Preserve the user's existing Anthropic font files and their local appearance. Public source and distributable builds use the bundled SIL Open Font License families: Newsreader for editorial headings and reading copy, Hanken Grotesk for navigation and controls, and Commit Mono for code, sequences, numbers and identifiers. These are independent public fonts; do not rename them as Anthropic assets or suggest an Anthropic endorsement.
+
+Keep the typography hierarchy and paper/ink identity consistent across both profiles, both editions, all three modes and secondary menus. Use the shared typography tokens rather than embedding profile-specific font names in new components. Keep native script fallbacks for glyphs outside the selected font coverage. Validate narrow layouts and scientific values in the public profile as well as the local profile.
+
+Treat profile selection as an explicit build/development concern. Public output must not copy ignored local Anthropic font binaries merely because they are present on the developer's computer. Preserve upstream OFL texts and font identity metadata with public assets; record source revisions and file digests in the font manifest. Do not alter the immutable Chem scientific snapshot to change its surrounding typography. See `../../docs/typography.md` for the supported profile commands and publication rules.
 
 ## Motion and interaction (September 23, 2026)
 

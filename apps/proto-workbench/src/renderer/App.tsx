@@ -686,7 +686,7 @@ function CodeDrawer() {
           {!fullEditor && <button className="icon-button" type="button" onClick={() => setDrawerCollapsed(true)} title="Collapse code panel" aria-label="Collapse code panel"><ChevronDown size={15} /></button>}
         </div>
         {activeDocument.artifactReader?.readOnly&&<p className="artifact-version-notice" role="status"><strong>{activeDocument.artifactReader.code}</strong> {activeDocument.artifactReader.message}</p>}
-        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme={theme === "dark" ? "proto-dark" : "proto-light"} options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: '"Anthropic Mono Web", Consolas, monospace' , scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
+        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme={theme === "dark" ? "proto-dark" : "proto-light"} options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: '"Proto Mono", Consolas, monospace' , scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
         <div className="code-actionbar"><span className="change-summary"><FileCheck2 size={14} />Run artifact</span><span className="code-rationale">Selected from the auditable run ledger.</span><button className="secondary-button" type="button" onClick={() => void openFile(activeDocument.path)}><Files size={13} />Open externally</button></div>
       </section>
     );
@@ -785,7 +785,7 @@ function CodeDrawer() {
               originalEditable: false,
               fontSize: 12,
               lineHeight: 19,
-              fontFamily: '"Anthropic Mono Web", Consolas, monospace' ,
+              fontFamily: '"Proto Mono", Consolas, monospace' ,
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
               folding: false,
@@ -805,7 +805,7 @@ function CodeDrawer() {
               readOnly: true,
               fontSize: 12,
               lineHeight: 19,
-              fontFamily: '"Anthropic Mono Web", Consolas, monospace' ,
+              fontFamily: '"Proto Mono", Consolas, monospace' ,
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
               lineNumbersMinChars: 3,

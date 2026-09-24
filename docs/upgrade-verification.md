@@ -1,5 +1,10 @@
 # Proto Workbench 0.2.0-rc.1: demo and verification scope
 
+> Historical September 5 preview evidence. For the later Chat / Design / Compute,
+> Chem and Harness Slice B source update, use the separate
+> [current source showcase and evidence](source-showcase-2026-09.md).
+> The screenshots, measurements and binary hashes below retain their original scope.
+
 The September 2026 upgrade adds persistent mission execution, loaded-context
 accounting, typed tool results, source-bound DNA edits, authentic protein
 structure inspection and immutable candidate packaging. The public

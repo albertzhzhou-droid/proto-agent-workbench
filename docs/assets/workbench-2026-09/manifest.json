@@ -1,0 +1,187 @@
+{
+  "schemaVersion": "proto-workbench.showcase-captures.v1",
+  "dateBasis": "America/Toronto local capture dates",
+  "scope": "Five unchanged source-browser screenshots with separate public-profile and historical local-profile scopes. Screenshot appearance does not distribute embedded font files.",
+  "files": [
+    {
+      "file": "compute.jpg",
+      "title": "Compute method library",
+      "caption": "The actual source-browser catalog contains 127 method entries, with availability read from the configured local Python environment. Catalog presence does not establish that every method passed execution, scientific or clean-machine acceptance.",
+      "captureDate": "2026-09-23",
+      "surface": "source-browser",
+      "typographyProfile": "public",
+      "sourceScope": "September 23 source-browser working tree after the public-font integration, based on parent df376cd5bb85c89acc356b639aa1568206bb21ac. This is a source capture, not a native packaged runtime or installer acceptance.",
+      "sourceParentCommit": "df376cd5bb85c89acc356b639aa1568206bb21ac",
+      "workingTreeChangesIncluded": true,
+      "catalogEntries": 127,
+      "modelInferencePerformedForCapture": false,
+      "scientificExecutionScope": "Catalog inspection only; no method execution is established by this image.",
+      "sha256": "c743350ba6a5bab2eec567bf387cf7bcda21b8d10d579a7bf3d9d6c4d5084160",
+      "bytes": 68440,
+      "width": 1280,
+      "height": 720,
+      "mimeType": "image/jpeg",
+      "metadata": {
+        "jfif": true,
+        "exif": false
+      },
+      "imageByteModifications": false
+    },
+    {
+      "file": "chat.jpg",
+      "title": "Empty local Chat workspace",
+      "caption": "An empty isolated Chat session with the selected local model visibly disconnected. No inference or synthetic conversation was inserted for this screenshot.",
+      "captureDate": "2026-09-23",
+      "surface": "source-browser",
+      "typographyProfile": "public",
+      "sourceScope": "September 23 source-browser working tree after the public-font integration, based on parent df376cd5bb85c89acc356b639aa1568206bb21ac. This is a source capture, not a native packaged runtime or installer acceptance.",
+      "sourceParentCommit": "df376cd5bb85c89acc356b639aa1568206bb21ac",
+      "workingTreeChangesIncluded": true,
+      "modelInferencePerformedForCapture": false,
+      "modelConnectionState": "disconnected",
+      "scientificExecutionScope": "Empty interface capture; no model or scientific-result acceptance.",
+      "sha256": "cc7c92cc5144f0d34f7f1e94ed5044be9f423048b87b8916637c2f2cf920ce75",
+      "bytes": 50872,
+      "width": 1280,
+      "height": 720,
+      "mimeType": "image/jpeg",
+      "metadata": {
+        "jfif": true,
+        "exif": false
+      },
+      "imageByteModifications": false
+    },
+    {
+      "file": "chem-reaction.jpg",
+      "title": "Illustrative reversible reaction",
+      "caption": "A locally calculated and saved reversible demonstration, showing the final 30-second sample from 121 samples at 298.15 K. Final illustrative concentrations are A = 0.25186 mol/L and B = 0.74814 mol/L. The spatial view is a population schematic, not an atomistic trajectory or experimentally verified reaction pathway.",
+      "captureDate": "2026-09-23",
+      "surface": "source-browser",
+      "typographyProfile": "public",
+      "sourceScope": "September 23 source-browser working tree after the public-font integration, based on parent df376cd5bb85c89acc356b639aa1568206bb21ac. This is a source capture, not a native packaged runtime or installer acceptance.",
+      "sourceParentCommit": "df376cd5bb85c89acc356b639aa1568206bb21ac",
+      "workingTreeChangesIncluded": true,
+      "modelInferencePerformedForCapture": false,
+      "scientificExecutionScope": "Successful local calculation for the bundled illustrative network; supplied rate constants with well-mixed, isothermal, constant-volume mass-action assumptions. No experimental or general thermochemical validation.",
+      "sha256": "4e22e59390c550048973730ce75383f805e9ed27919e263bc383565f890e5bc5",
+      "bytes": 73554,
+      "width": 1280,
+      "height": 720,
+      "mimeType": "image/jpeg",
+      "metadata": {
+        "jfif": true,
+        "exif": false
+      },
+      "imageByteModifications": false,
+      "localCalculation": {
+        "runId": "a9370cd1-e2c8-4c1b-8570-603446f1cc63",
+        "operator": "simulate_reaction_network",
+        "status": "completed",
+        "durationSeconds": 30,
+        "samples": 121,
+        "temperatureK": 298.15,
+        "finalConcentrationsMolPerL": {
+          "A": 0.25185906460644303,
+          "B": 0.7481409353935571
+        },
+        "solver": "SciPy solve_ivp / LSODA",
+        "retainedFiles": [
+          {
+            "file": "input.json",
+            "sha256": "3a78e9354192aae6d29a951a37a2b053dfa05d1356ec567054d5ebd5cf17d7ad",
+            "bytes": 1291
+          },
+          {
+            "file": "result.json",
+            "sha256": "1a404142faefbc0c12219fb03d402c2252f917415d69b6dcd3b5dc72f5ab13c9",
+            "bytes": 68089
+          },
+          {
+            "file": "manifest.json",
+            "sha256": "0da994a055c8296a3d55231b3b21e04ce28049330c301d15a69f1f96e98eafcb",
+            "bytes": 3931
+          },
+          {
+            "file": "compute-manifest.json",
+            "sha256": "8fb011c541e134619653a039ed17359451b413df832d5557fa3c1b2904625baf",
+            "bytes": 497205
+          }
+        ],
+        "rawRunPublished": false
+      }
+    },
+    {
+      "file": "research-project.jpg",
+      "title": "Saved synthetic research project",
+      "caption": "A retained September 22 source-browser capture of a synthetic research project and its saved run context. Original local typography and fixture scope are preserved; this is not an image of the historical downloadable installer.",
+      "captureDate": "2026-09-22",
+      "surface": "source-browser",
+      "typographyProfile": "local-anthropic (retained historical capture)",
+      "sourceScope": "Retained September 22 source-browser research-study acceptance capture, before the public-font profile. The exact captured commit is not asserted; original image bytes and the retained acceptance report are bound below.",
+      "sourceParentCommit": null,
+      "workingTreeChangesIncluded": null,
+      "modelInferencePerformedForCapture": null,
+      "scientificExecutionScope": "Synthetic research-study software acceptance; not experimental validation.",
+      "sha256": "8f0292f337f3420aca32bc48b215070b258dc1e61c4def4065d0b0a9f0d9e159",
+      "bytes": 116127,
+      "width": 1303,
+      "height": 1031,
+      "mimeType": "image/jpeg",
+      "metadata": {
+        "jfif": true,
+        "exif": false
+      },
+      "imageByteModifications": false,
+      "retainedSourceBinding": {
+        "originalCaptureFilename": "project-final-light.png",
+        "actualOriginalMediaType": "image/jpeg",
+        "publicCopyByteIdentical": true,
+        "reportFilename": "ui-acceptance.json",
+        "reportSha256": "73040f33899186b56826089f878dfa300901b7ad76c2f059650eca85b2c2c023",
+        "reportPublished": false,
+        "note": "The original screenshot tool used a .png name for JPEG bytes; the public copy has a matching .jpg extension with no re-encoding."
+      }
+    },
+    {
+      "file": "protein-study.jpg",
+      "title": "Reopened supplied-alignment protein study",
+      "caption": "A supplied-alignment study reopened during the September 22 local browser acceptance. The saved input fixtures are software examples, not experimentally validated biological results. Original local typography is retained.",
+      "captureDate": "2026-09-22",
+      "surface": "source-browser",
+      "typographyProfile": "local-anthropic (retained historical capture)",
+      "sourceScope": "Retained September 22 source-browser research-study acceptance capture, before the public-font profile. The exact captured commit is not asserted; original image bytes and the retained acceptance report are bound below.",
+      "sourceParentCommit": null,
+      "workingTreeChangesIncluded": null,
+      "modelInferencePerformedForCapture": null,
+      "scientificExecutionScope": "Reopening a saved supplied-alignment fixture; not protein-structure prediction or biological reference-dataset validation.",
+      "sha256": "8ec585505ed1e2b93eb7c2d33823a73ee2c776025093b36e69962ebd0d0acaf4",
+      "bytes": 113137,
+      "width": 1303,
+      "height": 1031,
+      "mimeType": "image/jpeg",
+      "metadata": {
+        "jfif": true,
+        "exif": false
+      },
+      "imageByteModifications": false,
+      "retainedSourceBinding": {
+        "originalCaptureFilename": "protein-reopened-light.png",
+        "actualOriginalMediaType": "image/jpeg",
+        "publicCopyByteIdentical": true,
+        "reportFilename": "ui-acceptance.json",
+        "reportSha256": "73040f33899186b56826089f878dfa300901b7ad76c2f059650eca85b2c2c023",
+        "reportPublished": false,
+        "note": "The original screenshot tool used a .png name for JPEG bytes; the public copy has a matching .jpg extension with no re-encoding."
+      }
+    }
+  ],
+  "boundaries": {
+    "newBinaryRelease": false,
+    "nativePackagedAcceptance": false,
+    "experimentalScientificValidation": false,
+    "modelScope": "The three September 23 captures did not execute model inference. The retained September 22 captures do not independently establish whether model inference was performed.",
+    "externalRuntimes": "LM Studio and an explicitly selected model remain external. Scientific computations require configured optional Python packages; Psi4, XDL and relevant WSL engines have separate feature-specific setup. Catalog entries and bundled UI do not prove these runtimes are installed or accepted.",
+    "privateData": "Local sessions, machine-specific reports, raw model output, run databases and Anthropic font bytes are excluded. Only selected report digests are published.",
+    "hashScope": "SHA-256 binds retained bytes; it is not a signature, authorship authentication, replay guarantee or proof of scientific correctness."
+  }
+}

@@ -7,11 +7,65 @@ branch history. Those historical entries therefore are not inferred from a Git l
 and byte-level differences without sufficient evidence are not presented as
 known feature changes.
 
-Version boundary: the Python CLI version is `0.1.0`; the Workbench upgrade candidate
-is `0.2.0-rc.1`, with the local debug scope complete and full release acceptance
-still outstanding. The previous Windows version
-was `0.1.2`. `Stage N`, `rN`, `vN`, and
+Version boundary: the Python CLI version is `0.1.0`; the Workbench package version
+remains `0.2.0-rc.1`. The September 23 source upgrade below is unreleased and is
+not included in the historical downloadable preview merely because the package
+version matches. Full release acceptance remains outstanding. The previous
+Windows version was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
+
+## 2026-09-23 — Scientific workspace and Harness upgrade (unreleased source)
+
+- Unified the source workspace around Chat / Design / Compute. Scientific Chat
+  shares canonical tools with the dedicated interfaces, reads PDF/DOCX/XLSX
+  documents, and retains research plans and versioned working documents.
+- Added research projects, bounded data access, saved computation associations,
+  explicit claim records and figure workflows. Receipt-bound facts preserve
+  literal identities, values, units and source locators; model interpretation
+  and human review remain separate from execution success.
+- Integrated the preserved Chem source and UI, scientific operators and evidence
+  into the shared application. Added protein comparative studies and RNA-seq
+  studies using the existing computation and bioinformatics adapters.
+- Added typed adapters for separately deployed WSL bioinformatics engines and
+  rootless OCI execution for Python, R and real Jupyter kernels. These runtimes,
+  Chemistry Python, Psi4, XDL and model weights remain external prerequisites;
+  their installation is not implied by the committed source or UI.
+- Implemented canonical cross-language tool contracts, shared execution policy
+  and journal, checksummed storage migrations, schema-derived IPC and explicit
+  evidence standing. Recovery inspects durable effects before replay, and the
+  workspace journal exposes receipt inspection and evidence-backed review.
+  The journal-first transition retains documented legacy compatibility.
+- Completed Harness Slice B: typed diagnostics, bounded task-wide repairs,
+  terminal abstention and human-review outcomes, host-checked preconditions and
+  call caps, persisted negative-result memory and per-run diagnostic JSON.
+- Added a frozen 30-case software evaluation pack and paired direct/Harness
+  runner with immutable attempts, independent scoring and explicit unknowns.
+  The local 60-attempt campaign completed 24/24 possible tasks in the direct arm
+  and 23/24 in Harness; correct abstention was 5/6 and 6/6 impossible tasks.
+  One direct error and one Harness timeout remain recorded. These measurements
+  do not show a completion or token-cost improvement and do not score scientific
+  answers. The exact measured snapshot predates the final notification fix.
+- Recorded final Workbench source validation: 1,405 Node tests passed, one
+  explicit skip, zero failures, TypeScript and desktop source build passed.
+  The earlier architecture Python base run passed 355 tests with four explicit
+  Windows filesystem skips; the subsequent tool-contract Python suite passed
+  9/9. These distinct runs are not combined into a single acceptance total.
+- Checked Harness diagnostic states and JSON export reopening in a production
+  component fixture, including a 390 × 844 view. This is browser component
+  evidence, separate from native packaged execution and installer acceptance.
+- Kept local configuration, generated runtime UI, raw runs, build outputs and
+  user-supplied font binaries out of the public source. Public builds bundle
+  Newsreader, Hanken Grotesk and Commit Mono with their OFL notices; local
+  self-use retains Anthropic through a separate font profile. Preserved the
+  Chem snapshot's byte-level manifest and locked source
+  dependency inputs.
+
+Implementation, retained failures and scope limits are recorded in the
+[architecture upgrade](docs/ARCHITECTURE_UPGRADE_2026-09-23.md),
+[Harness completion record](docs/HARNESS_ITERATION_IMPLEMENTATION_2026-09-23.md)
+and [evaluation protocol](docs/harness_iteration_evaluation.md). The September 5
+package evidence below remains historical; a current source build does not
+inherit its native-package results.
 
 ## 2026-09-05 — Reliable Harness and scientific workbench candidate
 
@@ -282,7 +336,7 @@ The final r39 queue and five screenshots are retained locally at
 and `apps/proto-workbench/build/stress-evidence-r39/`; these ignored artifacts
 are not distributed with a source checkout. The complete `pnpm test` run at
 r39 still had a compiler link-policy regression. The current 427/427 offline
-gate demonstrates that this old issue is closed in the present source.
+gate at that stage demonstrated that this old issue was closed in that source.
 
 ## 2026-07-08 — Python CLI 0.1.0 initial baseline
 

@@ -37,6 +37,7 @@ import { buildGlobalEvidenceSearch, GLOBAL_EVIDENCE_LIMITS } from "./services/gl
 import { ModelService } from "./services/model-service.ts";
 import { ResearchChatService } from "./services/research-chat.ts";
 import { ChemWorkbenchService } from "./services/chem-workbench.ts";
+declare const __PROTO_TYPOGRAPHY_PROFILE__: "local" | "public";
 import { ChemScienceService } from './services/chem-science.ts';
 import { ResearchToolBridge } from "./services/research-tools.ts";
 import { verifyModuleIntegrity } from "./services/module-integrity.ts";
@@ -702,8 +703,10 @@ function registerIpc(): void {
     if (!expectedRendererUrl) throw new Error("Workbench window is not ready.");
     if (!chemWorkbench) {
       const resourceRoot = app.isPackaged ? process.resourcesPath : projectRoot;
+      const chemUiRoot = app.isPackaged ? join(resourceRoot,"runtime/chem-ui")
+        : join(resourceRoot,"runtime/chem-ui-profiles",__PROTO_TYPOGRAPHY_PROFILE__);
       chemWorkbench = new ChemWorkbenchService({repoRoot, workspacePath:activeWorkspacePath,
-        runtimeRoot:join(resourceRoot,"runtime/chem-workbench"), uiRoot:join(resourceRoot,"runtime/chem-ui"), integrationRoot:join(resourceRoot,"runtime/chem-integration")});
+        runtimeRoot:join(resourceRoot,"runtime/chem-workbench"), uiRoot:chemUiRoot, integrationRoot:join(resourceRoot,"runtime/chem-integration")});
     }
     const parent = new URL(expectedRendererUrl);
     return chemWorkbench.start(parent.protocol === "file:" ? "file:" : parent.origin);

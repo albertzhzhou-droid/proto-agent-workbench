@@ -5,7 +5,9 @@ import { ChemWorkbenchService } from "../main/services/chem-workbench.ts";
 export function chemWorkbenchPreview(): Plugin {
   return {name:"proto-chem-workbench",configureServer(server){
     const repoRoot=resolve(server.config.root,"../..");
-    const service=new ChemWorkbenchService({repoRoot,workspacePath:repoRoot,uiRoot:resolve(server.config.root,"src/chem-ui")});
+    const profile:unknown=JSON.parse(server.config.define?.__PROTO_TYPOGRAPHY_PROFILE__ ?? "null");
+    if(profile!=="public" && profile!=="local")throw new Error("Chem preview typography profile is not pinned.");
+    const service=new ChemWorkbenchService({repoRoot,workspacePath:repoRoot,uiRoot:resolve(server.config.root,"runtime/chem-ui-profiles",profile)});
     server.httpServer?.once("close",()=>{void service.close();});
     server.middlewares.use(async(req,res,next)=>{
       if(req.url!=="/__proto/chem")return next();

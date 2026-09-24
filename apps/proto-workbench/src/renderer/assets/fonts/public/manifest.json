@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "description": "Unmodified redistributable public typography assets. Paths are relative to this directory; source URLs are pinned to immutable upstream commits.",
+  "fontByteModifications": false,
+  "files": [
+    {
+      "file": "newsreader/Newsreader[opsz,wght].woff2",
+      "kind": "font",
+      "bytes": 214880,
+      "sha256": "1faa3380ac0e87e057b180e03fd94bd708a612afb67d2590677be4508909fae9",
+      "sourceRepository": "https://github.com/productiontype/Newsreader",
+      "sourceCommit": "cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155",
+      "sourcePath": "fonts/variable/woff2/Newsreader[opsz,wght].woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/productiontype/Newsreader/cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155/fonts/variable/woff2/Newsreader%5Bopsz%2Cwght%5D.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "newsreader/OFL.txt",
+      "family": "Newsreader",
+      "internalFamily": "Newsreader",
+      "role": "serif",
+      "style": "Regular",
+      "version": "Version 1.003",
+      "format": "woff2",
+      "axes": [
+        {
+          "tag": "wght",
+          "minimum": 200.0,
+          "default": 400.0,
+          "maximum": 800.0
+        },
+        {
+          "tag": "opsz",
+          "minimum": 0.0,
+          "default": 16.0,
+          "maximum": 72.0
+        }
+      ]
+    },
+    {
+      "file": "newsreader/Newsreader-Italic[opsz,wght].woff2",
+      "kind": "font",
+      "bytes": 239844,
+      "sha256": "d184d5e6a967ffea109d9f99fa245eccbff221e27f30bfd7d6fdb2940fcc6265",
+      "sourceRepository": "https://github.com/productiontype/Newsreader",
+      "sourceCommit": "cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155",
+      "sourcePath": "fonts/variable/woff2/Newsreader-Italic[opsz,wght].woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/productiontype/Newsreader/cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155/fonts/variable/woff2/Newsreader-Italic%5Bopsz%2Cwght%5D.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "newsreader/OFL.txt",
+      "family": "Newsreader",
+      "internalFamily": "Newsreader",
+      "role": "serif",
+      "style": "Italic",
+      "version": "Version 1.003",
+      "format": "woff2",
+      "axes": [
+        {
+          "tag": "wght",
+          "minimum": 200.0,
+          "default": 400.0,
+          "maximum": 800.0
+        },
+        {
+          "tag": "opsz",
+          "minimum": 0.0,
+          "default": 16.0,
+          "maximum": 72.0
+        }
+      ]
+    },
+    {
+      "file": "newsreader/OFL.txt",
+      "kind": "license",
+      "bytes": 4394,
+      "sha256": "fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8",
+      "sourceRepository": "https://github.com/productiontype/Newsreader",
+      "sourceCommit": "cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155",
+      "sourcePath": "OFL.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/productiontype/Newsreader/cfcb4f7af0e52c25e8df2a2431814c8e5fe2e155/OFL.txt",
+      "license": "OFL-1.1",
+      "licenseFile": "newsreader/OFL.txt"
+    },
+    {
+      "file": "hanken-grotesk/HankenGrotesk[wght].woff2",
+      "kind": "font",
+      "bytes": 62244,
+      "sha256": "170db667e22d3d138440de92431b2a4c7695ad06bef89354e59b25b4114dd7eb",
+      "sourceRepository": "https://github.com/marcologous/hanken-grotesk",
+      "sourceCommit": "eff37d18946b018ad239cf5fd3992db5d19b82a0",
+      "sourcePath": "fonts/webfonts/HankenGrotesk[wght].woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/marcologous/hanken-grotesk/eff37d18946b018ad239cf5fd3992db5d19b82a0/fonts/webfonts/HankenGrotesk%5Bwght%5D.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "hanken-grotesk/OFL.txt",
+      "family": "Hanken Grotesk",
+      "internalFamily": "Hanken Grotesk",
+      "role": "sans",
+      "style": "Regular",
+      "version": "Version 3.014;Glyphs 3.1.1 (3134)",
+      "format": "woff2",
+      "axes": [
+        {
+          "tag": "wght",
+          "minimum": 100.0,
+          "default": 400.0,
+          "maximum": 900.0
+        }
+      ]
+    },
+    {
+      "file": "hanken-grotesk/HankenGrotesk-Italic[wght].woff2",
+      "kind": "font",
+      "bytes": 63560,
+      "sha256": "69bef5a645d888d5e22ac58989280a5634283e8538e841d79d5b4560d637b318",
+      "sourceRepository": "https://github.com/marcologous/hanken-grotesk",
+      "sourceCommit": "eff37d18946b018ad239cf5fd3992db5d19b82a0",
+      "sourcePath": "fonts/webfonts/HankenGrotesk-Italic[wght].woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/marcologous/hanken-grotesk/eff37d18946b018ad239cf5fd3992db5d19b82a0/fonts/webfonts/HankenGrotesk-Italic%5Bwght%5D.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "hanken-grotesk/OFL.txt",
+      "family": "Hanken Grotesk",
+      "internalFamily": "Hanken Grotesk",
+      "role": "sans",
+      "style": "Italic",
+      "version": "Version 3.014;Glyphs 3.1.1 (3134)",
+      "format": "woff2",
+      "axes": [
+        {
+          "tag": "wght",
+          "minimum": 100.0,
+          "default": 400.0,
+          "maximum": 900.0
+        }
+      ]
+    },
+    {
+      "file": "hanken-grotesk/OFL.txt",
+      "kind": "license",
+      "bytes": 4402,
+      "sha256": "e02ccb89a86839b22feff7872ff5cc355cc0f58318d29eee20e2cf83a612f16d",
+      "sourceRepository": "https://github.com/marcologous/hanken-grotesk",
+      "sourceCommit": "eff37d18946b018ad239cf5fd3992db5d19b82a0",
+      "sourcePath": "OFL.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/marcologous/hanken-grotesk/eff37d18946b018ad239cf5fd3992db5d19b82a0/OFL.txt",
+      "license": "OFL-1.1",
+      "licenseFile": "hanken-grotesk/OFL.txt"
+    },
+    {
+      "file": "commit-mono/CommitMonoV143-VF.woff2",
+      "kind": "font",
+      "bytes": 86768,
+      "sha256": "f342ca6c3f2597e6c0fcd84b3f3ed64d3ce5bdb6d0af19d190d645a558b1cf29",
+      "sourceRepository": "https://github.com/eigilnikolajsen/commit-mono",
+      "sourceCommit": "d407cd2bf8e01ca1db70544052fbbb9606406c3b",
+      "sourcePath": "src/fonts/fontlab/CommitMonoV143-VF.woff2",
+      "sourceUrl": "https://raw.githubusercontent.com/eigilnikolajsen/commit-mono/d407cd2bf8e01ca1db70544052fbbb9606406c3b/src/fonts/fontlab/CommitMonoV143-VF.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "commit-mono/LICENSE-FONT",
+      "family": "Commit Mono",
+      "internalFamily": "CommitMonoV143",
+      "role": "mono",
+      "style": "Extra Light",
+      "version": "Version 1.143",
+      "format": "woff2",
+      "axes": [
+        {
+          "tag": "wght",
+          "minimum": 200.0,
+          "default": 200.0,
+          "maximum": 700.0
+        },
+        {
+          "tag": "ital",
+          "minimum": 0.0,
+          "default": 0.0,
+          "maximum": 1.0
+        }
+      ]
+    },
+    {
+      "file": "commit-mono/LICENSE-FONT",
+      "kind": "license",
+      "bytes": 4360,
+      "sha256": "005e08f22d472be5139dcaf876dbed7ce8f17a501cd180c3259ad2aaf27237fe",
+      "sourceRepository": "https://github.com/eigilnikolajsen/commit-mono",
+      "sourceCommit": "d407cd2bf8e01ca1db70544052fbbb9606406c3b",
+      "sourcePath": "LICENSE-FONT",
+      "sourceUrl": "https://raw.githubusercontent.com/eigilnikolajsen/commit-mono/d407cd2bf8e01ca1db70544052fbbb9606406c3b/LICENSE-FONT",
+      "license": "OFL-1.1",
+      "licenseFile": "commit-mono/LICENSE-FONT"
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 /* The chemistry port retains its scientific components and state contracts.
    This last-loaded layer shares the parent Workbench's paper/ink UI vocabulary. */
 :root, :root[data-theme="light"] {
-  --font-sans:"Anthropic Sans Text","Microsoft YaHei UI",sans-serif;
-  --font-sans-display:"Anthropic Sans Display","Microsoft YaHei UI",sans-serif;
-  --font-serif:"Anthropic Serif Display","Songti SC","SimSun",serif;
-  --font-reading:"Anthropic Serif Text","Songti SC","SimSun",serif;
-  --font-mono:"Anthropic Mono Web","Cascadia Mono",Consolas,monospace;
+  --font-sans:"Proto Sans Text","Microsoft YaHei UI",sans-serif;
+  --font-sans-display:"Proto Sans Display","Microsoft YaHei UI",sans-serif;
+  --font-serif:"Proto Serif Display","Songti SC","SimSun",serif;
+  --font-reading:"Proto Serif Text","Songti SC","SimSun",serif;
+  --font-mono:"Proto Mono","Cascadia Mono",Consolas,monospace;
   --surface:#fdfcf9; --surface-soft:#f3f1ec; --surface-selected:#e8e5df;
   --canvas:#faf9f6; --line:#e3e0d9; --line-strong:#ccc8bf;
   --text:#2c2b28; --text-soft:#696760; --text-faint:#79766f;
