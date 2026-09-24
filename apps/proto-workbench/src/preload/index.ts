@@ -27,23 +27,28 @@ import type {
   WorkbenchApi,
 } from "../shared/contracts.ts";
 import { IPC } from "../shared/ipc.ts";
+import { validateChannelArguments, validateChannelResult, type InferChannelInput, type InferChannelResult, type IpcRequestChannel, type IpcWorkbenchApi } from "../shared/ipc-channel-contracts.ts";
 
 const MAX_IPC_ARGUMENT_CHARACTERS = 512 * 1024;
 const MAX_BINARY_IPC_BYTES = 16 * 1024 * 1024;
 
-function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
+function invoke<C extends IpcRequestChannel>(channel: C, ...args: InferChannelInput<C>): Promise<InferChannelResult<C>> {
   const serialized = JSON.stringify(args);
   if (serialized.length > MAX_IPC_ARGUMENT_CHARACTERS) {
     return Promise.reject(new Error("IPC request exceeds the renderer-to-main payload limit."));
   }
-  return ipcRenderer.invoke(channel, ...args);
+  return ipcRenderer.invoke(channel, ...validateChannelArguments(channel, args)).then(result => validateChannelResult(channel, result));
+}
+
+function invokeBinary<C extends IpcRequestChannel>(channel: C, ...args: InferChannelInput<C>): Promise<InferChannelResult<C>> {
+  return ipcRenderer.invoke(channel, ...validateChannelArguments(channel, args)).then(result => validateChannelResult(channel, result));
 }
 
 function invokeMapExport(input: MapExportRequest): ReturnType<WorkbenchApi["visualization"]["exportMap"]> {
   if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength < 32 || input.bytes.byteLength > MAX_BINARY_IPC_BYTES) {
     return Promise.reject(new Error("Map export payload is outside the renderer-to-main binary limit."));
   }
-  return ipcRenderer.invoke(IPC.visualizationMapExport, input);
+  return invokeBinary(IPC.visualizationMapExport, ...validateChannelArguments(IPC.visualizationMapExport, [input]));
 }
 
 function boundedString(value: unknown, label: string, maximum: number, allowEmpty = false): string {
@@ -101,7 +106,22 @@ function idempotencyKey(value: unknown): string {
   return key;
 }
 
-const api: WorkbenchApi = {
+const api: IpcWorkbenchApi = {
+  journal: {
+    list: input => invoke(IPC.journalList, input),
+    inspect: input => invoke(IPC.journalInspect, input),
+    reconcile: input => invoke(IPC.journalReconcile, input),
+  },
+  chem: { open: () => invoke(IPC.chemOpen) },
+  chemScience: {request: input => invoke(IPC.chemScienceRequest,input)},
+  chat: { request: (input) => invoke(IPC.researchChat, input) },
+  compute: {
+    catalog: (tool) => invoke(IPC.computeCatalog, tool),
+    run: (request) => invoke(IPC.computeRun, ...validateChannelArguments(IPC.computeRun, [request])),
+    studies: (request) => invoke(IPC.computeStudies, request),
+    figures: (request) => invoke(IPC.computeFigures, request),
+    workflows: (request) => invoke(IPC.computeWorkflows, request),
+  },
   app: {
     getSettings: () => invoke(IPC.settingsGet) as Promise<AppSettings>,
     updateSettings: (patch: AppSettingsUpdate) => invoke(IPC.settingsUpdate, patch) as Promise<AppSettings>,
@@ -113,6 +133,8 @@ const api: WorkbenchApi = {
   models: {
     scan: () => invoke(IPC.modelsScan),
     list: () => invoke(IPC.modelsList),
+    probeTools: (modelId: string) => invoke(IPC.modelsProbeTools, boundedString(modelId, "modelId", 128)),
+    evaluationSummaries: () => invoke(IPC.modelsEvaluationSummaries),
     estimate: (modelId: string, options: ModelLoadOptions) => invoke(IPC.modelsEstimate, boundedString(modelId, "modelId", 128), options),
     load: (modelId: string, options?: Partial<ModelLoadOptions>) =>
       invoke(IPC.modelsLoad, boundedString(modelId, "modelId", 128), options),
@@ -196,11 +218,11 @@ const api: WorkbenchApi = {
       if (JSON.stringify({ ...input, png: undefined }).length > MAX_IPC_ARGUMENT_CHARACTERS) {
         return Promise.reject(new Error("Sequence landscape request exceeds the payload limit."));
       }
-      return ipcRenderer.invoke(IPC.structureExportTracks, input);
+      return invokeBinary(IPC.structureExportTracks, ...validateChannelArguments(IPC.structureExportTracks, [input]));
     },
     exportImage: input => {
       if (!(input.png instanceof Uint8Array) || input.png.byteLength < 32 || input.png.byteLength > MAX_BINARY_IPC_BYTES) return Promise.reject(new Error("Invalid structure PNG size."));
-      return ipcRenderer.invoke(IPC.structureExportImage, input);
+      return invokeBinary(IPC.structureExportImage, ...validateChannelArguments(IPC.structureExportImage, [input]));
     },
   },
   materials: {

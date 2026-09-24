@@ -34,13 +34,13 @@ test("preview fixtures have a global, persistent safety boundary", async () => {
   const app = await readFile(resolve("src", "renderer", "App.tsx"), "utf8");
   const styles = await readFile(resolve("src", "renderer", "styles.css"), "utf8");
   const appShell = section(app, "export function App()", "function StartupSurface");
-  const topBar = section(app, "function TopBar()", "function Sidebar()");
+  const topBar = section(app, "function TopBar(", "function CommandPalette");
 
-  assert.match(appShell, /<TopBar \/>[\s\S]*?currentView === "runs"/);
+  assert.match(appShell, /<TopBar mode=\{activeMode\}[^>]*>[\s\S]*?<\/TopBar>[\s\S]*?currentView === "runs"/);
   assert.match(topBar, /const dataMode = workbenchDataMode\(\)/);
   assert.match(topBar, /dataMode === "preview" && <span className="global-preview-badge"/);
-  assert.match(topBar, /Development fixtures are active; actions do not change a real workspace\./);
-  assert.match(topBar, />Preview · fixture only<\/span>/);
+  assert.match(topBar, /Design workspace content uses development fixtures\. LM Studio inventory is read live\./);
+  assert.match(topBar, /mode === "chat" \? "Local chat · LM Studio" : "Preview · live models"/);
   assert.match(styles, /\.global-preview-badge\s*\{/);
 });
 

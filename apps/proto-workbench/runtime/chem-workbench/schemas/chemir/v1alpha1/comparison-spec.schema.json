@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "comparison-spec.schema.json",
+  "title": "ChemIR v1alpha1 ComparisonSpec payload",
+  "description": "A comparison task as data: which kind of stability, which subjects, which environment, which reference state, and which method. The object claims format validity only; model validity requires executed results and experimental validity is never claimed by a declaration.",
+  "type": "object",
+  "required": [
+    "kind",
+    "stability_kind",
+    "subject_references",
+    "conditions_reference",
+    "reference_state",
+    "method"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "kind": {
+      "const": "stability"
+    },
+    "stability_kind": {
+      "enum": [
+        "energy_ordering_under_profile",
+        "adsorption_site_preference"
+      ]
+    },
+    "subject_references": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Reference"
+      }
+    },
+    "conditions_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "reference_state": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "method": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false
+}

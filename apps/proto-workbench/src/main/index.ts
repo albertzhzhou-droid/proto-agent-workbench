@@ -1,3 +1,4 @@
+import { readModelSnapshot } from "../shared/model-status.ts";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
@@ -13,6 +14,16 @@ import type { ProteinStructureTarget, ProteinStructureImageRequest } from "../sh
 import { AppDatabase } from "./services/database.ts";
 import { LmStudioProvider, LM_STUDIO_BASE_URL, LM_STUDIO_TOKEN_ENV_NAMES } from "./services/lm-studio-provider.ts";
 import { McpClient } from "./services/mcp-client.ts";
+import { openWorkspaceExecutionJournal } from "./services/workspace-execution-journal.ts";
+import { runWorkspaceComputation } from "./services/compute-workspace.ts";
+import { requestComputeStudies } from "./services/compute-studies.ts";
+import { requestResearchFigures } from "./services/research-figures.ts";
+import { createResearchWorkflowService } from './services/research-workflow-runtime.ts';
+import type { ResearchWorkflowService } from './services/research-workflows.ts';
+import type { ResearchWorkflowsRequest } from '../shared/research-workflows.ts';
+import type { ResearchFiguresRequest } from "../shared/research-figures.ts";
+import type { ComputeRequest } from "../shared/compute.ts";
+import type { ComputeStudiesRequest } from "../shared/compute-studies.ts";
 import { buildMissionPreflight } from "./services/mission-preflight.ts";
 import { buildPolicySimulation } from "./services/policy-simulation.ts";
 import {
@@ -24,6 +35,10 @@ import { workspaceBindingIdentity } from "./services/run-checkpoints.ts";
 import { buildOperatorCockpit, OPERATOR_COCKPIT_LIMITS } from "./services/operator-cockpit.ts";
 import { buildGlobalEvidenceSearch, GLOBAL_EVIDENCE_LIMITS } from "./services/global-evidence.ts";
 import { ModelService } from "./services/model-service.ts";
+import { ResearchChatService } from "./services/research-chat.ts";
+import { ChemWorkbenchService } from "./services/chem-workbench.ts";
+import { ChemScienceService } from './services/chem-science.ts';
+import { ResearchToolBridge } from "./services/research-tools.ts";
 import { verifyModuleIntegrity } from "./services/module-integrity.ts";
 import { WorkspaceFiles } from "./services/workspace-files.ts";
 import { withWorkspaceWrite } from "./services/workspace-execution-queue.ts";
@@ -107,6 +122,11 @@ let startupRecoveryReport: StartupRecoveryReport = {
 let shutdownStarted = false;
 let expectedRendererUrl: string | undefined;
 let activeWorkspacePath = "";
+let executionLedger:ReturnType<typeof openWorkspaceExecutionJournal>|undefined;
+let researchChat: ResearchChatService | undefined;
+let researchWorkflows: ResearchWorkflowService | undefined;
+let chemWorkbench: ChemWorkbenchService | undefined;
+let chemScience: ChemScienceService | undefined;
 let workspaceTransition: Promise<void> = Promise.resolve();
 let filePickerActive = false;
 const attachmentGrants = new Map<string, AttachmentGrant>();
@@ -232,6 +252,12 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
   const transition = workspaceTransition.catch(() => undefined).then(async () => {
     if (sourceTransactionsInFlight) throw new Error("A source transaction is still validating. Wait for it to finish before switching workspaces.");
     const canonicalWorkspace = await canonicalSelectedDirectory(workspacePath);
+    await chemWorkbench?.close();
+    chemWorkbench = undefined;
+    await researchChat?.close();
+    await researchWorkflows?.close();
+    researchWorkflows = undefined;
+    await chemScience?.close();
     activeWorkspacePath = canonicalWorkspace;
     attachmentGrants.clear();
     const previousAgent = agentService;
@@ -241,8 +267,11 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
       await previousAgent.pauseAll("Workspace changed; the task and its used budget are saved for continuation.");
     }
     if (previousMcp) await previousMcp.stop();
+    executionLedger?.close();
+    executionLedger=openWorkspaceExecutionJournal(canonicalWorkspace,{legacyDb:database.db});
     database.invalidatePendingApprovals("The approval is not bound to the current workspace service.");
     workspaceFiles = new WorkspaceFiles(canonicalWorkspace, database);
+    const chatFiles = workspaceFiles;
     const patchRecovery = await workspaceFiles.reconcilePatchOperations();
     startupRecoveryReport.reconciledPatchOperations += patchRecovery.reconciled;
     startupRecoveryReport.conflictedPatchOperations += patchRecovery.conflicted;
@@ -253,7 +282,12 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
       workspacePath: canonicalWorkspace,
       materialsRoot: materialsRootPath(),
       workspaceCapability: randomBytes(32).toString("hex"),
-    });
+    }, {journal: executionLedger.journal});
+    const chemistryResources=app.isPackaged?process.resourcesPath:projectRoot;
+    const workflowMcp = mcpClient;
+    researchWorkflows = createResearchWorkflowService(canonicalWorkspace,()=>workflowMcp.fork());
+    chemScience=new ChemScienceService({repoRoot,workspacePath:canonicalWorkspace,journal:executionLedger.journal,runtimeRoot:join(chemistryResources,'runtime/chem-workbench'),integrationRoot:join(chemistryResources,'runtime/chem-integration')});
+    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: modelService, readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience) });
     agentService = new AgentService(
       database,
       modelService,
@@ -321,9 +355,9 @@ async function runMaterialsCli(arguments_: string[]): Promise<Record<string, unk
   });
 }
 
-type PrivilegedHandler = (event: IpcMainInvokeEvent, ...args: any[]) => unknown;
+type PrivilegedHandler<C extends import("../shared/ipc-channel-contracts.ts").IpcRequestChannel> = (event: IpcMainInvokeEvent, ...args: import("../shared/ipc-channel-contracts.ts").InferChannelArgs<C>) => unknown;
 
-function handlePrivileged(channel: string, handler: PrivilegedHandler): void {
+function handlePrivileged<C extends import("../shared/ipc-channel-contracts.ts").IpcRequestChannel>(channel: C, handler: PrivilegedHandler<C>): void {
   ipcMain.handle(channel, (event, ...args) => {
     assertPrivilegedIpcSender(event, mainWindow, expectedRendererUrl);
     return handler(event, ...validateIpcArguments(channel, args));
@@ -453,12 +487,13 @@ async function issuePolicySimulation(
 
 async function captureMissionEnvironment(threadId: string) {
   const { thread } = agentService.getThread(threadId);
-  const model = thread.modelId ? modelService.get(thread.modelId) : modelService.getActiveModel();
-  const [runtime, capabilities, mcpTools] = await Promise.all([
-    inferenceProvider.runtimeStatus(),
+  const [modelSnapshot, capabilities, mcpTools] = await Promise.all([
+    readModelSnapshot(() => modelService.scan(LM_STUDIO_BASE_URL)),
     mcpClient.capabilities(true),
     mcpClient.tools(true),
   ]);
+  const { runtime } = modelSnapshot;
+  const model = runtime.available ? (thread.modelId ? modelService.get(thread.modelId) : modelService.getActiveModel()) : undefined;
   const tools = agentService.executionTools(threadId, mcpTools);
   return { thread, model, runtime, capabilities, tools };
 }
@@ -483,11 +518,14 @@ function registerIpc(): void {
   handlePrivileged(IPC.settingsGet, () => readSettings());
   handlePrivileged(IPC.settingsUpdate, async (_event, patch: AppSettingsUpdate) => {
     if (patch.residencyPolicy) await modelService.setPolicy(patch.residencyPolicy);
-    if (patch.modules) database.setSetting("modules", normalizeModuleSettings(patch.modules));
+    if (patch.modules) {
+      if (agentService.hasActiveRuns()) throw new Error("Wait for or cancel the active run before changing plugins or skills.");
+      database.setSetting("modules", normalizeModuleSettings(patch.modules));
+    }
     return readSettings();
   });
   handlePrivileged(IPC.runtimeStatus, () => inferenceProvider.runtimeStatus());
-  handlePrivileged(IPC.startupRecovery, () => startupRecoveryReport);
+  handlePrivileged(IPC.startupRecovery, () => ({...startupRecoveryReport,executionJournal:executionLedger?.journal.recoverySummary(),harnessJournalDisagreements:agentService?.executionRecoveryReport().disagreements??0,migrationReports:[...database.migrationReports,...(executionLedger?.migrationReports??[]),...(researchChat?[researchChat.migrationReport]:[])]}));
   handlePrivileged(IPC.modulesIntegrity, () => moduleIntegrityReport);
   handlePrivileged(IPC.modulesAuditHistory, (_event, limit?: number) => database.listModuleAudits(limit));
 
@@ -495,6 +533,11 @@ function registerIpc(): void {
     return modelService.scan(LM_STUDIO_BASE_URL);
   });
   handlePrivileged(IPC.modelsList, () => modelService.list());
+  handlePrivileged(IPC.modelsProbeTools, (_event, modelId: string) => {
+    if (agentService.hasActiveRuns()) throw new Error("Wait for or cancel the active run before probing model capabilities.");
+    return modelService.probeToolCapability(modelId);
+  });
+  handlePrivileged(IPC.modelsEvaluationSummaries, () => database.listModelEvaluationSummaries());
   handlePrivileged(IPC.modelsEstimate, (_event, modelId: string, options: ModelLoadOptions) =>
     modelService.estimate(modelId, options),
   );
@@ -646,13 +689,84 @@ function registerIpc(): void {
     exportVerifiedMap(activeWorkspacePath, input, verifyExportedMapImage));
 
   handlePrivileged(IPC.materialsStatus, () => runMaterialsCli(["materials", "status", "--json"]));
-  handlePrivileged(IPC.materialsSearch, (_event, input: Record<string, unknown>) => mcpClient.call("proto_materials_search", input));
+  handlePrivileged(IPC.materialsSearch, (_event, input: Record<string, unknown>) => mcpClient.call("proto_materials_search", input,undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}}));
+  handlePrivileged(IPC.journalList,(_event,input)=>{if(!executionLedger)throw new Error("Execution journal is not ready.");return executionLedger.journal.listPage(input);});
+  handlePrivileged(IPC.journalInspect,(_event,input:{operationId:string})=>({record:executionLedger?.journal.get(input.operationId),reconciliations:executionLedger?.journal.reconciliationHistory(input.operationId),migrationReport:executionLedger?.migrationReport}));
+  handlePrivileged(IPC.journalReconcile,(_event,input:{operationId:string;verdict:"applied"|"not-applied";actor:string;evidenceRef:string})=>{if(!executionLedger)throw new Error("Execution journal is not ready.");return executionLedger.journal.reconcile(input.operationId,input.verdict,input.actor,input.evidenceRef);});
+  handlePrivileged(IPC.researchChat, (_event, input: unknown) => {
+    if (!researchChat) throw new Error("Chat workspace is not ready.");
+    return researchChat.request(input);
+  });
+  handlePrivileged(IPC.chemOpen, async () => {
+    await workspaceTransition;
+    if (!expectedRendererUrl) throw new Error("Workbench window is not ready.");
+    if (!chemWorkbench) {
+      const resourceRoot = app.isPackaged ? process.resourcesPath : projectRoot;
+      chemWorkbench = new ChemWorkbenchService({repoRoot, workspacePath:activeWorkspacePath,
+        runtimeRoot:join(resourceRoot,"runtime/chem-workbench"), uiRoot:join(resourceRoot,"runtime/chem-ui"), integrationRoot:join(resourceRoot,"runtime/chem-integration")});
+    }
+    const parent = new URL(expectedRendererUrl);
+    return chemWorkbench.start(parent.protocol === "file:" ? "file:" : parent.origin);
+  });
+  handlePrivileged(IPC.chemScienceRequest,async (_event,input:unknown)=>{
+    await workspaceTransition;
+    if(!chemScience)throw new Error('Chemistry workspace is not ready.');
+    return chemScience.request(input);
+  });
+  handlePrivileged(IPC.computeCatalog, (_event, tool?: string) => mcpClient.call("proto_compute_catalog", tool ? { tool } : {},undefined,undefined,{scope:{surface:"compute",scopeId:randomUUID()}}));
+  handlePrivileged(IPC.computeRun, async (_event, request: ComputeRequest) => {
+    await workspaceTransition;
+    if (!readSettings().modules.enabledOptional.includes("analysis.biomni")) throw new Error("Enable Biomni computations in Settings before running an analysis.");
+    const root = activeWorkspacePath;
+    const client = mcpClient.fork();
+    sourceTransactionsInFlight += 1;
+    try {
+      return await withWorkspaceWrite(root, undefined, () => runWorkspaceComputation(root, request,
+        (name, input, operationId) => client.call(name, input, undefined, undefined, { timeoutMs: 120_000, operationId, scope:{surface:"compute",scopeId:operationId} })));
+    } finally { sourceTransactionsInFlight -= 1; await client.stop(); }
+  });
+  handlePrivileged(IPC.computeStudies, async (_event, request: ComputeStudiesRequest) => {
+    await workspaceTransition;
+    const root = activeWorkspacePath;
+    sourceTransactionsInFlight += 1;
+    try {
+      return await withWorkspaceWrite(root, undefined, () => requestComputeStudies(root, request));
+    } finally { sourceTransactionsInFlight -= 1; }
+  });
+  handlePrivileged(IPC.computeFigures, async (_event, request: ResearchFiguresRequest) => {
+    await workspaceTransition;
+    const root = activeWorkspacePath;
+    const client = mcpClient.fork();
+    sourceTransactionsInFlight += 1;
+    try {
+      return await withWorkspaceWrite(root, undefined, () => requestResearchFigures(root, request, {
+        render: (name, input) => client.call(name, input, undefined, undefined, { timeoutMs: 120_000, scope:{surface:"figure",scopeId:randomUUID()} }),
+      }));
+    } finally { sourceTransactionsInFlight -= 1; await client.stop(); }
+  });
+  handlePrivileged(IPC.computeWorkflows, async (_event, request: ResearchWorkflowsRequest) => {
+    await workspaceTransition;
+    const service = researchWorkflows;
+    if (!service) throw new Error('Research workflow storage is not ready.');
+    const startsWork = request.action==='start'||request.action==='recover';
+    if (startsWork&&!readSettings().modules.enabledOptional.includes('analysis.biomni')) throw new Error('Enable computations in Settings before running a workflow.');
+    let retained = false;
+    sourceTransactionsInFlight += 1;
+    try {
+      const response = await service.request(request);
+      if(startsWork&&response.execution){
+        retained=true;
+        void service.wait(response.execution.id).catch(error=>reportMainProcessError(error)).finally(()=>{sourceTransactionsInFlight-=1;});
+      }
+      return response;
+    } finally {if(!retained)sourceTransactionsInFlight-=1;}
+  });
   handlePrivileged(IPC.materialsGet, (_event, resourceId: string, includeSequence: boolean) =>
-    mcpClient.call("proto_materials_get", { resource_id: resourceId, include_sequence: Boolean(includeSequence) }),
+    mcpClient.call("proto_materials_get", { resource_id: resourceId, include_sequence: Boolean(includeSequence) },undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}}),
   );
-  handlePrivileged(IPC.materialsFacets, () => mcpClient.call("proto_materials_facets", {}));
+  handlePrivileged(IPC.materialsFacets, () => mcpClient.call("proto_materials_facets", {},undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}}));
   handlePrivileged(IPC.materialsMaterialize, async (_event, input: MaterialsMaterializeRequest) => {
-    const result = await mcpClient.call("proto_materials_materialize", { ...input });
+    const result = await mcpClient.call("proto_materials_materialize", { ...input },undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}});
     const validated = validateMaterializedPartsResult(result, input);
     const artifact = await workspaceFiles.read(validated.parts_path);
     return validateMaterializedPartsArtifact(artifact, input, validated);
@@ -982,7 +1096,7 @@ async function prepareDesignEdit(input: DesignEditRequest): Promise<DesignEditRe
   if (root !== activeWorkspacePath || source.sha256 !== input.expectedSourceSha256 || parts.sha256 !== input.expectedPartsSha256) throw new Error("Design or material library changed. Refresh before editing.");
   const client = mcpClient.fork();
   try {
-    return await client.call("proto_design_edit", {path: relative(root, source.path).replaceAll("\\", "/"), parts_path: relative(root, parts.path).replaceAll("\\", "/"), commands: input.commands, expected_source_sha256: source.sha256, expected_parts_sha256: parts.sha256}, undefined, undefined, {timeoutMs: 60_000}) as unknown as DesignEditResult;
+    return await client.call("proto_design_edit", {path: relative(root, source.path).replaceAll("\\", "/"), parts_path: relative(root, parts.path).replaceAll("\\", "/"), commands: input.commands, expected_source_sha256: source.sha256, expected_parts_sha256: parts.sha256}, undefined, undefined, {timeoutMs: 60_000, scope:{surface:"design",scopeId:randomUUID()}}) as unknown as DesignEditResult;
   } finally {await client.stop();}
 }
 
@@ -1121,10 +1235,10 @@ function createWindow(): void {
     height: 1024,
     minWidth: 1180,
     minHeight: 720,
-    backgroundColor: "#f7f9f8",
+    backgroundColor: "#faf9f6",
     show: false,
     titleBarStyle: "hidden",
-    titleBarOverlay: { color: "#f8faf9", symbolColor: "#27312e", height: 46 },
+    titleBarOverlay: { color: "#faf9f6", symbolColor: "#2c2b28", height: 46 },
     webPreferences: {
       preload: join(moduleDirectory, "../preload/index.cjs"),
       contextIsolation: true,
@@ -1222,8 +1336,13 @@ app.on("before-quit", (event) => {
 });
 
 async function shutdown(): Promise<void> {
+  await researchWorkflows?.close();
+  await chemWorkbench?.close();
+  await researchChat?.close();
+  await chemScience?.close();
   await agentService?.pauseAll("Application closed; the task and its used budget are saved for continuation.");
   await Promise.all([mcpClient?.stop(), modelService?.shutdown()]);
+  executionLedger?.close();
   database?.close();
 }
 

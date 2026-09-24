@@ -1,0 +1,22 @@
+.workbench-switcher { position:relative; -webkit-app-region:no-drag; flex-shrink:0; }
+.workbench-switcher-trigger { min-width:130px; gap:9px; font:500 13px var(--font-sans); }
+.workbench-switcher-trigger > span { flex:1; text-align:left; }
+.workbench-editions { position:absolute; z-index:500; left:0; top:calc(100% + 9px); width:280px; padding:7px; color:var(--text); background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 10px 32px #0002; }
+.workbench-switcher-caption { margin:8px 9px 10px; color:var(--text-faint); letter-spacing:1.2px; font:500 9px var(--font-sans); }
+.workbench-editions button { display:flex; align-items:center; width:100%; gap:12px; padding:12px 10px; background:none; border:1px solid transparent; border-radius:6px; color:var(--text-soft); cursor:pointer; text-align:left; }
+.workbench-editions button:hover, .workbench-editions button:focus-visible, .workbench-editions button[aria-checked=true] { background:var(--surface-selected); color:var(--text); }
+.workbench-editions button span { flex:1; }
+.workbench-editions strong { display:block; font:500 13px var(--font-sans); }
+.workbench-editions small { display:block; margin-top:4px; color:var(--text-faint); font:11px var(--font-sans); }
+.app-shell.chem-edition { grid-template-columns:228px minmax(0,1fr); }
+.app-shell.chem-edition.sidebar-rail { grid-template-columns:76px minmax(0,1fr); }
+.chem-family-sidebar .sidebar-utilities > button[aria-current="page"] { background:var(--surface-selected); color:var(--text); }
+.chem-workspace-frame { flex:1; min-width:0; width:100%; height:100%; min-height:0; background:var(--canvas); }
+.chem-workspace-frame[hidden] { display:none; }
+.chem-workspace-frame iframe { display:block; width:100%; height:100%; border:0; background:var(--canvas); }
+.chem-startup { display:flex; align-items:center; justify-content:center; flex-direction:column; height:100%; max-width:660px; margin:auto; padding:40px; text-align:center; }
+.chem-startup-symbol { display:grid; place-items:center; width:54px; height:54px; background:var(--surface-selected); border:1px solid var(--line); border-radius:12px; margin-bottom:24px; }
+.chem-startup h1 { margin:12px 0; font:400 30px/1.25 var(--font-serif); color:var(--text); }
+.chem-startup > p:not(.eyebrow) { color:var(--text-soft); font:14px/1.7 var(--font-sans); overflow-wrap:anywhere; }
+.chem-startup > button, .chem-startup > .spin { margin-top:18px; }
+@media (max-width:1100px) { .workbench-switcher-trigger { min-width:115px; } }

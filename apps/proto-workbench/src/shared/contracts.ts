@@ -9,6 +9,91 @@ export type ModelLoadState =
   | "error";
 
 export type ToolCapability = "unknown" | "agent-ready" | "chat-only";
+export type ModelToolProbeStatus = "passed" | "failed" | "malformed" | "timeout" | "cancelled" | "unsupported" | "unavailable" | "error";
+
+/** One bounded tool-call probe bound to the exact loaded provider instance. */
+export interface ModelToolCapabilityProbe {
+  schema: "proto-workbench.model-tool-probe.v1";
+  probeId: string;
+  modelId: string;
+  modelFingerprint: string;
+  provider: "lmstudio" | "llama.cpp";
+  providerModelId?: string;
+  instanceId?: string;
+  status: ModelToolProbeStatus;
+  startedAt: string;
+  finishedAt: string;
+  requestedTool: string;
+  expectedArgumentsSha256?: string;
+  observedToolNames: string[];
+  observedArgumentsSha256?: string;
+  finishReason?: string;
+  requestSha256?: string;
+  responseSha256?: string;
+  failureCode?: string;
+}
+
+export type ModelEvaluationRunStatus = "success" | "error" | "timeout" | "cancelled" | "unsupported" | "refused" | "interrupted";
+export type ModelEvaluationDimensionResult = "pass" | "fail" | "unscored" | "not-run";
+export interface ModelEvaluationAttempt {
+  schema: "proto-workbench.model-evaluation-attempt.v1";
+  evaluationId: string;
+  attemptId: string;
+  caseId: string;
+  caseRevision: string;
+  caseSha256: string;
+  datasetSha256: string;
+  referenceSha256: string;
+  scorerVersion: string;
+  provider: "lmstudio" | "llama.cpp";
+  providerModelId?: string;
+  modelId: string;
+  modelFingerprint: string;
+  instanceId: string;
+  runtimeFingerprint: string;
+  toolSchemaSha256: string;
+  promptTemplateSha256: string;
+  startedAt: string;
+  finishedAt?: string;
+  status: ModelEvaluationRunStatus;
+  toolSelection: {
+    result: ModelEvaluationDimensionResult;
+    expectedTool?: string;
+    observedTool?: string;
+    expectedArgumentsSha256?: string;
+    observedArgumentsSha256?: string;
+  };
+  execution: {
+    result: ModelEvaluationDimensionResult;
+    effectState?: "none" | "no-effect" | "completed" | "effect-unknown";
+    recovery?: "not-needed" | "resumed" | "reconciled" | "effect-unknown" | "not-attempted";
+    receiptSha256?: string;
+  };
+  scientificAnswer: {
+    result: ModelEvaluationDimensionResult | "needs-human-review";
+    unitCheck?: ModelEvaluationDimensionResult;
+    sourceCheck?: ModelEvaluationDimensionResult;
+    reviewRecordSha256?: string;
+  };
+  failureCode?: string;
+}
+
+export interface ModelEvaluationDimensionCounts {
+  attempts: number;
+  pass: number;
+  fail: number;
+  unscored: number;
+  notRun: number;
+}
+
+export interface ModelEvaluationSummary {
+  evaluationId: string;
+  attempts: number;
+  statuses: Record<ModelEvaluationRunStatus, number>;
+  toolSelection: ModelEvaluationDimensionCounts;
+  execution: ModelEvaluationDimensionCounts;
+  scientificAnswer: ModelEvaluationDimensionCounts & { needsHumanReview: number };
+}
 
 export type KvCacheType = "f16" | "q8_0" | "q4_0";
 export type KvCachePlacement = "gpu" | "cpu";
@@ -95,6 +180,12 @@ export interface ModelDescriptor {
   vision: boolean;
   projectorPath?: string;
   toolCapability: ToolCapability;
+  /** Provider catalogue claim only; it is not a successful tool-call probe. */
+  providerToolUseAdvertised?: boolean;
+  /** Provider catalogue claim only; image input has not been probed by this field. */
+  providerVisionAdvertised?: boolean;
+  /** Latest probe. Its instanceId must match workbenchInstance before use. */
+  toolCapabilityProbe?: ModelToolCapabilityProbe;
   fingerprint: string;
   fingerprintSource?: "file-content" | "provider-metadata";
   estimatedVramBytes: number;
@@ -1218,6 +1309,8 @@ export interface MissionCapabilitySnapshot {
     id: string;
     fingerprint: string;
     toolCapability: ToolCapability;
+    instanceId?: string;
+    toolProbeId?: string;
     vision: boolean;
     active: boolean;
   };
@@ -1395,6 +1488,7 @@ export interface EvidenceClaim {
 }
 
 export interface ReviewPacketView {
+  evidenceStanding?: import("./evidence-standing.ts").EvidenceStanding;
   runId: string;
   operationId?: string;
   validationPlanSha256?: string;
@@ -1772,6 +1866,7 @@ export interface ReviewComment {
 
 export interface RuntimeStatus {
   available: boolean;
+  checkedAt?: string;
   provider?: "lmstudio" | "llama.cpp";
   endpoint?: string;
   modelCount?: number;
@@ -1783,6 +1878,9 @@ export interface RuntimeStatus {
 }
 
 export interface StartupRecoveryReport {
+  executionJournal?: {unknownEffects:number;total:number};
+  harnessJournalDisagreements?: number;
+  migrationReports?: import("./storage-migrations.ts").SchemaMigrationReport[];
   checkedAt: string;
   recoveredRuns: number;
   recoveredEvents: number;
@@ -1821,6 +1919,11 @@ export interface StreamEvent {
 }
 
 export interface WorkbenchApi {
+  journal: import("./execution-journal.ts").JournalApi;
+  chem?: { open(): Promise<import("./chem-workbench.ts").ChemWorkbenchStatus> };
+  chemScience?: import('./chem-science-api.ts').ChemScienceApi;
+  chat: import("./research-chat.ts").ResearchChatApi;
+  compute: import("./compute.ts").ComputeApi;
   app: {
     getSettings(): Promise<AppSettings>;
     updateSettings(patch: AppSettingsUpdate): Promise<AppSettings>;
@@ -1832,6 +1935,8 @@ export interface WorkbenchApi {
   models: {
     scan(): Promise<ModelDescriptor[]>;
     list(): Promise<ModelDescriptor[]>;
+    probeTools(modelId: string): Promise<ModelToolCapabilityProbe>;
+    evaluationSummaries(): Promise<ModelEvaluationSummary[]>;
     estimate(modelId: string, options: ModelLoadOptions): Promise<VramEstimate>;
     load(modelId: string, options?: Partial<ModelLoadOptions>): Promise<ModelInstance>;
     unload(modelId: string): Promise<void>;
@@ -1893,7 +1998,7 @@ export interface WorkbenchApi {
     list(): Promise<WorkspaceEntry[]>;
     open(path: string): Promise<void>;
     reveal(path: string): Promise<void>;
-    read(path: string): Promise<{ path: string; content: string; sha256: string }>;
+    read(path: string): Promise<{ path: string; content: string; sha256: string;artifactReader?:import("./artifact-readers.ts").ArtifactReaderSelection }>;
     search(query: string, glob?: string): Promise<Array<{ path: string; line: number; preview: string }>>;
     proposePatch(input: Omit<PatchProposal, "id" | "baseSha256" | "baseExists" | "before" | "afterExists" | "unifiedDiff" | "status" | "revision" | "createdAt">): Promise<PatchProposal>;
     applyApprovedPatch(patchId: string, expectedRevision: number): Promise<{ patch: PatchProposal; operation: PatchOperation; checkpoint: FileCheckpoint; events: AgentRunEvent[] }>;

@@ -13,6 +13,17 @@ test("exact same-resource metadata succeeds in a Markdown table", () => {
   assert.deepEqual(verifyMaterialEvidence([a, b], [table([a, b])], requirement), []);
 });
 
+test("compatible duplicate metadata ignores property order and absent fields without crossing snapshots", () => {
+  const rich = {...a, receiptScope: "snapshot:fixture", sourceFields: {provider: "iGEM Registry", record_id: a.sourceReferences[1]}};
+  const reordered = {...rich, sourceFields: {record_id: a.sourceReferences[1], provider: "iGEM Registry"}};
+  const partial = {...rich, length: undefined, sequenceSha256: undefined, sourceFields: {provider: "iGEM Registry"}, sourceReferences: [a.sourceReferences[0]], licenseIds: []};
+  const criteria = {...requirement, minimumRecords: 1};
+  assert.deepEqual(verifyMaterialEvidence([rich, reordered, partial], [table([a])], criteria), []);
+  assert.deepEqual(verifyMaterialEvidence([partial, reordered, rich], [table([a])], criteria), []);
+  assert.ok(codes(verifyMaterialEvidence([rich, {...partial, receiptScope: "snapshot:other"}], [table([a])], criteria)).includes("MATERIAL_RECEIPT_CONFLICT"));
+  assert.ok(codes(verifyMaterialEvidence([rich, {...rich, sourceFields: {...rich.sourceFields, provider: "Different"}}], [table([a])], criteria)).includes("MATERIAL_RECEIPT_CONFLICT"));
+});
+
 test("real lost-two-character SHA regression cannot complete a saved material report", () => {
   const wrong = {...a, sequenceSha256: "ad04141962efe3b134377d648cac44738ec28ad58b92bdbdc2c712554f85e5"};
   assert.equal(wrong.sequenceSha256.length, 62);

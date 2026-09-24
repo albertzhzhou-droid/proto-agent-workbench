@@ -1,0 +1,464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "ChemIR v1alpha1 common definitions",
+  "description": "Dependency-light definitions shared by the ChemIR v1alpha1 core profile.",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+    },
+    "Reference": {
+      "$ref": "#/$defs/Identifier"
+    },
+    "SourceReference": {
+      "type": "string",
+      "pattern": "^source:sha256:[0-9a-f]{64}$"
+    },
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "ShortString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "Unit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[^\\s]+(?: [^\\s]+)*$"
+    },
+    "RelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Digest": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NamespacedExtensions": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*:[A-Za-z][A-Za-z0-9_.-]*$"
+      },
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*:[A-Za-z][A-Za-z0-9_.-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "ReferenceArray": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "uniqueItems": true
+    },
+    "SourceReferenceArray": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/SourceReference"
+      },
+      "uniqueItems": true
+    },
+    "Quantity": {
+      "type": "object",
+      "required": [
+        "source_value",
+        "source_unit",
+        "normalized_value",
+        "normalized_unit",
+        "provenance_references"
+      ],
+      "properties": {
+        "source_value": {
+          "type": "number"
+        },
+        "source_unit": {
+          "$ref": "#/$defs/Unit"
+        },
+        "normalized_value": {
+          "type": "number"
+        },
+        "normalized_unit": {
+          "$ref": "#/$defs/Unit"
+        },
+        "uncertainty": {
+          "type": "number",
+          "minimum": 0
+        },
+        "uncertainty_kind": {
+          "enum": [
+            "standard_deviation",
+            "standard_error",
+            "confidence_interval_half_width",
+            "resolution",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "provenance_references": {
+          "$ref": "#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "#/$defs/NamespacedExtensions"
+        }
+      },
+      "dependentRequired": {
+        "uncertainty": [
+          "uncertainty_kind"
+        ],
+        "uncertainty_kind": [
+          "uncertainty"
+        ]
+      },
+      "additionalProperties": false
+    },
+    "Vector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false
+    },
+    "IntegerVector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "items": false
+    },
+    "BooleanVector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "boolean"
+        }
+      ],
+      "items": false
+    },
+    "Matrix3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Vector3"
+        },
+        {
+          "$ref": "#/$defs/Vector3"
+        },
+        {
+          "$ref": "#/$defs/Vector3"
+        }
+      ],
+      "items": false
+    },
+    "DecimalString": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]*[1-9])?$",
+      "maxLength": 64
+    },
+    "DecimalVector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/DecimalString"
+        },
+        {
+          "$ref": "#/$defs/DecimalString"
+        },
+        {
+          "$ref": "#/$defs/DecimalString"
+        }
+      ],
+      "items": false
+    },
+    "DecimalMatrix3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/DecimalVector3"
+        },
+        {
+          "$ref": "#/$defs/DecimalVector3"
+        },
+        {
+          "$ref": "#/$defs/DecimalVector3"
+        }
+      ],
+      "items": false
+    },
+    "ElementSymbol": {
+      "enum": [
+        "H",
+        "He",
+        "Li",
+        "Be",
+        "B",
+        "C",
+        "N",
+        "O",
+        "F",
+        "Ne",
+        "Na",
+        "Mg",
+        "Al",
+        "Si",
+        "P",
+        "S",
+        "Cl",
+        "Ar",
+        "K",
+        "Ca",
+        "Sc",
+        "Ti",
+        "V",
+        "Cr",
+        "Mn",
+        "Fe",
+        "Co",
+        "Ni",
+        "Cu",
+        "Zn",
+        "Ga",
+        "Ge",
+        "As",
+        "Se",
+        "Br",
+        "Kr",
+        "Rb",
+        "Sr",
+        "Y",
+        "Zr",
+        "Nb",
+        "Mo",
+        "Tc",
+        "Ru",
+        "Rh",
+        "Pd",
+        "Ag",
+        "Cd",
+        "In",
+        "Sn",
+        "Sb",
+        "Te",
+        "I",
+        "Xe",
+        "Cs",
+        "Ba",
+        "La",
+        "Ce",
+        "Pr",
+        "Nd",
+        "Pm",
+        "Sm",
+        "Eu",
+        "Gd",
+        "Tb",
+        "Dy",
+        "Ho",
+        "Er",
+        "Tm",
+        "Yb",
+        "Lu",
+        "Hf",
+        "Ta",
+        "W",
+        "Re",
+        "Os",
+        "Ir",
+        "Pt",
+        "Au",
+        "Hg",
+        "Tl",
+        "Pb",
+        "Bi",
+        "Po",
+        "At",
+        "Rn",
+        "Fr",
+        "Ra",
+        "Ac",
+        "Th",
+        "Pa",
+        "U",
+        "Np",
+        "Pu",
+        "Am",
+        "Cm",
+        "Bk",
+        "Cf",
+        "Es",
+        "Fm",
+        "Md",
+        "No",
+        "Lr",
+        "Rf",
+        "Db",
+        "Sg",
+        "Bh",
+        "Hs",
+        "Mt",
+        "Ds",
+        "Rg",
+        "Cn",
+        "Nh",
+        "Fl",
+        "Mc",
+        "Lv",
+        "Ts",
+        "Og"
+      ]
+    },
+    "FactOrigin": {
+      "enum": [
+        "asserted",
+        "imported",
+        "derived",
+        "computed",
+        "human_reviewed"
+      ]
+    },
+    "Representation": {
+      "type": "object",
+      "required": [
+        "format",
+        "role"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "smiles",
+            "inchi",
+            "inchikey",
+            "mol",
+            "sdf",
+            "xyz",
+            "cif",
+            "qcschema",
+            "other"
+          ]
+        },
+        "role": {
+          "enum": [
+            "original",
+            "normalized",
+            "derived"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16777216
+        },
+        "path": {
+          "$ref": "#/$defs/RelativePath"
+        },
+        "dialect": {
+          "$ref": "#/$defs/ShortString"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "tool": {
+          "$ref": "#/$defs/ShortString"
+        },
+        "tool_version": {
+          "$ref": "#/$defs/ShortString"
+        },
+        "loss_report_reference": {
+          "$ref": "#/$defs/Reference"
+        },
+        "provenance_references": {
+          "$ref": "#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "#/$defs/NamespacedExtensions"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "value"
+          ],
+          "not": {
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "required": [
+            "path"
+          ],
+          "not": {
+            "required": [
+              "value"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

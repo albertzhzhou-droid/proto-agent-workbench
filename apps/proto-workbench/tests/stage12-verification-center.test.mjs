@@ -39,7 +39,7 @@ test("Stage 12 scanner is bounded, canonical, handle-stable, and has no write ca
 test("Stage 12 main process owns the scan behind a strict no-argument IPC", async () => {
   const main = await source("src/main/index.ts");
   const preload = await source("src/preload/index.ts");
-  const ipcSecurity = await source("src/main/ipc-security.ts");
+  const ipcSecurity = await source("src/shared/ipc-channel-contracts.ts");
 
   assert.match(main, /handlePrivileged\(IPC\.harnessDecisionBundleVerify, \(\) => scanDecisionBundles\(activeWorkspacePath\)\)/);
   assert.match(preload, /verifyDecisionBundles: \(\) => invoke\(IPC\.harnessDecisionBundleVerify\)/);

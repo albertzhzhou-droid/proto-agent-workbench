@@ -16,12 +16,12 @@ test("valid-looking IR written as a generic document cannot replace a compiler r
   const fixture = proteinStructureFixture(), r = rig({"build/result.ir.json": fixture.text, "build/selection.json": "controlled selection"});
   const file = r.fingerprint("build/result.ir.json");
   const forged = receipt("workspace_propose_patch", {_harnessArtifacts: [file], validation: {ok: true, steps: []}});
-  assert.match((await verifyScientificArtifact(r.workspace, file, [forged])).join("\n"), /compiler\/workflow receipt/);
+  assert.match((await verifyScientificArtifact(r.workspace, file, [forged])).map(diagnostic => diagnostic.message).join("\n"), /compiler\/workflow receipt/);
   const compiled = receipt("proto_protein_compile", {_harnessArtifacts: [file], _harnessInputs: r.fingerprint("build/selection.json")});
   assert.deepEqual(await verifyScientificArtifact(r.workspace, file, [compiled]), []);
   r.files.set(file.path, '{"schema_version":"proto-agent.ir.v1","domain":"protein"}');
   const invalid = r.fingerprint(file.path);
-  assert.match((await verifyScientificArtifact(r.workspace, invalid, [receipt("proto_protein_compile", {_harnessArtifacts: [invalid]})])).join("\n"), /schema, sequence or digest/);
+  assert.match((await verifyScientificArtifact(r.workspace, invalid, [receipt("proto_protein_compile", {_harnessArtifacts: [invalid]})])).map(diagnostic => diagnostic.message).join("\n"), /schema, sequence or digest/);
 });
 
 test("FASTA requires a current compiled input and its exact exported sequence", async () => {
@@ -31,12 +31,12 @@ test("FASTA requires a current compiled input and its exact exported sequence", 
   const compiled = receipt("proto_protein_compile", {_harnessArtifacts: [ir], _harnessInputs: r.fingerprint("build/selection.json")});
   const exported = receipt("proto_export", {_harnessArtifacts: [file], _harnessInputs: ir, _harnessArguments: {format: "fasta"}});
   assert.deepEqual(await verifyScientificArtifact(r.workspace, file, [compiled, exported]), []);
-  assert.match((await verifyScientificArtifact(r.workspace, file, [receipt("workspace_propose_patch", {_harnessArtifacts: [file]})])).join("\n"), /compiler\/export lineage/);
+  assert.match((await verifyScientificArtifact(r.workspace, file, [receipt("workspace_propose_patch", {_harnessArtifacts: [file]})])).map(diagnostic => diagnostic.message).join("\n"), /compiler\/export lineage/);
   r.files.set(file.path, ">controlled-fixture\nAAA\n");
   const wrong = r.fingerprint(file.path);
-  assert.match((await verifyScientificArtifact(r.workspace, wrong, [compiled, receipt("proto_export", {...exported.data, _harnessArtifacts: [wrong]})])).join("\n"), /matching sequence/);
+  assert.match((await verifyScientificArtifact(r.workspace, wrong, [compiled, receipt("proto_export", {...exported.data, _harnessArtifacts: [wrong]})])).map(diagnostic => diagnostic.message).join("\n"), /matching sequence/);
   r.files.set(ir.path, fixture.text + " ");
-  assert.match((await verifyScientificArtifact(r.workspace, file, [compiled, exported])).join("\n"), /current compiler\/export lineage/);
+  assert.match((await verifyScientificArtifact(r.workspace, file, [compiled, exported])).map(diagnostic => diagnostic.message).join("\n"), /current compiler\/export lineage/);
 });
 
 test("coordinate suffixes and protein selection schemas enforce their trusted producers", async () => {

@@ -1,0 +1,688 @@
+{
+  "version": "model-runtime-fault-suite/v1",
+  "name": "Independent complex-molecule runtime faults 20260910b",
+  "review_status": "agent_independent_review",
+  "scope": "Twenty independent mocked controller/workflow-host fault cases on complex molecular subjects complete the section 16 runtime-failure family. No model inference or live energy/process execution occurs in this manifest's author validation.",
+  "authorship": {
+    "author": "independent contract-only author agent",
+    "human_review": false,
+    "independence_boundary": "Read section 16 of the original implementation plan, frozen tool/readiness/visualization contracts, compiler/parser/schema files, permitted examples, and the evaluation interface. For the complex extension, received the abstract molecular API and complexity rubric, invoked direct tool oracles, read the explicit cancel_job API and the independent verify_complex_chemistry verifier only. Did not read orchestrator.py, model_context.py, previous suites, evaluations, reports, prompts or model results.",
+    "model_inference_calls": 0,
+    "energy_calculations": 0,
+    "supersession": "An earlier unseen simple-chemistry author draft was superseded after the user changed the acceptance scope, before any model inference or final suite publication."
+  },
+  "provenance": {
+    "fixture_origin": "Independently authored synthetic molecular source declarations and SMILES. No third-party experimental dataset, measured geometry or numerical energy is embedded.",
+    "rights": "No externally licensed fixture was copied; structural representations are synthetic software test inputs, not ownership or publication-rights evidence.",
+    "chemical_scope": "Complex molecular read/derive and unexecuted finite-system proposals. Elemental and simple-compound smoke fixtures are excluded from promotion acceptance.",
+    "geometry": "Seed 42 RDKit ETKDGv3 source-generated conformers, explicit hydrogens, angstrom units; measured=false and optimized=false. No scientific energy backend was invoked.",
+    "fixture_compilation": "20/20",
+    "compile_checks": [
+      {
+        "id": "runtime-inventory-unavailable-a",
+        "compiled": true,
+        "source_hash": "sha256:8edf174870cb01c16f8edefb54796d1766fa9c6255b9064336e2b585d665ad3c"
+      },
+      {
+        "id": "runtime-inventory-unavailable-b",
+        "compiled": true,
+        "source_hash": "sha256:2a7b48c7061e2d093cff2e44c820aaef5b99ef1e6f8fb58f303cbd9f99071e94"
+      },
+      {
+        "id": "runtime-provider-timeout-view",
+        "compiled": true,
+        "source_hash": "sha256:b4f68496817e133bd97d4a64a87171901f202e726f4a152fec5eabeedb9b7a0f"
+      },
+      {
+        "id": "runtime-provider-timeout-plan",
+        "compiled": true,
+        "source_hash": "sha256:035dba1025053fb636320f58d01f3494465b9fb1eea5dc3a8aeb2ab1ac5eb8d1"
+      },
+      {
+        "id": "runtime-json-repair",
+        "compiled": true,
+        "source_hash": "sha256:32e30f6665efc34e3b664fd7519daf651e5aad2b9991b7e6ccdbb5c6c7da9f8b"
+      },
+      {
+        "id": "runtime-json-persistent",
+        "compiled": true,
+        "source_hash": "sha256:ccf12ad036203e4f888937ee30c3ab79b795e4df0570ae36875a159f17e8abcc"
+      },
+      {
+        "id": "runtime-truncation-repair",
+        "compiled": true,
+        "source_hash": "sha256:9d6fba187127449dc27b4e68ec39d947da13d223aae112a629144f1a6cb32649"
+      },
+      {
+        "id": "runtime-truncation-persistent",
+        "compiled": true,
+        "source_hash": "sha256:41a73add281dae71a7d776409bbf6a2215a32a63b632a98a0aa1519b6d32eb06"
+      },
+      {
+        "id": "runtime-unknown-tool-repair",
+        "compiled": true,
+        "source_hash": "sha256:b4ee256632832607bd6ec4e6202ca2c91cb10c1c731a8286f4caf558411192c6"
+      },
+      {
+        "id": "runtime-unknown-tool-persistent",
+        "compiled": true,
+        "source_hash": "sha256:ff4b28f886520a8593c42d1190d02bec960596d2690c67845364761c6b3a0555"
+      },
+      {
+        "id": "runtime-extra-argument-repair",
+        "compiled": true,
+        "source_hash": "sha256:005c345554bb3e47f8fb17527afad1cc5039dec40425e1889cfb2dc893cc818f"
+      },
+      {
+        "id": "runtime-extra-argument-persistent",
+        "compiled": true,
+        "source_hash": "sha256:7ba779520450a862e3b04146aaf93dc8b25a57e55249f6bfcdbae7179f7ca3e7"
+      },
+      {
+        "id": "runtime-foreign-inspection",
+        "compiled": true,
+        "source_hash": "sha256:40c35dc2cb8712b19cf424b3f3f23d18e207c2e6c8c6bc0e3beb61f7befc14ab"
+      },
+      {
+        "id": "runtime-foreign-plan",
+        "compiled": true,
+        "source_hash": "sha256:fa5121f124876ad1213b68b17d5c5125385e5aeb8af74c72cd0128f1504742d1"
+      },
+      {
+        "id": "runtime-profile-rejection",
+        "compiled": true,
+        "source_hash": "sha256:49efe0af50ef2a8e28e18bec7128d4d3fbbefc88bf6426216cd8e9d7d1b4a1fa"
+      },
+      {
+        "id": "runtime-tool-rejection",
+        "compiled": true,
+        "source_hash": "sha256:e60ec59abf067f81f7b7006a2c5678b4dd87f183a3f01fede92ba567395876c9"
+      },
+      {
+        "id": "runtime-cancel-running-marker",
+        "compiled": true,
+        "source_hash": "sha256:c267b0df68f8bc2ead3128a856ffdbe1426cdebee94117cf19fca2b2f3c3c03c"
+      },
+      {
+        "id": "runtime-cancel-repeat-marker",
+        "compiled": true,
+        "source_hash": "sha256:c07ef8e51ca55601d05bed43466446d1833d9f24cd9f026822bd2ca489d227fc"
+      },
+      {
+        "id": "runtime-stale-source-approval",
+        "compiled": true,
+        "source_hash": "sha256:99e5180df648fe4a1cb92141d3e9dca27ea672f7f8086d2f63107c6c08479202"
+      },
+      {
+        "id": "runtime-stale-expired-approval",
+        "compiled": true,
+        "source_hash": "sha256:8fc21ecd065c76e131114d811d0bb0e284354a53ece7623dcada2de35aa8b1a7"
+      }
+    ],
+    "fault_contract": "Provider inventory unavailable: zero model/tool calls. Provider timeout: stop. Once-only malformed/truncated/unknown-tool/extra-argument responses may use one shared mechanical repair within three total model calls; persistent faults stop. Foreign reference and unsupported scientific profile must not become substitute actions. Tool rejection stops after at most one dispatch. cancel_job on a mocked owned running job returns cancellation_requested and writes a marker; it does not claim terminal cancellation. Stale approval blocks admission before execution.",
+    "clean_input_contract": "clean_action is the intended normal proposal. The harness may derive clean_requirements from this action and explicit linked typed source as mocked input, never by interpreting the free-form objective and never as model performance evidence."
+  },
+  "cases": [
+    {
+      "id": "runtime-inventory-unavailable-a",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "provider_unavailable",
+        "mode": "persistent"
+      },
+      "objective": "Inspect runtime_subject_1 as the selected molecular object and report its source references. runtime_control_1 is a different compound.",
+      "source": "chem 0.1\n\nmolecule runtime_control_1 { structure smiles \"COc1ccc(-c2ncc(C(=O)N3CCOCC3)cn2)cc1\" }\nelectronic_state runtime_control_1_state { target runtime_control_1 finite charge 0 multiplicity 1 }\nconditions runtime_control_1_conditions { target runtime_control_1 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_1_intent { target runtime_control_1 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_1_state conditions runtime_control_1_conditions }\nmolecule runtime_subject_1 { structure smiles \"COc1ccc(N2CCN(S(=O)(=O)c3ccncc3)CC2)cc1\" }\nelectronic_state runtime_subject_1_state { target runtime_subject_1 finite charge 0 multiplicity 1 }\nconditions runtime_subject_1_conditions { target runtime_subject_1 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_1_intent { target runtime_subject_1 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_1_state conditions runtime_subject_1_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_1",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-inventory-unavailable-b",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "provider_unavailable",
+        "mode": "once"
+      },
+      "objective": "Generate a source-bound 3D molecular display for runtime_subject_2; do not execute calculations or substitute runtime_control_2.",
+      "source": "chem 0.1\n\nmolecule runtime_control_2 { structure smiles \"COc1ccc(N2CCN(S(=O)(=O)c3ccncc3)CC2)cc1\" }\nelectronic_state runtime_control_2_state { target runtime_control_2 finite charge 0 multiplicity 1 }\nconditions runtime_control_2_conditions { target runtime_control_2 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_2_intent { target runtime_control_2 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_2_state conditions runtime_control_2_conditions }\nmolecule runtime_subject_2 { structure smiles \"O=C1O[C@H](CO)[C@@H](O)[C@H]1O\" }\nelectronic_state runtime_subject_2_state { target runtime_subject_2 finite charge 0 multiplicity 1 }\nconditions runtime_subject_2_conditions { target runtime_subject_2 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_2_intent { target runtime_subject_2 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_2_state conditions runtime_subject_2_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "structure_preview",
+        "object_id": "runtime_subject_2",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-provider-timeout-view",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "provider_timeout",
+        "mode": "persistent"
+      },
+      "objective": "Generate a source-bound 3D molecular display for runtime_subject_3; do not execute calculations or substitute runtime_control_3.",
+      "source": "chem 0.1\n\nmolecule runtime_control_3 { structure smiles \"COc1ccc([C@@H](NC(=O)c2ccncc2)C(O)=O)cc1\" }\nelectronic_state runtime_control_3_state { target runtime_control_3 finite charge 0 multiplicity 1 }\nconditions runtime_control_3_conditions { target runtime_control_3 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_3_intent { target runtime_control_3 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_3_state conditions runtime_control_3_conditions }\nmolecule runtime_subject_3 { structure smiles \"N#Cc1ccc(C(=O)N2CCOCC2)nc1\" }\nelectronic_state runtime_subject_3_state { target runtime_subject_3 finite charge 0 multiplicity 1 }\nconditions runtime_subject_3_conditions { target runtime_subject_3 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_3_intent { target runtime_subject_3 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_3_state conditions runtime_subject_3_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "structure_preview",
+        "object_id": "runtime_subject_3",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-provider-timeout-plan",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "provider_timeout",
+        "mode": "once"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_4, retaining neutral singlet gas/zero-kelvin science. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_4.",
+      "source": "chem 0.1\n\nmolecule runtime_control_4 { structure smiles \"COCCNc1nc2cc(OC)ccc2nc1N3CCOCC3\" }\nelectronic_state runtime_control_4_state { target runtime_control_4 finite charge 0 multiplicity 1 }\nconditions runtime_control_4_conditions { target runtime_control_4 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_4_intent { target runtime_control_4 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_4_state conditions runtime_control_4_conditions }\nmolecule runtime_subject_4 { structure smiles \"COc1ccc([C@@H](NC(=O)c2ccncc2)C(O)=O)cc1\" }\nelectronic_state runtime_subject_4_state { target runtime_subject_4 finite charge 0 multiplicity 1 }\nconditions runtime_subject_4_conditions { target runtime_subject_4 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_4_intent { target runtime_subject_4 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_4_state conditions runtime_subject_4_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_4",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-json-repair",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "malformed_json",
+        "mode": "once"
+      },
+      "objective": "Inspect runtime_subject_5 as the selected molecular object and report its source references. runtime_control_5 is a different compound.",
+      "source": "chem 0.1\n\nmolecule runtime_control_5 { structure smiles \"COc1ccc(C(=O)OCCN2CC[C@H](c3ccccc3)C2=O)cc1\" }\nelectronic_state runtime_control_5_state { target runtime_control_5 finite charge 0 multiplicity 1 }\nconditions runtime_control_5_conditions { target runtime_control_5 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_5_intent { target runtime_control_5 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_5_state conditions runtime_control_5_conditions }\nmolecule runtime_subject_5 { structure smiles \"COc1ccc(N2CCNC2=O)cc1\" }\nelectronic_state runtime_subject_5_state { target runtime_subject_5 finite charge 0 multiplicity 1 }\nconditions runtime_subject_5_conditions { target runtime_subject_5 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_5_intent { target runtime_subject_5 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_5_state conditions runtime_subject_5_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_5",
+        "scale_factors": [],
+        "outcome": "completed_after_repair",
+        "max_model_calls": 3,
+        "max_tool_calls": 1,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_5",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-json-persistent",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "malformed_json",
+        "mode": "persistent"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_6, retaining neutral singlet gas/zero-kelvin science. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_6.",
+      "source": "chem 0.1\n\nmolecule runtime_control_6 { structure smiles \"O=C1NC[C@H](O)CO1\" }\nelectronic_state runtime_control_6_state { target runtime_control_6 finite charge 0 multiplicity 1 }\nconditions runtime_control_6_conditions { target runtime_control_6 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_6_intent { target runtime_control_6 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_6_state conditions runtime_control_6_conditions }\nmolecule runtime_subject_6 { structure smiles \"COc1ccc(-c2ncc(C(=O)N3CCOCC3)cn2)cc1\" }\nelectronic_state runtime_subject_6_state { target runtime_subject_6 finite charge 0 multiplicity 1 }\nconditions runtime_subject_6_conditions { target runtime_subject_6 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_6_intent { target runtime_subject_6 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_6_state conditions runtime_subject_6_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_6",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-truncation-repair",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "truncated_response",
+        "mode": "once"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_7, retaining neutral singlet gas/zero-kelvin science. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_7.",
+      "source": "chem 0.1\n\nmolecule runtime_control_7 { structure smiles \"Nc1ncc(CO)cn1\" }\nelectronic_state runtime_control_7_state { target runtime_control_7 finite charge 0 multiplicity 1 }\nconditions runtime_control_7_conditions { target runtime_control_7 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_7_intent { target runtime_control_7 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_7_state conditions runtime_control_7_conditions }\nmolecule runtime_subject_7 { structure smiles \"N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O\" }\nelectronic_state runtime_subject_7_state { target runtime_subject_7 finite charge 0 multiplicity 1 }\nconditions runtime_subject_7_conditions { target runtime_subject_7 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_7_intent { target runtime_subject_7 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_7_state conditions runtime_subject_7_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_7",
+        "scale_factors": [],
+        "outcome": "completed_after_repair",
+        "max_model_calls": 3,
+        "max_tool_calls": 1,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_7",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-truncation-persistent",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "truncated_response",
+        "mode": "persistent"
+      },
+      "objective": "Generate a source-bound 3D molecular display for runtime_subject_8; do not execute calculations or substitute runtime_control_8.",
+      "source": "chem 0.1\n\nmolecule runtime_control_8 { structure smiles \"NC(=O)c1ccncc1\" }\nelectronic_state runtime_control_8_state { target runtime_control_8 finite charge 0 multiplicity 1 }\nconditions runtime_control_8_conditions { target runtime_control_8 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_8_intent { target runtime_control_8 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_8_state conditions runtime_control_8_conditions }\nmolecule runtime_subject_8 { structure smiles \"COc1ccc(C(=O)OCCN2CC[C@H](c3ccccc3)C2=O)cc1\" }\nelectronic_state runtime_subject_8_state { target runtime_subject_8 finite charge 0 multiplicity 1 }\nconditions runtime_subject_8_conditions { target runtime_subject_8 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_8_intent { target runtime_subject_8 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_8_state conditions runtime_subject_8_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "structure_preview",
+        "object_id": "runtime_subject_8",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-unknown-tool-repair",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "unknown_tool",
+        "mode": "once"
+      },
+      "objective": "Inspect runtime_subject_9 as the selected molecular object and report its source references. runtime_control_9 is a different compound.",
+      "source": "chem 0.1\n\nmolecule runtime_control_9 { structure smiles \"O=S1(=O)CC[C@H](O)C1\" }\nelectronic_state runtime_control_9_state { target runtime_control_9 finite charge 0 multiplicity 1 }\nconditions runtime_control_9_conditions { target runtime_control_9 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_9_intent { target runtime_control_9 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_9_state conditions runtime_control_9_conditions }\nmolecule runtime_subject_9 { structure smiles \"Nc1ncc(CO)cn1\" }\nelectronic_state runtime_subject_9_state { target runtime_subject_9 finite charge 0 multiplicity 1 }\nconditions runtime_subject_9_conditions { target runtime_subject_9 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_9_intent { target runtime_subject_9 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_9_state conditions runtime_subject_9_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_9",
+        "scale_factors": [],
+        "outcome": "completed_after_repair",
+        "max_model_calls": 3,
+        "max_tool_calls": 1,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_9",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-unknown-tool-persistent",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "unknown_tool",
+        "mode": "persistent"
+      },
+      "objective": "Generate a source-bound 3D molecular display for runtime_subject_10; do not execute calculations or substitute runtime_control_10.",
+      "source": "chem 0.1\n\nmolecule runtime_control_10 { structure smiles \"CC(=O)Nc1ccc(O)cc1\" }\nelectronic_state runtime_control_10_state { target runtime_control_10 finite charge 0 multiplicity 1 }\nconditions runtime_control_10_conditions { target runtime_control_10 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_10_intent { target runtime_control_10 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_10_state conditions runtime_control_10_conditions }\nmolecule runtime_subject_10 { structure smiles \"COc1ccc2[nH]cc(CC(=O)O)c2c1\" }\nelectronic_state runtime_subject_10_state { target runtime_subject_10 finite charge 0 multiplicity 1 }\nconditions runtime_subject_10_conditions { target runtime_subject_10 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_10_intent { target runtime_subject_10 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_10_state conditions runtime_subject_10_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "structure_preview",
+        "object_id": "runtime_subject_10",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-extra-argument-repair",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "extra_argument",
+        "mode": "once"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_11, retaining neutral singlet gas/zero-kelvin science. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_11.",
+      "source": "chem 0.1\n\nmolecule runtime_control_11 { structure smiles \"CCN(CC)CC(=O)Nc1c(C)cccc1C\" }\nelectronic_state runtime_control_11_state { target runtime_control_11 finite charge 0 multiplicity 1 }\nconditions runtime_control_11_conditions { target runtime_control_11 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_11_intent { target runtime_control_11 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_11_state conditions runtime_control_11_conditions }\nmolecule runtime_subject_11 { structure smiles \"O=C1NC[C@H](O)CO1\" }\nelectronic_state runtime_subject_11_state { target runtime_subject_11 finite charge 0 multiplicity 1 }\nconditions runtime_subject_11_conditions { target runtime_subject_11 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_11_intent { target runtime_subject_11 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_11_state conditions runtime_subject_11_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_11",
+        "scale_factors": [],
+        "outcome": "completed_after_repair",
+        "max_model_calls": 3,
+        "max_tool_calls": 1,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_11",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-extra-argument-persistent",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "extra_argument",
+        "mode": "persistent"
+      },
+      "objective": "Inspect runtime_subject_12 as the selected molecular object and report its source references. runtime_control_12 is a different compound.",
+      "source": "chem 0.1\n\nmolecule runtime_control_12 { structure smiles \"N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O\" }\nelectronic_state runtime_control_12_state { target runtime_control_12 finite charge 0 multiplicity 1 }\nconditions runtime_control_12_conditions { target runtime_control_12 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_12_intent { target runtime_control_12 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_12_state conditions runtime_control_12_conditions }\nmolecule runtime_subject_12 { structure smiles \"O=C1N(CCN2CCOCC2)C(=O)c2ccccc21\" }\nelectronic_state runtime_subject_12_state { target runtime_subject_12 finite charge 0 multiplicity 1 }\nconditions runtime_subject_12_conditions { target runtime_subject_12 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_12_intent { target runtime_subject_12 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_12_state conditions runtime_subject_12_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_12",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-foreign-inspection",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "foreign_target",
+        "mode": "once"
+      },
+      "objective": "Inspect runtime_subject_13 as the selected molecular object and report its source references. runtime_control_13 is a different compound.",
+      "source": "chem 0.1\n\nmolecule runtime_control_13 { structure smiles \"O=C(O)[C@H](O)c1ccc(OC)cc1\" }\nelectronic_state runtime_control_13_state { target runtime_control_13 finite charge 0 multiplicity 1 }\nconditions runtime_control_13_conditions { target runtime_control_13 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_13_intent { target runtime_control_13 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_13_state conditions runtime_control_13_conditions }\nmolecule runtime_subject_13 { structure smiles \"NS(=O)(=O)c1ccc(Nc2ncccn2)cc1\" }\nelectronic_state runtime_subject_13_state { target runtime_subject_13 finite charge 0 multiplicity 1 }\nconditions runtime_subject_13_conditions { target runtime_subject_13 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_13_intent { target runtime_subject_13 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_13_state conditions runtime_subject_13_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "object_inspect",
+        "object_id": "runtime_subject_13",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-foreign-plan",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "foreign_target",
+        "mode": "persistent"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_14, retaining neutral singlet gas/zero-kelvin science. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_14.",
+      "source": "chem 0.1\n\nmolecule runtime_control_14 { structure smiles \"COC(=O)c1cnc(N)nc1OC\" }\nelectronic_state runtime_control_14_state { target runtime_control_14 finite charge 0 multiplicity 1 }\nconditions runtime_control_14_conditions { target runtime_control_14 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_14_intent { target runtime_control_14 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_14_state conditions runtime_control_14_conditions }\nmolecule runtime_subject_14 { structure smiles \"COCCNc1nc2cc(OC)ccc2nc1N3CCOCC3\" }\nelectronic_state runtime_subject_14_state { target runtime_subject_14 finite charge 0 multiplicity 1 }\nconditions runtime_subject_14_conditions { target runtime_subject_14 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_14_intent { target runtime_subject_14 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_14_state conditions runtime_subject_14_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_14",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-profile-rejection",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "unsupported_profile",
+        "mode": "once"
+      },
+      "objective": "Prepare the HF/STO-3G energy single-point draft for runtime_subject_15, retaining the target's declared PBE0/def2-SVP scientific intent. I explicitly accept source-generated RDKit conformer geometry for review. Do not execute or replace it with runtime_control_15.",
+      "source": "chem 0.1\n\nmolecule runtime_control_15 { structure smiles \"COc1ccc2c(c1)CCNC2=O\" }\nelectronic_state runtime_control_15_state { target runtime_control_15 finite charge 0 multiplicity 1 }\nconditions runtime_control_15_conditions { target runtime_control_15 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_15_intent { target runtime_control_15 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_15_state conditions runtime_control_15_conditions }\nmolecule runtime_subject_15 { structure smiles \"COC(=O)c1cnc(N)nc1OC\" }\nelectronic_state runtime_subject_15_state { target runtime_subject_15 finite charge 0 multiplicity 1 }\nconditions runtime_subject_15_conditions { target runtime_subject_15 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_15_intent { target runtime_subject_15 task single_point properties [energy] method \"pbe0\" basis \"def2-svp\" state runtime_subject_15_state conditions runtime_subject_15_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "rejected_without_tool",
+        "max_model_calls": 3,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_15",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-tool-rejection",
+      "family": "tool_runtime_failures",
+      "layer": "controller",
+      "fault": {
+        "kind": "tool_rejection",
+        "mode": "once"
+      },
+      "objective": "Generate a source-bound 3D molecular display for runtime_subject_16; do not execute calculations or substitute runtime_control_16.",
+      "source": "chem 0.1\n\nmolecule runtime_control_16 { structure smiles \"NS(=O)(=O)c1ccc(Nc2ncccn2)cc1\" }\nelectronic_state runtime_control_16_state { target runtime_control_16 finite charge 0 multiplicity 1 }\nconditions runtime_control_16_conditions { target runtime_control_16 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_16_intent { target runtime_control_16 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_16_state conditions runtime_control_16_conditions }\nmolecule runtime_subject_16 { structure smiles \"CN[C@@H](CO)c1ccc(O)c(O)c1\" }\nelectronic_state runtime_subject_16_state { target runtime_subject_16 finite charge 0 multiplicity 1 }\nconditions runtime_subject_16_conditions { target runtime_subject_16 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_16_intent { target runtime_subject_16 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_16_state conditions runtime_subject_16_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "tool_rejected",
+        "max_model_calls": 3,
+        "max_tool_calls": 1,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "structure_preview",
+        "object_id": "runtime_subject_16",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-cancel-running-marker",
+      "family": "tool_runtime_failures",
+      "layer": "workflow_host",
+      "fault": {
+        "kind": "cancelled_job",
+        "mode": "once"
+      },
+      "objective": "For a pre-existing owned running molecular job associated with runtime_subject_17, request cancellation and check the cancellation marker. Use only a mocked job record; do not launch a calculator or claim synchronous terminal cancellation.",
+      "source": "chem 0.1\n\nmolecule runtime_control_17 { structure smiles \"CN[C@@H](CO)c1ccc(O)c(O)c1\" }\nelectronic_state runtime_control_17_state { target runtime_control_17 finite charge 0 multiplicity 1 }\nconditions runtime_control_17_conditions { target runtime_control_17 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_17_intent { target runtime_control_17 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_17_state conditions runtime_control_17_conditions }\nmolecule runtime_subject_17 { structure smiles \"O=C(O)[C@H](O)c1ccc(OC)cc1\" }\nelectronic_state runtime_subject_17_state { target runtime_subject_17 finite charge 0 multiplicity 1 }\nconditions runtime_subject_17_conditions { target runtime_subject_17 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_17_intent { target runtime_subject_17 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_17_state conditions runtime_subject_17_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "cancellation_requested",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_17",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-cancel-repeat-marker",
+      "family": "tool_runtime_failures",
+      "layer": "workflow_host",
+      "fault": {
+        "kind": "cancelled_job",
+        "mode": "persistent"
+      },
+      "objective": "For a pre-existing owned running molecular job associated with runtime_subject_18, request cancellation twice to check that repeating the request preserves the marker. Use only a mocked job record; do not launch a calculator or claim synchronous terminal cancellation.",
+      "source": "chem 0.1\n\nmolecule runtime_control_18 { structure smiles \"COc1ccc(N2CCNC2=O)cc1\" }\nelectronic_state runtime_control_18_state { target runtime_control_18 finite charge 0 multiplicity 1 }\nconditions runtime_control_18_conditions { target runtime_control_18 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_18_intent { target runtime_control_18 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_18_state conditions runtime_control_18_conditions }\nmolecule runtime_subject_18 { structure smiles \"CC(=O)c1ccc(OC[C@H]2COCCO2)cc1C(=O)N\" }\nelectronic_state runtime_subject_18_state { target runtime_subject_18 finite charge 0 multiplicity 1 }\nconditions runtime_subject_18_conditions { target runtime_subject_18 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_18_intent { target runtime_subject_18 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_18_state conditions runtime_subject_18_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "cancellation_requested",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_18",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-stale-source-approval",
+      "family": "tool_runtime_failures",
+      "layer": "workflow_host",
+      "fault": {
+        "kind": "stale_approval",
+        "mode": "once"
+      },
+      "objective": "Evaluate host admission of the resolved molecular job for runtime_subject_19 after the injected stale_approval event. No live calculation or model call is permitted in this fault test.",
+      "source": "chem 0.1\n\nmolecule runtime_control_19 { structure smiles \"N#Cc1ccc(C(=O)N2CCOCC2)nc1\" }\nelectronic_state runtime_control_19_state { target runtime_control_19 finite charge 0 multiplicity 1 }\nconditions runtime_control_19_conditions { target runtime_control_19 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_19_intent { target runtime_control_19 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_19_state conditions runtime_control_19_conditions }\nmolecule runtime_subject_19 { structure smiles \"CCN(CC)CC(=O)Nc1c(C)cccc1C\" }\nelectronic_state runtime_subject_19_state { target runtime_subject_19 finite charge 0 multiplicity 1 }\nconditions runtime_subject_19_conditions { target runtime_subject_19 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_19_intent { target runtime_subject_19 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_19_state conditions runtime_subject_19_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "job_blocked",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_19",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    },
+    {
+      "id": "runtime-stale-expired-approval",
+      "family": "tool_runtime_failures",
+      "layer": "workflow_host",
+      "fault": {
+        "kind": "stale_approval",
+        "mode": "persistent"
+      },
+      "objective": "Evaluate host admission of the resolved molecular job for runtime_subject_20 after the injected stale_approval event. No live calculation or model call is permitted in this fault test.",
+      "source": "chem 0.1\n\nmolecule runtime_control_20 { structure smiles \"O=C1O[C@H](CO)[C@@H](O)[C@H]1O\" }\nelectronic_state runtime_control_20_state { target runtime_control_20 finite charge 0 multiplicity 1 }\nconditions runtime_control_20_conditions { target runtime_control_20 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_control_20_intent { target runtime_control_20 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_control_20_state conditions runtime_control_20_conditions }\nmolecule runtime_subject_20 { structure smiles \"CS(=O)(=O)c1ccc(OCCO)cc1\" }\nelectronic_state runtime_subject_20_state { target runtime_subject_20 finite charge 0 multiplicity 1 }\nconditions runtime_subject_20_conditions { target runtime_subject_20 phase gas temperature 0 temperature_unit kelvin  }\ncalculation runtime_subject_20_intent { target runtime_subject_20 task single_point properties [energy] method \"hf\" basis \"sto-3g\" state runtime_subject_20_state conditions runtime_subject_20_conditions }\n",
+      "attachments": {},
+      "expected": {
+        "action": "needs_input",
+        "object_id": "",
+        "scale_factors": [],
+        "outcome": "job_blocked",
+        "max_model_calls": 0,
+        "max_tool_calls": 0,
+        "must_stop": true,
+        "execution_authorized": false
+      },
+      "clean_action": {
+        "action": "plan_molecular_single_point",
+        "object_id": "runtime_subject_20",
+        "scale_factors": []
+      },
+      "rationale": "Mocked functional fault injection on a complex molecular subject. Once-only format faults permit one shared mechanical repair; semantic/profile/reference failures stop, and host cancellation/stale approval never authorizes execution. These are not real model or backend scientific results."
+    }
+  ],
+  "suite_hash": "sha256:58893135d74b85dde7aa994955fe010f6f5fca405d12a735a8b948732fe9868c"
+}

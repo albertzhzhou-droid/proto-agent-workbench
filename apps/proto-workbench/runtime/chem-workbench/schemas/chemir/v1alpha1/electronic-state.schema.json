@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "electronic-state.schema.json",
+  "title": "ChemIR v1alpha1 ElectronicState payload",
+  "description": "Finite and periodic electronic states are disjoint schema variants; finite multiplicity is never applied to a periodic state.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/FiniteElectronicState"
+    },
+    {
+      "$ref": "#/$defs/PeriodicElectronicState"
+    }
+  ],
+  "$defs": {
+    "FiniteElectronicState": {
+      "type": "object",
+      "required": [
+        "model",
+        "target_reference",
+        "charge",
+        "multiplicity"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "model": {
+          "const": "finite"
+        },
+        "target_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "charge": {
+          "type": "integer",
+          "minimum": -128,
+          "maximum": 128
+        },
+        "multiplicity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "state_label": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PeriodicElectronicState": {
+      "type": "object",
+      "required": [
+        "model",
+        "target_reference",
+        "orbital_treatment",
+        "spin_treatment",
+        "spin_orbit_treatment"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "model": {
+          "const": "periodic"
+        },
+        "target_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "orbital_treatment": {
+          "enum": [
+            "restricted",
+            "unrestricted"
+          ]
+        },
+        "spin_treatment": {
+          "enum": [
+            "collinear",
+            "non_collinear"
+          ]
+        },
+        "spin_orbit_treatment": {
+          "enum": [
+            "none",
+            "scalar_relativistic",
+            "explicit",
+            "unknown"
+          ]
+        },
+        "total_magnetic_moment": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "initial_site_moments": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/SiteMoment"
+          }
+        },
+        "magnetic_ordering": {
+          "enum": [
+            "nonmagnetic",
+            "ferromagnetic",
+            "antiferromagnetic",
+            "ferrimagnetic",
+            "paramagnetic",
+            "other",
+            "unknown"
+          ]
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SiteMoment": {
+      "type": "object",
+      "required": [
+        "site_reference",
+        "moment"
+      ],
+      "properties": {
+        "site_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "moment": {
+          "$ref": "common.schema.json#/$defs/Quantity"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

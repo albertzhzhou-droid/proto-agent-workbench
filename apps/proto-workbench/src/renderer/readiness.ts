@@ -1,3 +1,4 @@
+import { isModelConnected } from "../shared/model-status.ts";
 import type {
   AppSettings,
   ModelDescriptor,
@@ -42,11 +43,11 @@ export function deriveWorkbenchReadiness(input: {
 }): WorkbenchReadiness {
   const { settings, runtime, moduleIntegrity, models, workspaceEntries, threadModelId } = input;
   const selectedModel = threadModelId ? models.find((model) => model.id === threadModelId) : undefined;
-  const activeModel = selectedModel?.loadState === "active" && selectedModel.workbenchInstance
+  const activeModel = runtime.available && selectedModel?.loadState === "active" && isModelConnected(selectedModel)
     ? selectedModel
     : threadModelId
       ? undefined
-      : models.find((model) => model.loadState === "active" && model.workbenchInstance);
+      : runtime.available ? models.find((model) => model.loadState === "active" && isModelConnected(model)) : undefined;
   const workspaceSelected = Boolean(settings.workspacePath.trim());
   const workspaceReady = workspaceSelected && workspaceEntries.length > 0;
 

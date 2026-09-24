@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 
 test("Stage 16 contracts, IPC, preload, main handlers, and IPC schemas are wired", async () => {
   const [contracts, ipc, preload, main, security] = await Promise.all([
-    read("src/shared/contracts.ts"), read("src/shared/ipc.ts"), read("src/preload/index.ts"), read("src/main/index.ts"), read("src/main/ipc-security.ts"),
+    read("src/shared/contracts.ts"), read("src/shared/ipc.ts"), read("src/preload/index.ts"), read("src/main/index.ts"), read("src/shared/ipc-channel-contracts.ts"),
   ]);
   for (const token of ["TransparencyWitnessCatalog", "TransparencyWitnessEntry", "TransparencyWitnessImportReceipt", "importTransparencyWitnessPack", "listTransparencyWitnessPacks"]) assert.match(contracts, new RegExp(token));
   assert.match(ipc, /harnessTransparencyWitnessImport: "harness:transparency-witness-import"/);

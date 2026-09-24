@@ -35,6 +35,11 @@ test("core tools stay enabled while optional tools follow module settings", () =
   assert.equal(isToolEnabledForModules("proto_review_packet", coreOnly), true);
   assert.equal(isToolEnabledForModules("proto_pubmed_search", coreOnly), false);
   assert.equal(isToolEnabledForModules("proto_run_analysis", coreOnly), false);
+  assert.equal(isToolEnabledForModules("chemistry.catalog", coreOnly), false);
+  assert.equal(isToolEnabledForModules("chemistry.analyze_molecule", coreOnly), false);
+  assert.equal(isToolEnabledForModules("not_registered", coreOnly), false);
+  assert.equal(isToolEnabledForModules("chemistry.analyze_molecule", normalizeModuleSettings({profile:"full"})), true);
+  assert.equal(isToolEnabledForModules("chem.analyze_molecule", normalizeModuleSettings({profile:"custom",enabledOptional:["analysis.chemistry"]})), true);
 
   const research = normalizeModuleSettings({ profile: "research" });
   assert.equal(isToolEnabledForModules("proto_pubmed_search", research), true);

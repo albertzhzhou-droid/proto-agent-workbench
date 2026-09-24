@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "format-capability.schema.json",
+  "title": "Chem Workbench direction-specific format capability v1alpha1",
+  "type": "object",
+  "required": [
+    "capability_version",
+    "capability_id",
+    "adapter",
+    "format",
+    "direction",
+    "chemir_schema_version",
+    "profile",
+    "operations",
+    "classification",
+    "normalization_profile",
+    "aromaticity_policy",
+    "stereochemistry_policy",
+    "numeric_tolerance_policy",
+    "supported_fields",
+    "allowed_loss_codes",
+    "loss_report_version"
+  ],
+  "properties": {
+    "capability_version": {
+      "const": "format-capability/v1alpha1"
+    },
+    "capability_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "adapter": {
+      "$ref": "#/$defs/AdapterBinding"
+    },
+    "format": {
+      "$ref": "#/$defs/FormatDescriptor"
+    },
+    "direction": {
+      "enum": [
+        "import",
+        "export"
+      ]
+    },
+    "chemir_schema_version": {
+      "const": "chemir/v1alpha1"
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "enum": [
+          "import_bytes",
+          "export_bytes",
+          "compare"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "classification": {
+      "$ref": "#/$defs/Classification"
+    },
+    "normalization_profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "aromaticity_policy": {
+      "enum": [
+        "source_preserving",
+        "toolkit_declared",
+        "not_applicable"
+      ]
+    },
+    "stereochemistry_policy": {
+      "enum": [
+        "source_preserving",
+        "toolkit_declared",
+        "not_applicable"
+      ]
+    },
+    "numeric_tolerance_policy": {
+      "enum": [
+        "exact_only",
+        "not_applicable"
+      ]
+    },
+    "supported_fields": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "pattern": "^/"
+      },
+      "uniqueItems": true
+    },
+    "allowed_loss_codes": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "adapter-capability.schema.json#/$defs/LossCode"
+      },
+      "uniqueItems": true
+    },
+    "loss_report_version": {
+      "const": "loss/v1alpha1"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "const": "UNSUPPORTED"
+          }
+        },
+        "required": [
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "operations": {
+            "maxItems": 0
+          },
+          "allowed_loss_codes": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "operations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "direction": {
+            "const": "import"
+          },
+          "classification": {
+            "not": {
+              "const": "UNSUPPORTED"
+            }
+          }
+        },
+        "required": [
+          "direction",
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "operations": {
+            "contains": {
+              "const": "import_bytes"
+            },
+            "minContains": 1,
+            "maxContains": 1,
+            "not": {
+              "contains": {
+                "const": "export_bytes"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "direction": {
+            "const": "export"
+          },
+          "classification": {
+            "not": {
+              "const": "UNSUPPORTED"
+            }
+          }
+        },
+        "required": [
+          "direction",
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "operations": {
+            "contains": {
+              "const": "export_bytes"
+            },
+            "minContains": 1,
+            "maxContains": 1,
+            "not": {
+              "contains": {
+                "const": "import_bytes"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "const": "LOSSY_WITH_REPORT"
+          }
+        },
+        "required": [
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_loss_codes": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Classification": {
+      "enum": [
+        "BYTE_IDENTICAL",
+        "SEMANTIC_EQUIVALENT_UNDER_PROFILE",
+        "LOSSY_WITH_REPORT",
+        "ONE_WAY",
+        "QUERY_ONLY",
+        "UNSUPPORTED"
+      ]
+    },
+    "AdapterBinding": {
+      "type": "object",
+      "required": [
+        "id",
+        "version",
+        "manifest_hash"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "adapter-capability.schema.json#/$defs/AdapterId"
+        },
+        "version": {
+          "$ref": "adapter-capability.schema.json#/$defs/SemVer"
+        },
+        "manifest_hash": {
+          "$ref": "#/$defs/ManifestHash"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ManifestHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "adapter_manifest_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FormatDescriptor": {
+      "type": "object",
+      "required": [
+        "name",
+        "dialect",
+        "media_type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9][a-z0-9._+-]*$"
+        },
+        "dialect": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

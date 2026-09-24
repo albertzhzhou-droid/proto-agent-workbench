@@ -12,6 +12,21 @@ See [execution contracts](../../docs/reliable-harness.md),
 Use [isolated desktop sessions](../../docs/isolated-desktop-sessions.md) to keep a
 separate profile and workspace, including when checking a Portable candidate.
 
+## Chem CLI workspace
+
+The far-left application selector switches between **Proto CLI** and **Chem CLI**
+in the same top-bar position. Chem opens its complete existing Design and
+Structure studios, conditional interface models, inorganic candidate tools,
+governed calculations, and XDL document inspection with the same light/dark
+paper theme and user-supplied Anthropic fonts. Its original 3D views, numerical
+results, evidence, imports, exports, and approval workflows are retained.
+
+The integration uses a verified snapshot of the existing Chem working tree and
+its installed local Python, Psi4, and XDL environments. New work is stored under
+the selected Proto workspace's `build/chem-workspace`. See
+[Chem integration, runtime configuration, and acceptance](../../docs/chem-workbench-port.md)
+for the preserved scope, migrated history, and actual calculation checks.
+
 ## Offline verification
 
 Run `node scripts/verify-offline.mjs` from this directory for the repository-native offline baseline. The entrypoint never launches pnpm/npm/npx, checks that the installed TypeScript compiler exactly matches the lockfile and declared dependency floor, runs the complete Node test set plus typecheck, permits loopback-only test fixtures, and blocks external Node DNS/socket access. Invoke the Node entrypoint directly; package-manager wrappers may perform their own update or registry checks before a package script starts.
@@ -123,7 +138,8 @@ claims an already loaded instance, or prints completion text.
 
 ## Packaging inputs
 
-1. Run `pnpm build:sidecars` to build only the packaged MCP server and bounded
+1. Install the repository's `.[workbench,compute]` extras in its `.venv`, then
+   run `pnpm build:sidecars` to build only the packaged MCP server and bounded
    admin CLI from the repository `.venv`. The script verifies a same-volume
    staging tree before replacing the previous complete runtime.
 2. Run `pnpm verify:sidecars` to copy the packaged workspace template into a
@@ -157,3 +173,21 @@ packaged Workbench sidecars.
 
 Proto Workbench is open source under the repository's
 [MIT License](../../LICENSE).
+
+## Scientific Chat
+
+The top-left workspace switch is Chat / Design / Compute. Chat combines a real
+LM Studio conversation, research plans, unified scientific tools and versioned
+working documents. It calls the same computation and database implementations
+as the dedicated workspaces. Module/skill selections apply to new messages.
+
+See [the unified workflow](../../docs/chat-unified-workflow.md) for adapted
+OpenScience/DeepSeek Harness algorithms, real-model acceptance evidence and
+current runtime limits, and [bioinformatics environments](../../docs/bioinformatics-environment.md)
+for the installed engines and reproducible software checks.
+
+Chat also supports direct PDF/DOCX/XLSX parsing and general Python, R and
+Jupyter kernel execution through a configured rootless OCI runtime. The deployed
+WSL bioinformatics engines share Chat's canonical tool registry. See
+[deployment](../../docs/chat-execution-deployment.md) and
+[document reading](../../docs/chat-document-parsing.md) for current behavior.

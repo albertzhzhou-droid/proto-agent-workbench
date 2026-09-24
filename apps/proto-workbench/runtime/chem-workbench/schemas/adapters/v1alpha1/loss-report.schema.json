@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "loss-report.schema.json",
+  "title": "Chem Workbench conversion loss report v1alpha1",
+  "type": "object",
+  "required": [
+    "loss_report_version",
+    "adapter",
+    "capability_hash",
+    "direction",
+    "format",
+    "profile",
+    "input_hash",
+    "output_hash",
+    "classification",
+    "issues"
+  ],
+  "properties": {
+    "loss_report_version": {
+      "const": "loss/v1alpha1"
+    },
+    "adapter": {
+      "$ref": "format-capability.schema.json#/$defs/AdapterBinding"
+    },
+    "capability_hash": {
+      "$ref": "#/$defs/CapabilityHash"
+    },
+    "direction": {
+      "enum": [
+        "import",
+        "export"
+      ]
+    },
+    "format": {
+      "$ref": "format-capability.schema.json#/$defs/FormatDescriptor"
+    },
+    "profile": {
+      "$ref": "adapter-capability.schema.json#/$defs/ProfileId"
+    },
+    "input_hash": {
+      "$ref": "#/$defs/ArtifactHash"
+    },
+    "output_hash": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ArtifactHash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "classification": {
+      "$ref": "format-capability.schema.json#/$defs/Classification"
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/LossIssue"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "direction": {
+            "const": "import"
+          }
+        },
+        "required": [
+          "direction"
+        ]
+      },
+      "then": {
+        "properties": {
+          "input_hash": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "source_sha256",
+                  "artifact_sha256"
+                ]
+              }
+            }
+          },
+          "output_hash": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/SemanticHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "input_hash": {
+            "$ref": "#/$defs/SemanticHash"
+          },
+          "output_hash": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/OutputArtifactHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "enum": [
+              "QUERY_ONLY",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "output_hash": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "output_hash": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "const": "BYTE_IDENTICAL"
+          }
+        },
+        "required": [
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "issues": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "enum": [
+              "LOSSY_WITH_REPORT",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "classification"
+        ]
+      },
+      "then": {
+        "properties": {
+          "issues": {
+            "minItems": 1,
+            "contains": {
+              "properties": {
+                "disposition": {
+                  "enum": [
+                    "approximated",
+                    "dropped",
+                    "unresolved",
+                    "unsupported"
+                  ]
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "minContains": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "CapabilityHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "format_capability_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ArtifactHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "source_sha256",
+            "semantic_hash",
+            "artifact_sha256"
+          ]
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SemanticHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "semantic_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputArtifactHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "artifact_sha256"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EvidenceHash": {
+      "$ref": "#/$defs/ArtifactHash"
+    },
+    "Location": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "path"
+          ],
+          "properties": {
+            "kind": {
+              "const": "chemir_path"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^/"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "source_hash",
+            "line",
+            "column"
+          ],
+          "properties": {
+            "kind": {
+              "const": "source"
+            },
+            "source_hash": {
+              "type": "object",
+              "required": [
+                "type",
+                "algorithm",
+                "value"
+              ],
+              "properties": {
+                "type": {
+                  "const": "source_sha256"
+                },
+                "algorithm": {
+                  "const": "sha256"
+                },
+                "value": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "additionalProperties": false
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "column": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "LossIssue": {
+      "type": "object",
+      "required": [
+        "code",
+        "severity",
+        "location",
+        "feature",
+        "disposition",
+        "message",
+        "suggestion",
+        "evidence_hashes"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "adapter-capability.schema.json#/$defs/LossCode"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "review_required",
+            "error"
+          ]
+        },
+        "location": {
+          "$ref": "#/$defs/Location"
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "disposition": {
+          "enum": [
+            "preserved",
+            "normalized",
+            "approximated",
+            "dropped",
+            "unresolved",
+            "unsupported"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "suggestion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "evidence_hashes": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/EvidenceHash"
+          },
+          "uniqueItems": true
+        },
+        "output_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^/"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

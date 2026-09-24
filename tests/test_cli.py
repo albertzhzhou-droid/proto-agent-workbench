@@ -586,29 +586,34 @@ class CliTests(unittest.TestCase):
         self.assertIn("proto_skills_list", tool_names)
         self.assertIn("proto_skills_resolve", tool_names)
 
-    def test_mcp_skill_resolution_is_read_only_and_available(self) -> None:
-        self.stage_assets(*SKILL_CATALOG_ASSETS)
+    def _resolve_skill_over_mcp(self, skill_id: str) -> dict:
         request = json.dumps(
             {
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/call",
-                "params": {
-                    "name": "proto_skills_resolve",
-                    "arguments": {"skill_id": "lm-studio-model-endpoint"},
-                },
+                "params": {"name": "proto_skills_resolve", "arguments": {"skill_id": skill_id}},
             }
         )
         result = self.run_cli("mcp", "--once", request)
         self.assertEqual(result.returncode, 0, result.stderr)
-        payload = json.loads(result.stdout)
-        resolved = json.loads(payload["result"]["content"][0]["text"])
-        self.assertTrue(resolved["ok"])
-        self.assertEqual(resolved["adapter"]["status"], "available")
+        return json.loads(json.loads(result.stdout)["result"]["content"][0]["text"])
+
+    def test_mcp_skill_resolution_is_read_only_and_requires_an_explicit_content_pin(self) -> None:
+        self.stage_assets(*SKILL_CATALOG_ASSETS)
+        # Resolution reports the adapter it found, but an optional extension is
+        # not offered as usable until its exact content has been pinned locally.
+        blocked = self._resolve_skill_over_mcp("lm-studio-model-endpoint")
+        self.assertFalse(blocked["ok"])
+        self.assertEqual(blocked["resolution_state"], "blocked_by_extension_trust")
+        self.assertEqual(blocked["adapter"]["status"], "available")
         self.assertEqual(
-            {operation["id"] for operation in resolved["adapter"]["operations"]},
+            {operation["id"] for operation in blocked["adapter"]["operations"]},
             {"discover-models", "load-model", "generate-chat", "unload-owned-model"},
         )
+
+        # The trust round trip needs git, which this harness deliberately keeps off
+        # the CLI PATH; tests/test_skill_sdk.py covers pinning and its lapse in process.
 
     def test_mcp_proto_check_tool_call(self) -> None:
         self.stage_assets(*DESIGN_ASSETS)

@@ -1,7 +1,7 @@
 import {
   ArrowDown,
   ArrowUp,
-  Atom,
+  Spline,
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
@@ -1378,7 +1378,7 @@ function ProteinDesignPage({
 
       <div className="design-product-bar protein-product-bar">
         <div className="design-product-title">
-          <span className="design-status-icon"><Atom size={16} /></span>
+          <span className="design-status-icon"><Spline size={16} /></span>
           <div><span className="eyebrow">Governed protein IR</span><h2>{design.designId}</h2></div>
         </div>
         <dl>
@@ -1396,7 +1396,7 @@ function ProteinDesignPage({
           <ArtifactList documents={documents} selectedPath={selectedDocument?.path} onSelect={onSelectDocument} />
           <div className="design-panel-heading is-sub"><span>Protein records</span><strong>{design.proteins.length}</strong></div>
           <div className="construct-list protein-record-nav">
-            {design.proteins.map((protein, index) => <button type="button" className={`construct-item protein-record-nav-item ${selectedProteinId === protein.id ? "is-selected" : ""}`} key={`${protein.id}-${index}`} onClick={() => setSelectedProteinId(protein.id)} aria-current={selectedProteinId === protein.id ? "true" : undefined}><span className="construct-glyph"><Atom size={13} /></span><span><strong>{protein.name ?? protein.id}</strong><small>{protein.length.toLocaleString()} aa · {protein.source.provider || "source pending"}</small></span></button>)}
+            {design.proteins.map((protein, index) => <button type="button" className={`construct-item protein-record-nav-item ${selectedProteinId === protein.id ? "is-selected" : ""}`} key={`${protein.id}-${index}`} onClick={() => setSelectedProteinId(protein.id)} aria-current={selectedProteinId === protein.id ? "true" : undefined}><span className="construct-glyph"><Spline size={13} /></span><span><strong>{protein.name ?? protein.id}</strong><small>{protein.length.toLocaleString()} aa · {protein.source.provider || "source pending"}</small></span></button>)}
           </div>
           <div className="design-source-card">
             <span className="eyebrow">Provenance</span>
@@ -1485,10 +1485,10 @@ function ArtifactList({ documents, selectedPath, onSelect }: {
             onClick={() => onSelect(document.path)}
             aria-current={document.path === selectedPath ? "true" : undefined}
           >
-            {ready ? <Dna size={15} /> : <CircleAlert size={15} />}
+            {ready ? document.design?.domain === "protein" ? <Spline size={15} /> : <Dna size={15} /> : <CircleAlert size={15} />}
             <span>
               <strong>{document.design?.designId ?? document.name}</strong>
-              <small>{ready ? `${document.design!.constructs.length} constructs · ${document.design!.chassis}${(document.copyCount ?? 1) > 1 ? ` · ×${document.copyCount} copies` : ""}` : "Invalid or unreadable IR"}</small>
+              <small>{ready ? `${document.design!.domain === "protein" ? `${document.design!.proteins.length} protein${document.design!.proteins.length === 1 ? "" : "s"}` : `${document.design!.constructs.length} constructs`} · ${document.design!.chassis}${(document.copyCount ?? 1) > 1 ? ` · ×${document.copyCount} copies` : ""}` : "Invalid or unreadable IR"}</small>
             </span>
             <em className={document.digestBinding?.status === "mismatch" ? "is-mismatch" : undefined} title={ready ? integrityLabel : document.error}>{integrityLabel}</em>
           </button>

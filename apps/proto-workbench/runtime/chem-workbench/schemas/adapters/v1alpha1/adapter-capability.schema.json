@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adapter-capability.schema.json",
+  "title": "Chem Workbench adapter capability descriptor v1alpha1",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "adapter_id",
+    "adapter_version",
+    "adapter_type",
+    "permission_class",
+    "package_hash",
+    "schema_versions",
+    "operations",
+    "supported_profiles",
+    "required_backends",
+    "network_policy",
+    "environment_allowlist",
+    "resource_ceilings",
+    "licenses",
+    "expected_loss_codes"
+  ],
+  "properties": {
+    "manifest_version": {
+      "const": "adapter-capability/v1alpha1"
+    },
+    "adapter_id": {
+      "$ref": "#/$defs/AdapterId"
+    },
+    "adapter_version": {
+      "$ref": "#/$defs/SemVer"
+    },
+    "adapter_type": {
+      "enum": [
+        "FormatAdapter",
+        "DataServiceConnector",
+        "ComputeAdapter"
+      ]
+    },
+    "permission_class": {
+      "enum": [
+        "local_pure",
+        "network_fetch",
+        "compute_descriptor"
+      ]
+    },
+    "package_hash": {
+      "$ref": "#/$defs/PackageHash"
+    },
+    "schema_versions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "enum": [
+          "chemir/v1alpha1",
+          "loss/v1alpha1"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "enum": [
+          "import_bytes",
+          "export_bytes",
+          "compare",
+          "fetch",
+          "validate",
+          "lower",
+          "resolve",
+          "normalize"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "supported_profiles": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/ProfileId"
+      },
+      "uniqueItems": true
+    },
+    "required_backends": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/AdapterId"
+      },
+      "uniqueItems": true
+    },
+    "network_policy": {
+      "enum": [
+        "deny",
+        "explicit_allowlist"
+      ]
+    },
+    "environment_allowlist": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+      },
+      "uniqueItems": true
+    },
+    "resource_ceilings": {
+      "$ref": "#/$defs/ResourceCeilings"
+    },
+    "licenses": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "uniqueItems": true
+    },
+    "expected_loss_codes": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/LossCode"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "adapter_type": {
+            "const": "FormatAdapter"
+          }
+        },
+        "required": [
+          "adapter_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "permission_class": {
+            "const": "local_pure"
+          },
+          "operations": {
+            "items": {
+              "enum": [
+                "import_bytes",
+                "export_bytes",
+                "compare"
+              ]
+            }
+          },
+          "required_backends": {
+            "maxItems": 0
+          },
+          "network_policy": {
+            "const": "deny"
+          },
+          "environment_allowlist": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "adapter_type": {
+            "const": "DataServiceConnector"
+          }
+        },
+        "required": [
+          "adapter_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "permission_class": {
+            "const": "network_fetch"
+          },
+          "operations": {
+            "const": [
+              "fetch"
+            ]
+          },
+          "network_policy": {
+            "const": "explicit_allowlist"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "adapter_type": {
+            "const": "ComputeAdapter"
+          }
+        },
+        "required": [
+          "adapter_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "permission_class": {
+            "const": "compute_descriptor"
+          },
+          "operations": {
+            "items": {
+              "enum": [
+                "validate",
+                "lower",
+                "resolve",
+                "normalize"
+              ]
+            }
+          },
+          "network_policy": {
+            "const": "deny"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "AdapterId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 200,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)+$"
+    },
+    "SemVer": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "ProfileId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "LossCode": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$"
+    },
+    "PackageHash": {
+      "type": "object",
+      "required": [
+        "type",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "adapter_package_hash"
+        },
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResourceCeilings": {
+      "type": "object",
+      "properties": {
+        "cpu_threads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wall_time_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stdout_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stderr_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "artifact_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "file_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "process_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

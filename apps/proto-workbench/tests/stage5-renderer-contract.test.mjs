@@ -42,7 +42,7 @@ test("artifact selection is passive and artifact inspection is an explicit actio
   assert.match(selectStep, /set\(\{ selectedEventId \}\)/);
   assert.doesNotMatch(selectStep, /files\.read|activeDocument|outputArtifacts/);
   assert.match(openArtifact, /workbenchApi\(\)\.files\.read\(locator\)/);
-  assert.match(openArtifact, /activeDocument: \{ path: document\.path, content: document\.content \}/);
+  assert.match(openArtifact, /activeDocument: \{ path: document\.path, content: document\.content, artifactReader:document\.artifactReader \}/);
 });
 
 test("topology consumes only hardened projection edges and renders accessible DOM lanes", async () => {

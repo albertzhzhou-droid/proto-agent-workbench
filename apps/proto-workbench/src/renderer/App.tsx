@@ -2,7 +2,10 @@ import { DiffEditor, Editor, type BeforeMount } from "@monaco-editor/react";
 import { diffLines } from "diff";
 import {
   Archive,
-  Atom,
+  Bot,
+  UserRound,
+  Wrench,
+  Terminal,
   Sun,
   Moon,
   PanelLeft,
@@ -53,7 +56,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { AgentRunEvent, ModelDescriptor, PatchProposal, RunDetail, RunLifecycleProjection } from "../shared/contracts.ts";
 import { OperationalPage } from "./OperationalPages.tsx";
 import { HarnessMissionPanel } from "./HarnessMissionPanel.tsx";
@@ -61,17 +64,28 @@ import { GlobalEvidenceSearch } from "./GlobalEvidenceSearch.tsx";
 import { DecisionLab } from "./DecisionLab.tsx";
 import { DecisionBundleVerificationCenter } from "./DecisionBundleVerificationCenter.tsx";
 import { RunEvidenceViews } from "./RunEvidenceViews.tsx";
+import { EvidenceStandingView } from "./EvidenceStandingView.tsx";
+import { WorkspaceExecutionJournal } from "./WorkspaceExecutionJournal.tsx";
 import { workbenchDataMode } from "./mock-api.ts";
 import { deriveWorkbenchReadiness } from "./readiness.ts";
 import { deriveRunStageStates, RUN_STAGES } from "./stage-state.ts";
 import { useWorkbenchStore, type BootstrapPhase } from "./store.ts";
+import { ComputeWorkspace } from "./ComputeWorkspace.tsx";
+import { ChatWorkspace } from "./ChatWorkspace.tsx";
+import { ChemWorkspace } from "./ChemWorkspace.tsx";
+import { ChemNavigation, type ChemDesignTarget, type ChemComputeSection, type ChemUtility } from "./ChemNavigation.tsx";
+import { ChemComputationWorkspace } from "./ChemComputationWorkspace.tsx";
+import { WorkbenchSwitcher, type WorkbenchEdition } from "./WorkbenchSwitcher.tsx";
+import { WorkspaceNavigation, type WorkbenchMode, type ComputeSection } from "./WorkspaceNavigation.tsx";
+import { MODEL_REFRESH_MS, isModelConnected } from "../shared/model-status.ts";
 import { modelContextLabel } from "./model-presentation.ts";
 
 const GIB = 1024 ** 3;
-const WorkbenchTheme = createContext<"light" | "dark">("dark");
+const WorkbenchTheme = createContext<"light" | "dark">("light");
 
 export function App() {
   const bootstrap = useWorkbenchStore((state) => state.bootstrap);
+  const refreshModels = useWorkbenchStore(state => state.refreshModels);
   const ready = useWorkbenchStore((state) => state.ready);
   const bootstrapPhase = useWorkbenchStore((state) => state.bootstrapPhase);
   const modelsOpen = useWorkbenchStore((state) => state.modelsOpen);
@@ -84,11 +98,26 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [decisionLabOpen, setDecisionLabOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem("proto.sidebar.expanded") === "true");
+  const [executionJournalOpen,setExecutionJournalOpen]=useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem("proto.paper.sidebar.expanded") !== "false");
+  const [mode, setMode] = useState<WorkbenchMode>("design");
+  const [edition, setEdition] = useState<WorkbenchEdition>(() => localStorage.getItem("workbench.edition") === "chem" ? "chem" : "proto");
+  const [chemTitle, setChemTitle] = useState("Design studio");
+  const [chemMode, setChemMode] = useState<WorkbenchMode>('chat');
+  const [chemTarget, setChemTarget] = useState<ChemDesignTarget>({view:'design',section:'spatial',revision:0});
+  const [chemComputeSection, setChemComputeSection] = useState<ChemComputeSection>('analysis');
+  const [chemUtility, setChemUtility] = useState<ChemUtility|null>(null);
+  const activeMode = edition === 'chem' ? chemMode : mode;
+  const changeChemMode = (value:WorkbenchMode) => {setChemUtility(null);setChemMode(value);};
+  const workspacePath = useWorkbenchStore(state => state.settings.workspacePath);
+  const [computeSection, setComputeSection] = useState<ComputeSection>("all");
+  const [computeNavigationRevision, setComputeNavigationRevision] = useState(0);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">(() => localStorage.getItem("proto.theme") === "light" ? "light" : "dark");
-  useEffect(() => {document.documentElement.dataset.theme = theme; localStorage.setItem("proto.theme", theme);}, [theme]);
-  useEffect(() => {localStorage.setItem("proto.sidebar.expanded", String(sidebarOpen));}, [sidebarOpen]);
+  const [theme, setTheme] = useState<"light" | "dark">(() => localStorage.getItem("proto.paper.theme") === "dark" ? "dark" : "light");
+  useEffect(() => {document.documentElement.dataset.theme = theme; localStorage.setItem("proto.paper.theme", theme);}, [theme]);
+  useEffect(() => {localStorage.setItem("workbench.edition", edition); document.title = `${edition === "chem" ? "Chem" : "Proto"} Workbench`; setCommandOpen(false); setEvidenceOpen(false); setDecisionLabOpen(false); setVerificationOpen(false);}, [edition]);
+  useEffect(() => {localStorage.setItem("proto.paper.sidebar.expanded", String(sidebarOpen));}, [sidebarOpen]);
+  useEffect(()=>{const open=()=>setExecutionJournalOpen(true);window.addEventListener("proto:execution-recovery",open);return()=>window.removeEventListener("proto:execution-recovery",open);},[]);
   const closeCommands = () => {
     setCommandOpen(false);
     window.requestAnimationFrame(() => document.getElementById("mission-command-trigger")?.focus());
@@ -111,6 +140,15 @@ export function App() {
   }, [bootstrap]);
 
   useEffect(() => {
+    if (!ready) return;
+    const refresh = () => { if (document.visibilityState === "visible") void refreshModels(true); };
+    const timer = window.setInterval(refresh, MODEL_REFRESH_MS);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [ready, refreshModels]);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(clearToast, 4200);
     return () => window.clearTimeout(timer);
@@ -118,6 +156,7 @@ export function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (edition === "chem") return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") {
         event.preventDefault();
         setEvidenceOpen(false);
@@ -209,7 +248,7 @@ export function App() {
       window.removeEventListener("proto:decision-lab", onDecisionLabRequest);
       window.removeEventListener("proto:verification", onVerificationRequest);
     };
-  }, []);
+  }, [edition]);
 
   if (bootstrapError) {
     return <StartupSurface phase={bootstrapPhase} error={bootstrapError} onRetry={() => void bootstrap().then(() => setBootstrapError(undefined)).catch((error) => setBootstrapError(String(error)))} />;
@@ -220,11 +259,12 @@ export function App() {
   }
 
   return (
-    <WorkbenchTheme value={theme}><div className={`app-shell ${sidebarOpen ? "sidebar-expanded" : "sidebar-rail"} ${inspectorOpen ? "inspector-open" : "inspector-closed"}`}>
-      <TopBar />
-      <div className="workspace-view-controls"><button type="button" aria-label="Toggle task sidebar" title="Toggle task sidebar" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16}/></button><button type="button" aria-label="Toggle inspector" title="Toggle inspector" aria-pressed={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight size={16}/></button><button type="button" aria-label={`Use ${theme === "dark" ? "light" : "dark"} theme`} title={`Use ${theme === "dark" ? "light" : "dark"} theme`} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button></div>
-      <div className={`app-body ${currentView !== "runs" ? "is-page" : ""}`}>
-        <Sidebar />
+    <WorkbenchTheme value={theme}><div className={`app-shell ${edition === "chem" ? "chem-edition" : "proto-edition"} ${sidebarOpen ? "sidebar-expanded" : "sidebar-rail"} ${inspectorOpen ? "inspector-open" : "inspector-closed"}`}>
+      {edition === 'proto' ? <WorkspaceNavigation mode={mode} onMode={setMode} section={computeSection} onSection={section => {setComputeSection(section); setComputeNavigationRevision(value => value + 1);}} /> : <ChemNavigation mode={chemMode} onMode={changeChemMode} target={chemTarget} onTarget={(view,section)=>{changeChemMode('design');setChemTarget(value=>({view,section,revision:value.revision+1}));}} section={chemComputeSection} onSection={section=>{changeChemMode('compute');setChemComputeSection(section);}} utility={chemUtility} onUtility={view=>{setChemMode('design');setChemUtility(view);}}/>}
+      <TopBar mode={activeMode} edition={edition} onEdition={setEdition} chemTitle={chemUtility ? ({models:'Local models',settings:'Settings',help:'Help & documentation'} as Record<string,string>)[chemUtility] : chemMode==='chat'?'Chat':chemMode==='compute'?'Computation':chemTitle}>
+      <div className="workspace-view-controls"><button type="button" aria-label="Workspace execution journal" title="Workspace execution journal" onClick={()=>setExecutionJournalOpen(true)}><History size={16}/></button><button type="button" aria-label="Toggle task sidebar" title="Toggle navigation" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16}/></button>{edition === 'proto' && mode === "design" && <button type="button" aria-label="Toggle inspector" title="Toggle inspector" aria-pressed={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight size={16}/></button>}<button type="button" aria-label={`Use ${theme === "dark" ? "light" : "dark"} theme`} title={`Use ${theme === "dark" ? "light" : "dark"} theme`} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button></div></TopBar>
+      <div className="app-body">
+        <div id="design-workspace" className="mode-content" role="tabpanel" aria-labelledby="mode-design" hidden={edition !== "proto" || mode !== "design"}>
         {currentView === "runs" ? <>
           <main className={`run-workspace ${fullEditor ? "is-full-editor" : ""}`}>
             {!fullEditor && <RunHeader />}
@@ -236,12 +276,19 @@ export function App() {
           </main>
           {inspectorOpen && <ReviewPanel />}
         </> : <main className="page-workspace"><OperationalPage view={currentView} /></main>}
+        </div>
+        <ComputeWorkspace section={computeSection} navigationRevision={computeNavigationRevision} hidden={edition !== "proto" || mode !== "compute"}/>
+        <ChatWorkspace hidden={activeMode !== 'chat'} edition={edition}/>
+        <ChemWorkspace active={edition === "chem" && chemMode === 'design' && !chemUtility} theme={theme} sidebarExpanded={sidebarOpen} workspacePath={workspacePath} target={chemTarget} onTitle={setChemTitle}/>
+        <ChemComputationWorkspace active={edition === 'chem' && chemMode === 'compute'} section={chemComputeSection} onSection={setChemComputeSection} workspacePath={workspacePath}/>
+        {edition === 'chem' && chemUtility && <div className="mode-content" role="tabpanel" aria-labelledby="mode-design"><main className="page-workspace"><OperationalPage view={chemUtility}/></main></div>}
       </div>
       {modelsOpen && <ModelPopover />}
-      {commandOpen && <CommandPalette onClose={closeCommands} />}
+      {commandOpen && <CommandPalette onClose={closeCommands} onDesign={() => setMode("design")} />}
       {evidenceOpen && <GlobalEvidenceSearch onClose={closeEvidence} />}
       {decisionLabOpen && <DecisionLab onClose={closeDecisionLab} />}
       {verificationOpen && <DecisionBundleVerificationCenter onClose={closeVerification} />}
+      {executionJournalOpen && <WorkspaceExecutionJournal onClose={()=>setExecutionJournalOpen(false)} />}
       {toast && (
         <div className="toast" role="status">
           <CircleAlert size={16} />
@@ -281,74 +328,38 @@ function StartupSurface({ phase, error, onRetry }: { phase: BootstrapPhase; erro
   );
 }
 
-function TopBar() {
-  const runtime = useWorkbenchStore((state) => state.runtime);
-  const settings = useWorkbenchStore((state) => state.settings);
-  const toggleModels = useWorkbenchStore((state) => state.toggleModels);
-  const modelsOpen = useWorkbenchStore((state) => state.modelsOpen);
-  const chooseWorkspace = useWorkbenchStore((state) => state.chooseWorkspace);
-  const navigate = useWorkbenchStore((state) => state.navigate);
+function TopBar({ mode, edition, onEdition, chemTitle, children }: { mode: WorkbenchMode; edition: WorkbenchEdition; onEdition(value: WorkbenchEdition): void; chemTitle: string; children: ReactNode }) {
+  const toolsMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (event: PointerEvent) => {if (toolsMenu.current && !toolsMenu.current.contains(event.target as Node)) toolsMenu.current.open = false;};
+    const escape = (event: KeyboardEvent) => {if(event.key === "Escape" && toolsMenu.current) toolsMenu.current.open = false;};
+    document.addEventListener("pointerdown", close); document.addEventListener("keydown", escape);
+    return () => {document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape);};
+  }, []);
+  const settings = useWorkbenchStore(s => s.settings);
+  const chooseWorkspace = useWorkbenchStore(s => s.chooseWorkspace);
+  const toggleModels = useWorkbenchStore(s => s.toggleModels);
+  const currentView = useWorkbenchStore(s => s.currentView);
   const dataMode = workbenchDataMode();
-
-  return (
-    <header className="topbar">
-      <div className="brand-block">
-        <span className="brand-mark" aria-hidden="true">
-          <Dna size={18} />
-        </span>
-        <span className="brand-name">Proto Workbench</span>
-        {dataMode === "preview" && <span className="global-preview-badge" title="Development fixtures are active; actions do not change a real workspace.">Preview · fixture only</span>}
-      </div>
-      <div className="topbar-divider" />
-      <button className="workspace-picker topbar-control" type="button" onClick={() => void chooseWorkspace()}>
-        <span className="control-label">Workspace</span>
-        <span title={settings.workspacePath}>{workspaceName(settings.workspacePath)}</span>
-        <ChevronDown size={14} />
-      </button>
-      <div className="topbar-spacer" />
-      <button id="mission-command-trigger" className="topbar-control command-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:commands"))} title="Open mission commands (Ctrl+K)">
-        <Search size={14} /><span>Commands</span><kbd>Ctrl K</kbd>
-      </button>
-      <button id="global-evidence-trigger" className="topbar-control evidence-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:evidence"))} title="Search global evidence (Ctrl+Shift+F)">
-        <Fingerprint size={14} /><span>Evidence</span>
-      </button>
-      <button id="decision-lab-trigger" className="topbar-control decision-lab-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:decision-lab"))} title="Open Decision Lab (Ctrl+Shift+L)">
-        <FlaskConical size={14} /><span>Lab</span>
-      </button>
-      <button id="verification-center-trigger" className="topbar-control verification-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:verification"))} title="Verify Decision Bundles (Ctrl+Shift+V)">
-        <ShieldCheck size={14} /><span>Verify</span>
-      </button>
-      <button
-        className={`topbar-control model-trigger ${modelsOpen ? "is-open" : ""}`}
-        type="button"
-        onClick={() => toggleModels()}
-        aria-expanded={modelsOpen}
-      >
-        <Boxes size={15} />
-        <span>Models</span>
-        <ChevronDown size={14} />
-      </button>
-      <div className="runtime-inline" title={runtime.detail}>
-        <Circle size={8} fill={runtime.available ? "#35a45d" : "#d59615"} stroke="none" />
-        <span>{runtime.available ? "LM Studio ready" : "LM Studio setup"}</span>
-      </div>
-      <button className="topbar-control runtime-picker" type="button" onClick={() => navigate("settings")}>
-        <Atom size={15} />
-        <span>LM Studio · 127.0.0.1:1234</span>
-        <ChevronDown size={14} />
-      </button>
-      <button className="icon-button topbar-icon" type="button" title="Settings" aria-label="Settings" onClick={() => navigate("settings")}>
-        <Settings size={17} />
-      </button>
-      <button className="icon-button topbar-icon" type="button" title="Help" aria-label="Help" onClick={() => navigate("help")}>
-        <CircleHelp size={17} />
-      </button>
-      <span className="window-overlay-space" aria-hidden="true" />
-    </header>
-  );
+  const names: Record<string,string> = {launchpad:"Overview", designs:"Design studio", runs:"Research runs", workspaces:"Workspaces", materials:"Materials", sources:"Sources", reviews:"Reviews", models:"Local models", settings:"Settings", help:"Help"};
+  return <header className="topbar">
+    <WorkbenchSwitcher edition={edition} onChange={onEdition}/>
+    <span className="breadcrumb-divider">/</span><span className="workspace-location">{edition === "chem" ? chemTitle : mode === "chat" ? "Chat" : mode === "compute" ? "Compute" : names[currentView]}</span>
+    {edition === "proto" && dataMode === "preview" && <span className="global-preview-badge" title={mode === "chat" ? "Chat uses the real local LM Studio server and saves conversations in this source workspace." : "Design workspace content uses development fixtures. LM Studio inventory is read live."}>{mode === "chat" ? "Local chat · LM Studio" : "Preview · live models"}</span>}
+    <div className="topbar-spacer"/>
+    {edition === "proto" && <><button id="mission-command-trigger" className="topbar-control command-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:commands"))} title="Commands (Ctrl+K)"><Search size={15}/><span>Search & commands</span><kbd>Ctrl K</kbd></button>
+    <details ref={toolsMenu} className="workspace-tools-menu"><summary title="Research tools"><SlidersHorizontal size={16}/><span>Tools</span></summary><div onClick={() => {if(toolsMenu.current) toolsMenu.current.open = false;}}>
+      <button type="button" title={settings.workspacePath} onClick={() => void chooseWorkspace()}><FolderKanban size={15}/>Change workspace · {workspaceName(settings.workspacePath)}</button>
+      <button id="global-evidence-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:evidence"))}><Fingerprint size={15}/>Evidence search</button>
+      <button id="decision-lab-trigger" type="button" title="Decision Lab (Ctrl+Shift+L)" onClick={() => window.dispatchEvent(new Event("proto:decision-lab"))}><FlaskConical size={15}/>Decision Lab</button>
+      <button id="verification-center-trigger" type="button" title="Verify bundles (Ctrl+Shift+V)" onClick={() => window.dispatchEvent(new Event("proto:verification"))}><ShieldCheck size={15}/>Verify bundles</button>
+      <button type="button" onClick={() => toggleModels()}><Boxes size={15}/>Model switcher</button>
+    </div></details></>}
+    {children}
+  </header>;
 }
 
-function CommandPalette({ onClose }: { onClose: () => void }) {
+function CommandPalette({ onClose, onDesign }: { onClose: () => void; onDesign: () => void }) {
   const beginNewRun = useWorkbenchStore((state) => state.beginNewRun);
   const setPrompt = useWorkbenchStore((state) => state.setPrompt);
   const navigate = useWorkbenchStore((state) => state.navigate);
@@ -360,6 +371,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       title: "Plan an evidence-gap review",
       detail: "Create a read-only planning draft with a structured starting goal.",
       run: async () => {
+        onDesign();
         await beginNewRun("plan");
         setPrompt("Map the evidence gaps for this workspace goal, identify assumptions, and propose a review plan without changing files or running code.");
       },
@@ -369,6 +381,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       title: "Draft a controlled workspace change",
       detail: "Create an Act draft that must pass Mission Preflight before it can start.",
       run: async () => {
+        onDesign();
         await beginNewRun("act");
         setPrompt("Complete the requested workspace change within the mission scope, record the diff, validate the result, and preserve the evidence.");
       },
@@ -377,7 +390,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       id: "plan-recovery",
       title: "Open recovery and run evidence",
       detail: "Navigate to durable run state without resuming or executing anything.",
-      run: async () => navigate("runs"),
+      run: async () => { onDesign(); navigate("runs"); },
     },
     {
       id: "decision-lab",
@@ -395,13 +408,13 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       id: "launchpad",
       title: "Open environment Launchpad",
       detail: "Review runtime, model, modules, and workspace readiness.",
-      run: async () => navigate("launchpad"),
+      run: async () => { onDesign(); navigate("launchpad"); },
     },
     {
       id: "materials",
       title: "Open biological Materials",
       detail: "Search the external, versioned catalogue and inspect rights and safety gates.",
-      run: async () => navigate("materials"),
+      run: async () => { onDesign(); navigate("materials"); },
     },
   ];
   const visible = commands.filter((command) => `${command.title} ${command.detail}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
@@ -424,64 +437,6 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
         <footer><ShieldCheck size={13} /><span>Commands never send a prompt, call a tool, or approve a side effect.</span></footer>
       </section>
     </div>
-  );
-}
-
-function Sidebar() {
-  const runs = useWorkbenchStore((state) => state.runs);
-  const selectedRunId = useWorkbenchStore((state) => state.selectedRunId);
-  const selectRun = useWorkbenchStore((state) => state.selectRun);
-  const currentView = useWorkbenchStore((state) => state.currentView);
-  const navigate = useWorkbenchStore((state) => state.navigate);
-  const showArchived = useWorkbenchStore((state) => state.showArchived);
-  const setShowArchived = useWorkbenchStore((state) => state.setShowArchived);
-  const navigation = [
-    { label: "Launchpad", view: "launchpad" as const, icon: Workflow },
-    { label: "Workspaces", view: "workspaces" as const, icon: FolderKanban },
-    { label: "Designs", view: "designs" as const, icon: Dna },
-    { label: "Runs", view: "runs" as const, icon: History },
-    { label: "Models", view: "models" as const, icon: Boxes },
-    { label: "Materials", view: "materials" as const, icon: Database },
-    { label: "Sources", view: "sources" as const, icon: BookOpen },
-    { label: "Reviews", view: "reviews" as const, icon: ClipboardCheck },
-  ];
-
-  return (
-    <aside className="sidebar">
-      <nav className="primary-nav" aria-label="Primary">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button className={`nav-item ${currentView === item.view ? "is-active" : ""}`} type="button" key={item.label} title={item.label} aria-label={item.label} onClick={() => navigate(item.view)} aria-current={currentView === item.view ? "page" : undefined}>
-              <Icon size={17} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-      <div className="sidebar-section-title">Recent runs</div>
-      <div className="recent-runs">
-        {runs.slice(0, 8).map((run) => (
-          <button
-            className={`recent-run ${selectedRunId === run.runId ? "is-selected" : ""}`}
-            type="button"
-            key={run.runId}
-            onClick={() => void selectRun(run.runId)}
-            aria-current={selectedRunId === run.runId ? "true" : undefined}
-          >
-            <span className="recent-run-copy">
-              <strong>{run.title}</strong>
-              <small>{formatRunDate(run.createdAt)}</small>
-            </span>
-            <RunStateBadge lifecycle={run.lifecycle} />
-          </button>
-        ))}
-      </div>
-      <button className={`archive-button ${showArchived ? "is-active" : ""}`} type="button" onClick={() => void setShowArchived(!showArchived)}>
-        {showArchived ? <History size={16} /> : <Archive size={16} />}
-        <span>{showArchived ? "Hide archived runs" : "Show archived runs"}</span>
-      </button>
-    </aside>
   );
 }
 
@@ -652,7 +607,7 @@ function LedgerEvent({
         <time>{formatTime(event.createdAt)}</time>
       </div>
       <div className="actor-cell">
-        <span className={`actor-mark actor-${event.actor}`}><Atom size={13} /></span>
+        <span className={`actor-mark actor-${event.actor}`}>{event.actor === 'user' ? <UserRound size={13}/> : event.actor === 'tool' ? <Wrench size={13}/> : event.actor === 'system' ? <Terminal size={13}/> : <Bot size={13}/>}</span>
         <span>{capitalize(event.actor)}</span>
       </div>
       <div className="event-copy">
@@ -730,7 +685,8 @@ function CodeDrawer() {
           <button className="icon-button" type="button" onClick={() => setFullEditor(!fullEditor)} title={fullEditor ? "Exit full editor" : "Open full editor"} aria-label={fullEditor ? "Exit full editor" : "Open full editor"}>{fullEditor ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</button>
           {!fullEditor && <button className="icon-button" type="button" onClick={() => setDrawerCollapsed(true)} title="Collapse code panel" aria-label="Collapse code panel"><ChevronDown size={15} /></button>}
         </div>
-        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme={theme === "dark" ? "proto-dark" : "proto-light"} options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: "Cascadia Code, Consolas, monospace", scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
+        {activeDocument.artifactReader?.readOnly&&<p className="artifact-version-notice" role="status"><strong>{activeDocument.artifactReader.code}</strong> {activeDocument.artifactReader.message}</p>}
+        <div className="editor-surface"><Editor value={activeDocument.content} language={languageForPath(activeDocument.path)} beforeMount={configureMonaco} theme={theme === "dark" ? "proto-dark" : "proto-light"} options={{ automaticLayout: true, minimap: { enabled: false }, readOnly: true, fontSize: 12, lineHeight: 19, fontFamily: '"Anthropic Mono Web", Consolas, monospace' , scrollBeyondLastLine: false, overviewRulerLanes: 0, lineNumbersMinChars: 3, padding: { top: 10, bottom: 10 } }} /></div>
         <div className="code-actionbar"><span className="change-summary"><FileCheck2 size={14} />Run artifact</span><span className="code-rationale">Selected from the auditable run ledger.</span><button className="secondary-button" type="button" onClick={() => void openFile(activeDocument.path)}><Files size={13} />Open externally</button></div>
       </section>
     );
@@ -829,7 +785,7 @@ function CodeDrawer() {
               originalEditable: false,
               fontSize: 12,
               lineHeight: 19,
-              fontFamily: "Cascadia Code, Consolas, monospace",
+              fontFamily: '"Anthropic Mono Web", Consolas, monospace' ,
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
               folding: false,
@@ -849,7 +805,7 @@ function CodeDrawer() {
               readOnly: true,
               fontSize: 12,
               lineHeight: 19,
-              fontFamily: "Cascadia Code, Consolas, monospace",
+              fontFamily: '"Anthropic Mono Web", Consolas, monospace' ,
               scrollBeyondLastLine: false,
               overviewRulerLanes: 0,
               lineNumbersMinChars: 3,
@@ -1085,7 +1041,7 @@ function Composer() {
     <section className="composer-wrap">
       {(isAgentRunning || streamingText || latestAssistant) && (
         <div className="assistant-reply">
-          <Atom size={14} />
+          <Bot size={14} />
           <div className="assistant-reply-copy">
             <span>{isAgentRunning ? runningSummary : latestAssistant?.content}</span>
             {isAgentRunning && agentStartedAt && <time>{formatElapsed(clock - agentStartedAt)}</time>}
@@ -1220,6 +1176,7 @@ function ReviewPanel() {
         </section>
 
         <section className="review-section">
+          <EvidenceStandingView standing={review.evidenceStanding}/>
           <h2>Claim → Evidence traceability</h2>
           <div className="claims-table">
             <div className="claim-row claim-header"><span>ID</span><span>Claim</span><span>Evidence</span><span>Status</span></div>
@@ -1318,7 +1275,6 @@ function ModelPopover() {
           <strong>LM Studio inventory</strong>
           <span>{runtime.modelCount ?? models.length} models</span>
         </div>
-        <div className="vram-meter"><span style={{ width: runtime.available ? "100%" : "0%" }} /></div>
         <div className="vram-labels"><span>{loadedInstances} loaded instance{loadedInstances === 1 ? "" : "s"}</span><span>{runtime.available ? "Synchronized" : "Unavailable"}</span></div>
       </div>
       <div className="model-table-head"><span>Model</span><span>Status</span><span>Size</span><span>Action</span></div>
@@ -1328,7 +1284,7 @@ function ModelPopover() {
             key={model.id}
             model={model}
             busy={busyModelId === model.id}
-            disabled={isAgentRunning}
+            disabled={isAgentRunning || !runtime.available || workbenchDataMode() === "preview"}
             onLoad={() => void loadModel(model.id)}
             onUnload={() => void unloadModel(model.id)}
             onPin={() => void pinModel(model.id, !model.pinned)}
@@ -1370,7 +1326,7 @@ function ModelRow({
   onUnload: () => void;
   onPin: () => void;
 }) {
-  const resident = Boolean(model.workbenchInstance && (model.loadState === "active" || model.loadState === "warm"));
+  const resident = isModelConnected(model);
   const embedding = model.modelKind === "embedding";
   return (
     <div className="model-row">
@@ -1378,7 +1334,7 @@ function ModelRow({
         <StatusDot status={model.loadState} />
         <span><strong>{model.name}</strong><small>{model.quantization} · {modelContextLabel(model)}</small></span>
       </div>
-      <span className={`model-state is-${model.loadState}`}>{resident ? "Connected" : model.loadedInstances?.length ? "Loaded in LM Studio" : embedding ? "Embedding" : "Available"}</span>
+      <span className={`model-state is-${model.loadState}`}>{resident ? "Connected" : model.loadedInstances?.length ? "Loaded in LM Studio" : embedding ? "Embedding" : "Not loaded"}</span>
       <span title="Model weight size reported by LM Studio">{formatGb(model.sizeBytes)}</span>
       <div className="model-actions">
         <button className="icon-button" type="button" onClick={onPin} title={model.pinned ? "Unpin model" : "Pin model"} aria-label={model.pinned ? "Unpin model" : "Pin model"}>
@@ -1448,28 +1404,28 @@ const configureMonaco: BeforeMount = (monaco) => {
       base: "vs",
       inherit: true,
       rules: [
-        { token: "keyword", foreground: "006f69", fontStyle: "bold" },
-        { token: "identifier", foreground: "25312e" },
-        { token: "number", foreground: "915c00" },
-        { token: "comment", foreground: "7b8783", fontStyle: "italic" },
+        { token: "keyword", foreground: "514E47", fontStyle: "bold" },
+        { token: "identifier", foreground: "2C2B28" },
+        { token: "number", foreground: "877143" },
+        { token: "comment", foreground: "79766F", fontStyle: "italic" },
       ],
       colors: {
-        "editor.background": "#fbfcfc",
-        "editorLineNumber.foreground": "#9aa6a2",
-        "editorLineNumber.activeForeground": "#4f5c58",
-        "editor.selectionBackground": "#cfe8e4",
-        "editor.lineHighlightBackground": "#f3f7f5",
-        "diffEditor.insertedTextBackground": "#bfe4cc88",
-        "diffEditor.removedTextBackground": "#f1c9c688",
-        "diffEditor.insertedLineBackground": "#e9f7ee",
-        "diffEditor.removedLineBackground": "#fbeeed",
-        "editorGutter.addedBackground": "#2f9b55",
-        "editorGutter.deletedBackground": "#cc3b38",
+        "editor.background": "#FDFCF9",
+        "editorLineNumber.foreground": "#79766F",
+        "editorLineNumber.activeForeground": "#696760",
+        "editor.selectionBackground": "#E2DED5",
+        "editor.lineHighlightBackground": "#F3F1EC",
+        "diffEditor.insertedTextBackground": "#BFCABA55",
+        "diffEditor.removedTextBackground": "#DCBDB955",
+        "diffEditor.insertedLineBackground": "#EEF0EB",
+        "diffEditor.removedLineBackground": "#F7EEEB",
+        "editorGutter.addedBackground": "#526555",
+        "editorGutter.deletedBackground": "#A04F49",
       },
     });
     monaco.editor.defineTheme("proto-dark", {base: "vs-dark", inherit: true, rules: [
-      {token: "keyword", foreground: "71DBC2", fontStyle: "bold"}, {token: "identifier", foreground: "DEEDE7"}, {token: "number", foreground: "E9BF79"}, {token: "comment", foreground: "819F91", fontStyle: "italic"},
-    ], colors: {"editor.background": "#101B17", "editorLineNumber.foreground": "#5F7B6F", "editor.selectionBackground": "#285545", "editor.lineHighlightBackground": "#172820", "diffEditor.insertedLineBackground": "#1A3B2B", "diffEditor.removedLineBackground": "#3C2928"}});
+      {token: "keyword", foreground: "D6D1C4", fontStyle: "bold"}, {token: "identifier", foreground: "E8E5DC"}, {token: "number", foreground: "C5B58D"}, {token: "comment", foreground: "A29C90", fontStyle: "italic"},
+    ], colors: {"editor.background": "#292824", "editorLineNumber.foreground": "#A29C90", "editor.selectionBackground": "#4A473F", "editor.lineHighlightBackground": "#33312C", "diffEditor.insertedLineBackground": "#30372E", "diffEditor.removedLineBackground": "#41312E"}});
   }
 };
 

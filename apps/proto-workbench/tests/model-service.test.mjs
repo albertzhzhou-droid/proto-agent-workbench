@@ -503,3 +503,29 @@ test("quick-switch estimates credit VRAM that the current resident will release"
     await service.shutdown();
   }
 });
+
+
+test("authoritative server catalogs never expose persisted models or retain them after failure", async () => {
+  const old = descriptor("obsolete-mcp-model");
+  const current = {...descriptor("current-server-model"), provider: "lmstudio", loadedInstances: []};
+  let fail = false;
+  const catalog = {authoritativeEndpoint: "http://127.0.0.1:1234", scan: async () => {
+    if (fail) throw new Error("server unavailable");
+    return [current];
+  }};
+  const database = new FakeDatabase([old], {mode: "quick-switch", budgetBytes: 20 * GIB, warmTtlMinutes: 30, pinnedModelIds: []});
+  const service = new ModelService(database, catalog, new FakeRuntime(), abundantGpu, abundantRam);
+  const changes = [];
+  const stop = service.subscribe(models => changes.push(models));
+  try {
+    assert.deepEqual(service.list(), []);
+    await service.scan(catalog.authoritativeEndpoint);
+    assert.deepEqual(service.list().map(model => model.id), [current.id]);
+    fail = true;
+    await assert.rejects(service.scan(catalog.authoritativeEndpoint), /server unavailable/);
+    assert.deepEqual(service.list(), []);
+    assert.deepEqual(changes.at(-1), []);
+    fail = false;
+    assert.equal((await service.scan(catalog.authoritativeEndpoint)).length, 1);
+  } finally {stop(); await service.shutdown();}
+});

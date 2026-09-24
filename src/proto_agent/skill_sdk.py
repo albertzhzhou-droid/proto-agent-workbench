@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
 import stat as stat_module
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
@@ -15,6 +19,7 @@ from .security import (
     SecurityBoundaryError,
     WorkspacePaths,
     read_bytes_bounded,
+    write_text_bounded,
 )
 
 
@@ -28,6 +33,9 @@ MAX_INTERFACES = 8
 MAX_UPSTREAM_SOURCES = 16
 MAX_SKILL_CONTENT_FILES = 32
 MAX_SKILL_CONTENT_BYTES = 4 * 1024 * 1024
+EXTENSION_TRUST_ROOT = Path(".proto-agent") / "extension-trust"
+EXTENSION_TRUST_SCHEMA_VERSION = "proto-agent.extension-trust.v1"
+MAX_EXTENSION_TRUST_BYTES = 16 * 1024
 
 _IDENTIFIER = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
 _CONNECTOR_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
@@ -111,6 +119,7 @@ def list_skill_adapters(
             "The connector registry changed while Skill capabilities were being resolved.",
         )
     connector_registry_sha256 = hashlib.sha256(registry_before).hexdigest()
+    source_commit = _source_commit(paths.workspace)
 
     directories = _skill_directories(root)
     directory_names = [directory.name for directory in directories]
@@ -144,17 +153,23 @@ def list_skill_adapters(
             digest.update(item["path"].encode("utf-8"))
             digest.update(b"\0")
             digest.update(bytes.fromhex(item["sha256"]))
-        adapters.append(
-            _resolve_adapter(
-                validated,
-                capabilities,
-                manifest_path=(directory / SKILL_MANIFEST_NAME).relative_to(paths.workspace).as_posix(),
-                document_path=(directory / SKILL_DOCUMENT_NAME).relative_to(paths.workspace).as_posix(),
-                manifest_sha256=manifest_digest,
-                document_sha256=document_digest,
-                content_files=content_files,
-            )
+        adapter = _resolve_adapter(
+            validated,
+            capabilities,
+            manifest_path=(directory / SKILL_MANIFEST_NAME).relative_to(paths.workspace).as_posix(),
+            document_path=(directory / SKILL_DOCUMENT_NAME).relative_to(paths.workspace).as_posix(),
+            manifest_sha256=manifest_digest,
+            document_sha256=document_digest,
+            content_files=content_files,
         )
+        identity = _extension_identity(
+            adapter,
+            source_commit=source_commit,
+            connector_registry_sha256=connector_registry_sha256,
+        )
+        adapter["extension_identity"] = identity
+        adapter["trust"] = _read_extension_trust(paths, validated["id"], identity)
+        adapters.append(adapter)
     if [directory.name for directory in _skill_directories(root)] != directory_names:
         raise SecurityBoundaryError(
             "SKILL_CATALOG_RACE_DETECTED",
@@ -172,6 +187,7 @@ def list_skill_adapters(
         "skills_root": root.relative_to(paths.workspace).as_posix(),
         "connector_registry": registry.relative_to(paths.workspace).as_posix(),
         "connector_registry_sha256": connector_registry_sha256,
+        "source_commit": source_commit,
         "adapter_count": len(adapters),
         "status_counts": status_counts,
         "catalog_sha256": digest.hexdigest(),
@@ -201,13 +217,190 @@ def resolve_skill_adapter(
         if adapter["id"] == skill_id:
             return {
                 "schema_version": "proto-agent.skill-resolution.v1",
-                "ok": adapter["status"] == "available",
+                "ok": adapter["status"] == "available" and adapter["trust"]["state"] == "trusted",
                 "catalog_sha256": catalog["catalog_sha256"],
                 "connector_registry_sha256": catalog["connector_registry_sha256"],
                 "adapter": adapter,
+                "resolution_state": (
+                    "available_and_trusted"
+                    if adapter["status"] == "available" and adapter["trust"]["state"] == "trusted"
+                    else "blocked_by_extension_trust"
+                    if adapter["trust"]["state"] != "trusted"
+                    else "capability_unavailable"
+                ),
                 "safety_boundary": catalog["safety_boundary"],
             }
     raise ValueError(f"Unknown skill adapter: {skill_id}")
+
+
+def trust_skill_adapter(
+    skill_id: str,
+    skills_root: str | Path = DEFAULT_SKILLS_ROOT,
+    connector_registry: str | Path = DEFAULT_CONNECTORS_PATH,
+    *,
+    workspace_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Pin the exact current declarative adapter identity in local workspace state.
+
+    This is an explicit local approval action. It does not sign content, authorize
+    connector effects, or enable executable extensions.
+    """
+
+    if not isinstance(skill_id, str) or not _IDENTIFIER.fullmatch(skill_id):
+        raise ValueError("Skill id must be a bounded lowercase kebab-case identifier.")
+    paths = WorkspacePaths.create(workspace_root)
+    catalog = list_skill_adapters(
+        skills_root,
+        connector_registry,
+        workspace_root=paths.workspace,
+    )
+    adapter = next((item for item in catalog["adapters"] if item["id"] == skill_id), None)
+    if adapter is None:
+        raise ValueError(f"Unknown skill adapter: {skill_id}")
+    identity = adapter["extension_identity"]
+    if not isinstance(identity.get("source_commit"), str) or not _REVISION.fullmatch(identity["source_commit"]):
+        raise SecurityBoundaryError(
+            "EXTENSION_SOURCE_COMMIT_UNAVAILABLE",
+            "A local source commit could not be resolved; the extension cannot be pinned.",
+        )
+    trust_directory = paths.ensure_directory(
+        paths.workspace / EXTENSION_TRUST_ROOT,
+        boundary=paths.workspace,
+    )
+    record = {
+        "schema_version": EXTENSION_TRUST_SCHEMA_VERSION,
+        "extension_id": skill_id,
+        "state": "granted",
+        **identity,
+        "granted_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "boundary": "local_content_pin_only",
+    }
+    target = trust_directory / f"{skill_id}.json"
+    write_text_bounded(
+        target,
+        json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        MAX_EXTENSION_TRUST_BYTES,
+        boundary=paths.workspace,
+    )
+    return {
+        "schema_version": "proto-agent.extension-trust-receipt.v1",
+        "ok": True,
+        "extension_id": skill_id,
+        "state": "trusted",
+        "identity": identity,
+        "trust_record": target.relative_to(paths.workspace).as_posix(),
+        "boundary": (
+            "Explicit local content pin only. This is not a digital signature, publisher identity, "
+            "effect authorization, or permission to execute extension code."
+        ),
+    }
+
+
+def _source_commit(workspace: Path) -> str | None:
+    environment = {key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")}
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(workspace), "rev-parse", "--verify", "HEAD"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            encoding="ascii",
+            errors="replace",
+            timeout=2,
+            check=False,
+            shell=False,
+            env=environment,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    revision = completed.stdout.strip().lower()
+    return revision if completed.returncode == 0 and _REVISION.fullmatch(revision) else None
+
+
+def _extension_identity(
+    adapter: dict[str, Any],
+    *,
+    source_commit: str | None,
+    connector_registry_sha256: str,
+) -> dict[str, Any]:
+    content_descriptors = [
+        {"path": item["path"], "sha256": item["sha256"], "size": item["size"]}
+        for item in adapter["content_files"]
+    ]
+    content_sha256 = hashlib.sha256(
+        json.dumps(content_descriptors, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    capability_scope = {
+        "policy": adapter["policy"],
+        "operations": [
+            {
+                "id": operation["id"],
+                "required": operation["required"],
+                "interfaces": operation["interfaces"],
+            }
+            for operation in adapter["operations"]
+        ],
+    }
+    capability_scope_sha256 = hashlib.sha256(
+        json.dumps(capability_scope, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {
+        "source_commit": source_commit,
+        "declaration_sha256": adapter["manifest_sha256"],
+        "content_sha256": content_sha256,
+        "capability_scope_sha256": capability_scope_sha256,
+        "connector_registry_sha256": connector_registry_sha256,
+    }
+
+
+def _read_extension_trust(
+    paths: WorkspacePaths,
+    extension_id: str,
+    current_identity: dict[str, Any],
+) -> dict[str, Any]:
+    relative = EXTENSION_TRUST_ROOT / f"{extension_id}.json"
+    try:
+        trust_file = paths.workspace_file(relative, extensions={".json"}, max_bytes=MAX_EXTENSION_TRUST_BYTES)
+        payload = read_bytes_bounded(trust_file, MAX_EXTENSION_TRUST_BYTES)
+        record = strict_json_loads(payload.decode("utf-8"), max_bytes=MAX_EXTENSION_TRUST_BYTES)
+    except SecurityBoundaryError as exc:
+        if exc.code == "FILE_NOT_FOUND":
+            return {"state": "untrusted", "reason": "no_local_trust_record"}
+        return {"state": "invalid", "reason": "trust_record_path_invalid", "detail": exc.code}
+    except (JsonValidationError, UnicodeDecodeError, ValueError, OSError):
+        return {"state": "invalid", "reason": "trust_record_unreadable_or_malformed"}
+    if not isinstance(record, dict):
+        return {"state": "invalid", "reason": "trust_record_schema_invalid"}
+    expected_keys = {
+        "schema_version",
+        "extension_id",
+        "state",
+        "source_commit",
+        "declaration_sha256",
+        "content_sha256",
+        "capability_scope_sha256",
+        "connector_registry_sha256",
+        "granted_at",
+        "boundary",
+    }
+    if set(record) != expected_keys or record.get("schema_version") != EXTENSION_TRUST_SCHEMA_VERSION:
+        return {"state": "invalid", "reason": "trust_record_schema_invalid"}
+    if record.get("extension_id") != extension_id or record.get("boundary") != "local_content_pin_only":
+        return {"state": "invalid", "reason": "trust_record_binding_invalid"}
+    if record.get("state") != "granted":
+        return {"state": "invalid", "reason": "trust_record_state_invalid"}
+    if not isinstance(record.get("granted_at"), str) or not record["granted_at"].endswith("Z"):
+        return {"state": "invalid", "reason": "trust_record_timestamp_invalid"}
+    if not all(
+        isinstance(record.get(key), str) and _SHA256.fullmatch(record[key])
+        for key in ("declaration_sha256", "content_sha256", "capability_scope_sha256", "connector_registry_sha256")
+    ) or not isinstance(record.get("source_commit"), str) or not _REVISION.fullmatch(record["source_commit"]):
+        return {"state": "invalid", "reason": "trust_record_identity_invalid"}
+    changed = [key for key, value in current_identity.items() if record.get(key) != value]
+    if changed:
+        return {"state": "stale", "reason": "extension_identity_changed", "changed_identity_fields": changed}
+    return {"state": "trusted", "reason": "exact_local_content_pin", "granted_at": record["granted_at"]}
 
 
 def audit_skill_adapters(

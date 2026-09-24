@@ -316,8 +316,10 @@ async function captureSidecarTree(runtimeRoot, adminCliPath, mcpPath) {
         throw new Error("Packaged sidecar file escaped its runtime root.");
       }
       totalBytes += info.size;
-      if (totalBytes > 2 * 1024 * 1024 * 1024) {
-        throw new Error("Packaged sidecar tree exceeded the 2 GiB verification limit.");
+      // The two independent scientific sidecars include NumPy, SciPy and Torch.
+      // Their combined tree exceeds 2 GiB; keep a bounded 4 GiB release budget.
+      if (totalBytes > 4 * 1024 * 1024 * 1024) {
+        throw new Error("Packaged sidecar tree exceeded the 4 GiB verification limit.");
       }
       files.push({
         path: relative(root, absolute).replaceAll("\\", "/"),

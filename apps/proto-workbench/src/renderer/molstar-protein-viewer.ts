@@ -53,20 +53,22 @@ export async function createProteinViewport(
 ): Promise<ProteinViewport> {
   if (data.text.length > LIMITS.maxBytes || sha256Text(data.text) !== data.attachment.contentSha256) throw new Error("Structure bytes failed the renderer digest check.");
   const spec = DefaultPluginSpec();
+  const backgroundColor = () => Color(document.documentElement.dataset.theme === "dark" ? 0x262724 : 0xfdfcf9);
   const plugin = new PluginContext({ ...spec, actions: [], animations: [], config: [[PluginConfig.VolumeStreaming.Enabled, false]],
-    canvas3d: { renderer: { backgroundColor: Color(0x111b20) }, camera: { mode: "perspective" },
+    canvas3d: { renderer: { backgroundColor: backgroundColor() }, camera: { mode: "perspective" },
       cameraFog: { name: "off", params: {} }, trackball: { animate: { name: "off", params: {} } } } });
   // initViewerAsync also rejects this separate lifecycle promise on failure.
   // The awaited initialization below remains the source of the visible error.
   void plugin.canvas3dInitialized.catch(() => undefined);
   let disposed = false;
   let observer: ResizeObserver | undefined;
+  let themeObserver: MutationObserver | undefined;
   let subscription: { unsubscribe(): void } | undefined;
   let unbindContextLost: (() => void) | undefined;
   const check = () => { if (disposed || options.signal?.aborted) throw new Error("Structure loading was cancelled."); };
   const dispose = () => {
     if (disposed) return;
-    disposed = true; observer?.disconnect(); subscription?.unsubscribe();
+    disposed = true; observer?.disconnect(); themeObserver?.disconnect(); subscription?.unsubscribe();
     options.signal?.removeEventListener("abort", dispose);
     unbindContextLost?.(); plugin.dispose();
   };
@@ -76,6 +78,8 @@ export async function createProteinViewport(
     if (!(await plugin.initViewerAsync(canvas, container))) throw new Error("WebGL is unavailable. Sequence and residue tables remain accessible.");
     check();
     unbindContextLost = bindProteinContextLoss(canvas, options.onContextLost);
+    themeObserver = new MutationObserver(() => plugin.canvas3d?.setProps({renderer:{backgroundColor:backgroundColor()}}));
+    themeObserver.observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
     plugin.managers.interactivity.setProps({ granularity: "residue" });
     plugin.representation.structure.themes.colorThemeRegistry.add({ name: "proto-plddt", label: "AlphaFold pLDDT", category: "Validation",
       factory: confidenceTheme, getParams: () => ({}), defaultValues: {}, isApplicable: () => data.attachment.source.provider === "alphafold" });
@@ -109,6 +113,12 @@ export async function createProteinViewport(
         componentRef = component.ref;
         await plugin.builders.structure.representation.addRepresentation(component, { type: plugin.representation.structure.registry.get(representation),
           color: plugin.representation.structure.themes.colorThemeRegistry.get(color === "confidence" ? "proto-plddt" : color === "residue" ? "residue-name" : "chain-id"),
+          // Keep categorical chains distinct without fluorescent canvas colors.
+          // Confidence and residue schemes retain their scientific conventions.
+          colorParams: color === "chain" ? { palette: { name: "generate", params: {
+            hue: [1, 360], chroma: [18, 32], luminance: [45, 70], sort: "contrast",
+            clusteringStepCount: 50, minSampleCount: 800, sampleCountFactor: 5, maxCount: 75,
+          } } } : undefined,
           typeParams: { quality: "medium", ignoreHydrogens: true } });
         check();
       });

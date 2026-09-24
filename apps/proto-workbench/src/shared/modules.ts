@@ -1,3 +1,6 @@
+import { TOOL_CONTRACTS, resolveToolContract } from "./tool-contracts.ts";
+import { normalizeDesignSkills } from "./design-skills.ts";
+
 export type CoreModuleId =
   | "core.audit"
   | "core.inference"
@@ -13,6 +16,8 @@ export type OptionalModuleId =
   | "evidence.uniprot"
   | "evidence.rhea"
   | "analysis.python"
+  | "analysis.biomni"
+  | "analysis.chemistry"
   | "analysis.notebook"
   | "analysis.r"
   | "media.vision";
@@ -22,6 +27,7 @@ export type ModuleProfile = "core-only" | "research" | "full" | "custom";
 export interface ModuleSettings {
   profile: ModuleProfile;
   enabledOptional: OptionalModuleId[];
+  enabledSkills?: string[];
 }
 
 export interface WorkbenchModuleDescriptor {
@@ -80,6 +86,8 @@ export interface ModuleIntegrityReport {
   modules: ModuleIntegrityResult[];
 }
 
+const toolsForModule = (module: CoreModuleId | OptionalModuleId): string[] => [...TOOL_CONTRACTS.values()].filter(contract => contract.module === module).map(contract => contract.name);
+
 export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
   {
     id: "core.audit",
@@ -88,7 +96,7 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Module identity, SHA-256 integrity verification, isolation, and startup blocking.",
     core: true,
     resourceTier: "required",
-    tools: [],
+    tools: toolsForModule("core.audit"),
   },
   {
     id: "core.inference",
@@ -97,7 +105,7 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "LM Studio catalogue discovery, explicit instance lifecycle, ownership-safe unload, and streaming chat.",
     core: true,
     resourceTier: "required",
-    tools: [],
+    tools: toolsForModule("core.inference"),
   },
   {
     id: "core.workspace",
@@ -106,7 +114,7 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Contained reads, searches, patch proposals, and approved writes.",
     core: true,
     resourceTier: "required",
-    tools: ["workspace_read", "workspace_search", "workspace_propose_patch", "workspace_resume_validation"],
+    tools: toolsForModule("core.workspace"),
   },
   {
     id: "core.governance",
@@ -115,7 +123,7 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Mission scope, provenance, recovery, cancellation, and event history.",
     core: true,
     resourceTier: "required",
-    tools: ["proto_connectors_check"],
+    tools: toolsForModule("core.governance"),
   },
   {
     id: "core.validation",
@@ -124,33 +132,7 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Parts lookup, deterministic checks, compile, export, workflow, and sequence validation.",
     core: true,
     resourceTier: "required",
-    tools: [
-      "proto_check",
-      "proto_compile",
-      "proto_export",
-      "proto_validate_sbol",
-      "proto_score",
-      "proto_validate_sequences",
-      "proto_optimize_sequences",
-      "proto_search_parts",
-      "proto_materials_search",
-      "proto_materials_get",
-      "proto_materials_facets",
-      "proto_materials_materialize",
-      "proto_materials_materialize_proteins",
-      "proto_protein_compile",
-      "proto_protein_inspect",
-      "proto_structure_list",
-      "proto_structure_read",
-      "proto_structure_import_workspace",
-      "proto_structure_search",
-      "proto_structure_fetch",
-      "proto_language_reference",
-      "proto_protein_validate",
-      "proto_design_edit",
-      "proto_workflow_run",
-      "proto_provenance_verify",
-    ],
+    tools: toolsForModule("core.validation"),
   },
   {
     id: "core.review",
@@ -159,11 +141,25 @@ export const CORE_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Patch gates, claim traceability, review packets, and human checklists.",
     core: true,
     resourceTier: "required",
-    tools: ["proto_review_packet", "proto_literature_search"],
+    tools: toolsForModule("core.review"),
   },
 ];
 
 export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
+  {
+    id: "analysis.chemistry", version: 1, label: "Chemistry scientific computing",
+    description: "Chemistry operator catalog, saved calculations, and provenance through the shared execution contract.",
+    core: false, resourceTier: "standard", tools: toolsForModule("analysis.chemistry"),
+  },
+  {
+    id: "analysis.biomni",
+    version: 2,
+    label: "Biomni scientific computing",
+    description: "127 statistical, biological, sequence, comparative-study, RNA-seq and structure-result methods plus nine WSL bioinformatics operations with live probes. Typed schemas and source-bound result artifacts share one tool workflow.",
+    core: false,
+    resourceTier: "standard",
+    tools: toolsForModule("analysis.biomni"),
+  },
   {
     id: "evidence.pubmed",
     version: 1,
@@ -171,7 +167,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "NCBI literature metadata through mission-bound network capabilities.",
     core: false,
     resourceTier: "light",
-    tools: ["proto_pubmed_search"],
+    tools: toolsForModule("evidence.pubmed"),
   },
   {
     id: "evidence.europe-pmc",
@@ -180,7 +176,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Articles, preprints, patents, and linked life-science metadata.",
     core: false,
     resourceTier: "light",
-    tools: ["proto_europe_pmc_search"],
+    tools: toolsForModule("evidence.europe-pmc"),
   },
   {
     id: "evidence.crossref",
@@ -189,7 +185,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "DOI and bibliographic identity corroboration.",
     core: false,
     resourceTier: "light",
-    tools: ["proto_crossref_search"],
+    tools: toolsForModule("evidence.crossref"),
   },
   {
     id: "evidence.uniprot",
@@ -198,7 +194,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Reviewed protein and catalytic-function annotations without sequences.",
     core: false,
     resourceTier: "light",
-    tools: ["proto_uniprot_search"],
+    tools: toolsForModule("evidence.uniprot"),
   },
   {
     id: "evidence.rhea",
@@ -207,7 +203,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Curated reactions with ChEBI, EC, publication, and pathway links.",
     core: false,
     resourceTier: "light",
-    tools: ["proto_rhea_search"],
+    tools: toolsForModule("evidence.rhea"),
   },
   {
     id: "analysis.python",
@@ -216,7 +212,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Approval-gated workspace Python scripts.",
     core: false,
     resourceTier: "standard",
-    tools: ["proto_run_analysis"],
+    tools: toolsForModule("analysis.python"),
   },
   {
     id: "analysis.notebook",
@@ -225,7 +221,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Approval-gated workspace notebook execution.",
     core: false,
     resourceTier: "standard",
-    tools: ["proto_run_notebook"],
+    tools: toolsForModule("analysis.notebook"),
   },
   {
     id: "analysis.r",
@@ -234,7 +230,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "R runtime detection and approval-gated workspace scripts.",
     core: false,
     resourceTier: "standard",
-    tools: ["proto_r_status", "proto_run_r"],
+    tools: toolsForModule("analysis.r"),
   },
   {
     id: "media.vision",
@@ -243,7 +239,7 @@ export const OPTIONAL_MODULES: WorkbenchModuleDescriptor[] = [
     description: "Image attachments when the selected local model supports vision.",
     core: false,
     resourceTier: "standard",
-    tools: [],
+    tools: toolsForModule("media.vision"),
   },
 ];
 
@@ -267,10 +263,12 @@ export function normalizeModuleSettings(value?: Partial<ModuleSettings>): Module
   const known = new Set(OPTIONAL_MODULES.map((module) => module.id));
   const enabled = (value?.enabledOptional ?? (profile === "custom" ? [] : modulesForProfile(profile)))
     .filter((id): id is OptionalModuleId => known.has(id));
-  return { profile, enabledOptional: [...new Set(enabled)] };
+  return { profile, enabledOptional: [...new Set(enabled)],
+    ...(value?.enabledSkills ? { enabledSkills: normalizeDesignSkills(value.enabledSkills) } : {}) };
 }
 
 export function isToolEnabledForModules(tool: string, settings: ModuleSettings): boolean {
-  const optional = OPTIONAL_MODULES.find((module) => module.tools.includes(tool));
-  return !optional || settings.enabledOptional.includes(optional.id as OptionalModuleId);
+  const contract = resolveToolContract(tool);
+  if (!contract) return false;
+  return contract.module.startsWith("core.") || settings.enabledOptional.includes(contract.module as OptionalModuleId);
 }

@@ -33,7 +33,7 @@ def run_python_analysis(
     try:
         paths = WorkspacePaths.create(workspace_root)
         script = paths.workspace_file(script_path, extensions={".py"}, max_bytes=MAX_TEXT_FILE_BYTES)
-        active_broker = broker or ExecutionBroker.from_environment(caller="library")
+        active_broker = broker or ExecutionBroker.from_environment(caller="library", workspace_root=paths.workspace)
         active_broker.require_available()
         run_id = _run_id(script)
         run_dir = paths.run_directory(out_dir, run_id)
@@ -71,7 +71,7 @@ def run_python_analysis(
         "script": script.relative_to(paths.workspace).as_posix(),
         "args": args,
         "provider": result.provider,
-        "sandboxed": result.provider in {"docker", "podman"},
+        "sandboxed": result.provider in {"docker", "podman", "docker-wsl"},
         "command": public_execution_command(result.command, workspace=paths.workspace, run_dir=run_dir),
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),

@@ -1,0 +1,23 @@
+{
+  "tool": "descriptive_statistics",
+  "arguments": {
+    "values": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "dataset_manifests": [
+    "examples/compute/quantity-statistics.dataset.json"
+  ],
+  "quantity_bindings": {
+    "values": {
+      "dataset_id": "fixture:statistics",
+      "entity_id": "series:example",
+      "unit": "mol/L",
+      "quantity_kind": "value"
+    }
+  }
+}

@@ -1,9 +1,10 @@
+import { isModelConnected } from "../shared/model-status.ts";
 import type { ModelDescriptor } from "../shared/contracts.ts";
 
 /** Catalog maxima and memory telemetry are not the connected execution context. */
 export function connectedContext(model: ModelDescriptor): number | undefined {
   const binding = model.workbenchInstance;
-  if (!binding || !["active", "warm"].includes(model.loadState)) return undefined;
+  if (!binding || !isModelConnected(model)) return undefined;
   const observed = binding.contextLength
     ?? model.loadedInstances?.find((instance) => instance.id === binding.id)?.contextLength;
   return Number.isSafeInteger(observed) && observed! > 0 ? observed : undefined;

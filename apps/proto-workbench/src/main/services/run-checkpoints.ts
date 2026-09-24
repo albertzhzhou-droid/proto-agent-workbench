@@ -1,3 +1,4 @@
+import { applySchemaMigrations, type SchemaMigrationReport } from "./schema-migrations.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -87,8 +88,8 @@ type ForkRow = {
   created_at: string;
 };
 
-export function installRunCheckpointSchema(db: DatabaseSync): void {
-  db.exec(`
+export function installRunCheckpointSchema(db: DatabaseSync): SchemaMigrationReport {
+  return applySchemaMigrations(db,"run-checkpoints",[{version:1,sql:`
     CREATE TABLE IF NOT EXISTS run_checkpoints (
       id TEXT PRIMARY KEY,
       run_id TEXT NOT NULL,
@@ -139,14 +140,7 @@ export function installRunCheckpointSchema(db: DatabaseSync): void {
     BEGIN
       SELECT RAISE(ABORT, 'run_forks are immutable');
     END;
-  `);
-  const forkColumns = db.prepare("PRAGMA table_info(run_forks)").all() as Array<{ name: string }>;
-  if (!forkColumns.some((column) => column.name === "request_sha256")) {
-    db.exec("ALTER TABLE run_forks ADD COLUMN request_sha256 TEXT");
-  }
-  if (!forkColumns.some((column) => column.name === "resume_contract_digest")) {
-    db.exec("ALTER TABLE run_forks ADD COLUMN resume_contract_digest TEXT");
-  }
+  `,columns:[{table:"run_forks",name:"request_sha256",definition:"TEXT"},{table:"run_forks",name:"resume_contract_digest",definition:"TEXT"}]}]);
 }
 
 export function createRunCheckpoint(db: DatabaseSync, input: CreateRunCheckpointInput): RunCheckpoint {

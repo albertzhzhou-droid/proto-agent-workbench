@@ -1,25 +1,46 @@
 import { relative, resolve, isAbsolute } from "node:path";
 import { realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import type { HarnessCheckpoint, MaterialBinding } from "../../shared/harness.ts";
+import type { BlockingClass, HarnessCheckpoint, HarnessDiagnostic, MaterialBinding } from "../../shared/harness.ts";
 import type { AgentRunEvent, PatchOperation, PatchProposal } from "../../shared/contracts.ts";
 import type { AppDatabase } from "./database.ts";
 import type { WorkspaceFiles } from "./workspace-files.ts";
 import { toolDeadlineMs, type McpClient } from "./mcp-client.ts";
-import { classifyToolCall } from "./permissions.ts";
+import { evaluateToolPolicy } from "./permissions.ts";
+import type { PolicyGrant, PolicyDecision } from "../../shared/tool-policy.ts";
+import { TOOL_CONTRACTS, toolContract, toolsProducing, type ArtifactClass, type ToolContract } from "../../shared/tool-contracts.ts";
 import type { HarnessStore } from "./harness-store.ts";
 import { withWorkspaceWrite, withReadSlot, type WorkspaceQueueState } from "./workspace-execution-queue.ts";
-import { executeHarnessStructureTool, HARNESS_STRUCTURE_TOOL_NAMES, HARNESS_STRUCTURE_WRITE_TOOLS } from "./harness-structure-tools.ts";
+import { executeHarnessStructureTool, HARNESS_STRUCTURE_TOOL_NAMES } from "./harness-structure-tools.ts";
 import { inspectSourceValidation } from "./harness-source-recovery.ts";
 import { verifyScientificArtifact } from "./harness-artifact-verification.ts";
-import { verifyMissionEvidence } from "./mission-evidence.ts";
+import { verifyMissionDiagnostics } from "./mission-evidence.ts";
+import { conflictingReceiptDiagnostics, harnessDiagnostic } from "./harness-diagnostics.ts";
+import { declaredMcpToolEffect } from "./tool-effects.ts";
+import { writeHarnessReconciliationProof } from "./harness-reconciliation-proof.ts";
 
-const PARTS_TOOLS = new Set(["proto_search_parts", "proto_check", "proto_compile", "proto_workflow_run", "proto_review_packet", "proto_score", "proto_validate_sequences", "proto_optimize_sequences", "proto_design_edit"]);
-const WRITE_TOOLS = new Set(["workspace_propose_patch", "proto_compile", "proto_protein_compile", "proto_export", "proto_materials_materialize", "proto_materials_materialize_proteins", "proto_workflow_run", "proto_review_packet", "proto_run_analysis", "proto_run_notebook", "proto_run_r", "proto_optimize_sequences"]);
-export const harnessToolEffect = (name: string): "read" | "write" => name === "workspace_resume_validation" || WRITE_TOOLS.has(name) || HARNESS_STRUCTURE_WRITE_TOOLS.has(name) ? "write" : "read";
+const PARTS_TOOLS = new Set([...TOOL_CONTRACTS.values()].filter(contract => contract.preconditions.includes("material-binding")).map(contract => contract.name));
+/** Only known receipt obligations have producer mappings. An unclassified
+ * diagnostic remains repairable without an invented remediation promise. */
+const DIAGNOSTIC_ARTIFACTS: Readonly<Record<string, ArtifactClass>> = {
+  SCIENTIFIC_IR_INVALID: "compiled-design", SCIENTIFIC_COMPILATION_MISSING: "compiled-design",
+  PROTEIN_COMPILE_MISSING: "compiled-design", SCIENTIFIC_EXPORT_LINEAGE_MISSING: "scientific-export",
+  STRUCTURE_RECEIPT_MISSING: "structure", PROTEIN_MATERIALIZATION_MISSING: "protein-materialization",
+  DNA_VALIDATION_MISSING: "design-validation", DELIVERABLE_EMPTY: "workspace-write",
+  MATERIAL_REPORT_REQUIRED: "workspace-write", MATERIAL_FIELD_MISSING: "workspace-write",
+  MATERIAL_HASH_MISMATCH: "workspace-write", MATERIAL_FIELD_MISMATCH: "workspace-write",
+  LITERATURE_CITATION_UNBOUND: "workspace-write", LITERATURE_PROVIDER_UNCITED: "workspace-write",
+  LITERATURE_CITATION_COUNT: "workspace-write",
+};
+/** Harness, workspace and MCP names all carry the same contract; no per-surface override. */
+export const harnessToolEffect = (name: string): "read" | "write" => declaredMcpToolEffect(name);
 const text = (args: Record<string, unknown>, key: string): string => {if (typeof args[key] !== "string" || !args[key]) throw new Error(`${key} must be a nonempty string`); return args[key] as string;};
 const denied = (code: string, message: string) => ({ok: false, code, message, effect_state: "none"});
-const artifactPaths = (value: unknown): string[] => Array.isArray(value) ? value.filter((p): p is string => typeof p === "string") : [];
+const artifactPaths = (value: unknown): string[] => Array.isArray(value) ? value.flatMap(item => {
+  if (typeof item === "string") return [item];
+  if (item && typeof item === "object" && "path" in item && typeof item.path === "string") return [item.path];
+  return [];
+}) : [];
 
 /** All file mutations use the same CAS transaction as manual changes. */
 export class HarnessWorkspace {
@@ -35,10 +56,17 @@ export class HarnessWorkspace {
   }
 
   async execute(name: string, input: Record<string, unknown>, callId: string, c: HarnessCheckpoint, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<Record<string, unknown>> {
+    if (!toolContract(name)) return denied("UNKNOWN_CAPABILITY", "Unknown tools are denied by default.");
+    const decision=this.policyDecision(name,input,callId,c);
+    if(!decision.allowed){
+      this.mcp.recordPolicyDenial?.(name,input,{operationId:callId,scope:{surface:"harness",scopeId:c.contract.runId},decision});
+      return {...denied(decision.code,decision.reason),policyDecision:decision};
+    }
     const sourceTool = name === "workspace_propose_patch" || name === "workspace_resume_validation";
     if (sourceTool) this.store.beginSourceOperation(c.contract.runId, callId, input, name);
     let entered = false;
-    const operation = () => { entered = true; return this.executeOwned(name, input, callId, c, signal); };
+    const operation = () => { entered = true; return this.executeOwned(name, input, callId, c, signal,decision); };
+    const run=async()=>{
     try {
       return await (harnessToolEffect(name) === "write"
         ? withWorkspaceWrite(await realpath(c.contract.workspacePath), signal, operation, queueState)
@@ -55,13 +83,26 @@ export class HarnessWorkspace {
       }
       throw error;
     }
+    };
+    // MCP already journals its actual dispatch. Host-owned workspace/structure
+    // tools use the same boundary through a local backend adapter.
+    if(toolContract(name)?.surface!=="mcp"&&this.mcp.invokeLocal)return this.mcp.invokeLocal(name,input,async mark=>{mark();return run();},
+      {operationId:callId,scope:{surface:"harness",scopeId:c.contract.runId},decision,decisionId:decision.decisionId});
+    return run();
   }
 
-  private async executeOwned(name: string, input: Record<string, unknown>, callId: string, c: HarnessCheckpoint, signal: AbortSignal): Promise<Record<string, unknown>> {
+  private policyDecision(name:string,input:Record<string,unknown>,callId:string,c:HarnessCheckpoint):PolicyDecision {
+    // The saved mission contract is the existing user authorization. Its grant
+    // identity is stable and the full evidence is copied into each journal row.
+    const grant: PolicyGrant = {id: `mission:${c.contract.runId}`, source: "mission", actor: "user",
+      surface: "harness", scopeId: c.contract.runId, grantedAt: c.createdAt,
+      risks: [...(c.contract.scope.network ? ["network" as const] : []), ...(c.contract.scope.execution ? ["code-execution" as const] : [])]};
+    return evaluateToolPolicy({tool: name, args:input, surface: "harness", scopeId: c.contract.runId,
+      operationId: callId, mode: c.contract.mode, grants: [grant]});
+  }
+
+  private async executeOwned(name: string, input: Record<string, unknown>, callId: string, c: HarnessCheckpoint, signal: AbortSignal,decision:PolicyDecision): Promise<Record<string, unknown>> {
     const args = {...input};
-    const permission = classifyToolCall(name, args);
-    if (!permission.allowed && !(permission.risk === "network" && c.contract.scope.network) && !(permission.risk === "code-execution" && c.contract.scope.execution)) return denied("MISSION_SCOPE_REQUIRED", permission.reason);
-    if (c.contract.mode === "plan" && harnessToolEffect(name) === "write") return denied("PLAN_MODE_READ_ONLY", "Switch to Act mode to authorize workspace effects.");
     if (name === "workspace_read") return {ok: true, ...await this.workspace.read(text(args, "path"))};
     if (name === "workspace_search") return {ok: true, matches: await this.workspace.search(text(args, "query"), typeof args.extension === "string" ? args.extension : undefined)};
     if (HARNESS_STRUCTURE_TOOL_NAMES.has(name)) {
@@ -87,8 +128,9 @@ export class HarnessWorkspace {
       if (rel.startsWith("..") || isAbsolute(rel)) return denied("WORKSPACE_PATH_REQUIRED", `${key} is outside the current workspace.`);
       args[key] = rel.replaceAll("\\", "/");
     }
-    const result = await this.mcp.call(name, args, signal, !permission.allowed && permission.risk === "network" ? {runId: c.contract.runId, approvalId: `mission:${c.contract.runId}:${callId}`, expiresAt: new Date(Date.now() + Math.min(10 * 60_000, c.contract.budgets.activeTimeMs - c.activeTimeMs)).toISOString()} : undefined,
-      {timeoutMs: Math.max(1, Math.min(toolDeadlineMs(name, args), c.contract.budgets.activeTimeMs - c.activeTimeMs))});
+    const result = await this.mcp.call(name, args, signal, decision.requiredRisk === "network" && decision.grantId ? {runId: c.contract.runId, approvalId: decision.grantId, expiresAt: new Date(Date.now() + Math.min(10 * 60_000, c.contract.budgets.activeTimeMs - c.activeTimeMs)).toISOString()} : undefined,
+      {timeoutMs: Math.max(1, Math.min(toolDeadlineMs(name, args), c.contract.budgets.activeTimeMs - c.activeTimeMs)), operationId: callId,
+        scope: {surface: "harness", scopeId: c.contract.runId}, decisionId: decision.decisionId, decision});
     if (result.ok !== false && name === "proto_materials_materialize") {
       const path = text(result, "parts_path");
       const bound = await this.workspace.read(path);
@@ -164,6 +206,23 @@ export class HarnessWorkspace {
 
   /** Inspect committed state only; no source or artifact write is replayed. */
   async reconcile(name: string, _args: Record<string, unknown>, callId: string, c: HarnessCheckpoint, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<Record<string, unknown> | undefined> {
+    const journal=this.mcp.executionJournal?.(),record=journal?.get(callId);
+    if(record&&(record.scope.surface!=="harness"||record.scope.scopeId!==c.contract.runId||record.tool!==name))throw new Error("HARNESS_JOURNAL_SCOPE_MISMATCH");
+    if(record?.recoveredReceipt)return record.recoveredReceipt;
+    if(record?.state==="reconciled-not-applied")return denied("TOOL_RECONCILED_NOT_APPLIED","The operation was inspected and did not apply. Any retry needs a new operation ID.");
+    const receipt=await this.reconcileSource(name,_args,callId,c,signal,queueState);
+    if(receipt&&journal&&record?.state==="effect-unknown"){
+      const link=this.store.sourceOperation(c.contract.runId,callId),verdict=receipt.effect_state==="none"?"not-applied":"applied";
+      const evidenceRef=await writeHarnessReconciliationProof(c.contract.workspacePath,{operationId:callId,runId:c.contract.runId,tool:name,verdict,
+        actor:"harness-source-recovery",observedAt:new Date().toISOString(),patchOperationId:link?.operationId,patchId:link?.patchId,sourcePath:link?.targetPath,
+        sourceSha256:link?.resultSha256,receipt});
+      this.mcp.reconcileExecution(callId,verdict,"harness-source-recovery",evidenceRef);
+      if(verdict==="applied")journal.recordReconciledReceipt(callId,receipt);
+    }
+    return receipt;
+  }
+
+  private async reconcileSource(name: string, _args: Record<string, unknown>, callId: string, c: HarnessCheckpoint, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<Record<string, unknown> | undefined> {
     if (name !== "workspace_propose_patch" && name !== "workspace_resume_validation") return undefined;
     return withWorkspaceWrite(await realpath(c.contract.workspacePath), signal, async () => {
       const link = this.store.sourceOperation(c.contract.runId, callId);
@@ -273,7 +332,8 @@ export class HarnessWorkspace {
     if (path.startsWith("..") || isAbsolute(path)) return false;
     const before = await this.workspace.artifactFingerprint(path).catch(() => undefined);
     if (!before) return false;
-    const result = await this.mcp.call("proto_provenance_verify", {path: path.replaceAll("\\", "/")}, signal, undefined, {timeoutMs: 30_000});
+    const result = await this.mcp.call("proto_provenance_verify", {path: path.replaceAll("\\", "/")}, signal, undefined,
+      {timeoutMs: 30_000, scope: {surface: "harness", scopeId: c.contract.runId, parentOperationId: patch.id}});
     const after = await this.workspace.artifactFingerprint(path).catch(() => undefined);
     return result.ok === true && after?.sha256 === before.sha256 ? {path: before.path, sha256: before.sha256} : false;
   }
@@ -285,28 +345,34 @@ export class HarnessWorkspace {
     return {ok, effect_state: "committed", recovered: true, patch, operation, operation_id: operation.id, artifacts: [source.path], diagnostics: ok ? [] : [{code: "PATCH_VALIDATION_FAILED", message: operation.error ?? "Validation remains incomplete."}], validation: {source: source.path, sha256: source.sha256, materialBinding: patch.materialBinding, ok, steps: events.map(event => ({tool: event.tool, status: event.status}))}, _harnessArtifacts: [{path: source.path, sha256: source.sha256, sizeBytes: Buffer.byteLength(source.content)}], ...(provenance ? {_harnessRecoveredProvenance: provenance} : {})};
   }
 
-  async verify(c: HarnessCheckpoint, summary = ""): Promise<{ok: boolean; diagnostics: string[]; artifacts: string[]}> {
-    const diagnostics: string[] = [], artifacts: string[] = [];
+  async verify(c: HarnessCheckpoint, summary = "", availableToolNames?: readonly string[]): Promise<{ok: boolean; diagnostics: HarnessDiagnostic[]; artifacts: string[]}> {
+    const diagnostics: HarnessDiagnostic[] = [], artifacts: string[] = [];
+    // Codes and classes are host judgments. An unclassified push stays
+    // `repairable`, so an omission reproduces the old retry behaviour rather
+    // than inventing a new early stop.
     const results = c.resultHandles.map(h => this.store.read(c.contract.runId, h)).filter(r => r.ok);
-    if (c.contract.requiresArtifacts && !c.contract.deliverables.length) diagnostics.push("The requested artifact task has no recorded deliverables. Call harness_plan.");
-    if (!results.some(r => !r.tool.startsWith("harness_"))) diagnostics.push("No successful workspace or scientific tool evidence exists.");
+    const push = (code: string, subject: string, message: string, blockingClass: BlockingClass = "repairable") => diagnostics.push(harnessDiagnostic(code, subject, message, blockingClass, results));
+    diagnostics.push(...conflictingReceiptDiagnostics(results, c.contract.workspacePath));
+    if (c.contract.requiresArtifacts && !c.contract.deliverables.length) push("DELIVERABLES_NOT_PLANNED", "contract", "The requested artifact task has no recorded deliverables. Call harness_plan.");
+    if (!results.some(r => !r.tool.startsWith("harness_"))) push("NO_TOOL_EVIDENCE", "contract", "No successful workspace or scientific tool evidence exists.");
     for (const required of c.contract.requiredReads ?? []) {
-      if (!results.some(r => r.tool === "workspace_read" && String(r.data.path).toLowerCase() === resolve(c.contract.workspacePath, required).toLowerCase())) diagnostics.push(`Required input has not been read: ${required}`);
+      if (!results.some(r => r.tool === "workspace_read" && String(r.data.path).toLowerCase() === resolve(c.contract.workspacePath, required).toLowerCase())) push("REQUIRED_INPUT_UNREAD", required, `Required input has not been read: ${required}`, "dependency-missing");
     }
     for (const deliverable of c.contract.deliverables) {
       try {
         const file = await this.workspace.artifactFingerprint(deliverable.path);
-        if (!file.sizeBytes) {diagnostics.push(`Empty deliverable: ${deliverable.path}`); continue;}
+        if (!file.sizeBytes) {push("DELIVERABLE_EMPTY", deliverable.path, `Empty deliverable: ${deliverable.path}`); continue;}
         const binaryFormat = /\.(png|pdf)$/i.exec(file.path)?.[1]?.toLowerCase();
         if (binaryFormat) {
-          if (file.detectedFormat !== binaryFormat) diagnostics.push(`Deliverable is not a structurally valid ${binaryFormat.toUpperCase()}: ${deliverable.path}`);
+          if (file.detectedFormat !== binaryFormat) push("DELIVERABLE_FORMAT_INVALID", deliverable.path, `Deliverable is not a structurally valid ${binaryFormat.toUpperCase()}: ${deliverable.path}`);
           // Current autonomous tools export scientific text formats. Native
           // image export has independent decoder receipts but no model-callable
           // renderer bridge yet; arbitrary workspace bytes cannot replace one.
-          diagnostics.push(`Binary deliverable requires a trusted renderer/exporter receipt; this autonomous tool set cannot produce that receipt: ${deliverable.path}`);
+          // No available tool can produce this receipt, so retrying cannot help.
+          push("RENDERER_RECEIPT_UNAVAILABLE", deliverable.path, `Binary deliverable requires a trusted renderer/exporter receipt; this autonomous tool set cannot produce that receipt: ${deliverable.path}`, "unsupported");
         }
         const recorded = results.some(r => (r.data._harnessArtifacts as Array<{path: string; sha256: string}> | undefined)?.some(a => a.path.toLowerCase() === file.path.toLowerCase() && a.sha256 === file.sha256));
-        if (!recorded) diagnostics.push(`Deliverable lacks a matching committed artifact digest: ${deliverable.path}`);
+        if (!recorded) push("ARTIFACT_DIGEST_UNRECORDED", deliverable.path, `Deliverable lacks a matching committed artifact digest: ${deliverable.path}`);
         diagnostics.push(...await verifyScientificArtifact(this.workspace, file, results));
         if (deliverable.kind === "dna" || /\.proto$/i.test(file.path)) {
           const validation = results.some(r => {
@@ -316,7 +382,7 @@ export class HarnessWorkspace {
               && Boolean(c.contract.materialBinding) && v.materialBinding?.partsSha256 === c.contract.materialBinding?.partsSha256
               && ["proto_check", "proto_workflow_run", "proto_provenance_verify", "proto_review_packet"].every(tool => v.steps?.some(step => step.tool === tool && step.status === "completed"));
           });
-          if (!validation) diagnostics.push(`DNA deliverable lacks current check/workflow/review evidence: ${deliverable.path}`);
+          if (!validation) push("DNA_VALIDATION_MISSING", deliverable.path, `DNA deliverable lacks current check/workflow/review evidence: ${deliverable.path}`);
         }
         if (deliverable.kind === "protein") {
           const compilation = results.filter(r => r.tool === "proto_protein_compile");
@@ -324,17 +390,71 @@ export class HarnessWorkspace {
             || results.some(r => r.tool === "proto_export"
               && (r.data._harnessArtifacts as Array<{path: string; sha256: string}> | undefined)?.some(a => a.path.toLowerCase() === file.path.toLowerCase() && a.sha256 === file.sha256)
               && compilation.some(compiledResult => (compiledResult.data._harnessArtifacts as Array<{sha256: string}> | undefined)?.some(a => a.sha256 === (r.data._harnessInputs as {sha256?: string} | undefined)?.sha256)));
-          if (!compiled) diagnostics.push(`Protein deliverable lacks a successful compile receipt: ${deliverable.path}`);
+          if (!compiled) push("PROTEIN_COMPILE_MISSING", deliverable.path, `Protein deliverable lacks a successful compile receipt: ${deliverable.path}`);
         }
         artifacts.push(file.path);
-      } catch (error) {diagnostics.push(`Cannot reopen ${deliverable.path}: ${String(error)}`);}
+      } catch (error) {
+        // The declared deliverable cannot be reopened at all. Another model
+        // round cannot re-establish a file the host can no longer read.
+        push("DELIVERABLE_UNREADABLE", deliverable.path, `Cannot reopen ${deliverable.path}: ${String(error)}`, "stale");
+      }
     }
     if (c.contract.materialBinding) {
       const current = await this.workspace.read(c.contract.materialBinding.partsPath).catch(() => undefined);
-      if (current?.sha256 !== c.contract.materialBinding.partsSha256) diagnostics.push("The bound material snapshot changed or is unavailable.");
+      // Every derived receipt was bound to the old snapshot. Redoing the work
+      // against a moved base is a person's decision, not a retry.
+      if (current?.sha256 !== c.contract.materialBinding.partsSha256) push("MATERIAL_BINDING_STALE", c.contract.materialBinding.partsPath, "The bound material snapshot changed or is unavailable.", "stale");
     }
-    diagnostics.push(...await verifyMissionEvidence(c.contract, results, this.workspace, summary));
+    diagnostics.push(...await verifyMissionDiagnostics(c.contract, results, this.workspace, summary));
+    await this.withDiagnosticRemedies(diagnostics, c, availableToolNames);
     return {ok: diagnostics.length === 0, diagnostics, artifacts};
+  }
+
+  private async withDiagnosticRemedies(diagnostics: HarnessDiagnostic[], c: HarnessCheckpoint, availableToolNames?: readonly string[]): Promise<void> {
+    const names = availableToolNames ?? c.selectedTools ?? [];
+    for (const diagnostic of diagnostics) {
+      if (diagnostic.blockingClass !== "repairable") continue;
+      const artifactClass = DIAGNOSTIC_ARTIFACTS[diagnostic.code];
+      if (!artifactClass) continue;
+      const declared = c.contract.deliverables.find(item => item.path === diagnostic.subject);
+      // Report diagnostics may concern a resource id or completion summary,
+      // rather than a saved target. Do not invent a writable path or force an
+      // unsupported class when the existing summary route can still satisfy it.
+      const target = declared?.path ?? (artifactClass === "workspace-write" && c.contract.deliverables.length === 1 ? c.contract.deliverables[0].path : undefined);
+      if (artifactClass === "workspace-write" && !target) continue;
+      let protein: boolean | undefined = declared?.kind === "protein" || diagnostic.code === "PROTEIN_COMPILE_MISSING" ? true : declared?.kind === "dna" ? false : undefined;
+      if (artifactClass === "compiled-design" && /\.ir\.json$/i.test(diagnostic.subject)) {
+        const current = await this.workspace.read(diagnostic.subject).catch(() => undefined);
+        try { const domain = JSON.parse(current?.content ?? "null")?.domain; if (domain === "protein" || domain === "dna") protein = domain === "protein"; } catch { /* Domain cannot be inferred from invalid JSON. */ }
+      }
+      const permitted = (contract: ToolContract) => {
+        if ((c.toolCallCounts?.[contract.name] ?? 0) >= contract.maxCallsPerRun) return false;
+        if (c.contract.budgets && (c.activeTimeMs >= c.contract.budgets.activeTimeMs || c.generatedTokens >= c.contract.budgets.maxGeneratedTokens || c.round >= c.contract.budgets.maxRounds)) return false;
+        if (!c.contract.scope || !this.policyDecision(contract.name, {}, `diagnostic:${diagnostic.code}`, c).allowed) return false;
+        if (contract.effect === "write" && (!c.contract.scope.writeRoots.length || target && !c.contract.scope.writeRoots.some(root => this.withinRoot(c, target, root)))) return false;
+        return true;
+      };
+      const needsMaterial = (contract: ToolContract) => !c.contract.materialBinding && (contract.preconditions.includes("material-binding")
+        || diagnostic.code === "DNA_VALIDATION_MISSING" || contract.name === "workspace_propose_patch" && Boolean(target && /\.proto$/i.test(target)));
+      const producers = toolsProducing(artifactClass, names).filter(contract => {
+        if (contract.name.startsWith("workspace_") && artifactClass !== "workspace-write" && diagnostic.code !== "DNA_VALIDATION_MISSING") return false;
+        if (artifactClass === "compiled-design" && (protein === true ? contract.name !== "proto_protein_compile" : protein === false && contract.name === "proto_protein_compile")) return false;
+        if (diagnostic.code === "STRUCTURE_RECEIPT_MISSING" && contract.name === "proto_structure_read") return false;
+        if (diagnostic.code === "DNA_VALIDATION_MISSING" && !["workspace_propose_patch", "workspace_resume_validation"].includes(contract.name)) return false;
+        return permitted(contract);
+      });
+      const direct = producers.find(contract => !needsMaterial(contract));
+      // An absent binding is a satisfiable prerequisite when this same host
+      // exposes an authorized materializer. It is not proof that the requested
+      // compiler/validator is unsupported. Never invent a binding or part ID.
+      const prerequisite = !direct && producers.some(needsMaterial)
+        ? toolsProducing("materialized-parts", names).find(contract => permitted(contract) && !contract.preconditions.includes("material-binding")) : undefined;
+      if (direct) diagnostic.remedy = {tool: direct.name, reason: `This available host tool declares ${artifactClass} receipts and satisfies the current mission authority and call allowance. Its result still requires verification.`};
+      else if (prerequisite) diagnostic.remedy = {tool: prerequisite.name, reason: `First establish the missing governed material binding through this available host tool; the ${artifactClass} producer still requires that exact verified binding before dispatch.`};
+      // Only a complete host inventory establishes absence. Persisted selected
+      // tools are a discovery subset, so they cannot prove unsupported work.
+      else if (availableToolNames) diagnostic.blockingClass = "unsupported";
+    }
   }
 
   private async digests(paths: string[]): Promise<Array<{path: string; sha256: string; sizeBytes: number}>> {

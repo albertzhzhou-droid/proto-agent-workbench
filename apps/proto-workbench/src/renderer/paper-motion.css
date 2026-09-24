@@ -1,0 +1,623 @@
+/* Motion is bookbinding, not animation.
+ *
+ * A page settles, ink darkens under the thumb, a ribbon marks the place. Nothing
+ * bounces, glows, or slides further than the eye would forgive in a bound volume.
+ * Loaded last so every workspace — Proto and Chem, Chat, Design and Compute —
+ * inherits one timing vocabulary instead of inventing its own.
+ *
+ * Distances stay between 1px and 8px, opacity does the rest, and only transform
+ * and opacity are animated so scientific canvases keep their frame budget.
+ */
+
+:root {
+  /* One curve per intent: entrances decelerate onto the page, state changes are
+     symmetric, dismissals accelerate away and are not watched. */
+  --ease-page: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-state: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* One tempo per weight of thing being moved. */
+  --tempo-touch: 110ms;
+  --tempo-control: 180ms;
+  --tempo-panel: 260ms;
+  --tempo-page: 380ms;
+
+  /* Elevation is paper lifting off paper, never a coloured halo. */
+  --lift-rest: 0 1px 1px var(--shadow-color);
+  --lift-hover: 0 2px 4px var(--shadow-color), 0 6px 16px var(--shadow-color);
+  --lift-overlay: 0 24px 64px var(--shadow-color), 0 2px 8px var(--shadow-color);
+}
+
+/* ---------------------------------------------------------------------------
+ * Keyframes. Every entrance resolves to `transform: none` so a finished
+ * animation never leaves a containing block behind for absolute descendants.
+ * ------------------------------------------------------------------------ */
+
+@keyframes paper-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes paper-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Whole pages translate only — scaling a scroll container full of set type
+   costs legibility for the duration of the turn. */
+@keyframes paper-turn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes paper-lift-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes paper-drop-in {
+  from { opacity: 0; transform: translateY(-5px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes paper-slip-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Live status: a slow breath, not a blink. Reserved for work actually running. */
+@keyframes paper-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes paper-pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--shadow-color); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes caret-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.15; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Controls. Hover darkens the ink, press seats the control into the page.
+ * ------------------------------------------------------------------------ */
+
+:root[data-theme] button,
+:root[data-theme] summary,
+:root[data-theme] .sidebar-recent,
+:root[data-theme] a.analysis-download {
+  transition:
+    background-color var(--tempo-control) var(--ease-state),
+    border-color var(--tempo-control) var(--ease-state),
+    color var(--tempo-control) var(--ease-state),
+    box-shadow var(--tempo-control) var(--ease-state),
+    opacity var(--tempo-control) var(--ease-state),
+    transform var(--tempo-touch) var(--ease-state);
+}
+
+:root[data-theme] :is(.primary-button, .send-button, .secondary-button, .quiet-button, .chat-submit, .analysis-run, .dna-preview-button, .dna-apply-button):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-hover);
+}
+
+:root[data-theme] :is(.primary-button, .send-button, .secondary-button, .quiet-button, .chat-submit, .analysis-run, .icon-button, .topbar-control, .dna-preview-button, .dna-apply-button):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+  transition-duration: 60ms;
+}
+
+/* Quiet icon controls have no elevation to give — they only take on ink. */
+:root[data-theme] :is(.icon-button, .topbar-control, .chat-icon-button, .chat-text-button, .workspace-view-controls button, .workspace-tools-menu summary):hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-selected);
+}
+
+/* Disabled controls fade rather than snap when work begins or ends. */
+:root[data-theme] button:disabled {
+  transition: opacity var(--tempo-panel) var(--ease-state);
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Navigation. The active chapter is marked with a ribbon that extends from the
+ * spine; it is the one place in the product where something arrives on its own.
+ * ------------------------------------------------------------------------ */
+
+.workspace-sidebar nav > button,
+.sidebar-utilities > button,
+.sidebar-recent {
+  position: relative;
+}
+
+.workspace-sidebar nav > button::before,
+.sidebar-recent::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--text);
+  transform: scaleY(0);
+  transform-origin: center;
+  opacity: 0;
+  transition:
+    transform var(--tempo-panel) var(--ease-page),
+    opacity var(--tempo-control) var(--ease-state);
+}
+
+.workspace-sidebar nav > button[aria-current="page"]::before,
+.sidebar-recent[aria-current="page"]::before {
+  transform: scaleY(1);
+  opacity: 1;
+}
+
+.sidebar-rail .workspace-sidebar nav > button::before,
+.sidebar-rail .sidebar-recent::before {
+  left: -4px;
+}
+
+/* Sidebar glyphs lead the label by a hair on hover — the page acknowledging a
+   finger before the eye moves. */
+.workspace-sidebar nav > button svg,
+.sidebar-utilities > button svg {
+  transition: transform var(--tempo-control) var(--ease-page), color var(--tempo-control) var(--ease-state);
+}
+
+.workspace-sidebar nav > button:hover svg,
+.sidebar-utilities > button:hover svg {
+  transform: translateX(1px);
+}
+
+.workspace-sidebar nav > button[aria-current="page"] svg {
+  color: var(--text);
+}
+
+/* The Chat / Design / Compute switch reads as a single milled control. */
+.workspace-mode-switch button {
+  transition:
+    background-color var(--tempo-control) var(--ease-state),
+    color var(--tempo-control) var(--ease-state),
+    border-color var(--tempo-control) var(--ease-state),
+    box-shadow var(--tempo-control) var(--ease-state);
+}
+
+.workspace-mode-switch button:not([aria-selected="true"]):hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface), transparent 45%);
+}
+
+/* ---------------------------------------------------------------------------
+ * Tabs and segmented controls. A rule slides under the reading position.
+ * ------------------------------------------------------------------------ */
+
+.analysis-output-tabs button {
+  position: relative;
+}
+
+/* The underline moves as a rule, so the static border hands its job over. */
+.analysis-output-tabs button[aria-selected="true"] {
+  border-bottom-color: transparent;
+}
+
+.analysis-output-tabs button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: var(--text);
+  transform: scaleX(0);
+  transition: transform var(--tempo-panel) var(--ease-page);
+}
+
+.analysis-output-tabs button[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+.analysis-output-tabs button:hover:not([aria-selected="true"])::after {
+  transform: scaleX(0.35);
+  background: var(--line-strong);
+}
+
+/* ---------------------------------------------------------------------------
+ * Surfaces. Cards are leaves of paper: they lift under the cursor and take the
+ * border darker, and they never change hue.
+ * ------------------------------------------------------------------------ */
+
+:root[data-theme] :is(.analysis-method, .analysis-history-row, .readiness-card, .settings-card, .model-card, .source-card, .material-card, .chat-starters button, .run-dependency-node, .mission-library-list > article) {
+  transition:
+    background-color var(--tempo-control) var(--ease-state),
+    border-color var(--tempo-control) var(--ease-state),
+    box-shadow var(--tempo-panel) var(--ease-state),
+    transform var(--tempo-control) var(--ease-page);
+}
+
+/* Free-standing cards lift. */
+:root[data-theme] :is(.analysis-history-row, .chat-starters button, .run-dependency-node):hover:not(:disabled) {
+  border-color: var(--line-strong);
+  box-shadow: var(--lift-hover);
+  transform: translateY(-2px);
+}
+
+:root[data-theme] :is(.analysis-history-row, .chat-starters button):active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--lift-rest);
+  transition-duration: 60ms;
+}
+
+/* Method cards are cells of a ruled table, not loose leaves: the grid clips to
+   a shared hairline, so they take a pencil stroke in the margin instead of
+   lifting out of the rule. */
+.analysis-method {
+  position: relative;
+}
+
+.analysis-method::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--tempo-control) var(--ease-page);
+}
+
+.analysis-method:hover:not(:disabled)::before,
+.analysis-method:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Method glyphs sit in a frame that warms as the card is considered. */
+.analysis-method-icon,
+.page-title-icon,
+.dna-composer-icon,
+.brand-mark {
+  transition:
+    background-color var(--tempo-control) var(--ease-state),
+    border-color var(--tempo-control) var(--ease-state),
+    color var(--tempo-control) var(--ease-state);
+}
+
+.analysis-method:hover:not(:disabled) .analysis-method-icon {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--surface-selected);
+}
+
+/* Text inputs settle into focus rather than flashing a ring. */
+:root[data-theme] :is(input, textarea, select, .analysis-search, .design-search, .chat-composer) {
+  transition:
+    border-color var(--tempo-control) var(--ease-state),
+    background-color var(--tempo-control) var(--ease-state),
+    box-shadow var(--tempo-control) var(--ease-state);
+}
+
+.chat-composer:focus-within {
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+/* One focus treatment everywhere, offset outward as it appears. */
+:root[data-theme] :is(button, input, textarea, select, summary, a):focus-visible {
+  transition:
+    outline-offset var(--tempo-touch) var(--ease-page),
+    outline-color var(--tempo-touch) var(--ease-state);
+}
+
+/* ---------------------------------------------------------------------------
+ * Rows. Long scientific tables get ink on hover and nothing else — a moving row
+ * in a ledger of a thousand rows is noise, not feedback.
+ * ------------------------------------------------------------------------ */
+
+:root[data-theme] :is(.ledger-row, .parts-table-row, .construct-item, .design-document, .evidence-timeline-list button, .evidence-step-selector button, .chat-document-list > div, .chat-model-options > button, .command-palette-list button) {
+  transition:
+    background-color var(--tempo-touch) var(--ease-state),
+    border-color var(--tempo-touch) var(--ease-state),
+    color var(--tempo-touch) var(--ease-state);
+}
+
+/* ---------------------------------------------------------------------------
+ * Entrances. A workspace arrives the way a page is turned: once, quickly, and
+ * without drawing attention to the turn itself.
+ * ------------------------------------------------------------------------ */
+
+[role="tabpanel"]:not([hidden]) {
+  animation: paper-fade var(--tempo-panel) var(--ease-page) both;
+}
+
+.operational-page,
+.designs-page,
+.compute-workspace > .analysis-library,
+.analysis-desk {
+  animation: paper-turn var(--tempo-page) var(--ease-page) both;
+}
+
+/* Inside a page, the masthead leads and the body follows by a breath. */
+.page-header,
+.analysis-library-heading,
+.analysis-desk-heading,
+.chat-welcome {
+  animation: paper-settle var(--tempo-page) var(--ease-page) both;
+}
+
+.analysis-library-toolbar { animation: paper-settle var(--tempo-page) var(--ease-page) 40ms both; }
+.analysis-library-group { animation: paper-settle var(--tempo-page) var(--ease-page) 80ms both; }
+.analysis-library-group:nth-of-type(2) { animation-delay: 120ms; }
+.analysis-library-group:nth-of-type(3) { animation-delay: 160ms; }
+.analysis-library-footer { animation: paper-fade var(--tempo-page) var(--ease-page) 200ms both; }
+
+.chat-starters { animation: paper-settle var(--tempo-page) var(--ease-page) 90ms both; }
+
+/* Panels that open beside the work slide in from their own edge. */
+.review-panel,
+.chat-documents,
+.design-inspector {
+  animation: paper-slip-in var(--tempo-panel) var(--ease-page) both;
+}
+
+.code-drawer:not(.is-collapsed) {
+  animation: paper-settle var(--tempo-panel) var(--ease-page) both;
+}
+
+/* Menus originate at their trigger: below it drops, above it lifts. */
+.workspace-tools-menu[open] > div {
+  animation: paper-drop-in var(--tempo-control) var(--ease-page) both;
+  transform-origin: top right;
+}
+
+.chat-model-menu {
+  animation: paper-lift-in var(--tempo-control) var(--ease-page) both;
+  transform-origin: bottom left;
+}
+
+/* Disclosure bodies unfold from their summary. */
+.chat-tool-call[open] > div,
+.analysis-detail[open] > :not(summary),
+.chat-interpretation-note[open] > p {
+  animation: paper-settle var(--tempo-control) var(--ease-page) both;
+}
+
+/* Overlays: the room dims, then the card arrives. */
+.command-palette-backdrop,
+.decision-lab-backdrop,
+.global-evidence-backdrop,
+.verification-center-backdrop {
+  animation: paper-fade var(--tempo-control) var(--ease-page) both;
+  backdrop-filter: blur(2px);
+}
+
+.command-palette,
+.decision-lab-dialog,
+.global-evidence-dialog,
+.verification-center-dialog,
+.startup-card {
+  animation: paper-lift-in var(--tempo-panel) var(--ease-page) 40ms both;
+  box-shadow: var(--lift-overlay);
+}
+
+/* The execution journal is a native dialog and carries its own backdrop. */
+.workspace-journal[open] {
+  animation: paper-lift-in var(--tempo-panel) var(--ease-page) both;
+  box-shadow: var(--lift-overlay);
+}
+
+.workspace-journal[open]::backdrop {
+  animation: paper-fade var(--tempo-control) var(--ease-page) both;
+}
+
+/* Command rows deal out like index cards, then stop — six is enough to read as
+   a sequence without making the seventh row feel slow. */
+.command-palette-list button {
+  animation: paper-settle 220ms var(--ease-page) both;
+}
+
+.command-palette-list button:nth-child(1) { animation-delay: 70ms; }
+.command-palette-list button:nth-child(2) { animation-delay: 100ms; }
+.command-palette-list button:nth-child(3) { animation-delay: 125ms; }
+.command-palette-list button:nth-child(4) { animation-delay: 145ms; }
+.command-palette-list button:nth-child(5) { animation-delay: 160ms; }
+.command-palette-list button:nth-child(n + 6) { animation-delay: 170ms; }
+
+/* Transcript: each new message is set onto the page once. */
+.research-message {
+  animation: paper-settle var(--tempo-panel) var(--ease-page) both;
+}
+
+.chat-code,
+.analysis-figure,
+.chat-message-documents {
+  animation: paper-fade var(--tempo-page) var(--ease-page) both;
+}
+
+/* A toast is a slip of paper laid down at the edge of the desk. */
+.toast {
+  animation: paper-lift-in var(--tempo-panel) var(--ease-page) both;
+  box-shadow: var(--lift-hover);
+}
+
+/* Startup checklist advances one line at a time. */
+.startup-checklist li {
+  animation: paper-settle 240ms var(--ease-page) both;
+}
+
+.startup-checklist li:nth-child(2) { animation-delay: 50ms; }
+.startup-checklist li:nth-child(3) { animation-delay: 100ms; }
+.startup-checklist li:nth-child(4) { animation-delay: 150ms; }
+.startup-checklist li:nth-child(n + 5) { animation-delay: 190ms; }
+
+/* ---------------------------------------------------------------------------
+ * Live status. These are the only things allowed to move on their own, because
+ * each one reports work that is genuinely in progress.
+ * ------------------------------------------------------------------------ */
+
+.spin {
+  animation: spin 1.15s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+.chat-thinking {
+  animation: paper-breathe 1.9s var(--ease-state) infinite;
+}
+
+/* A compositor's slug at the end of the line the model is still setting. It
+   sits on the last paragraph so it tracks the text instead of the container. */
+.research-message.is-streaming .chat-markdown > :is(p, li):last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.46em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.16em;
+  background: var(--text-faint);
+  animation: caret-blink 1.05s steps(1, end) infinite;
+}
+
+/* A running stage keeps a soft ring; completed stages simply are. */
+.stage-item.is-running .stage-node {
+  animation: paper-pulse-ring 2.1s var(--ease-state) infinite;
+}
+
+.stage-node {
+  transition:
+    background-color var(--tempo-panel) var(--ease-state),
+    border-color var(--tempo-panel) var(--ease-state),
+    color var(--tempo-panel) var(--ease-state);
+}
+
+/* The connector between stages fills toward the next step instead of switching
+   colour, so progress is legible from the corner of the eye. */
+.stage-line {
+  background-color: var(--surface-soft);
+  background-image: linear-gradient(90deg, var(--teal) 0 50%, transparent 50% 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  background-repeat: no-repeat;
+  transition: background-position var(--tempo-page) var(--ease-page);
+}
+
+.stage-item.is-completed .stage-line {
+  background-color: var(--surface-soft);
+  background-image: linear-gradient(90deg, var(--teal) 0 50%, transparent 50% 100%);
+  background-position: 0 0;
+}
+
+.context-meter i {
+  transition: width var(--tempo-page) var(--ease-page);
+}
+
+/* Loading notices fade in so a fast local response never flashes a spinner. */
+.analysis-loading,
+.designs-loading,
+.startup-loading,
+.decision-lab-loading,
+.global-evidence-loading,
+.verification-center-loading {
+  animation: paper-fade var(--tempo-panel) var(--ease-page) 120ms both;
+}
+
+/* ---------------------------------------------------------------------------
+ * Typographic finish. The book part of the book.
+ * ------------------------------------------------------------------------ */
+
+.page-header h1,
+.run-header h1,
+.analysis-desk-heading h1,
+.analysis-library-heading h1,
+.analysis-empty h2,
+.chat-welcome h1,
+.mission-summary h2,
+.design-product-title h2,
+.library-section-heading h2 {
+  text-wrap: balance;
+}
+
+.page-header p,
+.analysis-description,
+.analysis-library-heading p,
+.analysis-method-copy small,
+.chat-welcome > p,
+.chat-markdown p,
+.chat-markdown li,
+.mission-summary p,
+.sidebar-note {
+  text-wrap: pretty;
+}
+
+/* Quantities read as figures in a table, never as prose. */
+.analysis-metrics strong,
+.mission-metrics strong,
+.readiness-score,
+.operator-cockpit-metrics strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Highlighting is a pencil under a line, not a coloured block. */
+::selection {
+  background: var(--surface-selected);
+  color: var(--text);
+}
+
+/* Margins of a well-made book: the scrollbar is visible when sought, quiet
+   otherwise, and never a coloured element. */
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* Anchored jumps inside long evidence and sequence views glide. */
+.operational-page,
+.chat-scroll,
+.ledger-scroll,
+.analysis-result-body,
+.run-workspace {
+  scroll-behavior: smooth;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion. workbench-theme.css already collapses every duration; this
+ * removes the displacement itself so nothing jumps to a translated position.
+ * ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] :is(button, .analysis-method, .analysis-history-row, .chat-starters button, .run-dependency-node):is(:hover, :active) {
+    transform: none !important;
+  }
+
+  .workspace-sidebar nav > button:hover svg,
+  .sidebar-utilities > button:hover svg {
+    transform: none !important;
+  }
+
+  .stage-item.is-running .stage-node,
+  .chat-thinking,
+  .research-message.is-streaming .chat-markdown > :is(p, li):last-child::after {
+    animation: none !important;
+  }
+
+  .operational-page,
+  .chat-scroll,
+  .ledger-scroll,
+  .analysis-result-body,
+  .run-workspace {
+    scroll-behavior: auto;
+  }
+
+  .command-palette-backdrop,
+  .decision-lab-backdrop,
+  .global-evidence-backdrop,
+  .verification-center-backdrop {
+    backdrop-filter: none;
+  }
+}

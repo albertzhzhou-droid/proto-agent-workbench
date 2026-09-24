@@ -1,0 +1,79 @@
+{
+  "schema_version": "proto-agent.remote-connectors.v1",
+  "note": "Every connector ships DISABLED. Enabling one grants network, program, or data-lake access to a fixed host/program list and must be a deliberate operator decision. Remote capabilities are separate from the offline compute registry and are never auto-approved.",
+  "connectors": [
+    {
+      "id": "openfda",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://api.fda.gov",
+      "purpose": "FDA drug labels, enforcement recalls, and FAERS adverse-event queries (upstream Biomni openFDA wrappers)."
+    },
+    {
+      "id": "jaspar",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://jaspar.genereg.net",
+      "purpose": "JASPAR PWM retrieval for transcription-factor binding-site scanning."
+    },
+    {
+      "id": "iupred",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://iupred2a.elte.hu",
+      "purpose": "IUPred2A long-disorder predictions from protein sequences."
+    },
+    {
+      "id": "hmmer_web",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://www.ebi.ac.uk",
+      "purpose": "EBI HMMER hmmscan submissions against Pfam."
+    },
+    {
+      "id": "ncbi_entrez",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov",
+      "purpose": "NCBI Entrez gene summaries; NCBI terms of service apply."
+    },
+    {
+      "id": "ensembl_biomart",
+      "kind": "http_api",
+      "enabled": false,
+      "endpoint": "https://www.ensembl.org",
+      "purpose": "BioMart orthologue conversion between Ensembl gene identifiers."
+    },
+    {
+      "id": "muscle_exec",
+      "kind": "local_executable",
+      "enabled": false,
+      "programs": ["muscle"],
+      "timeout_s": 600,
+      "purpose": "MUSCLE multiple-sequence alignment feeding the offline phylogeny tool."
+    },
+    {
+      "id": "macs2_exec",
+      "kind": "local_executable",
+      "enabled": false,
+      "programs": ["macs2"],
+      "timeout_s": 3600,
+      "purpose": "MACS2 ChIP-seq peak calling on workspace alignment files."
+    },
+    {
+      "id": "plannotate_exec",
+      "kind": "local_executable",
+      "enabled": false,
+      "programs": ["plannotate"],
+      "timeout_s": 600,
+      "purpose": "pLannotate plasmid feature annotation from FASTA input."
+    },
+    {
+      "id": "ddinter_datalake",
+      "kind": "data_lake",
+      "enabled": false,
+      "datalake_root": "../Proto CLI Materials/ddinter",
+      "purpose": "DDInter drug-interaction database files (interaction_matrix.json, name_mapping.json) placed by the operator; never bundled with Proto."
+    }
+  ]
+}

@@ -12,7 +12,7 @@ test("main process owns the bounded Operator Cockpit projection", async () => {
     source("src/main/services/operator-cockpit.ts"),
     source("src/shared/ipc.ts"),
     source("src/preload/index.ts"),
-    source("src/main/ipc-security.ts"),
+    source("src/shared/ipc-channel-contracts.ts"),
   ]);
   assert.match(ipc, /runsCockpit: "runs:cockpit"/);
   assert.match(security, /\[IPC\.runsCockpit\]: noArguments/);

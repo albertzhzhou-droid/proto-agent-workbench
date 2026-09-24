@@ -1,0 +1,25 @@
+.protein-comparison { margin:20px 0; padding:20px; border:1px solid var(--line); border-radius:14px; background:var(--surface-soft); min-width:0; }
+.protein-comparison > header,.protein-comparison-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.protein-comparison h3 { display:flex; align-items:center; gap:8px; margin:6px 0 16px; }
+.protein-comparison p,.protein-study-results p { font-size:12px; line-height:1.6; color:var(--text-faint); }
+.protein-comparison textarea { display:block; box-sizing:border-box; width:100%; min-height:150px; margin:8px 0 12px; padding:12px; resize:vertical; font-family:var(--font-mono,monospace); color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.protein-comparison summary,.protein-study-results summary { cursor:pointer; padding:10px 0; font-weight:600; }
+.protein-comparison-ids { display:flex; flex-wrap:wrap; gap:8px; }
+.protein-comparison-actions input { width:75px; margin-left:8px; padding:5px; background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:5px; }
+.protein-study-results { min-width:0; }
+.protein-alignment-scroll { max-width:100%; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+.protein-alignment-scroll table { border-collapse:collapse; font-family:var(--font-mono,monospace); font-size:11px; white-space:nowrap; }
+.protein-alignment-scroll th { font-weight:500; padding:7px 4px; }
+.protein-alignment-scroll th:first-child { position:sticky; left:0; z-index:2; min-width:110px; max-width:180px; overflow:hidden; text-overflow:ellipsis; text-align:left; background:var(--surface-soft); padding:8px; }
+.protein-alignment-scroll td { text-align:center; border-bottom:1px solid var(--line); padding:0; }
+.protein-alignment-scroll button { display:flex; align-items:center; justify-content:center; min-width:25px; height:32px; padding:2px; border:0; border-radius:3px; background:transparent; color:var(--text); font:inherit; cursor:pointer; }
+.protein-alignment-scroll button[aria-pressed=true] { background:var(--text); color:var(--surface); }
+.protein-alignment-scroll button:focus-visible { outline:2px solid var(--text); outline-offset:-2px; }
+.protein-alignment-scroll tr[aria-current=true] th { font-weight:700; }
+.conservation-bar { width:12px; display:block; min-height:1px; background:var(--text-faint); }
+.protein-tree-newick { overflow:auto; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:8px; font-size:12px; }
+.protein-tree-scroll { overflow:auto; max-height:440px; border:1px solid var(--line); border-radius:8px; padding:12px; }
+.protein-tree-scroll svg { display:block; min-width:500px; width:100%; color:var(--text-faint); }
+.protein-tree-scroll text { fill:var(--text); font-family:var(--font-mono,monospace); font-size:11px; }
+.protein-tree-tips { display:flex; gap:8px; flex-wrap:wrap; padding-top:12px; }
+@media(max-width:800px) {.protein-comparison{padding:12px}.protein-comparison-actions{align-items:flex-start}.protein-alignment-scroll th:first-child{min-width:80px;max-width:120px}}

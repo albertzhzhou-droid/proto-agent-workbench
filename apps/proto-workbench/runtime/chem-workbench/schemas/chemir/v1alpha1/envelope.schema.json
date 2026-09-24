@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "envelope.schema.json",
+  "title": "ChemIR v1alpha1 immutable object envelope",
+  "$ref": "#/$defs/Envelope",
+  "$defs": {
+    "Envelope": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "id",
+        "kind",
+        "payload",
+        "source_references",
+        "provenance_references",
+        "review_requirement_references",
+        "extensions"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "chemir/v1alpha1"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "kind": {
+          "enum": [
+            "Molecule",
+            "Geometry",
+            "ElectronicState",
+            "ChemicalSubstance",
+            "MaterialLot",
+            "CoordinationComplex",
+            "PeriodicStructure",
+            "SurfaceSlab",
+            "AdsorptionComplex",
+            "InterfaceReactionStep",
+            "ConditionSet",
+            "ComparisonSpec",
+            "CalculationSpec",
+            "Evidence"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        },
+        "source_references": {
+          "$ref": "common.schema.json#/$defs/SourceReferenceArray"
+        },
+        "provenance_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "review_requirement_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

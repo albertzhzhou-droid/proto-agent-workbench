@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -10,7 +11,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Mapping, Sequence
 from uuid import uuid4
 
@@ -44,6 +45,10 @@ class SandboxConfig:
     image: str | None = None
     unsafe_host: bool = False
     caller: str = "library"
+    wsl_distribution: str | None = None
+    wsl_user: str | None = None
+    wsl_socket: str | None = None
+    wsl_docker_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -82,12 +87,18 @@ class ExecutionBroker:
         provider: str | None = None,
         image: str | None = None,
         caller: str = "library",
+        workspace_root: str | Path | None = None,
     ) -> "ExecutionBroker":
+        configured = sandbox_configuration_from_environment(workspace_root)
         return cls(
             SandboxConfig(
-                provider=provider or os.environ.get("PROTO_AGENT_SANDBOX_PROVIDER"),
-                image=image or os.environ.get("PROTO_AGENT_SANDBOX_IMAGE"),
+                provider=provider or configured.get("provider"),
+                image=image or configured.get("image"),
                 caller=caller,
+                wsl_distribution=configured.get("wslDistribution"),
+                wsl_user=configured.get("wslUser"),
+                wsl_socket=configured.get("wslSocket"),
+                wsl_docker_path=configured.get("wslDockerPath"),
             )
         )
 
@@ -98,28 +109,34 @@ class ExecutionBroker:
     def status(self) -> dict[str, object]:
         provider = (self.config.provider or "").lower()
         image = self.config.image or ""
-        provider_valid = provider in {"docker", "podman"}
+        provider_valid = provider in {"docker", "podman", "docker-wsl"}
         image_pinned = is_digest_pinned_image(image)
-        executable = shutil.which(provider) if provider_valid else None
+        wsl_valid = provider != "docker-wsl" or valid_wsl_configuration(self.config)
+        executable = shutil.which("wsl.exe" if provider == "docker-wsl" else provider) if provider_valid else None
         configured = bool(provider and image)
         provider_visible = executable is not None
+        runtime_probe: dict[str, object] = {}
         if self.config.unsafe_host:
             mode = "unsafe-host"
             available = True
             reason = "Host execution was explicitly enabled for this CLI invocation only."
-        elif provider_valid and image_pinned and executable:
+        elif provider_valid and image_pinned and wsl_valid and executable:
             mode = "oci"
-            available = True
-            reason = "Digest-pinned OCI sandbox is configured and the provider executable is visible; no sandbox smoke test has run."
+            prefix = wsl_provider_prefix(executable, self.config) if provider == "docker-wsl" else [executable]
+            runtime_probe = probe_oci_provider(prefix, image, provider)
+            available = bool(runtime_probe["ready"])
+            reason = str(runtime_probe["reason"])
         else:
             mode = "disabled"
             available = False
             if not provider and not image:
                 reason = "Execution is disabled by default; no OCI sandbox is configured."
             elif not provider_valid:
-                reason = "Sandbox provider must be docker or podman."
+                reason = "Sandbox provider must be docker, podman or docker-wsl."
             elif not image_pinned:
                 reason = "Sandbox image must be pinned as name@sha256:<64 lowercase hex characters>."
+            elif not wsl_valid:
+                reason = "WSL sandbox requires an explicit distribution, non-root user and local Unix socket."
             else:
                 reason = f"Configured OCI provider is not available on PATH: {provider}"
         return {
@@ -129,10 +146,12 @@ class ExecutionBroker:
             "configured": configured,
             "provider_visible": provider_visible,
             "smoke_verified": False,
+            "runtime_probe": runtime_probe,
             "provider": provider or None,
             "provider_executable": Path(executable).name if executable else None,
             "image": image or None,
             "image_digest_pinned": image_pinned,
+            "wsl_distribution": self.config.wsl_distribution if provider == "docker-wsl" else None,
             "caller": self.config.caller,
             "network": "none" if mode == "oci" else None,
             "workspace_mount": "read-only" if mode == "oci" else None,
@@ -206,16 +225,16 @@ class ExecutionBroker:
         if status["mode"] != "oci" or not status["available"]:
             raise ExecutionDenied("EXECUTION_DISABLED", str(status["reason"]))
         provider = str(status["provider"])
-        executable_path = shutil.which(provider)
+        executable_path = shutil.which("wsl.exe" if provider == "docker-wsl" else provider)
         if executable_path is None:
             raise ExecutionDenied("EXECUTION_DISABLED", f"Configured OCI provider is not available: {provider}")
-        executable = executable_path
+        prefix = wsl_provider_prefix(executable_path, self.config) if provider == "docker-wsl" else [executable_path]
         image = str(status["image"])
         container_name = f"proto-agent-{uuid4().hex}"
         container_user = oci_non_root_user()
         _prepare_oci_run_directory(run_dir, container_user)
         command = build_oci_argv(
-            executable=executable,
+            executable=prefix[-1] if provider != "docker-wsl" else str(self.config.wsl_docker_path or "/usr/bin/docker"),
             provider=provider,
             image=image,
             runtime=runtime,
@@ -226,13 +245,14 @@ class ExecutionBroker:
             container_name=container_name,
             container_user=container_user,
         )
+        command = [*prefix, *command[1:]]
         return _run_bounded(
             command,
             cwd=workspace,
             env=minimal_provider_environment(),
             timeout=timeout,
             provider=provider,
-            cleanup=(executable, container_name),
+            cleanup=(tuple(prefix), container_name),
             output_dir=run_dir,
             cancel_event=cancel_event,
         )
@@ -240,6 +260,101 @@ class ExecutionBroker:
 
 def is_digest_pinned_image(image: str | None) -> bool:
     return bool(image and _DIGEST_IMAGE.fullmatch(image))
+
+
+def sandbox_configuration_from_environment(workspace_root: str | Path | None = None) -> dict[str, str]:
+    """Read explicit environment overrides, otherwise the local workspace profile.
+
+    The profile is outside build/ and therefore cannot be changed by generated
+    code or Chat document writes. It configures OCI only, never host execution.
+    """
+    names = {
+        "provider": "PROTO_AGENT_SANDBOX_PROVIDER", "image": "PROTO_AGENT_SANDBOX_IMAGE",
+        "wslDistribution": "PROTO_AGENT_SANDBOX_WSL_DISTRIBUTION",
+        "wslUser": "PROTO_AGENT_SANDBOX_WSL_USER", "wslSocket": "PROTO_AGENT_SANDBOX_WSL_SOCKET",
+        "wslDockerPath": "PROTO_AGENT_SANDBOX_WSL_DOCKER_PATH",
+    }
+    if any(os.environ.get(name) for name in names.values()):
+        return {key: os.environ[name] for key, name in names.items() if os.environ.get(name)}
+    root = Path(workspace_root or os.environ.get("PROTO_WORKBENCH_WORKSPACE_ROOT", Path.cwd()))
+    candidate = root / ".proto-agent" / "sandbox.json"
+    if not candidate.exists():
+        return {}
+    try:
+        paths = WorkspacePaths.create(root)
+        path = paths.workspace_file(".proto-agent/sandbox.json", extensions={".json"}, max_bytes=16_384)
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        if not isinstance(payload, dict) or set(payload) - {"version", *names} or payload.get("version") != 1:
+            raise ValueError("Unsupported sandbox configuration schema.")
+        if any(not isinstance(value, str) for key, value in payload.items() if key != "version"):
+            raise ValueError("Sandbox configuration fields must be strings.")
+        return {key: payload[key] for key in names if key in payload}
+    except (OSError, ValueError, SecurityBoundaryError) as exc:
+        raise ExecutionDenied("INVALID_SANDBOX_CONFIGURATION", f"Unable to read the workspace sandbox profile: {exc}") from exc
+
+
+def valid_wsl_configuration(config: SandboxConfig) -> bool:
+    return bool(
+        re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", config.wsl_distribution or "")
+        and re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", config.wsl_user or "")
+        and config.wsl_user != "root"
+        and re.fullmatch(r"unix:///(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_.-]+\.sock", config.wsl_socket or "")
+        and ".." not in (config.wsl_socket or "")
+        and re.fullmatch(r"/(?:[A-Za-z0-9_.-]+/)*docker", config.wsl_docker_path or "/usr/bin/docker")
+        and ".." not in (config.wsl_docker_path or "")
+    )
+
+
+def wsl_provider_prefix(executable: str, config: SandboxConfig) -> list[str]:
+    if not valid_wsl_configuration(config):
+        raise ExecutionDenied("INVALID_WSL_PROVIDER", "WSL execution requires an explicit distribution, non-root user and local Unix socket.")
+    return [executable, "--distribution", str(config.wsl_distribution), "--user", str(config.wsl_user),
+            "--exec", config.wsl_docker_path or "/usr/bin/docker", "--host", str(config.wsl_socket)]
+
+
+def probe_oci_provider(prefix: Sequence[str], image: str, provider: str = "docker") -> dict[str, object]:
+    """Check current daemon, resource controls and exact image without running code."""
+    result: dict[str, object] = {"ready": False, "daemon_reachable": False, "image_present": False,
+                                 "checked_at": time.time(), "reason": "OCI provider probe has not completed."}
+    try:
+        options = {"stdin": subprocess.DEVNULL, "stdout": subprocess.PIPE, "stderr": subprocess.PIPE,
+                   "timeout": 5, "check": False, "shell": False, "env": minimal_provider_environment(),
+                   **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {})}
+        info_format = "{{json .Host}}" if provider == "podman" else "{{.ServerVersion}}|{{.MemoryLimit}}|{{.CPUCfsQuota}}|{{.PidsLimit}}"
+        info = subprocess.run([*prefix, "info", "--format", info_format], **options)
+        if info.returncode != 0:
+            result["reason"] = "The configured OCI daemon is unreachable: " + info.stderr.decode("utf-8", errors="replace").strip()[:400]
+            return result
+        text = info.stdout.decode("utf-8", errors="replace").strip()
+        result["daemon_reachable"] = True
+        if provider == "podman":
+            host = json.loads(text)
+            result["resource_controls_available"] = isinstance(host, dict) and host.get("cgroupVersion") == "v2" and {"memory", "cpu", "pids"}.issubset(host.get("cgroupControllers", []))
+        else:
+            fields = text.split("|")
+            result["resource_controls_available"] = len(fields) == 4 and all(value == "true" for value in fields[1:])
+            result["server_version"] = fields[0]
+        if not result["resource_controls_available"]:
+            result["reason"] = "The OCI daemon does not report memory, CPU quota and PID controls; execution remains disabled."
+            return result
+        inspected = subprocess.run([*prefix, "image", "inspect", "--format", "{{.Id}}", image], **options)
+        result["image_present"] = inspected.returncode == 0 and bool(re.fullmatch(r"sha256:[0-9a-f]{64}", inspected.stdout.decode("utf-8", errors="replace").strip()))
+        if not result["image_present"]:
+            result["reason"] = "The configured digest-pinned OCI image is not present in the running daemon."
+            return result
+        result.update({"ready": True, "reason": "The OCI daemon is reachable, resource controls are available and the exact pinned image is present. No execution smoke test is implied."})
+    except (OSError, ValueError, TypeError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = "The configured OCI provider could not be checked: " + str(exc)[:400]
+    return result
+
+
+def windows_path_to_wsl(value: str | Path) -> str:
+    """Translate a previously validated local drive path without invoking a shell."""
+    raw = str(value)
+    path = PureWindowsPath(raw)
+    if not re.fullmatch(r"[A-Za-z]:", path.drive) or not path.is_absolute() or ".." in path.parts or "," in raw or "\x00" in raw:
+        raise ExecutionDenied("UNSAFE_WSL_MOUNT_PATH", "WSL container mounts require an absolute local Windows drive path without traversal or commas.")
+    return "/mnt/" + path.drive[0].lower() + "/" + "/".join(path.parts[1:])
 
 
 def oci_non_root_user() -> str:
@@ -280,6 +395,8 @@ def public_execution_command(
         (str(run_dir).replace("\\", "/"), "<run>"),
         (str(workspace), "<workspace>"),
         (str(workspace).replace("\\", "/"), "<workspace>"),
+        *((windows_path_to_wsl(path), marker) for path, marker in ((run_dir, "<run>"), (workspace, "<workspace>"))
+          if re.match(r"^[A-Za-z]:[\\/]", str(path))),
     )
     public: list[str] = []
     for index, raw in enumerate(command):
@@ -320,8 +437,8 @@ def build_oci_argv(
     container_name: str,
     container_user: str | None = None,
 ) -> list[str]:
-    if provider not in {"docker", "podman"}:
-        raise ExecutionDenied("INVALID_PROVIDER", "OCI provider must be docker or podman.")
+    if provider not in {"docker", "podman", "docker-wsl"}:
+        raise ExecutionDenied("INVALID_PROVIDER", "OCI provider must be docker, podman or docker-wsl.")
     if not is_digest_pinned_image(image):
         raise ExecutionDenied("UNPINNED_IMAGE", "OCI image must be pinned by sha256 digest.")
     if not re.fullmatch(r"proto-agent-[0-9a-f]{8,64}", container_name):
@@ -353,6 +470,8 @@ def build_oci_argv(
     )
     if runtime_argv is None:
         raise ExecutionDenied("UNSUPPORTED_RUNTIME", f"Unsupported execution runtime: {runtime}")
+    workspace_mount = windows_path_to_wsl(workspace) if provider == "docker-wsl" else str(workspace)
+    run_mount = windows_path_to_wsl(run_dir) if provider == "docker-wsl" else str(run_dir)
 
     return [
         executable,
@@ -378,9 +497,9 @@ def build_oci_argv(
         "--cpus",
         OCI_CPU_LIMIT,
         "--mount",
-        f"type=bind,src={workspace},dst=/workspace,readonly",
+        f"type=bind,src={workspace_mount},dst=/workspace,readonly",
         "--mount",
-        f"type=bind,src={run_dir},dst=/run",
+        f"type=bind,src={run_mount},dst=/run",
         "--tmpfs",
         "/tmp:rw,noexec,nosuid,size=64m",
         "--workdir",
@@ -389,6 +508,18 @@ def build_oci_argv(
         "PROTO_AGENT_WORKSPACE=/workspace",
         "--env",
         "PROTO_AGENT_RUN_DIR=/run",
+        "--env",
+        "HOME=/tmp",
+        "--env",
+        "JUPYTER_RUNTIME_DIR=/tmp/jupyter-runtime",
+        "--env",
+        "MPLCONFIGDIR=/tmp/matplotlib",
+        "--env",
+        "OPENBLAS_NUM_THREADS=1",
+        "--env",
+        "OMP_NUM_THREADS=1",
+        "--env",
+        "MKL_NUM_THREADS=1",
         image,
         *runtime_argv,
     ]
@@ -458,7 +589,7 @@ def _run_bounded(
     env: Mapping[str, str],
     timeout: int,
     provider: str,
-    cleanup: tuple[str, str] | None = None,
+    cleanup: tuple[tuple[str, ...], str] | None = None,
     output_dir: Path,
     cancel_event: threading.Event | None = None,
 ) -> ExecutionResult:
@@ -790,10 +921,10 @@ def _apply_posix_host_limits(timeout: int) -> None:
         resource.setrlimit(name, (effective, effective))
 
 
-def _cleanup_container(executable: str, container_name: str, *, env: Mapping[str, str]) -> None:
+def _cleanup_container(provider_prefix: Sequence[str], container_name: str, *, env: Mapping[str, str]) -> None:
     try:
         subprocess.run(
-            [executable, "rm", "-f", container_name],
+            [*provider_prefix, "rm", "-f", container_name],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

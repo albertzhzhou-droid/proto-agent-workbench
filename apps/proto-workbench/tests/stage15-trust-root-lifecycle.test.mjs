@@ -54,7 +54,7 @@ test("Stage 15 candidate service keeps the exact seven-file pack immutable and b
 test("Stage 15 main and preload expose user-mediated no-argument import and read-only listing", async () => {
   const main = await source("src/main/index.ts");
   const preload = await source("src/preload/index.ts");
-  const ipcSecurity = await source("src/main/ipc-security.ts");
+  const ipcSecurity = await source("src/shared/ipc-channel-contracts.ts");
 
   assert.match(main, /handlePrivileged\(IPC\.harnessTrustRootCandidateImport/);
   assert.match(main, /pickDirectory\("Select an offline TUF trust-root candidate pack"/);

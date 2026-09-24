@@ -5,6 +5,7 @@ import type { ProteinResidueMapping, ProteinStructureApi } from "../shared/prote
 import type { ProteinTrackStructureContext } from "../shared/protein-track-export.ts";
 import { ProteinStructureView } from "./ProteinStructureView.tsx";
 import { ProteinSequenceTracks } from "./ProteinSequenceTracks.tsx";
+import { ProteinComparisonPanel } from "./ProteinComparisonPanel.tsx";
 import "./protein-workspace.css";
 import {
   calculateProteinMetrics,
@@ -228,6 +229,12 @@ export function ProteinSequenceView({ design, structureApi, artifact, selectedPr
         </div>
       </div>
 
+      <ProteinComparisonPanel proteins={design.proteins} activeProteinId={protein.id} sourceKey={artifact?.sha256 ?? design.designId} onSelect={(id,position)=>{
+        const index=design.proteins.findIndex(item=>item.id===id);
+        if(index<0)return;
+        chooseProtein(index);setSelectedRange({start:position,end:position+1});setRangeStart(String(position+1));setRangeEnd(String(position+1));
+        setWindowStart(Math.min(position,Math.max(0,design.proteins[index].length-PROTEIN_VISUALIZATION_LIMITS.maxRenderedResidues)));
+      }}/>
       <ProteinStructureView protein={protein} api={structureApi} artifact={artifact} selectedRange={selectedRange} onSelectRange={selectRange}
         onClearSelection={() => { setSelectedRange(undefined); setRangeStart(""); setRangeEnd(""); }} onMappingChange={setStructureMapping} onMappingContextChange={setStructureContext} />
       <ProteinSequenceTracks sequence={protein.sequence} mapping={structureMapping} selectedRange={selectedRange} onSelectRange={selectRange}

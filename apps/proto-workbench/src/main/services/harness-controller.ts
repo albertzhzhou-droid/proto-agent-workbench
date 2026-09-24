@@ -1,11 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
 import Ajv from "ajv";
-import { HARNESS_DEFAULTS, type HarnessCheckpoint, type HarnessMessage, type HarnessState, type HarnessToolCall, type MissionContract, type ToolResultEnvelope } from "../../shared/harness.ts";
+import { HARNESS_DEFAULTS, type HarnessCheckpoint, type HarnessDiagnostic, type HarnessMessage, type HarnessState, type HarnessToolCall, type MissionContract, type ToolResultEnvelope } from "../../shared/harness.ts";
+import {recordHarnessVerdict, rememberHarnessFailure, priorInvalidHarnessCall} from "./harness-iteration.ts";
+import {evaluateToolDispatch, resolveToolContract} from "../../shared/tool-contracts.ts";
 import type { ChatCompletionChunk, ExecutionBinding } from "./inference-provider.ts";
 import { assembleHarnessContext, bindCurrentExecutionState, projectToolResult, providerMessages, type HarnessToolDefinition } from "./harness-context.ts";
 import { HarnessStore } from "./harness-store.ts";
 import type { WorkspaceQueueState } from "./workspace-execution-queue.ts";
 import { observeHarnessResult, observationProgressAction } from "./harness-observation-progress.ts";
+import { completionGate, turnBudget } from "./turn-engine.ts";
+import type { ToolExecutionRecord } from "./tool-execution-journal.ts";
 
 export interface HarnessHost {
   binding(signal: AbortSignal): Promise<ExecutionBinding>;
@@ -15,7 +19,8 @@ export interface HarnessHost {
   execute(name: string, args: Record<string, unknown>, callId: string, checkpoint: HarnessCheckpoint, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<Record<string, unknown>>;
   reconcile?(name: string, args: Record<string, unknown>, callId: string, checkpoint: HarnessCheckpoint, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<Record<string, unknown> | undefined>;
   effect(name: string): "read" | "write";
-  verify(checkpoint: HarnessCheckpoint, summary?: string): Promise<{ok: boolean; diagnostics: string[]; artifacts: string[]}>;
+  executionRecord?(callId:string):ToolExecutionRecord|undefined;
+  verify(checkpoint: HarnessCheckpoint, summary?: string): Promise<{ok: boolean; diagnostics: HarnessDiagnostic[]; artifacts: string[]}>;
   publish(checkpoint: HarnessCheckpoint, detail: string): void;
   delta(text: string): void;
 }
@@ -25,6 +30,7 @@ export const HARNESS_TOOLS = [
   definition("harness_read_result", "Read durable raw JSON fields omitted from a tool summary when they are needed. Supply its handle and character offset; next_offset identifies the next unread character. You do not need to exhaust unrelated metadata or every result page.", {handle: {type: "string"}, offset: {type: "integer", minimum: 0}, limit: {type: "integer", minimum: 1, maximum: 24000}}, ["handle"]),
   definition("harness_plan", "Record concrete deliverables before writing. Original user targets remain mandatory. Record zero deliverables only for read-only tasks.", {deliverables: {type: "array", maxItems: 24, items: {type: "object", required: ["path", "kind"], properties: {path: {type: "string"}, kind: {enum: ["dna", "protein", "document"]}}, additionalProperties: false}}}, ["deliverables"]),
   definition("harness_finish", "Request completion after executing the task. The host independently checks artifacts and validation evidence; failed checks keep the task open.", {summary: {type: "string", minLength: 1}}, ["summary"]),
+  definition("harness_report_blocked", "Stop the task for human review when the available tools and evidence cannot establish the requested result. Record why, and which requirements remain unmet. This is a complete outcome, not a failure and not a retry: no further rounds run, and every saved result stays available. Prefer this over repeating operations or reporting an unverified result.", {reason: {type: "string", minLength: 1}, unmet_requirements: {type: "array", maxItems: 24, items: {type: "string", minLength: 1}}}, ["reason", "unmet_requirements"]),
 ];
 const INITIAL_TOOLS = new Set(["workspace_read", "workspace_search", "workspace_propose_patch", "proto_language_reference", "proto_materials_search", "proto_materials_get", "proto_materials_materialize", "proto_materials_materialize_proteins"]);
 const ajv = new Ajv({allErrors: true, strict: false});
@@ -33,7 +39,7 @@ const failure = (code: string, message: string, effectState: "none" | "unknown" 
 export const initialHarnessToolNames = (tools: HarnessToolDefinition[]) => tools.filter(t => INITIAL_TOOLS.has(t.function.name)).map(t => t.function.name);
 export function createHarnessCheckpoint(contract: MissionContract, instructions: string, history: HarnessMessage[] = [], tools: HarnessToolDefinition[] = []): HarnessCheckpoint {
   const now = new Date().toISOString();
-  return {schema: "proto-workbench.execution.v1", revision: 0, contract, state: "queued", messages: [{role: "system", content: instructions}, ...history, {role: "user", content: contract.goal}], round: 0, generatedTokens: 0, activeTimeMs: 0, pendingCalls: [], completedCalls: [], resultHandles: [], deliveredPaths: [], fullContent: "", createdAt: now, updatedAt: now, hostRecovered: false, selectedTools: initialHarnessToolNames(tools)};
+  return {schema: "proto-workbench.execution.v1", revision: 0, contract, state: "queued", messages: [{role: "system", content: instructions}, ...history, {role: "user", content: contract.goal}], round: 0, generatedTokens: 0, activeTimeMs: 0, pendingCalls: [], completedCalls: [], resultHandles: [], deliveredPaths: [], fullContent: "", createdAt: now, updatedAt: now, hostRecovered: false, selectedTools: initialHarnessToolNames(tools), repairBudget: {...HARNESS_DEFAULTS.repairBudget}};
 }
 
 /** Durable, goal-independent orchestration. No task-specific host content generation. */
@@ -54,6 +60,14 @@ export class HarnessController {
   }
 
   async run(c: HarnessCheckpoint, signal: AbortSignal, options: {resumed?: boolean} = {}): Promise<void> {
+    if (["completed","abstained","needs-human","cancelled"].includes(c.state)) return;
+    const stoppedVerdict=c.verdicts?.at(-1);
+    if(stoppedVerdict?.action==="needs-human"){
+      c.abstention??={reason:"Saved verification requires human review.",unmetRequirements:stoppedVerdict.diagnostics.map(d=>`${d.blockingClass}: ${d.message}`),declaredAt:stoppedVerdict.recordedAt};
+      c.fullContent=stoppedVerdict.summary??c.fullContent;c.pendingCalls=[];c.state="needs-human";
+      this.store.save(c);this.host.publish(c,"Saved review verdict restored without another tool or model call");return;
+    }
+    if(!c.toolCallCounts||!c.toolDispatches){const usage=this.store.toolUsage(c.contract.runId);c.toolCallCounts??=usage.counts;c.toolDispatches??=usage.operationIds;}
     // A crash may lose the provider's final usage frame. The last persisted
     // conservative count still belongs to this mission and cannot be refunded.
     c.generatedTokens += c.inFlightGenerationTokens ?? 0;
@@ -66,9 +80,24 @@ export class HarnessController {
     const budgetAbort = new AbortController();
     const runSignal = AbortSignal.any([signal, budgetAbort.signal]);
     let queued = false;
+    let terminalCheckpointCommitted = false;
     const account = () => { const now = Date.now(); if (!queued) c.activeTimeMs += now - lastTick; lastTick = now; };
-    const save = (state: HarnessState, detail: string) => { account(); c.state = state; this.store.save(c); this.host.publish(c, detail); };
-    let repairCount = 0, repeated = 0, lastSignature = "", noProgressRepaired = c.observationProgress?.repairIssued ?? recovery.progressRepairs > 0;
+    const save = (state: HarnessState, detail: string) => {
+      account(); c.state = state; this.store.save(c);
+      // Publication is a separate boundary. A presentation failure cannot undo
+      // a terminal checkpoint that the store has already committed.
+      terminalCheckpointCommitted = ["completed", "abstained", "needs-human"].includes(state);
+      this.host.publish(c, detail);
+    };
+    // Repairs are a task allowance, not a per-run one. A checkpoint written
+    // before this field existed is migrated from the counters it did persist,
+    // so resuming an old run cannot hand it another full set of repairs.
+    const budget = c.repairBudget ??= {
+      outputRepairs: Math.max(0, HARNESS_DEFAULTS.repairBudget.outputRepairs - recovery.outputRepairs),
+      progressRepairs: Math.max(0, HARNESS_DEFAULTS.repairBudget.progressRepairs - recovery.progressRepairs),
+    };
+    budget.verifyRepairs ??= Math.max(0,HARNESS_DEFAULTS.repairBudget.verifyRepairs-(c.verdicts?.filter(v=>v.action==="repair").length??0));
+    let repeated = 0, lastSignature = "";
     let observedThisRun = false;
     let persistenceFailure: Error | undefined;
     const armBudget = () => { budgetTimer = setTimeout(() => budgetAbort.abort(failure("TASK_BUDGET_EXHAUSTED", "Active execution time exhausted.")), Math.max(1, c.contract.budgets.activeTimeMs - c.activeTimeMs)); };
@@ -115,8 +144,13 @@ export class HarnessController {
               // A durable completion receipt is evidence of the old state, not
               // authority to mark changed or deleted artifacts complete now.
               const verified = await this.host.verify(c, String(result.data.summary ?? ""));
-              if (!verified.ok) result = {...result, ok: false, data: {...result.data, ...verified}};
+              if (!verified.ok || verified.diagnostics.length) result = {...result, ok: false, data: {...result.data, ...verified}};
             }
+            // The shared gate sees all durable external operations. A model's
+            // finish receipt cannot erase a ledger error or uncertain effect.
+            const currentEvidence = completionGate(this.store.executionActivities(c.contract.runId));
+            c.evidenceStatus = currentEvidence;
+            const verdict=call.function.name==="harness_finish"?recordHarnessVerdict(c,call.id,result):undefined;
             // Restore metadata as well as the result if a crash occurred between result and checkpoint commits.
             if (result.ok && call.function.name === "harness_plan") c.contract.deliverables = result.data.deliverables as MissionContract["deliverables"];
             if (result.ok && call.function.name === "harness_discover_tools") c.selectedTools = [...new Set([...(c.selectedTools ?? []), ...((result.data.activated as HarnessToolDefinition[] | undefined) ?? []).map(t => t.function.name)])];
@@ -124,6 +158,7 @@ export class HarnessController {
             if (result.data.resume_tool === "workspace_resume_validation" && this.host.tools.some(tool => tool.function.name === result.data.resume_tool)) c.selectedTools = [...new Set([...(c.selectedTools ?? []), "workspace_resume_validation"])];
             if (result.ok && Array.isArray(result.data.artifacts)) c.deliveredPaths = [...new Set([...c.deliveredPaths, ...result.data.artifacts.filter((path): path is string => typeof path === "string")])];
             if (!c.completedCalls.includes(call.id)) {
+              rememberHarnessFailure(c,call,result);
               observeHarnessResult(c, call, result, call.function.name.startsWith("harness_") ? "read" : this.host.effect(call.function.name));
               observedThisRun = true;
               c.completedCalls.push(call.id);
@@ -131,21 +166,50 @@ export class HarnessController {
               c.messages.push({role: "tool", content: projectToolResult(result), tool_call_id: call.id});
             }
             c.pendingCalls = c.pendingCalls.filter(p => p.id !== call.id);
-            save("checkpointing", `${call.function.name}: ${result.ok ? "result saved" : "diagnostics saved"}`);
-            if (call.function.name === "harness_finish" && result.ok) {
+            // Persist terminal decisions with removal of their pending call. A
+            // crash before that commit leaves the durable receipt to reconcile.
+            if (call.function.name === "harness_finish" && result.ok && currentEvidence === "incomplete-evidence") {
+              throw failure("COMPLETION_EVIDENCE_INCOMPLETE","Durable tool execution evidence is incomplete. Reconcile unknown effects and resolve failed operations before completion.");
+            }
+            if (call.function.name === "harness_finish" && result.ok && verdict!.action === "completed") {
               signal.throwIfAborted();
               c.deliveredPaths = result.data.artifacts as string[];
               c.fullContent = String(result.data.summary);
+              c.pendingCalls = [];
               save("completed", "Deliverables and acceptance evidence verified");
               return;
             }
+            if (call.function.name === "harness_finish" && verdict!.action !== "completed") {
+              const failures=verdict!.diagnostics;
+              if (verdict!.action==="needs-human") {
+                c.abstention = {reason: "Acceptance checks require human review or the verification repair allowance is exhausted.", unmetRequirements: failures.map(item => `${item.blockingClass}: ${item.message}`), declaredAt: new Date().toISOString()};
+                c.fullContent = String(result.data.summary ?? "");
+                c.pendingCalls = [];
+                save("needs-human", "Acceptance checks require human review; no automatic retry is allowed");
+                return;
+              }
+              c.messages.push({role:"user",_harnessGenerated:true,content:`One bounded verification repair remains authorized for these exact requirements: ${failures.map(d=>`${d.code} (${d.blockingClass}) ${d.subject}: ${d.message}${d.remedy?` Use ${d.remedy.tool}: ${d.remedy.reason}`:""}`).join("\n")}. Use saved receipt handles. If the available tools cannot resolve them, call harness_report_blocked.`});
+              save("recovering","Verification diagnostics and remaining repair budget saved");
+            }
+            if (call.function.name === "harness_report_blocked" && result.ok) {
+              // A declared stop is an outcome, not a failure. Anything the
+              // model batched behind it is dropped unexecuted rather than run
+              // against a task that is already handed to a person.
+              c.abstention = {reason: String(result.data.reason), unmetRequirements: (result.data.unmet_requirements as string[]) ?? [], declaredAt: new Date().toISOString()};
+              c.fullContent = String(result.data.reason);
+              c.pendingCalls = [];
+              save("abstained", "Task stopped for human review at the model's request");
+              return;
+            }
+            if (call.function.name !== "harness_finish") save("checkpointing", `${call.function.name}: ${result.ok ? "result saved" : "diagnostics saved"}`);
           }
         }
         runSignal.throwIfAborted();
         const progressAction = observationProgressAction(c);
-        if (progressAction === "stop" && observedThisRun) throw failure("NO_PROGRESS", "The task continued observing unchanged source, tool results or validation outcomes after one bounded progress repair. All receipts and unfinished deliverables remain saved.");
+        if (progressAction === "stop" && observedThisRun) throw failure("NO_PROGRESS", "The task continued observing unchanged source, tool results or validation outcomes after its bounded progress repairs. All receipts and unfinished deliverables remain saved.");
+        if (progressAction === "repair" && budget.progressRepairs <= 0) throw failure("NO_PROGRESS", "Unchanged observations recurred and the task's progress-repair allowance is spent. All receipts and unfinished deliverables remain saved.");
         if (progressAction === "repair") {
-          noProgressRepaired = true; recovery.progressRepairs += 1;
+          budget.progressRepairs -= 1; recovery.progressRepairs += 1;
           c.observationProgress!.repairIssued = true; c.observationProgress!.unchanged = 0;
           c.messages.push({role: "user", _harnessGenerated: true, content: "Recent individual operations only repeated unchanged observations. All full results remain available. Use the saved source and validation evidence to produce the requested bounded deliverables, repair a concrete outstanding diagnostic, or request verified completion. Reordering old reads does not create progress. This is the one bounded progress repair; no host-authored result will replace your work."});
           save("recovering", "Repairing a cycle of unchanged observations");
@@ -167,7 +231,10 @@ export class HarnessController {
         if (primaryContext !== undefined && binding.contextLength !== primaryContext) throw failure("MODEL_CONTEXT_MISMATCH", `The primary model must be explicitly loaded with ${primaryContext.toLocaleString("en-US")} tokens.`);
         c.contract.contextTokens = binding.contextLength;
         const toolSet = [...HARNESS_TOOLS, ...this.host.tools.filter(t => c.selectedTools?.includes(t.function.name))];
-        const outputTokens = Math.min(repairCount ? HARNESS_DEFAULTS.maxOutputTokens : HARNESS_DEFAULTS.outputTokens, c.contract.budgets.maxGeneratedTokens - c.generatedTokens);
+        // A task that has already spent an output repair keeps the larger
+        // allowance across resumes; the previous run-local flag forgot it.
+        const requestedOutputTokens = Math.min(budget.outputRepairs < HARNESS_DEFAULTS.repairBudget.outputRepairs ? HARNESS_DEFAULTS.maxOutputTokens : HARNESS_DEFAULTS.outputTokens, c.contract.budgets.maxGeneratedTokens - c.generatedTokens);
+        const outputTokens = turnBudget(binding.contextLength,requestedOutputTokens).replyTokens;
         const context = await assembleHarnessContext(bindCurrentExecutionState(c), toolSet, c.contract.goal, binding.contextLength, outputTokens, async (messages, tools) => {
           const counted = await this.host.count(providerMessages(messages), tools, runSignal); c.tokenCountMethod = counted.method; return counted.tokens;
         });
@@ -213,7 +280,8 @@ export class HarnessController {
         c.generatedTokens += usage || Buffer.byteLength(content + reasoning + JSON.stringify([...assembled.values()]), "utf8");
         delete c.inFlightGenerationTokens;
         if (finish === "length" || !finish || (!content.trim() && !assembled.size)) {
-          if (++repairCount > 1) throw failure(finish === "length" ? "OUTPUT_TRUNCATED" : "MODEL_OUTPUT_INCOMPLETE", "The model did not produce a complete actionable response after one repair.");
+          if (budget.outputRepairs <= 0) throw failure(finish === "length" ? "OUTPUT_TRUNCATED" : "MODEL_OUTPUT_INCOMPLETE", "The model did not produce a complete actionable response and the task's output-repair allowance is spent.");
+          budget.outputRepairs -= 1;
           recovery.outputRepairs += 1;
           c.messages.push({role: "user", _harnessGenerated: true, content: `The preceding response was incomplete (${finish ?? "missing terminal status"}) and no tools from it were executed. Produce a complete bounded tool call. Read large content through result handles. Use harness_finish only after acceptance checks.`});
           save("recovering", "Repairing incomplete model output");
@@ -222,19 +290,21 @@ export class HarnessController {
         const calls = [...assembled.values()];
         if (!calls.length) {
           c.messages.push({role: "assistant", content});
-          if (++repairCount > 1) throw failure("COMPLETION_UNVERIFIED", "The model stopped without verified completion. The task and its artifacts remain available.");
+          if (budget.outputRepairs <= 0) throw failure("COMPLETION_UNVERIFIED", "The model stopped without verified completion and the task's output-repair allowance is spent. The task and its artifacts remain available.");
+          budget.outputRepairs -= 1;
           recovery.outputRepairs += 1;
-          c.messages.push({role: "user", _harnessGenerated: true, content: "Continue the requested tool workflow. When all requirements are satisfied, call harness_finish with the final summary; prose alone cannot complete this task."});
+          c.messages.push({role: "user", _harnessGenerated: true, content: "Continue the requested tool workflow. When all requirements are satisfied, call harness_finish with the final summary; prose alone cannot complete this task. If the available tools and evidence cannot establish the result, call harness_report_blocked with the reason and the unmet requirements instead of answering without verification."});
+          save("recovering", "Output repair and remaining allowance saved");
           continue;
         }
         const signature = createHash("sha256").update(JSON.stringify(calls.map(call => call.function))).digest("hex");
         repeated = signature === lastSignature ? repeated + 1 : 0; lastSignature = signature;
         if (repeated >= 2) {
-          if (noProgressRepaired) throw failure("NO_PROGRESS", "The same operation recurred after one bounded progress repair. Saved for continuation.");
-          noProgressRepaired = true;
+          if (budget.progressRepairs <= 0) throw failure("NO_PROGRESS", "The same operation recurred and the task's progress-repair allowance is spent. Saved for continuation.");
+          budget.progressRepairs -= 1;
           if (c.observationProgress) {c.observationProgress.repairIssued = true; c.observationProgress.unchanged = 0;}
           recovery.progressRepairs += 1;
-          c.messages.push({role: "user", _harnessGenerated: true, content: "The same unchanged operation was requested repeatedly. This duplicate was not executed. Inspect the existing result and diagnostics, then change the arguments or next step to make observable progress. If the requested work is already complete, use harness_finish. One bounded progress repair is available."});
+          c.messages.push({role: "user", _harnessGenerated: true, content: "The same unchanged operation was requested repeatedly. This duplicate was not executed. Inspect the existing result and diagnostics, then change the arguments or next step to make observable progress. If the requested work is already complete, use harness_finish. If no available tool can establish it, use harness_report_blocked instead of repeating. This is the last bounded progress repair."});
           save("recovering", "Repairing repeated operations before another effect");
           continue;
         }
@@ -244,7 +314,11 @@ export class HarnessController {
         save("checkpointing", "Tool intents checkpointed before execution");
       }
     } catch (error) {
+      // Let the caller report a notification failure while preserving the
+      // authoritative saved outcome. Failed store.save calls never set this flag.
+      if (terminalCheckpointCommitted) throw error;
       const e = error as {code?: string; stage?: string; message?: string; retryable?: boolean; effectState?: "none" | "unknown"};
+      c.evidenceStatus = "incomplete-evidence";
       const paused = signal.aborted && (signal.reason as {code?: string})?.code === "HARNESS_PAUSED";
       c.error = {code: persistenceFailure ? "CHECKPOINT_PERSISTENCE_FAILED" : paused ? "HARNESS_PAUSED" : signal.aborted ? "USER_CANCELLED" : budgetAbort.signal.aborted ? "TASK_BUDGET_EXHAUSTED" : e.code ?? "HARNESS_FAILURE", stage: e.stage ?? c.state, message: persistenceFailure?.message ?? (paused ? String((signal.reason as Error)?.message ?? signal.reason) : e.message ?? String(error)), retryable: paused || (e.retryable ?? false), effectState: e.effectState ?? "none"};
       save(e.effectState === "unknown" ? "effect-unknown" : paused ? "paused" : signal.aborted ? "cancelled" : "incomplete", c.error.message);
@@ -253,6 +327,8 @@ export class HarnessController {
 
   private async execute(c: HarnessCheckpoint, call: HarnessToolCall, signal: AbortSignal, queueState?: WorkspaceQueueState): Promise<ToolResultEnvelope> {
     const name = call.function.name;
+    const prior=priorInvalidHarnessCall(c,call);
+    if(prior)return this.store.record(c.contract.runId,call.id,name,{ok:false,code:"PREVIOUS_INVALID_CALL",effect_state:"none",message:"The same invalid arguments were already rejected. Change the arguments before retrying.",prior_result_handle:prior.resultHandle,failure_code:prior.failureCode});
     const definition = [...HARNESS_TOOLS, ...this.host.tools].find(t => t.function.name === name);
     let args: Record<string, unknown>;
     try {
@@ -260,6 +336,14 @@ export class HarnessController {
       if (!definition || !ajv.validate(definition.function.parameters, args)) throw new Error(ajv.errorsText());
     } catch (error) { return this.store.record(c.contract.runId, call.id, name, {ok: false, code: "INVALID_TOOL_ARGUMENTS", message: String(error)}); }
     const effect = name.startsWith("harness_") ? "read" : this.host.effect(name);
+    if(!name.startsWith("harness_")){
+      const canonical=resolveToolContract(name)?.name??name;
+      const counted=c.toolDispatches?.includes(call.id)??false;
+      const used=c.toolCallCounts?.[canonical]??0;
+      const decision=evaluateToolDispatch(name,{calls:Math.max(0,used-(counted?1:0)),facts:{"schema-validated":true,"within-run-budget":c.activeTimeMs<c.contract.budgets.activeTimeMs&&c.generatedTokens<c.contract.budgets.maxGeneratedTokens&&c.round<=c.contract.budgets.maxRounds,"material-binding":!!c.contract.materialBinding}});
+      if(!decision.allowed)return this.store.record(c.contract.runId,call.id,name,{ok:false,...decision});
+      if(!counted){(c.toolCallCounts??={})[canonical]=used+1;(c.toolDispatches??=[]).push(call.id);this.store.save(c);}
+    }
     this.store.intent(c.contract.runId, call.id, name, args, effect);
     let data: Record<string, unknown>;
     try {
@@ -269,19 +353,25 @@ export class HarnessController {
         const matches = this.host.tools.map((tool, order) => {
           const name = tool.function.name.toLowerCase(), description = tool.function.description.toLowerCase();
           const score = !query ? 1 : name === query ? 10000 : (name.includes(query) ? 1000 : 0) + terms.reduce((sum, term) => sum + (name.includes(term) ? 10 : description.includes(term) ? 1 : 0), 0);
-          return {tool, order, score};
+          const failures=(c.negativeResults??[]).filter(item=>item.tool===tool.function.name).length;
+          return {tool, order, score:score>0?Math.max(0.1,score/(1+failures)):score};
         }).filter(candidate => candidate.score > 0).sort((left, right) => right.score-left.score || left.order-right.order).map(candidate => candidate.tool);
         const chosen = query ? matches.slice(0, 6) : [];
         c.selectedTools = [...new Set([...(c.selectedTools ?? []), ...chosen.map(t => t.function.name)])];
-        data = {ok: true, names: matches.map(t => t.function.name), activated: chosen, message: query ? "Matching tools remain callable. Refine the query if more than six match." : "Search a specific name or keyword to activate its schema."};
+        data = {ok: true, names: matches.map(t => t.function.name), activated: chosen, prior_failures:(c.negativeResults??[]).filter(row=>chosen.some(tool=>tool.function.name===row.tool)), message: query ? "Matching tools remain callable. Previous failed selections are shown and down-ranked; change invalid arguments before retrying. Refine the query if more than six match." : "Search a specific name or keyword to activate its schema."};
       } else if (name === "harness_read_result") data = this.store.page(c.contract.runId, String(args.handle), Number(args.offset ?? 0), Number(args.limit ?? 12000));
       else if (name === "harness_plan") {
         const proposed = args.deliverables as MissionContract["deliverables"];
         c.contract.deliverables = [...c.contract.deliverables, ...proposed.filter(d => !c.contract.deliverables.some(old => old.path === d.path))];
         data = {ok: true, deliverables: c.contract.deliverables, scope: c.contract.scope};
+      } else if (name === "harness_report_blocked") {
+        data = {ok: true, reason: args.reason, unmet_requirements: args.unmet_requirements,
+          acknowledged: "Recorded as requiring human review. No further rounds will run and every saved result remains available."};
       } else if (name === "harness_finish") {
-        const verified = c.pendingCalls.length > 1 ? {ok: false, diagnostics: ["Completion must be requested after all other operations have committed."], artifacts: []} : await this.host.verify(c, String(args.summary));
-        data = {...verified, summary: args.summary};
+        const verified = c.pendingCalls.length > 1
+          ? {ok: false, diagnostics: [{code: "FINISH_NOT_LAST", blockingClass: "repairable" as const, subject: "contract", message: "Completion must be requested after all other operations have committed."}], artifacts: []}
+          : await this.host.verify(c, String(args.summary));
+        data = {...verified, ok: verified.ok && verified.diagnostics.length === 0, summary: args.summary};
       } else data = await this.host.execute(name, args, call.id, c, signal, queueState);
     } catch (error) {
       const e = error as {code?: string; message?: string; effectState?: "none" | "unknown"};

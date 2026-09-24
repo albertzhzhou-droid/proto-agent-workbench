@@ -1,0 +1,11 @@
+{
+  "tool": "gene_set_enrichment_analysis",
+  "arguments": {
+    "genes": ["example_a", "example_b"],
+    "background": ["example_a", "example_b", "example_c", "example_d", "example_e"],
+    "gene_sets": [
+      {"name": "illustrative_set_1", "genes": ["example_a", "example_b"]},
+      {"name": "illustrative_set_2", "genes": ["example_c", "example_d"]}
+    ]
+  }
+}

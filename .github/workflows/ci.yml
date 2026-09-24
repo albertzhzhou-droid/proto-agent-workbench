@@ -14,35 +14,70 @@ concurrency:
 
 jobs:
   python:
-    name: Python ${{ matrix.python-version }} baseline
-    runs-on: windows-latest
-    timeout-minutes: 15
+    name: Python ${{ matrix.profile }} (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.12"]
+        include:
+          - {profile: base, python-version: "3.10", os: windows-latest, extras: ""}
+          - {profile: base, python-version: "3.12", os: windows-latest, extras: ""}
+          - {profile: compute, python-version: "3.12", os: windows-latest, extras: "--extra compute --extra compute-research"}
+          - {profile: figures, python-version: "3.12", os: ubuntu-latest, extras: "--extra research-figures"}
+          - {profile: figures, python-version: "3.12", os: windows-latest, extras: "--extra research-figures"}
+          - {profile: heavy, python-version: "3.12", os: windows-latest, extras: "--extra compute --extra compute-models --extra compute-vision --extra compute-medical --extra compute-chem --extra compute-genomics"}
+          - {profile: linux-worker, python-version: "3.12", os: ubuntu-latest, extras: ""}
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      CUDA_VISIBLE_DEVICES: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-      - name: Install
-        run: python -m pip install -e .
+      - name: Install pinned environment manager
+        run: python -m pip install uv==0.12.3
+      - name: Classify every Python test before environment setup
+        run: python scripts/run-test-profile.py --profile ${{ matrix.profile }} --list --report build/ci/${{ matrix.profile }}-plan.json
+      - name: Install the locked profile in a clean virtual environment
+        run: uv sync --locked --python ${{ matrix.python-version }} --no-managed-python ${{ matrix.extras }}
       - name: Check installed dependencies
-        run: python -m pip check
-      - name: Test
-        run: python -B -m unittest discover -s tests -p "test_*.py" -q
+        run: uv pip check
+      - name: Run profile with explicit result counts
+        run: uv run --locked --no-sync python -B scripts/run-test-profile.py --profile ${{ matrix.profile }} --report build/ci/${{ matrix.profile }}-results.json
+      - name: Preserve profile evidence even when setup or tests fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.profile }}-${{ matrix.python-version }}-${{ matrix.os }}
+          path: build/ci/*.json
+          if-no-files-found: error
 
   workbench:
-    name: Workbench offline baseline
+    name: Workbench contracts, typecheck and offline baseline
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
+    env:
+      PROTO_CHEM_PYTHON: ${{ github.workspace }}/.venv/Scripts/python.exe
+      PYTHONDONTWRITEBYTECODE: "1"
+      CUDA_VISIBLE_DEVICES: ""
     defaults:
       run:
         working-directory: apps/proto-workbench
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Python environment manager
+        run: python -m pip install uv==0.12.3
+      - name: Provision actual Python and Chem runtimes used by integration tests
+        working-directory: .
+        run: uv sync --locked --python 3.12 --no-managed-python --extra compute --extra compute-research --extra compute-vision --extra compute-chem --extra chem-workbench --extra research-figures
+      - name: Check Python runtime dependencies
+        working-directory: .
+        run: uv pip check
       - uses: pnpm/action-setup@v4
         with:
           version: 11.19.0
@@ -54,6 +89,21 @@ jobs:
           cache-dependency-path: apps/proto-workbench/pnpm-lock.yaml
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Typecheck shared contracts, host, preload and renderer
+        run: pnpm typecheck
+      - name: Verify generated Python tool contracts match the canonical table
+        run: node scripts/export-tool-contracts.mjs --check
+      - name: Run mandatory execution and contract regression tests
+        run: >-
+          node --test --test-concurrency=4 tests/tool-contracts.test.mjs tests/execution-kernel.test.mjs
+          tests/tool-execution-journal.test.mjs tests/permissions.test.mjs
+          tests/ipc-channel-contracts.test.mjs tests/ipc-contract-drift.test.mjs
+          tests/turn-engine.test.mjs tests/owned-process.test.mjs
+          tests/research-chat.test.mjs tests/research-evidence.test.mjs
+          tests/research-session-state.test.mjs
+          tests/architecture-followup.test.mjs
+          tests/architecture-storage.test.mjs tests/harness-journal-authority.test.mjs
+          tests/harness-source-recovery.test.mjs tests/research-workflow-runtime.test.mjs
       - name: Verify offline baseline
         run: node scripts/verify-offline.mjs
       - name: Build desktop bundles

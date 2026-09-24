@@ -1,0 +1,42 @@
+{
+  "schema_version": "proto-agent.dataset-manifest.v1",
+  "dataset_id": "fixture:counts",
+  "display_name": "Synthetic unit-binding fixture; no biological validation",
+  "files": [
+    {
+      "id": "source",
+      "path": "examples/compute/quantity-counts.data.json",
+      "role": "measurement",
+      "sha256": "ca9078fdbe3811cfd1de59fd077a4f7f06731330f386ea65c9bd871bac29a0b2",
+      "bytes": 252
+    }
+  ],
+  "entities": [
+    {
+      "id": "sample-a",
+      "type": "sample"
+    },
+    {
+      "id": "sample-b",
+      "type": "sample"
+    }
+  ],
+  "references": [],
+  "quantities": [
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "sample-a",
+      "value": 200,
+      "unit": "count",
+      "quantity_kind": "value"
+    },
+    {
+      "schema_version": "proto-agent.quantity.v1",
+      "entity_id": "sample-b",
+      "value": 600,
+      "unit": "count",
+      "quantity_kind": "value"
+    }
+  ],
+  "coordinate_systems": []
+}

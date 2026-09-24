@@ -5,7 +5,7 @@ import test from "node:test";
 
 test("mission launch is bound to a main-process-issued digest and rechecked before send", async () => {
   const contracts = await source("src/shared/contracts.ts");
-  const ipc = await source("src/main/ipc-security.ts");
+  const ipc = await source("src/shared/ipc-channel-contracts.ts");
   const main = await source("src/main/index.ts");
   const preload = await source("src/preload/index.ts");
   const agent = await source("src/main/services/agent-service.ts");
@@ -38,7 +38,7 @@ test("renderer preflight is a two-step review and mutations invalidate the cache
 
 test("command palette only navigates or prepares drafts", async () => {
   const app = await source("src/renderer/App.tsx");
-  const palette = section(app, "function CommandPalette", "function Sidebar");
+  const palette = section(app, "function CommandPalette", "function RunHeader");
   const launchpad = await source("src/renderer/OperationalPages.tsx");
   const cockpit = await source("src/main/services/operator-cockpit.ts");
 

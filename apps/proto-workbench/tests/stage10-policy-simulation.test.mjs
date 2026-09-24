@@ -22,7 +22,7 @@ test("Stage 10 exposes a typed simulation-only report and harness API", async ()
 test("Stage 10 captures trusted inputs and validates attachments before simulation", async () => {
   const main = await source("src/main/index.ts");
   const preload = await source("src/preload/index.ts");
-  const ipcSecurity = await source("src/main/ipc-security.ts");
+  const ipcSecurity = await source("src/shared/ipc-channel-contracts.ts");
 
   assert.match(main, /captureMissionEnvironment\(input\.threadId\)/);
   assert.match(main, /buildPolicySimulation\(/);

@@ -1,0 +1,5 @@
+# Official XDL 2.1.0 tag, pinned to its full commit.
+xdl @ git+https://gitlab.com/croningroup/chemputer/xdl.git@6d60e8da7218a589b9c8715a239956601b17cd07
+# Socket.IO 4.x requires the Engine.IO 3.x protocol family.
+# https://python-socketio.readthedocs.io/en/latest/intro.html#version-compatibility
+python-engineio>=3.13,<4

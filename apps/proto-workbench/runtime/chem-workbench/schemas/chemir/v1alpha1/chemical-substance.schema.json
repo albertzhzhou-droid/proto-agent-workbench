@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chemical-substance.schema.json",
+  "title": "ChemIR v1alpha1 ChemicalSubstance payload",
+  "description": "A single- or multi-component chemical identity, distinct from a physical lot.",
+  "type": "object",
+  "required": [
+    "name",
+    "components"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "identity_status": {
+      "enum": [
+        "specified",
+        "ambiguous",
+        "unresolved"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/SubstanceComponent"
+      }
+    },
+    "tautomer_relations": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/TautomerRelation"
+      }
+    },
+    "representations": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Representation"
+      }
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "SubstanceComponent": {
+      "type": "object",
+      "required": [
+        "role"
+      ],
+      "properties": {
+        "molecule_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "coordination_complex_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "periodic_structure_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "substance_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "unresolved_identity": {
+          "$ref": "#/$defs/UnresolvedIdentity"
+        },
+        "role": {
+          "enum": [
+            "principal",
+            "counterion",
+            "solvate",
+            "hydrate",
+            "coformer",
+            "other"
+          ]
+        },
+        "stoichiometry": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "molecule_reference"
+          ]
+        },
+        {
+          "required": [
+            "coordination_complex_reference"
+          ]
+        },
+        {
+          "required": [
+            "periodic_structure_reference"
+          ]
+        },
+        {
+          "required": [
+            "substance_reference"
+          ]
+        },
+        {
+          "required": [
+            "unresolved_identity"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "UnresolvedIdentity": {
+      "type": "object",
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "source_description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TautomerRelation": {
+      "type": "object",
+      "required": [
+        "left_molecule_reference",
+        "right_molecule_reference",
+        "relation",
+        "origin",
+        "evidence_references"
+      ],
+      "properties": {
+        "left_molecule_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "right_molecule_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "relation": {
+          "enum": [
+            "alternative_tautomer",
+            "dominant_tautomer",
+            "unknown"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

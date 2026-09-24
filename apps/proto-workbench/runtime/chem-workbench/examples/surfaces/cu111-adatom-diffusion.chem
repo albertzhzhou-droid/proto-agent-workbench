@@ -1,0 +1,83 @@
+chem 0.1
+
+crystal fcc_copper {
+  structure cif "structures/fcc-copper.cif"
+  semantics explicit_configuration
+}
+
+surface_slab cu111 {
+  parent fcc_copper
+  construction fcc-cubic-cell-cut
+  miller [1, 1, 1]
+  termination "cu-111-a"
+  layers 4
+  vacuum 10
+  vacuum_unit angstrom
+}
+
+adsorption_complex cu_adatom_top {
+  slab cu111
+  adsorbate [Cu]
+  site top
+  height 2
+  height_unit angstrom
+}
+
+adsorption_complex cu_adatom_fcc_hollow {
+  slab cu111
+  adsorbate [Cu]
+  site fcc_hollow
+  height 2
+  height_unit angstrom
+}
+
+conditions cu111_gas_solid_zero_kelvin {
+  target cu111
+  phase gas_solid_interface
+  temperature 0
+  temperature_unit kelvin
+}
+
+conditions adatom_top_conditions {
+  target cu_adatom_top
+  phase gas_solid_interface
+  temperature 0
+  temperature_unit kelvin
+}
+
+conditions adatom_hollow_conditions {
+  target cu_adatom_fcc_hollow
+  phase gas_solid_interface
+  temperature 0
+  temperature_unit kelvin
+}
+
+interface_reaction_step cu_adatom_descent {
+  reactants [cu_adatom_top]
+  products [cu_adatom_fcc_hollow]
+}
+
+calculation cu_adatom_top_single_point {
+  target cu_adatom_top
+  conditions adatom_top_conditions
+  task single_point
+  properties [energy]
+  method "emt"
+}
+
+calculation cu_adatom_fcc_hollow_single_point {
+  target cu_adatom_fcc_hollow
+  conditions adatom_hollow_conditions
+  task single_point
+  properties [energy]
+  method "emt"
+}
+
+comparison cu_adatom_site_preference {
+  kind stability
+  stability_kind adsorption_site_preference
+  subjects [cu_adatom_top, cu_adatom_fcc_hollow]
+  conditions cu111_gas_solid_zero_kelvin
+  reference_state "cu111 slab, copper adatom, gas-solid interface at 0 K"
+  method "emt"
+}

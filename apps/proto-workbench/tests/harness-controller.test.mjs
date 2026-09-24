@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { HarnessController } from "../src/main/services/harness-controller.ts";
 import { HarnessStore } from "../src/main/services/harness-store.ts";
-import { assembleHarnessContext, bindCurrentExecutionState, compactHarnessHistory, projectToolResult, providerMessages } from "../src/main/services/harness-context.ts";
+import { assembleHarnessContext, bindCurrentExecutionState, compactHarnessHistory, harnessMemoryBudget, projectToolResult, providerMessages } from "../src/main/services/harness-context.ts";
+import {recordHarnessVerdict} from "../src/main/services/harness-iteration.ts";
 import {withWorkspaceWrite, withReadSlot} from "../src/main/services/workspace-execution-queue.ts";
 
 const tool = (name) => ({type: "function", function: {name, description: name, parameters: {type: "object", properties: {path: {type: "string"}}, additionalProperties: false}}});
@@ -50,7 +51,7 @@ for (const variant of [{content: "Done", finish: "stop"}, {content: "", finish: 
 test("finish diagnostics are returned to the model and do not become green completion", async () => {
   const r = rig([finish(), finish(), finish()], {verify: async () => ({ok: false, diagnostics: ["Missing compiled artifact"], artifacts: []})});
   await r.controller.run(r.c, new AbortController().signal);
-  assert.equal(r.c.state, "incomplete"); assert.ok(r.c.messages.some(m => m.role === "tool" && m.content.includes("Missing compiled artifact"))); r.db.close();
+  assert.equal(r.c.state, "needs-human"); assert.ok(r.c.messages.some(m => m.role === "tool" && m.content.includes("Missing compiled artifact"))); assert.equal(r.c.verdicts[0].action,"repair"); r.db.close();
 });
 
 test("finish before another queued tool cannot skip that tool", async () => {
@@ -105,7 +106,7 @@ test("journal reconciliation restores a write receipt without replaying it or re
   assert.deepEqual(r.c.pendingCalls, []); assert.ok(r.c.deliveredPaths.includes("build/result.md")); r.db.close();
 });
 
-test("known-none write cancellation commits diagnostics before pausing and can resume", async () => {
+test("known-none write cancellation resumes without promoting its failed evidence to completion", async () => {
   const pause = new AbortController(); let attempts = 0;
   const r = rig([{calls: [["workspace_propose_patch", {path: "build/result.md"}]]}, finish()], {
     execute: async () => {attempts++; pause.abort({code: "HARNESS_PAUSED"}); throw Object.assign(new Error("Cancelled before mutation"), {code: "HARNESS_PAUSED", effectState: "none"});}
@@ -117,7 +118,7 @@ test("known-none write cancellation commits diagnostics before pausing and can r
   assert.equal(receipt.ok, false); assert.equal(receipt.data.effect_state, "none");
   assert.equal(r.store.uncertainEffect("run", r.c.completedCalls.at(-1)), false);
   await r.controller.run(r.store.get("run"), new AbortController().signal);
-  assert.equal(r.store.get("run").state, "completed"); assert.equal(attempts, 1); r.db.close();
+  assert.equal(r.store.get("run").state, "incomplete");assert.equal(r.store.get("run").evidenceStatus,"incomplete-evidence"); assert.equal(attempts, 1); r.db.close();
 });
 
 test("resumption preserves consumed rounds, tokens and active time", async () => {
@@ -152,6 +153,7 @@ for (const type of ["write", "read"]) test(`shared workspace ${type} queue time 
 
 test("registered tools remain discoverable and repeatedly callable", async () => {
   const r = rig([{calls: [["harness_discover_tools", {query: "proto_compile"}]]}, {calls: [["proto_compile", {path: "a.proto"}]]}, {calls: [["proto_compile", {path: "b.proto"}]]}, finish()]);
+  r.c.contract.materialBinding={partsPath:"build/unit-fixture.json",partsSha256:"a".repeat(64)};
   await r.controller.run(r.c, new AbortController().signal); assert.equal(r.c.state, "completed"); assert.equal(r.calls.length, 2); assert.ok(r.c.selectedTools.includes("proto_compile")); r.db.close();
 });
 
@@ -299,7 +301,7 @@ test("repeated operations get one repair opportunity before no-progress terminat
   await recovered.controller.run(recovered.c, new AbortController().signal);
   assert.equal(recovered.c.state, "completed");
   assert.equal(recovered.calls.length, 2, "The detected duplicate must not execute another effect");
-  assert.ok(recovered.c.messages.some(message => message._harnessGenerated && /One bounded progress repair/.test(message.content)));
+  assert.ok(recovered.c.messages.some(message => message._harnessGenerated && /last bounded progress repair/.test(message.content)));
   recovered.db.close();
   const repeated = rig([read(), read(), read(), read()]);
   await repeated.controller.run(repeated.c, new AbortController().signal);
@@ -361,4 +363,243 @@ test("a reverified replacement of the same model and context resumes with a dura
     assert.equal(changed.c.round, 0);
     changed.db.close();
   }
+});
+
+const blocked = (reason = "No available tool can produce the required receipt.", unmet = ["build/report.png renderer receipt"]) =>
+  ({calls: [["harness_report_blocked", {reason, unmet_requirements: unmet}]]});
+
+test("a declared stop is a terminal outcome, not a failure, and records what is unmet", async () => {
+  const r = rig([read(), blocked()]);
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "abstained");
+  assert.equal(r.c.error, undefined, "An intentional stop must not be reported as an error");
+  assert.equal(r.c.abstention.reason, "No available tool can produce the required receipt.");
+  assert.deepEqual(r.c.abstention.unmetRequirements, ["build/report.png renderer receipt"]);
+  assert.ok(r.c.abstention.declaredAt);
+  assert.equal(r.store.get("run").state, "abstained");
+  assert.equal(r.store.project(r.c).resumable, false);
+  assert.equal(r.store.read("run", r.c.resultHandles[0]).data.content, "file body", "Saved receipts stay readable");
+  r.db.close();
+});
+
+test("a declared stop runs no further rounds and drops anything batched behind it", async () => {
+  const r = rig([{calls: [["harness_report_blocked", {reason: "Insufficient evidence", unmet_requirements: []}], ["workspace_propose_patch", {path: "build/result.md"}]]}]);
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "abstained");
+  assert.equal(r.calls.length, 0, "No workspace effect may run after the task is handed to a person");
+  assert.deepEqual(r.c.pendingCalls, []);
+  assert.equal(r.c.round, 1);
+  r.db.close();
+});
+
+test("the abstain tool is always callable without discovery and is never a write", async () => {
+  const r = rig([blocked()]);
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "abstained");
+  assert.equal(r.store.uncertainEffect("run", r.c.completedCalls[0]), false);
+  r.db.close();
+});
+
+test("repair allowances are spent once per task and are not refunded by resuming", async () => {
+  const stalling = () => ({content: "no tool call", finish: "stop"});
+  const first = rig([stalling(), read(), finish()]);
+  await first.controller.run(first.c, new AbortController().signal);
+  assert.equal(first.c.state, "completed");
+  assert.equal(first.c.repairBudget.outputRepairs, 0, "The single output repair is consumed");
+  assert.equal(first.c.recoveryCounters.outputRepairs, 1);
+  first.db.close();
+
+  // A run that stalls, is resumed, and stalls again must not get a second repair.
+  const r = rig([stalling(), stalling()]);
+  r.c.repairBudget = {outputRepairs: 0, progressRepairs: 1};
+  await r.controller.run(r.c, new AbortController().signal, {resumed: true});
+  assert.equal(r.c.state, "incomplete");
+  assert.equal(r.c.error.code, "COMPLETION_UNVERIFIED");
+  assert.equal(r.c.recoveryCounters.outputRepairs, 0, "A spent allowance issues no further repair");
+  r.db.close();
+});
+
+test("a checkpoint written before repair budgets existed is migrated from its counters", async () => {
+  const r = rig([{content: "no tool call", finish: "stop"}, {content: "still no tool call", finish: "stop"}]);
+  delete r.c.repairBudget;
+  r.c.recoveryCounters = {transportRetries: 0, outputRepairs: 1, progressRepairs: 0, instanceRebinds: 0, journalReconciliations: 0, resumes: 1};
+  await r.controller.run(r.c, new AbortController().signal, {resumed: true});
+  assert.equal(r.c.repairBudget.outputRepairs, 0, "The already-spent output repair is not granted again");
+  assert.equal(r.c.repairBudget.progressRepairs, 1, "An unspent allowance survives migration");
+  assert.equal(r.c.state, "incomplete");
+  r.db.close();
+});
+
+const diagnostic = (blockingClass, message = "acceptance failure") =>
+  ({code: "TEST_DIAGNOSTIC", blockingClass, subject: "build/report.png", message});
+
+test("an unsupported acceptance failure goes to human review in one verify cycle", async () => {
+  const r = rig([read(), finish(), finish(), finish()], {
+    verify: async () => ({ok: false, diagnostics: [diagnostic("unsupported", "No tool can produce a renderer receipt")], artifacts: []}),
+  });
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "needs-human");
+  assert.equal(r.c.error, undefined, "An unresolvable check is a review handoff, not a failure");
+  assert.equal(r.c.round, 2, "The round budget is not consumed retrying an unresolvable check");
+  assert.ok(r.c.abstention.unmetRequirements[0].startsWith("unsupported: "));
+  assert.equal(r.store.project(r.c).resumable, false);
+  r.db.close();
+});
+
+for (const blockingClass of ["stale", "conflicting"]) {
+  test(`a ${blockingClass} acceptance failure is never retried`, async () => {
+    const r = rig([finish(), finish()], {verify: async () => ({ok: false, diagnostics: [diagnostic(blockingClass)], artifacts: []})});
+    await r.controller.run(r.c, new AbortController().signal);
+    assert.equal(r.c.state, "needs-human");
+    assert.equal(r.c.round, 1);
+    r.db.close();
+  });
+}
+
+test("a repairable diagnostic still returns to the model and can finish", async () => {
+  let attempt = 0;
+  const r = rig([finish(), finish()], {verify: async () => (++attempt === 1
+    ? {ok: false, diagnostics: [diagnostic("repairable", "Missing compiled artifact")], artifacts: []}
+    : {ok: true, diagnostics: [], artifacts: ["build/result.md"]})});
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "completed");
+  assert.ok(r.c.messages.some(m => m.role === "tool" && m.content.includes("Missing compiled artifact")));
+  r.db.close();
+});
+
+test("a permanent diagnostic stops even when other diagnostics are repairable", async () => {
+  let attempt = 0;
+  const r = rig([finish(), finish()], {verify: async () => (++attempt === 1
+    ? {ok: false, diagnostics: [diagnostic("unsupported"), diagnostic("repairable", "Fixable gap")], artifacts: []}
+    : {ok: true, diagnostics: [], artifacts: ["build/result.md"]})});
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.state, "needs-human", "Fixing a separate gap cannot resolve an unsupported requirement");
+  assert.equal(attempt,1);assert.equal(r.c.repairBudget.verifyRepairs,1);
+  r.db.close();
+});
+
+test("an unclassified diagnostic stays repairable within the persisted allowance", async () => {
+  const r = rig([finish(), finish(), finish()], {verify: async () => ({ok: false, diagnostics: ["Missing compiled artifact"], artifacts: []})});
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(r.c.verdicts[0].diagnostics[0].blockingClass,"repairable");
+  assert.equal(r.c.verdicts[0].action,"repair");assert.equal(r.c.round,2);
+  assert.equal(r.c.state,"needs-human","The shared repair allowance still bounds unknown diagnostics");
+  r.db.close();
+});
+
+test("a missing dependency receives one exact hint before human review",async()=>{
+  const r=rig([finish(),finish()],{verify:async()=>({ok:false,diagnostics:[{...diagnostic("dependency-missing"),subject:"required-input.txt"}],artifacts:[]})});
+  await r.controller.run(r.c,new AbortController().signal);
+  assert.equal(r.c.state,"needs-human");assert.equal(r.c.round,2);
+  assert.equal(r.c.dependencyHints.length,1);assert.equal(r.c.repairBudget.verifyRepairs,0);
+  assert.equal(r.c.messages.filter(m=>m._harnessGenerated&&m.content.includes("One bounded verification repair")).length,1);
+  const exported=r.store.project(r.c);assert.deepEqual(exported.diagnosticCounts,{"dependency-missing":2});
+  assert.ok(exported.verdicts.every(v=>v.diagnostics[0].evidenceRefs.length===1));r.db.close();
+});
+
+test("verification reservations survive crash and five repeated resume attempts",async()=>{
+  const r=rig([finish()],{verify:async()=>({ok:false,diagnostics:[diagnostic("repairable")],artifacts:[]})});
+  const result=r.store.record("run","saved-finish","harness_finish",{ok:false,summary:"Unverified summary",diagnostics:[diagnostic("repairable")]});
+  const first=recordHarnessVerdict(r.c,"saved-finish",result);assert.equal(first.action,"repair");
+  r.store.save(r.c);
+  const restored=r.store.get("run");recordHarnessVerdict(restored,"saved-finish",result);
+  assert.equal(restored.repairBudget.verifyRepairs,0);assert.equal(restored.verdicts.length,1);
+  await r.controller.run(restored,new AbortController().signal,{resumed:true});
+  for(let i=0;i<5;i++)await r.controller.run(restored,new AbortController().signal,{resumed:true});
+  assert.equal(restored.state,"needs-human");assert.equal(restored.round,1);assert.equal(restored.verdicts.length,2);r.db.close();
+});
+
+test("a checkpoint after a permanent verdict cannot dispatch its pending batch on resume",async()=>{
+  const r=rig([]);const result=r.store.record("run","stop","harness_finish",{ok:false,summary:"Retain this summary",diagnostics:[diagnostic("conflicting")]});
+  recordHarnessVerdict(r.c,"stop",result);r.c.state="checkpointing";
+  r.c.pendingCalls=[{id:"never-write",type:"function",function:{name:"workspace_propose_patch",arguments:'{"path":"build/out.txt"}'}}];r.store.save(r.c);
+  const restored=r.store.get("run");await r.controller.run(restored,new AbortController().signal,{resumed:true});
+  assert.equal(restored.state,"needs-human");assert.equal(restored.fullContent,"Retain this summary");assert.equal(r.calls.length,0);assert.equal(restored.round,0);r.db.close();
+});
+
+test("call limits migrate old reservations and survive resume without dispatching beyond the cap",async()=>{
+  const r=rig([read(),{calls:[["workspace_read",{path:"second.txt"}]]},finish()]);
+  for(let i=0;i<63;i++)r.store.intent("run",`historic-${i}`,"workspace_read",{path:`old-${i}.txt`},"read");
+  await r.controller.run(r.c,new AbortController().signal);
+  assert.equal(r.calls.length,1);assert.equal(r.c.toolCallCounts.workspace_read,64);
+  const limitResult=r.c.resultHandles.map(h=>r.store.read("run",h)).find(r=>r.data.code==="TOOL_CALL_LIMIT_EXCEEDED");assert.ok(limitResult);
+  assert.equal(r.store.get("run").toolCallCounts.workspace_read,64);r.db.close();
+});
+
+test("same invalid argument identity stays rejected after compaction while a repaired call runs",async()=>{
+  const bad={calls:[["workspace_read",{unexpected:true}]]};
+  const r=rig([bad,bad,bad,read(),finish()]);await r.controller.run(r.c,new AbortController().signal);
+  assert.equal(r.calls.length,1);assert.ok(r.c.resultHandles.map(h=>r.store.read("run",h)).some(r=>r.data.code==="PREVIOUS_INVALID_CALL"));
+  const compacted=compactHarnessHistory(bindCurrentExecutionState(r.c),r.c.contract.goal,8192);
+  assert.ok(compacted.some(m=>m.content.includes('"negative_results"')&&m.content.includes("INVALID_TOOL_ARGUMENTS")));
+  assert.ok(compacted.some(m=>m.content.includes('"last_verdict"')));
+  assert.ok(harnessMemoryBudget(8192).characters<harnessMemoryBudget(32768).characters);r.db.close();
+});
+
+for(const outcome of ["completed","abstained"]){
+  test(`the ${outcome} receipt and terminal checkpoint cannot leave a resumable gap`,async()=>{
+    const r=rig([outcome==="completed"?finish():blocked()]);
+    const save=r.store.save.bind(r.store),snapshots=[];
+    r.store.save=c=>{save(c);snapshots.push(r.store.get("run"));};
+    await r.controller.run(r.c,new AbortController().signal);
+    const consumed=snapshots.filter(c=>c.completedCalls.length);
+    assert.ok(consumed.length);assert.ok(consumed.every(c=>c.state===outcome));
+    const restored=consumed[0];await r.controller.run(restored,new AbortController().signal,{resumed:true});
+    assert.equal(restored.round,1);assert.equal(r.calls.length,0);r.db.close();
+  });
+}
+
+test("prose repair is durable before the next asynchronous binding lookup",async()=>{
+  const r=rig([{content:"Unverified answer",finish:"stop"},finish()]);
+  const binding=r.host.binding;let lookups=0;
+  r.host.binding=async signal=>{if(++lookups===2){const saved=r.store.get("run");assert.equal(saved.repairBudget.outputRepairs,0);assert.equal(saved.recoveryCounters.outputRepairs,1);assert.ok(saved.messages.some(m=>m._harnessGenerated&&m.content.includes("prose alone")));}return binding(signal);};
+  await r.controller.run(r.c,new AbortController().signal);assert.equal(r.c.state,"completed");r.db.close();
+});
+
+test("nonempty permanent diagnostics cannot be hidden by an inconsistent ok flag",async()=>{
+  const r=rig([finish()],{verify:async()=>({ok:true,diagnostics:[diagnostic("conflicting")],artifacts:[]})});
+  await r.controller.run(r.c,new AbortController().signal);assert.equal(r.c.state,"needs-human");assert.equal(r.c.repairBudget.verifyRepairs,1);r.db.close();
+});
+
+for (const outcome of ["completed", "abstained", "needs-human"]) {
+  test(`a publication exception preserves committed ${outcome} and cannot resume execution`, async () => {
+    const notificationFailure = new Error("Fixture notification sink closed after terminal commit");
+    const r = rig([read(), outcome === "abstained" ? blocked() : finish()], {
+      ...(outcome === "needs-human" ? {verify: async () => ({ok: false, diagnostics: [diagnostic("unsupported")], artifacts: []})} : {}),
+      publish: c => {if (c.state === outcome) throw notificationFailure;},
+    });
+    await assert.rejects(r.controller.run(r.c, new AbortController().signal), error => error === notificationFailure);
+    const restored = r.store.get("run");
+    assert.equal(restored.state, outcome);
+    assert.equal(r.c.state, outcome);
+    assert.deepEqual(restored.pendingCalls, []);
+    assert.equal(restored.error, undefined, "presentation failure must not become an execution failure");
+    assert.equal(restored.resultHandles.length, 2, "prior evidence remains intact");
+    assert.equal(r.calls.length, 1);
+    assert.equal(r.store.project(restored).resumable, false);
+    const revision = restored.revision;
+    await r.controller.run(restored, new AbortController().signal, {resumed: true});
+    assert.equal(restored.revision, revision, "no model call or checkpoint rewrite follows the terminal outcome");
+    assert.equal(r.calls.length, 1);
+    r.db.close();
+  });
+}
+
+test("a failed terminal checkpoint write still follows the execution failure path", async () => {
+  const r = rig([finish()]);
+  const save = r.store.save.bind(r.store);
+  let attemptedTerminalWrite = false;
+  r.store.save = c => {
+    if (c.state === "completed" && !attemptedTerminalWrite) {
+      attemptedTerminalWrite = true;
+      throw Object.assign(new Error("Fixture terminal checkpoint could not be committed"), {code: "FIXTURE_STORE_WRITE_FAILED"});
+    }
+    return save(c);
+  };
+  await r.controller.run(r.c, new AbortController().signal);
+  assert.equal(attemptedTerminalWrite, true);
+  assert.equal(r.store.get("run").state, "incomplete");
+  assert.equal(r.store.get("run").error.code, "FIXTURE_STORE_WRITE_FAILED");
+  assert.equal(r.states.includes("completed"), false, "an uncommitted terminal outcome is never published");
+  r.db.close();
 });

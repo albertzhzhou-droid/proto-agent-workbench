@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_MODULES, OPTIONAL_MODULES } from "../src/shared/modules.ts";
 import { collectConfiguredRuntimeResources } from "./packaging-resources.mjs";
 import { verifyWorkspaceTemplate } from "./workspace-template-sync.mjs";
+import { createArtifactMaterializer } from "./manifest-artifacts.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(await readFile(join(projectRoot, "package.json"), "utf8"));
@@ -22,31 +22,15 @@ const protoFiles = resourcesUnder(runtimeResources, "runtime/proto-agent");
 const templateFiles = resourcesUnder(runtimeResources, "runtime/workspace-template");
 const descriptorFiles = resourcesUnder(runtimeResources, "runtime/modules");
 const trustFiles = resourcesUnder(runtimeResources, "runtime/trust");
-const knownRuntimePrefixes = ["runtime/proto-agent", "runtime/workspace-template", "runtime/modules", "runtime/trust"];
+const chemFiles = [...resourcesUnder(runtimeResources,"runtime/chem-workbench"), ...resourcesUnder(runtimeResources,"runtime/chem-ui"), ...resourcesUnder(runtimeResources,"runtime/chem-integration")];
+const knownRuntimePrefixes = ["runtime/proto-agent", "runtime/workspace-template", "runtime/modules", "runtime/trust", "runtime/chem-workbench", "runtime/chem-ui", "runtime/chem-integration"];
 const unknownRuntimeResources = runtimeResources.filter((resource) =>
   !knownRuntimePrefixes.some((prefix) => resource.path === prefix || resource.path.startsWith(`${prefix}/`)));
 if (unknownRuntimeResources.length) {
   throw new Error(`Runtime resources have no module ownership: ${unknownRuntimeResources.map((resource) => resource.path).join(", ")}`);
 }
 if (!trustFiles.length) throw new Error("The packaged runtime/trust tree is empty and cannot be integrity-bound.");
-const hashCache = new Map();
-
-async function materialize(files) {
-  return Promise.all(files.map(async (file) => {
-    const key = `${file.scope}:${file.path}`;
-    if (!hashCache.has(key)) {
-      const absolute = join(projectRoot, ...file.sourcePath.split("/"));
-      const metadata = await stat(absolute);
-      hashCache.set(key, {
-        scope: file.scope,
-        path: file.path,
-        sizeBytes: metadata.size,
-        sha256: await sha256File(absolute),
-      });
-    }
-    return hashCache.get(key);
-  }));
-}
+const materialize = createArtifactMaterializer(projectRoot);
 
 const groups = {
   app: await materialize(appFiles),
@@ -54,6 +38,7 @@ const groups = {
   template: await materialize(templateFiles),
   descriptors: await materialize(descriptorFiles),
   trust: await materialize(trustFiles),
+  chem: await materialize(chemFiles),
 };
 
 const modules = allModules.map((module) => {
@@ -84,7 +69,9 @@ function artifactsForModule(moduleId) {
   if (moduleId === "core.governance") {
     return uniqueArtifacts([...descriptor, ...groups.app, ...groups.trust]);
   }
-  if (moduleId === "core.audit" || moduleId === "core.workspace") {
+  if (moduleId === "core.workspace") return uniqueArtifacts([...descriptor, ...groups.app]);
+  if (moduleId === "analysis.chemistry") return uniqueArtifacts([...descriptor, ...groups.app, ...groups.chem]);
+  if (moduleId === "core.audit") {
     return uniqueArtifacts([...descriptor, ...groups.app]);
   }
   if (moduleId === "core.inference") return uniqueArtifacts([...descriptor, ...groups.app]);
@@ -150,14 +137,4 @@ async function writeModuleDescriptors(root, modules) {
     };
     await writeFile(join(root, `${module.id}.json`), `${JSON.stringify(descriptor, null, 2)}\n`, "utf8");
   }));
-}
-
-function sha256File(path) {
-  return new Promise((resolveHash, rejectHash) => {
-    const hash = createHash("sha256");
-    const stream = createReadStream(path);
-    stream.on("data", (chunk) => hash.update(chunk));
-    stream.on("error", rejectHash);
-    stream.on("end", () => resolveHash(hash.digest("hex")));
-  });
 }

@@ -109,6 +109,9 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
   }
 
   const imageAttachments = input.attachments.filter((attachment) => attachment.mediaType.startsWith("image/"));
+  if (imageAttachments.length > 0 && input.model?.vision) {
+    warnings.push("Image input is provider-advertised but has not been verified with an exact-instance image probe.");
+  }
   const attachmentsReady = imageAttachments.length === 0
     || (input.visionModuleEnabled && Boolean(input.model?.vision));
   requirements.push({
@@ -237,6 +240,7 @@ export function buildMissionPreflight(input: MissionPreflightInputs): MissionPre
       fingerprint: input.model.fingerprint,
       loadState: input.model.loadState,
       toolCapability: input.model.toolCapability,
+      toolProbeId: input.model.toolCapabilityProbe?.probeId,
       vision: input.model.vision,
       workbenchInstance: input.model.workbenchInstance ? {
         id: input.model.workbenchInstance.id,

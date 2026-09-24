@@ -1,0 +1,10 @@
+{
+  "description": "Engineering fixture: the pinned water geometry for the qcengine.psi4.hf_sto3g.smoke.v1 acceptance profile. Generated for installation smoke checks, not an experimental deposition.",
+  "charge": 0,
+  "multiplicity": 1,
+  "atoms": [
+    ["O", "0", "0", "0"],
+    ["H", "0", "0", "0.9572"],
+    ["H", "0.92662721", "0", "-0.23998721"]
+  ]
+}

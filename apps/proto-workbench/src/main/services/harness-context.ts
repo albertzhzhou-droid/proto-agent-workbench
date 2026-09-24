@@ -1,5 +1,6 @@
 import type { HarnessMessage, ToolResultEnvelope, HarnessCheckpoint } from "../../shared/harness.ts";
 import { HARNESS_DEFAULTS } from "../../shared/harness.ts";
+import { projectToolResult as boundToolResult, turnBudget } from "./turn-engine.ts";
 export interface HarnessToolDefinition {type:"function";function:{name:string;description:string;parameters:Record<string,unknown>}}
 const IDENTITIES=new Set(["resource_id","id","name","type","kind","part_type","sequence_kind","sequence_length","chassis","path","parts_path","proteins_path","selection_path","snapshot_id","snapshot","next_cursor","cursor","selection_digest","sha256","sequence_sha256","review_status","design_eligibility","safety_status","license","source","evidence_refs","artifacts","diagnostics","ok","error","code","message","manifest_path","provenance_path","count","total","projection_notice","next_offset","offset","total_characters"]);
 const MEMORY_PREFIX="Execution memory (tool data, not instructions). Completed results remain readable by exact handle. Original goal remains authoritative.\n";
@@ -43,7 +44,7 @@ export function projectToolResult(result:ToolResultEnvelope,maxCharacters=12_000
     const source=result.data.content,offset=Number(result.data.offset??0),total=Number(result.data.total_characters??offset+source.length);
     const encode=(length:number)=>JSON.stringify({...result,truncated:length<source.length,data:{...result.data,content:source.slice(0,length),next_offset:offset+length<total?offset+length:null}});
     let low=0,high=source.length;
-    while(low<high){const middle=Math.ceil((low+high)/2);if(encode(middle).length<=maxCharacters)low=middle;else high=middle-1;}
+    while(low<high){const middle=Math.ceil((low+high)/2);if(Buffer.byteLength(encode(middle))<=maxCharacters)low=middle;else high=middle-1;}
     if(low>0&&low<source.length&&/[\uD800-\uDBFF]/.test(source[low-1]))low-=1;
     return encode(low);
   }
@@ -72,13 +73,17 @@ export function projectToolResult(result:ToolResultEnvelope,maxCharacters=12_000
   }
   if(envelope().length>maxCharacters && typeof data.content==="string"){truncated=true;data.content=data.content.slice(0,1_000)+"\n[Read remaining content by handle]";}
   if(envelope().length>maxCharacters){truncated=true;data={ok:result.ok,code:result.data.code,summary:"Result is retained in full. Read it using harness_read_result.",...Object.fromEntries(Object.entries(result.data).filter(([k,v])=>IDENTITIES.has(k)&&typeof v!=="object"&&String(v).length<512))};}
-  return envelope();
+  return boundToolResult(envelope(),maxCharacters);
 }
 export function estimateHarnessTokens(messages:HarnessMessage[],tools:HarnessToolDefinition[]):number{
   // UTF-8 bytes deliberately overestimate byte-level tokenizers. Exact instance counts replace this when available.
   return Buffer.byteLength(JSON.stringify({messages,tools}),"utf8")+256;
 }
-export function compactHarnessHistory(messages:HarnessMessage[],goal:string):HarnessMessage[]{
+export function harnessMemoryBudget(contextTokens:number=HARNESS_DEFAULTS.contextTokens){
+  return {records:Math.max(2,Math.min(24,Math.floor(contextTokens/1365))),characters:Math.max(768,Math.min(18000,Math.floor(contextTokens*0.55)))};
+}
+export function compactHarnessHistory(messages:HarnessMessage[],goal:string,contextTokens:number=HARNESS_DEFAULTS.contextTokens):HarnessMessage[]{
+  const memoryBudget=harnessMemoryBudget(contextTokens);
   const systems=messages.filter(m=>m.role==="system");
   const instructions=messages.filter(m=>m.role==="user"&&!m._harnessGenerated);
   const state=messages.filter(m=>m._harnessGenerated&&m.content.startsWith(STATE_PREFIX)).slice(-1);
@@ -88,31 +93,32 @@ export function compactHarnessHistory(messages:HarnessMessage[],goal:string):Har
     return {tool:r.tool,handle:r.handle,source_handle:r.data?.handle,ok:r.ok,data};}catch{return {tool_call_id:m.tool_call_id,summary:m.content.slice(0,400)};}});
   const unique=new Map<string,Record<string,unknown>>();
   for(const item of [...prior,...current]){const key=String(item.handle??item.tool_call_id??JSON.stringify(item));unique.delete(key);unique.set(key,item);}
-  const resultMemory=[...unique.values()].slice(-24);
+  const resultMemory=[...unique.values()].slice(-memoryBudget.records);
   // Full receipts remain durable. Bound compact tool data independently from
   // genuine user instructions, which are always preserved in full.
-  while(resultMemory.length>1&&JSON.stringify(resultMemory).length>18000)resultMemory.shift();
+  while(resultMemory.length>1&&JSON.stringify(resultMemory).length>memoryBudget.characters)resultMemory.shift();
+  if(JSON.stringify(resultMemory).length>memoryBudget.characters){const item=resultMemory[0];resultMemory[0]={tool:item.tool,handle:item.handle,ok:item.ok,summary:"Full result retained by handle."};}
   // Keep the most recent assistant tool request and every matching result as an indivisible protocol group.
   let boundary=messages.length;
   for(let i=messages.length-1;i>=0;i--){if(messages[i].role==="assistant"&&(messages[i] as {tool_calls?:unknown[]}).tool_calls?.length){boundary=i;break;}}
   const tail=messages.slice(boundary).filter(m=>m.role!=="system"&&(m.role!=="user"||m._harnessGenerated)&&!(m._harnessGenerated&&(m.content.startsWith(STATE_PREFIX)||m.content.startsWith(MEMORY_PREFIX))));
-  const checkpoint:HarnessMessage={role:"user",_harnessGenerated:true,content:MEMORY_PREFIX+JSON.stringify(resultMemory.slice(-24))};
+  const checkpoint:HarnessMessage={role:"user",_harnessGenerated:true,content:MEMORY_PREFIX+JSON.stringify(resultMemory)};
   return [...systems,...instructions,...(instructions.some(m=>m.content===goal)?[]:[{role:"user" as const,content:goal}]),...state,checkpoint,...tail];
 }
 
 export function bindCurrentExecutionState(c:HarnessCheckpoint):HarnessMessage[]{
   const messages=c.messages.filter(m=>!m._harnessGenerated||!m.content.startsWith(STATE_PREFIX));
-  const state:HarnessMessage={role:"user",_harnessGenerated:true,content:STATE_PREFIX+JSON.stringify({deliverables:c.contract.deliverables,required_reads:c.contract.requiredReads??[],evidence_requirements:c.contract.evidenceRequirements??[],material_binding:c.contract.materialBinding??null,delivered_paths:c.deliveredPaths.slice(-24),round:c.round,generated_tokens:c.generatedTokens})};
+  const state:HarnessMessage={role:"user",_harnessGenerated:true,content:STATE_PREFIX+JSON.stringify({deliverables:c.contract.deliverables,required_reads:c.contract.requiredReads??[],evidence_requirements:c.contract.evidenceRequirements??[],material_binding:c.contract.materialBinding??null,delivered_paths:c.deliveredPaths.slice(-24),round:c.round,generated_tokens:c.generatedTokens,repair_budget:c.repairBudget,last_verdict:c.verdicts?.at(-1),negative_results:c.negativeResults?.slice(-harnessMemoryBudget(c.contract.contextTokens).records)})};
   return [...messages,state];
 }
 
 export function providerMessages(messages:HarnessMessage[]):HarnessMessage[]{return messages.map(message=>{const {_harnessGenerated,...wire}=message;return wire;});}
 export async function assembleHarnessContext(messages:HarnessMessage[],tools:HarnessToolDefinition[],goal:string,contextTokens:number,outputTokens:number=HARNESS_DEFAULTS.outputTokens,count?:(messages:HarnessMessage[],tools:HarnessToolDefinition[])=>Promise<number>):Promise<{messages:HarnessMessage[];tools:HarnessToolDefinition[];tokens:number;compacted:boolean}>{
-  const budget=contextTokens-outputTokens-HARNESS_DEFAULTS.safetyTokens;
+  const budget=turnBudget(contextTokens,outputTokens).inputBudget;
   if(budget<512)throw new Error("CONTEXT_BUDGET_EXHAUSTED");
   const measure=count??(async(m,t)=>estimateHarnessTokens(m,t));
   let selected=structuredClone(messages),tokens=await measure(selected,tools),compacted=false;
-  if(tokens>budget){selected=compactHarnessHistory(messages,goal);compacted=true;tokens=await measure(selected,tools);}
+  if(tokens>budget){selected=compactHarnessHistory(messages,goal,contextTokens);compacted=true;tokens=await measure(selected,tools);}
   if(tokens>budget){
     selected=selected.map(m=>m.role==="tool"?{...m,content:shrinkResult(m.content)}:m);
     tokens=await measure(selected,tools);

@@ -1,4 +1,4 @@
-import type { MissionContract, MissionEvidenceRequirement, ToolResultEnvelope } from "../../shared/harness.ts";
+import type { BlockingClass, HarnessDiagnostic, MissionContract, MissionEvidenceRequirement, ToolResultEnvelope } from "../../shared/harness.ts";
 import type { WorkspaceFiles } from "./workspace-files.ts";
 import { deriveMaterialEvidence, materialEvidenceRecords } from "./mission-material-contract.ts";
 import { verifyMaterialEvidence } from "./harness-material-evidence.ts";
@@ -8,6 +8,7 @@ import { deriveSourceFields, verifySourceField } from "./mission-source-field.ts
 import { deriveArtifactReport, artifactReportRecords } from "./mission-artifact-contract.ts";
 import { verifyArtifactReport } from "./harness-artifact-report.ts";
 import { deriveDnaEvidence, verifyDnaEvidence } from "./mission-dna-contract.ts";
+import { harnessDiagnostic } from "./harness-diagnostics.ts";
 
 const PROVIDERS = {pubmed: "proto_pubmed_search", crossref: "proto_crossref_search", "europe-pmc": "proto_europe_pmc_search"} as const;
 const LITERATURE = /\b(?:pubmed|crossref|europe[ -]?pmc|literature|papers?|publications?|bibliograph\w*)\b|文献|论文/i;
@@ -65,10 +66,19 @@ function publications(result: ToolResultEnvelope): Publication[] {
   });
 }
 
+/** Compatibility projection for callers that display the existing prose. */
 export async function verifyMissionEvidence(contract: MissionContract, results: ToolResultEnvelope[], workspace: WorkspaceFiles, summary = ""): Promise<string[]> {
+  return (await verifyMissionDiagnostics(contract, results, workspace, summary)).map(diagnostic => diagnostic.message);
+}
+
+export async function verifyMissionDiagnostics(contract: MissionContract, results: ToolResultEnvelope[], workspace: WorkspaceFiles, summary = ""): Promise<HarnessDiagnostic[]> {
   const requirements = contract.evidenceRequirements ?? deriveMissionEvidence(contract.goal, contract.workspacePath);
   if (!requirements.length) return [];
-  const diagnostics: string[] = [], successful = results.filter(result => result.ok);
+  const diagnostics: HarnessDiagnostic[] = [], successful = results.filter(result => result.ok);
+  const push = (code: string, subject: string, message: string, blockingClass: BlockingClass = "repairable") => diagnostics.push(harnessDiagnostic(code, subject, message, blockingClass, successful));
+  const messages = (values: string[], subject: string, fallbackCode: string) => {
+    for (const message of values) push(/^([A-Z][A-Z0-9_]+):/.exec(message)?.[1] ?? fallbackCode, subject, message);
+  };
   const current = async (fingerprint: Digest | undefined) => Boolean(fingerprint?.path && fingerprint.sha256 && (await workspace.artifactFingerprint(fingerprint.path).catch(() => undefined))?.sha256 === fingerprint.sha256);
   const savedDocuments: string[] = [], savedFiles: Array<{path: string; content: string}> = [];
   const reportDeliverables = contract.deliverables.filter(deliverable => /\.(?:md|txt|csv|tsv|json)$/i.test(deliverable.path) && !/\.ir\.json$/i.test(deliverable.path));
@@ -85,26 +95,30 @@ export async function verifyMissionEvidence(contract: MissionContract, results: 
       const boundResults = requirement.recordKind === "protein" ? (await Promise.all(successful.map(async result => result.tool !== "proto_protein_inspect" || await current(input(result)) ? result : undefined))).filter((result): result is ToolResultEnvelope => Boolean(result)) : successful;
       const records = materialEvidenceRecords(boundResults, requirement);
       const minimumRecords = requirement.allReturnedRecords ? Math.max(requirement.minimumRecords, new Set(records.map(record => record.resourceId)).size) : requirement.minimumRecords;
-      if (!evidenceDocuments.length) diagnostics.push("MATERIAL_REPORT_REQUIRED: Save a current digest-bound report containing the requested material identities and metadata before finishing. A completion summary cannot substitute for a requested saved report.");
-      diagnostics.push(...verifyMaterialEvidence(records, evidenceDocuments, {...requirement, minimumRecords}).map(item => `${item.code}: ${item.message}`));
+      if (!evidenceDocuments.length) push("MATERIAL_REPORT_REQUIRED", "materials", "MATERIAL_REPORT_REQUIRED: Save a current digest-bound report containing the requested material identities and metadata before finishing. A completion summary cannot substitute for a requested saved report.");
+      for (const item of verifyMaterialEvidence(records, evidenceDocuments, {...requirement, minimumRecords})) push(item.code, item.resourceId ?? "materials", `${item.code}: ${item.message}`, item.code === "MATERIAL_RECEIPT_CONFLICT" ? "conflicting" : "repairable");
       for (const binding of requirement.reports ?? []) for (const path of binding.paths) {
-        diagnostics.push(...verifyMaterialEvidence(records, documentsAt(path), {minimumRecords, fields: binding.fields}).map(item => `${item.code}: ${path}: ${item.message}`));
+        for (const item of verifyMaterialEvidence(records, documentsAt(path), {minimumRecords, fields: binding.fields})) push(item.code, path, `${item.code}: ${path}: ${item.message}`, item.code === "MATERIAL_RECEIPT_CONFLICT" ? "conflicting" : "repairable");
       }
     } else if (requirement.kind === "dna-edit") {
-      diagnostics.push(...await verifyDnaEvidence(requirement, results, workspace, contract.workspacePath ?? "."));
+      messages(await verifyDnaEvidence(requirement, results, workspace, contract.workspacePath ?? "."), requirement.path, "DNA_EVIDENCE_MISSING");
     } else if (requirement.kind === "source-field") {
-      if (requirement.reportPaths?.length) for (const path of requirement.reportPaths) diagnostics.push(...(await verifySourceField(requirement, successful, workspace, contract.workspacePath ?? ".", documentsAt(path))).map(message => `${path}: ${message}`));
-      else diagnostics.push(...await verifySourceField(requirement, successful, workspace, contract.workspacePath ?? ".", evidenceDocuments));
+      if (requirement.reportPaths?.length) for (const path of requirement.reportPaths) {
+        for (const message of await verifySourceField(requirement, successful, workspace, contract.workspacePath ?? ".", documentsAt(path))) push(/^([A-Z][A-Z0-9_]+):/.exec(message)?.[1] ?? "SOURCE_FIELD_EVIDENCE_MISSING", path, `${path}: ${message}`);
+      }
+      else messages(await verifySourceField(requirement, successful, workspace, contract.workspacePath ?? ".", evidenceDocuments), requirement.sourcePaths.join(", "), "SOURCE_FIELD_EVIDENCE_MISSING");
     } else if (requirement.kind === "artifact-report") {
       const records = (await artifactReportRecords(successful, workspace, contract.workspacePath ?? ".", requirement)).filter(record => !reportDeliverables.some(item => resolve(contract.workspacePath ?? ".", item.path).toLowerCase() === resolve(contract.workspacePath ?? ".", record.path).toLowerCase()));
       const criteria = {minimumRecords: requirement.minimumRecords, ...(requirement.category === "metadata" || requirement.allRecords ? {requiredPaths: records.map(record => record.path)} : {})};
-      if (requirement.reportPaths?.length) for (const path of requirement.reportPaths) diagnostics.push(...verifyArtifactReport(records, documentsAt(path), criteria).map(item => `${item.code}: ${path}: ${item.message}`));
-      else diagnostics.push(...verifyArtifactReport(records, evidenceDocuments, criteria).map(item => `${item.code}: ${item.message}`));
+      if (requirement.reportPaths?.length) for (const path of requirement.reportPaths) {
+        for (const item of verifyArtifactReport(records, documentsAt(path), criteria)) push(item.code, path, `${item.code}: ${path}: ${item.message}`);
+      }
+      else for (const item of verifyArtifactReport(records, evidenceDocuments, criteria)) push(item.code, "artifact-report", `${item.code}: ${item.message}`);
     } else if (requirement.kind === "literature") {
       const accepted = successful.filter(result => Object.values(PROVIDERS).includes(result.tool as typeof PROVIDERS[keyof typeof PROVIDERS]) && (!requirement.live || result.data.mode === "network"));
       const records = accepted.flatMap(publications), unique = new Map(records.filter(record => !requirement.countPublicationsOnly || record.publication).map(record => [record.key, record]));
-      for (const provider of requirement.providers) if (!accepted.some(result => result.tool === PROVIDERS[provider] && publications(result).length)) diagnostics.push(`Literature evidence requires nonempty verified identifiers returned by ${provider}${requirement.live ? " through a live network request" : ""}.`);
-      if (unique.size < requirement.minimumRecords) diagnostics.push(`Literature evidence requires ${requirement.minimumRecords} distinct retrieved publications; ${unique.size} are available.`);
+      for (const provider of requirement.providers) if (!accepted.some(result => result.tool === PROVIDERS[provider] && publications(result).length)) push("LITERATURE_PROVIDER_MISSING", provider, `Literature evidence requires nonempty verified identifiers returned by ${provider}${requirement.live ? " through a live network request" : ""}.`);
+      if (unique.size < requirement.minimumRecords) push("LITERATURE_RECORD_COUNT", "literature", `Literature evidence requires ${requirement.minimumRecords} distinct retrieved publications; ${unique.size} are available.`);
       const known = new Set(records.flatMap(record => record.identifiers));
       const cited = new Set<string>();
       for (const match of report.matchAll(doiExpression)) cited.add(`doi:${canonicalDoi(match[0])}`);
@@ -112,10 +126,10 @@ export async function verifyMissionEvidence(contract: MissionContract, results: 
       for (const match of report.matchAll(/\bPMC\d+\b/gi)) cited.add(`pmcid:${match[0].toUpperCase()}`);
       // A plain exact PMID is also a valid table cell when it came from a receipt.
       for (const id of known) if (id.startsWith("pmid:") && new RegExp(`\\b${id.slice(5)}\\b`).test(report)) cited.add(id);
-      for (const id of cited) if (!known.has(id)) diagnostics.push(`Literature citation was not returned by a successful permitted provider receipt: ${id}`);
-      for (const provider of requirement.providers) if (!accepted.filter(result => result.tool === PROVIDERS[provider]).flatMap(publications).some(record => record.identifiers.some(id => cited.has(id)))) diagnostics.push(`The ${reportLabel} must cite at least one identifier retrieved from ${provider}.`);
+      for (const id of cited) if (!known.has(id)) push("LITERATURE_CITATION_UNBOUND", id, `Literature citation was not returned by a successful permitted provider receipt: ${id}`);
+      for (const provider of requirement.providers) if (!accepted.filter(result => result.tool === PROVIDERS[provider]).flatMap(publications).some(record => record.identifiers.some(id => cited.has(id)))) push("LITERATURE_PROVIDER_UNCITED", provider, `The ${reportLabel} must cite at least one identifier retrieved from ${provider}.`);
       const citedRecords = [...unique.values()].filter(record => record.identifiers.some(id => cited.has(id))).length;
-      if (citedRecords < requirement.minimumRecords) diagnostics.push(`The ${reportLabel} must cite at least ${requirement.minimumRecords} retrieved publication identities; ${citedRecords} are bound.`);
+      if (citedRecords < requirement.minimumRecords) push("LITERATURE_CITATION_COUNT", "literature", `The ${reportLabel} must cite at least ${requirement.minimumRecords} retrieved publication identities; ${citedRecords} are bound.`);
     } else if (requirement.kind === "structure") {
       let bound = false;
       for (const result of successful.filter(item => ["proto_structure_fetch", "proto_structure_import_workspace"].includes(item.tool))) {
@@ -125,7 +139,7 @@ export async function verifyMissionEvidence(contract: MissionContract, results: 
         const reopened = successful.some(read => read.tool === "proto_structure_read" && sameFile(input(read), input(result)) && (read.data.attachment as typeof attachment)?.id === attachment.id && (read.data.attachment as typeof attachment)?.contentSha256 === attachment.contentSha256);
         if (reopened) {bound = true; break;}
       }
-      if (!bound) diagnostics.push("Structure evidence requires a current protein artifact, digest-bound coordinate and provenance attachment, and a successful readback of that exact attachment.");
+      if (!bound) push("STRUCTURE_EVIDENCE_MISSING", "structure", "Structure evidence requires a current protein artifact, digest-bound coordinate and provenance attachment, and a successful readback of that exact attachment.");
     } else {
       const requested = [requirement.workflow ? "proto_workflow_run" : "", requirement.verification ? "proto_provenance_verify" : "", requirement.review ? "proto_review_packet" : ""].filter(Boolean);
       for (const name of requested) {
@@ -137,7 +151,7 @@ export async function verifyMissionEvidence(contract: MissionContract, results: 
           const boundValidation = outputs(result).length > 1 || (recoveredProvenance && await current(recoveredProvenance));
           if (["workspace_propose_patch", "workspace_resume_validation"].includes(result.tool) && validation?.ok && validation.steps?.some(step => step.tool === name && step.status === "completed") && await current({path: validation.source ?? "", sha256: validation.sha256 ?? ""}) && boundValidation && (await Promise.all(outputs(result).map(current))).every(Boolean)) {verified = true; break;}
         }
-        if (!verified) diagnostics.push(`Mission evidence requires current source-bound ${name} receipts. Bibliographic or review readiness is not implied by an arbitrary report.`);
+        if (!verified) push("PROVENANCE_RECEIPT_MISSING", name, `Mission evidence requires current source-bound ${name} receipts. Bibliographic or review readiness is not implied by an arbitrary report.`);
       }
     }
   }

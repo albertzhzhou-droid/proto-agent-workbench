@@ -1,3 +1,5 @@
+import { applySchemaMigrations, type SchemaMigrationReport } from "./schema-migrations.ts";
+import { readEvidenceStanding } from "../../shared/evidence-standing.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -8,6 +10,11 @@ import type {
   ChatMessage,
   FileCheckpoint,
   ModelDescriptor,
+  ModelEvaluationAttempt,
+  ModelEvaluationDimensionCounts,
+  ModelEvaluationRunStatus,
+  ModelEvaluationSummary,
+  ModelToolCapabilityProbe,
   PatchOperation,
   PatchOperationState,
   PatchProposal,
@@ -193,12 +200,14 @@ const CHECKLIST_STATUSES = new Set<ReviewPacketView["checklist"][number]["status
 
 export class AppDatabase {
   readonly db: DatabaseSync;
+  migrationReport!: SchemaMigrationReport;
+  readonly migrationReports: SchemaMigrationReport[] = [];
 
   constructor(path: string) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
-    this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
-    this.migrate();
+    try {this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");this.migrate();}
+    catch(error){this.db.close();throw error;}
   }
 
   close(): void {
@@ -270,6 +279,102 @@ export class AppDatabase {
       descriptor: string;
     }>;
     return rows.map((row) => JSON.parse(row.descriptor) as ModelDescriptor);
+  }
+
+  appendModelToolCapabilityProbe(probe: ModelToolCapabilityProbe): ModelToolCapabilityProbe {
+    const payload = JSON.stringify(probe), bytes = Buffer.byteLength(payload);
+    if (bytes > 64 * 1024) throw new Error("MODEL_TOOL_PROBE_RECORD_LIMIT");
+    const sha256 = createHash("sha256").update(payload).digest("hex");
+    this.db.prepare(`INSERT INTO model_tool_capability_probes
+      (probe_id,model_id,instance_id,created_at,payload,sha256,bytes) VALUES(?,?,?,?,?,?,?)`)
+      .run(probe.probeId, probe.modelId, probe.instanceId ?? null, probe.finishedAt, payload, sha256, bytes);
+    return probe;
+  }
+
+  appendModelEvaluationAttempt(attempt: ModelEvaluationAttempt): ModelEvaluationAttempt {
+    validateModelEvaluationAttempt(attempt);
+    const payload = JSON.stringify(attempt), bytes = Buffer.byteLength(payload);
+    if (bytes > 64 * 1024) throw new Error("MODEL_EVALUATION_RECORD_LIMIT");
+    const sha256 = createHash("sha256").update(payload).digest("hex");
+    this.db.prepare(`INSERT INTO model_evaluation_attempts
+      (attempt_id,evaluation_id,case_id,finished_at,payload,sha256,bytes) VALUES(?,?,?,?,?,?,?)`)
+      .run(attempt.attemptId, attempt.evaluationId, attempt.caseId, attempt.finishedAt ?? attempt.startedAt, payload, sha256, bytes);
+    return attempt;
+  }
+
+  listModelEvaluationAttempts(evaluationId: string, limit = 1_000): ModelEvaluationAttempt[] {
+    const rows = this.db.prepare(`SELECT payload,sha256,bytes FROM model_evaluation_attempts
+      WHERE evaluation_id=? ORDER BY finished_at DESC,attempt_id DESC LIMIT ?`)
+      .all(evaluationId, Math.max(1, Math.min(5_000, Math.floor(limit)))) as Array<{payload:string;sha256:string;bytes:number}>;
+    return rows.map(row => {
+      if (Buffer.byteLength(row.payload) !== row.bytes || createHash("sha256").update(row.payload).digest("hex") !== row.sha256) {
+        throw new Error("MODEL_EVALUATION_DIGEST_MISMATCH");
+      }
+      const attempt = JSON.parse(row.payload) as ModelEvaluationAttempt;
+      validateModelEvaluationAttempt(attempt);
+      return attempt;
+    });
+  }
+
+  summarizeModelEvaluation(evaluationId: string): ModelEvaluationSummary | undefined {
+    const rows = this.db.prepare(`SELECT payload,sha256,bytes FROM model_evaluation_attempts
+      WHERE evaluation_id=? ORDER BY finished_at,attempt_id`).all(evaluationId) as Array<{payload:string;sha256:string;bytes:number}>;
+    if (!rows.length) return undefined;
+    const summary: ModelEvaluationSummary = {
+      evaluationId, attempts: 0,
+      statuses: { success: 0, error: 0, timeout: 0, cancelled: 0, unsupported: 0, refused: 0, interrupted: 0 },
+      toolSelection: emptyEvaluationDimensionCounts(),
+      execution: emptyEvaluationDimensionCounts(),
+      scientificAnswer: { ...emptyEvaluationDimensionCounts(), needsHumanReview: 0 },
+    };
+    for (const row of rows) {
+      if (Buffer.byteLength(row.payload) !== row.bytes || createHash("sha256").update(row.payload).digest("hex") !== row.sha256) {
+        throw new Error("MODEL_EVALUATION_DIGEST_MISMATCH");
+      }
+      const attempt = JSON.parse(row.payload) as ModelEvaluationAttempt;
+      validateModelEvaluationAttempt(attempt);
+      summary.attempts += 1;
+      summary.statuses[attempt.status] += 1;
+      countEvaluationDimension(summary.toolSelection, attempt.toolSelection.result);
+      countEvaluationDimension(summary.execution, attempt.execution.result);
+      if (attempt.scientificAnswer.result === "needs-human-review") summary.scientificAnswer.needsHumanReview += 1;
+      else countEvaluationDimension(summary.scientificAnswer, attempt.scientificAnswer.result);
+    }
+    return summary;
+  }
+
+  listModelEvaluationSummaries(limit = 20): ModelEvaluationSummary[] {
+    const rows = this.db.prepare(`SELECT evaluation_id FROM model_evaluation_attempts
+      GROUP BY evaluation_id ORDER BY MAX(finished_at) DESC,evaluation_id LIMIT ?`)
+      .all(Math.max(1, Math.min(100, Math.floor(limit)))) as Array<{evaluation_id:string}>;
+    return rows.flatMap((row) => {
+      const summary = this.summarizeModelEvaluation(row.evaluation_id);
+      return summary ? [summary] : [];
+    });
+  }
+
+  listModelToolCapabilityProbes(limit = 5_000): ModelToolCapabilityProbe[] {
+    const rows = this.db.prepare(`SELECT payload,sha256,bytes FROM model_tool_capability_probes
+      ORDER BY created_at DESC,probe_id DESC LIMIT ?`).all(Math.max(1, Math.min(10_000, Math.floor(limit)))) as Array<{payload:string;sha256:string;bytes:number}>;
+    return rows.map(row => {
+      if (Buffer.byteLength(row.payload) !== row.bytes || createHash("sha256").update(row.payload).digest("hex") !== row.sha256) {
+        throw new Error("MODEL_TOOL_PROBE_DIGEST_MISMATCH");
+      }
+      return JSON.parse(row.payload) as ModelToolCapabilityProbe;
+    });
+  }
+
+  listLatestModelToolCapabilityProbes(): ModelToolCapabilityProbe[] {
+    const rows = this.db.prepare(`SELECT payload,sha256,bytes FROM (
+      SELECT payload,sha256,bytes,ROW_NUMBER() OVER(PARTITION BY model_id ORDER BY created_at DESC,probe_id DESC) AS row_number
+      FROM model_tool_capability_probes
+    ) WHERE row_number=1 ORDER BY payload`).all() as Array<{payload:string;sha256:string;bytes:number}>;
+    return rows.map(row => {
+      if (Buffer.byteLength(row.payload) !== row.bytes || createHash("sha256").update(row.payload).digest("hex") !== row.sha256) {
+        throw new Error("MODEL_TOOL_PROBE_DIGEST_MISMATCH");
+      }
+      return JSON.parse(row.payload) as ModelToolCapabilityProbe;
+    });
   }
 
   createThread(thread: AgentThread): void {
@@ -2004,7 +2109,7 @@ export class AppDatabase {
   }
 
   private migrate(): void {
-    this.db.exec(`
+    this.migrationReport=applySchemaMigrations(this.db,"workbench",[{version:1,sql:`
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -2022,6 +2127,26 @@ export class AppDatabase {
         descriptor TEXT NOT NULL,
         scanned_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS model_tool_capability_probes (
+        probe_id TEXT PRIMARY KEY,
+        model_id TEXT NOT NULL,
+        instance_id TEXT,
+        created_at TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        bytes INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_model_tool_probe_identity ON model_tool_capability_probes(model_id,instance_id,created_at DESC);
+      CREATE TABLE IF NOT EXISTS model_evaluation_attempts (
+        attempt_id TEXT PRIMARY KEY,
+        evaluation_id TEXT NOT NULL,
+        case_id TEXT NOT NULL,
+        finished_at TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        bytes INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_model_evaluation_attempts_set ON model_evaluation_attempts(evaluation_id,finished_at DESC,attempt_id DESC);
       CREATE TABLE IF NOT EXISTS threads (
         id TEXT PRIMARY KEY,
         workspace_path TEXT NOT NULL,
@@ -2134,28 +2259,21 @@ export class AppDatabase {
         comment TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
-    `);
-    this.ensureColumn("run_state", "thread_id", "TEXT");
-    this.ensureColumn("run_state", "workspace_path", "TEXT");
-    this.ensureColumn("run_state", "created_at", "TEXT");
-    this.ensureColumn("run_state", "updated_at", "TEXT");
-    this.ensureColumn("run_state", "revision", "INTEGER NOT NULL DEFAULT 0");
-    this.ensureColumn("run_state", "recovery_state", "TEXT");
-    this.ensureColumn("patches", "target_path", "TEXT");
-    this.ensureColumn("patches", "revision", "INTEGER NOT NULL DEFAULT 0");
-    this.ensureColumn("approvals", "expires_at", "TEXT");
-    this.ensureColumn("approvals", "revision", "INTEGER NOT NULL DEFAULT 0");
-    this.ensureColumn("approvals", "decided_at", "TEXT");
-    this.ensureColumn("approvals", "decision_key", "TEXT");
-    installRunHistorySchema(this.db);
-    installRunCheckpointSchema(this.db);
-  }
-
-  private ensureColumn(table: "run_state" | "patches" | "approvals", column: string, definition: string): void {
-    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-    if (!columns.some((candidate) => candidate.name === column)) {
-      this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-    }
+    `,columns:[
+      {table:"run_state",name:"thread_id",definition:"TEXT"},
+      {table:"run_state",name:"workspace_path",definition:"TEXT"},
+      {table:"run_state",name:"created_at",definition:"TEXT"},
+      {table:"run_state",name:"updated_at",definition:"TEXT"},
+      {table:"run_state",name:"revision",definition:"INTEGER NOT NULL DEFAULT 0"},
+      {table:"run_state",name:"recovery_state",definition:"TEXT"},
+      {table:"patches",name:"target_path",definition:"TEXT"},
+      {table:"patches",name:"revision",definition:"INTEGER NOT NULL DEFAULT 0"},
+      {table:"approvals",name:"expires_at",definition:"TEXT"},
+      {table:"approvals",name:"revision",definition:"INTEGER NOT NULL DEFAULT 0"},
+      {table:"approvals",name:"decided_at",definition:"TEXT"},
+      {table:"approvals",name:"decision_key",definition:"TEXT"},
+    ]}]);
+    this.migrationReports.push(this.migrationReport,installRunHistorySchema(this.db),installRunCheckpointSchema(this.db));
   }
 
   private touchRunRevision(runId: string): void {
@@ -2581,6 +2699,7 @@ function normalizeReviewPayload(runId: string, payloadJson: string): ReviewPacke
       ? payload.packetSha256
       : undefined,
     packetPath: typeof payload.packetPath === "string" ? payload.packetPath : undefined,
+    evidenceStanding: readEvidenceStanding(payload.evidenceStanding),
     gate: validGate ? payload.gate as ReviewPacketView["gate"] : "blocked",
     approvedAt: typeof payload.approvedAt === "string" ? payload.approvedAt : undefined,
     summary: typeof payload.summary === "string"
@@ -2605,6 +2724,59 @@ function parseJson(value: string): unknown {
 
 function sha256Text(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+const MODEL_EVALUATION_STATUSES = new Set<ModelEvaluationRunStatus>(["success", "error", "timeout", "cancelled", "unsupported", "refused", "interrupted"]);
+const MODEL_EVALUATION_DIMENSIONS = new Set(["pass", "fail", "unscored", "not-run"]);
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+
+function validateModelEvaluationAttempt(value: ModelEvaluationAttempt): void {
+  assertOnlyKeys(value, ["schema", "evaluationId", "attemptId", "caseId", "caseRevision", "caseSha256", "datasetSha256", "referenceSha256", "scorerVersion", "provider", "providerModelId", "modelId", "modelFingerprint", "instanceId", "runtimeFingerprint", "toolSchemaSha256", "promptTemplateSha256", "startedAt", "finishedAt", "status", "toolSelection", "execution", "scientificAnswer", "failureCode"]);
+  if (value.schema !== "proto-workbench.model-evaluation-attempt.v1") throw new Error("MODEL_EVALUATION_SCHEMA_INVALID");
+  for (const key of ["evaluationId", "attemptId", "caseId", "caseRevision", "scorerVersion", "modelId", "instanceId", "runtimeFingerprint"] as const) {
+    if (typeof value[key] !== "string" || value[key].length < 1 || value[key].length > 256) throw new Error("MODEL_EVALUATION_IDENTITY_INVALID");
+  }
+  for (const key of ["caseSha256", "datasetSha256", "referenceSha256", "modelFingerprint", "toolSchemaSha256", "promptTemplateSha256"] as const) {
+    if (typeof value[key] !== "string" || !SHA256_PATTERN.test(value[key])) throw new Error("MODEL_EVALUATION_DIGEST_INVALID");
+  }
+  if (value.provider !== "lmstudio" && value.provider !== "llama.cpp") throw new Error("MODEL_EVALUATION_PROVIDER_INVALID");
+  if (value.providerModelId !== undefined && (typeof value.providerModelId !== "string" || value.providerModelId.length > 512)) throw new Error("MODEL_EVALUATION_PROVIDER_ID_INVALID");
+  if (!MODEL_EVALUATION_STATUSES.has(value.status)) throw new Error("MODEL_EVALUATION_STATUS_INVALID");
+  if (typeof value.startedAt !== "string" || !Number.isFinite(Date.parse(value.startedAt))) throw new Error("MODEL_EVALUATION_TIME_INVALID");
+  if (value.finishedAt !== undefined && (typeof value.finishedAt !== "string" || !Number.isFinite(Date.parse(value.finishedAt)) || Date.parse(value.finishedAt) < Date.parse(value.startedAt))) throw new Error("MODEL_EVALUATION_TIME_INVALID");
+  if (value.failureCode !== undefined && (typeof value.failureCode !== "string" || value.failureCode.length > 128)) throw new Error("MODEL_EVALUATION_FAILURE_CODE_INVALID");
+  const tool = value.toolSelection, execution = value.execution, scientific = value.scientificAnswer;
+  assertOnlyKeys(tool, ["result", "expectedTool", "observedTool", "expectedArgumentsSha256", "observedArgumentsSha256"]);
+  assertOnlyKeys(execution, ["result", "effectState", "recovery", "receiptSha256"]);
+  assertOnlyKeys(scientific, ["result", "unitCheck", "sourceCheck", "reviewRecordSha256"]);
+  if (!MODEL_EVALUATION_DIMENSIONS.has(tool.result) || !MODEL_EVALUATION_DIMENSIONS.has(execution.result)
+    || (!MODEL_EVALUATION_DIMENSIONS.has(scientific.result) && scientific.result !== "needs-human-review")) throw new Error("MODEL_EVALUATION_DIMENSION_INVALID");
+  for (const item of [tool.expectedArgumentsSha256, tool.observedArgumentsSha256, execution.receiptSha256, scientific.reviewRecordSha256]) {
+    if (item !== undefined && (typeof item !== "string" || !SHA256_PATTERN.test(item))) throw new Error("MODEL_EVALUATION_EVIDENCE_DIGEST_INVALID");
+  }
+  for (const item of [tool.expectedTool, tool.observedTool]) {
+    if (item !== undefined && (typeof item !== "string" || item.length > 256)) throw new Error("MODEL_EVALUATION_TOOL_NAME_INVALID");
+  }
+  if (execution.effectState !== undefined && !["none", "no-effect", "completed", "effect-unknown"].includes(execution.effectState)) throw new Error("MODEL_EVALUATION_EFFECT_INVALID");
+  if (execution.recovery !== undefined && !["not-needed", "resumed", "reconciled", "effect-unknown", "not-attempted"].includes(execution.recovery)) throw new Error("MODEL_EVALUATION_RECOVERY_INVALID");
+  if (scientific.unitCheck !== undefined && !MODEL_EVALUATION_DIMENSIONS.has(scientific.unitCheck)) throw new Error("MODEL_EVALUATION_UNIT_CHECK_INVALID");
+  if (scientific.sourceCheck !== undefined && !MODEL_EVALUATION_DIMENSIONS.has(scientific.sourceCheck)) throw new Error("MODEL_EVALUATION_SOURCE_CHECK_INVALID");
+}
+
+function assertOnlyKeys(value: unknown, allowed: string[]): asserts value is Record<string, unknown> {
+  if (!isJsonRecord(value) || Object.keys(value).some((key) => !allowed.includes(key))) throw new Error("MODEL_EVALUATION_UNEXPECTED_FIELD");
+}
+
+function emptyEvaluationDimensionCounts(): ModelEvaluationDimensionCounts {
+  return { attempts: 0, pass: 0, fail: 0, unscored: 0, notRun: 0 };
+}
+
+function countEvaluationDimension(counts: ModelEvaluationDimensionCounts, result: string): void {
+  counts.attempts += 1;
+  if (result === "pass") counts.pass += 1;
+  else if (result === "fail") counts.fail += 1;
+  else if (result === "unscored") counts.unscored += 1;
+  else counts.notRun += 1;
 }
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {

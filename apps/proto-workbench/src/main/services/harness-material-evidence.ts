@@ -3,6 +3,8 @@ import { expandJsonReportBlocks } from "./harness-report-documents.ts";
 /** Exact identity fields from successful, run-bound material tool receipts. */
 export interface MaterialEvidenceRecord {
   resourceId: string; sequenceSha256?: string; length?: number;
+  /** Snapshot or input digest; compatible fragments may merge only in this scope. */
+  receiptScope?: string;
   sourceReferences: string[]; sourceFields?: Record<string, string>; licenseIds: string[]; licenseFields?: Record<string, string>;
 }
 export interface MaterialEvidenceRequirement {minimumRecords: number; fields: Array<"sequence_sha256" | "source" | "license" | "length">}
@@ -187,9 +189,24 @@ export function verifyMaterialEvidence(records: MaterialEvidenceRecord[], docume
   const diagnostics: MaterialEvidenceDiagnostic[] = [], unique = new Map<string, MaterialEvidenceRecord>();
   for (const record of records) {
     const previous = unique.get(record.resourceId);
-    const signature = (item: MaterialEvidenceRecord) => JSON.stringify([item.sequenceSha256?.toLowerCase(), item.length, [...item.sourceReferences].sort(), item.sourceFields, [...item.licenseIds].sort(), item.licenseFields]);
-    if (previous && signature(previous) !== signature(record)) diagnostics.push({code: "MATERIAL_RECEIPT_CONFLICT", resourceId: record.resourceId, message: `Conflicting snapshot-bound receipts for ${record.resourceId}; retrieve an unambiguous record before completion.`});
-    else unique.set(record.resourceId, record);
+    const disagreement = (left: unknown, right: unknown) => left !== undefined && right !== undefined && left !== right;
+    const fieldConflict = (left: Record<string, string> = {}, right: Record<string, string> = {}) => Object.keys(left).some(key => disagreement(left[key], right[key]));
+    const setConflict = (left: string[], right: string[]) => left.length > 0 && right.length > 0 && !left.every(value => right.includes(value)) && !right.every(value => left.includes(value));
+    // Ordering and absent fields are not contradictory claims. Compatible
+    // search/get fragments can add metadata, but may never bridge snapshots.
+    const conflict = previous && (previous.receiptScope !== record.receiptScope
+      || disagreement(previous.sequenceSha256?.toLowerCase(), record.sequenceSha256?.toLowerCase())
+      || disagreement(previous.length, record.length)
+      || fieldConflict(previous.sourceFields, record.sourceFields) || fieldConflict(previous.licenseFields, record.licenseFields)
+      || setConflict(previous.sourceReferences, record.sourceReferences) || setConflict(previous.licenseIds, record.licenseIds));
+    if (conflict) diagnostics.push({code: "MATERIAL_RECEIPT_CONFLICT", resourceId: record.resourceId, message: `Conflicting snapshot-bound receipts for ${record.resourceId}; retrieve an unambiguous record before completion.`});
+    else unique.set(record.resourceId, previous ? {...previous, ...record,
+      sequenceSha256: previous.sequenceSha256 ?? record.sequenceSha256, length: previous.length ?? record.length,
+      ...((previous.sourceFields || record.sourceFields) ? {sourceFields: {...previous.sourceFields, ...record.sourceFields}} : {}),
+      ...((previous.licenseFields || record.licenseFields) ? {licenseFields: {...previous.licenseFields, ...record.licenseFields}} : {}),
+      sourceReferences: [...new Set([...previous.sourceReferences, ...record.sourceReferences])].sort(),
+      licenseIds: [...new Set([...previous.licenseIds, ...record.licenseIds])].sort(),
+    } : record);
   }
   const expanded = expandJsonReportBlocks(documents);
   for (const message of expanded.errors) diagnostics.push({code: "MATERIAL_FIELD_MISMATCH", message});

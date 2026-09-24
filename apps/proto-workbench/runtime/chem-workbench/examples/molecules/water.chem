@@ -1,0 +1,27 @@
+chem 0.1
+
+molecule water {
+  structure smiles "O"
+}
+
+conditions water_gas_zero_kelvin {
+  target water
+  phase gas
+  temperature 0
+  temperature_unit kelvin
+}
+
+electronic_state water_ground_state {
+  target water
+  finite charge 0 multiplicity 1
+}
+
+calculation water_single_point {
+  target water
+  state water_ground_state
+  conditions water_gas_zero_kelvin
+  task single_point
+  properties [energy]
+  method "hf"
+  basis "sto-3g"
+}

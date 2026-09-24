@@ -25,6 +25,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+data-read = [
+  "pyarrow==25.0.1",
+  "zarr==3.3.0; python_version >= '3.12'",
+]
+compute = [
+  "numpy==2.2.6",
+  "scipy==1.15.3",
+]
+compute-models = ["torch>=2.2", "pykalman>=0.9", "scikit-learn>=1.4"]
+compute-vision = ["opencv-python-headless>=4.9", "scikit-image>=0.22", "tifffile>=2024.1"]
+compute-medical = ["nibabel>=5.2", "SimpleITK>=2.3"]
+compute-research = ["biopython>=1.83"]
+research-figures = ["matplotlib>=3.9,<4"]
+compute-chem = ["rdkit>=2024.3", "Viennarna>=2.6"]
+chem-workbench = ["sympy>=1.13", "jsonschema>=4.23,<5"]
+compute-genomics = ["python-libsbml>=5.20", "cobra>=0.29", "msprime>=1.3", "h5py>=3.10", "cooler>=0.10", "networkx>=3.2", "biopython>=1.83"]
 workbench = [
   "gguf>=0.17.1",
   "pyinstaller>=6.16",
@@ -36,6 +52,9 @@ proto-agent-mcp = "proto_agent.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+proto_agent = ["data/licenses/*.txt", "data/*.json"]
 
 [tool.uv]
 exclude-newer = "2026-08-17T21:44:19Z"

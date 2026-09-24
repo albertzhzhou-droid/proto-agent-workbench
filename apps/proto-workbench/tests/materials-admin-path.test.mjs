@@ -154,7 +154,7 @@ test("materialized parts artifact binds canonical JSON, snapshot, chassis, exact
 
 test("Materials page materialization reads and validates the generated artifact before returning", async () => {
   const source = await readFile(resolve("src", "main", "index.ts"), "utf8");
-  assert.match(source, /IPC\.materialsMaterialize[\s\S]*?mcpClient\.call\("proto_materials_materialize", \{ \.\.\.input \}\)[\s\S]*?validateMaterializedPartsResult\(result, input\)[\s\S]*?workspaceFiles\.read\(validated\.parts_path\)[\s\S]*?validateMaterializedPartsArtifact\(artifact, input, validated\)/u);
+  assert.match(source, /IPC\.materialsMaterialize[\s\S]*?mcpClient\.call\("proto_materials_materialize", \{ \.\.\.input \},[\s\S]*?scope:[\s\S]*?validateMaterializedPartsResult\(result, input\)[\s\S]*?workspaceFiles\.read\(validated\.parts_path\)[\s\S]*?validateMaterializedPartsArtifact\(artifact, input, validated\)/u);
 });
 
 function materializedPayload(request, digest) {

@@ -95,6 +95,7 @@ interface InstanceBinding {
 }
 
 export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
+  readonly authoritativeEndpoint = LM_STUDIO_BASE_URL;
   private readonly fetchImpl: FetchImplementation;
   private readonly environment: Environment;
   private readonly chatDeadlineMs: number;
@@ -143,10 +144,14 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
     this.scanController?.abort();
     const controller = new AbortController();
     this.scanController = controller;
-    const scanSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
+    const scanSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(5_000), ...(signal ? [signal] : [])]);
     try {
       const models = await this.synchronize(scanSignal);
       return models.map((model) => this.toDescriptor(model));
+    } catch (error) {
+      // Preserve ownership records for cleanup, but never expose stale residency.
+      if (this.scanController === controller) this.nativeModels.clear();
+      throw error;
     } finally {
       if (this.scanController === controller) this.scanController = undefined;
     }
@@ -168,6 +173,7 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
       };
     } catch (error) {
       if (isAbortError(error)) throw error;
+      this.nativeModels.clear();
       return {
         available: false,
         provider: "lmstudio",
@@ -555,7 +561,9 @@ export class LmStudioProvider implements ModelCatalogSource, InferenceRuntime {
       quantization: model.quantization?.name ?? "unknown",
       contextLength: model.max_context_length,
       vision: model.capabilities?.vision ?? false,
-      toolCapability: model.capabilities?.trained_for_tool_use ? "agent-ready" : "unknown",
+      providerVisionAdvertised: model.capabilities?.vision ?? false,
+      toolCapability: "unknown",
+      providerToolUseAdvertised: model.capabilities?.trained_for_tool_use ?? false,
       fingerprint,
       fingerprintSource: "provider-metadata",
       estimatedVramBytes: model.size_bytes,

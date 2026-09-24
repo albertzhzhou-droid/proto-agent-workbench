@@ -1,0 +1,47 @@
+/* Original user-supplied fonts; family and weight read from OpenType metadata. */
+@font-face { font-family: "Anthropic Mono Web"; src: url("./fonts/Anthropic Mono Web.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Mono Web"; src: url("./fonts/Anthropic Mono Web Regular Italic.otf") format("opentype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Bold-Static.otf") format("opentype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-BoldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Extrabold-Static.otf") format("opentype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-ExtraboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Light-Static.otf") format("opentype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Medium-Static.otf") format("opentype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-MediumItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Regular-Static.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-RegularItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Display"; src: url("./fonts/AnthropicSans-Display-Semibold-Static.otf") format("opentype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Bold-Static.otf") format("opentype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-BoldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Extrabold-Static.otf") format("opentype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-ExtraboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Light-Static.otf") format("opentype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Medium-Static.otf") format("opentype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-MediumItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Regular-Static.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-RegularItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Sans Text"; src: url("./fonts/AnthropicSans-Text-Semibold-Static.otf") format("opentype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Bold-Static.otf") format("opentype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-BoldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Extrabold-Static.otf") format("opentype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-ExtraboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Light-Static.otf") format("opentype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-LightItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Medium-Static.otf") format("opentype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-MediumItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Regular-Static.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-RegularItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-Semibold-Static.otf") format("opentype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Display"; src: url("./fonts/AnthropicSerif-Display-SemiboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Bold-Static.otf") format("opentype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-BoldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Extrabold-Static.otf") format("opentype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-ExtraboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Light-Static.otf") format("opentype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-LightItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Medium-Static.otf") format("opentype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-MediumItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Regular-Static.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-RegularItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-Semibold-Static.otf") format("opentype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: "Anthropic Serif Text"; src: url("./fonts/AnthropicSerif-Text-SemiboldItalic-Static.otf") format("opentype"); font-style: italic; font-weight: 600; font-display: swap; }

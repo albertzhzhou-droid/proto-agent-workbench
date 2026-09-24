@@ -12,7 +12,7 @@ test("main process owns a bounded, redacted Global Evidence projection", async (
     source("src/main/services/global-evidence.ts"),
     source("src/shared/ipc.ts"),
     source("src/preload/index.ts"),
-    source("src/main/ipc-security.ts"),
+    source("src/shared/ipc-channel-contracts.ts"),
   ]);
   assert.match(ipc, /runsSearchEvidence: "runs:search-evidence"/);
   assert.match(preload, /searchEvidence: \(input: GlobalEvidenceSearchRequest\) => invoke\(IPC\.runsSearchEvidence/);

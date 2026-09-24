@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "molecule.schema.json",
+  "title": "ChemIR v1alpha1 Molecule payload",
+  "description": "A finite molecular graph. Physical lots, conformer coordinates, charge multiplicity, and salt identity are represented by other ChemIR kinds.",
+  "type": "object",
+  "required": [
+    "representations"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "atoms": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/Atom"
+      }
+    },
+    "bonds": {
+      "type": "array",
+      "maxItems": 200000,
+      "items": {
+        "$ref": "#/$defs/Bond"
+      }
+    },
+    "stereochemistry": {
+      "$ref": "#/$defs/Stereochemistry"
+    },
+    "representations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "common.schema.json#/$defs/Representation"
+      }
+    },
+    "aromaticity_policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "normalization_policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "ambiguities": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/Ambiguity"
+      }
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "dependentRequired": {
+    "atoms": [
+      "bonds"
+    ],
+    "bonds": [
+      "atoms"
+    ]
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Atom": {
+      "type": "object",
+      "required": [
+        "id",
+        "element",
+        "formal_charge"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "element": {
+          "$ref": "common.schema.json#/$defs/ElementSymbol"
+        },
+        "isotope_mass_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 400
+        },
+        "formal_charge": {
+          "type": "integer",
+          "minimum": -16,
+          "maximum": 16
+        },
+        "radical_electrons": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Bond": {
+      "type": "object",
+      "required": [
+        "id",
+        "atom_references",
+        "order"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/Identifier"
+        },
+        "atom_references": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "common.schema.json#/$defs/Reference"
+          },
+          "uniqueItems": true
+        },
+        "order": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 4
+            },
+            {
+              "enum": [
+                "aromatic",
+                "unknown"
+              ]
+            }
+          ]
+        },
+        "stereo": {
+          "enum": [
+            "E",
+            "Z",
+            "cis",
+            "trans",
+            "up",
+            "down",
+            "either",
+            "unspecified"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AtomStereocenter": {
+      "type": "object",
+      "required": [
+        "center_atom_reference",
+        "configuration",
+        "origin",
+        "evidence_references"
+      ],
+      "properties": {
+        "center_atom_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "configuration": {
+          "enum": [
+            "R",
+            "S",
+            "unknown",
+            "unspecified"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BondStereocenter": {
+      "type": "object",
+      "required": [
+        "bond_reference",
+        "configuration",
+        "origin",
+        "evidence_references"
+      ],
+      "properties": {
+        "bond_reference": {
+          "$ref": "common.schema.json#/$defs/Reference"
+        },
+        "configuration": {
+          "enum": [
+            "E",
+            "Z",
+            "cis",
+            "trans",
+            "unknown",
+            "unspecified"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/FactOrigin"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Stereochemistry": {
+      "type": "object",
+      "required": [
+        "atom_centers",
+        "bond_centers"
+      ],
+      "properties": {
+        "atom_centers": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/AtomStereocenter"
+          }
+        },
+        "bond_centers": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "$ref": "#/$defs/BondStereocenter"
+          }
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Policy": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "version": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "tool": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Ambiguity": {
+      "type": "object",
+      "required": [
+        "kind",
+        "description",
+        "affected_references"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "unspecified_stereochemistry",
+            "tautomer",
+            "aromaticity",
+            "bond_order",
+            "charge",
+            "other"
+          ]
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/NonEmptyString"
+        },
+        "affected_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "evidence_references": {
+          "$ref": "common.schema.json#/$defs/ReferenceArray"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

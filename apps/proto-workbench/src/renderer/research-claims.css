@@ -1,0 +1,47 @@
+.research-claims-panel { display:flex; flex-direction:column; flex:0 0 450px; width:450px; max-width:100%; min-width:0; min-height:0; background:var(--canvas); border-left:1px solid var(--line); overflow-wrap:anywhere; }
+.research-claims-panel > header { display:flex; align-items:center; justify-content:space-between; padding:17px 18px; border-bottom:1px solid var(--line); }
+.research-claims-panel h2 { font:20px var(--font-serif); margin:0; }
+.research-claims-content { flex:1; min-height:0; overflow:auto; padding:16px 18px 24px; }
+.research-claims-content p { font-size:11px; line-height:1.6; color:var(--text-soft); }
+.research-claims-toolbar, .research-claim-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.research-claims-toolbar { justify-content:space-between; padding-bottom:14px; }
+.research-claims-toolbar small { color:var(--text-faint); font-size:10px; }
+.research-claims-panel button { cursor:pointer; }
+.research-claims-panel button:disabled { cursor:default; opacity:.55; }
+.research-claim-card { border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); padding:14px; margin:0 0 14px; }
+.research-claim-card h3 { font:16px/1.5 var(--font-reading); margin:0 0 12px; overflow-wrap:anywhere; }
+.research-claim-status { display:flex; flex-wrap:wrap; gap:5px; margin:0 0 12px; font-size:10px; color:var(--text-soft); }
+.research-claim-status span { border:1px solid var(--line); background:var(--surface-soft); border-radius:4px; padding:3px 6px; }
+.research-claim-status .needs-review { color:var(--amber); border-color:var(--amber); }
+.research-claim-evidence { border-top:1px solid var(--line); padding:12px 0; }
+.research-claim-evidence h4 { font-size:11px; font-weight:550; margin:0 0 6px; }
+.research-claim-evidence blockquote { border-left:2px solid var(--line-strong); padding-left:10px; margin:8px 0; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.6 var(--font-reading); }
+.research-claim-evidence details, .research-claim-history { font-size:10px; color:var(--text-soft); }
+.research-claim-evidence summary, .research-claim-history summary { cursor:pointer; padding:5px 0; }
+.research-claim-evidence dl { margin:8px 0; }
+.research-claim-evidence dt { margin:7px 0 2px; color:var(--text-faint); }
+.research-claim-evidence dd { margin:0; overflow-wrap:anywhere; font:10px/1.5 var(--font-mono); }
+.research-claim-history ol { padding-left:18px; line-height:1.7; }
+.research-claim-editor { border-top:1px solid var(--line); padding-top:14px; }
+.research-claim-editor fieldset { border:0; margin:0; padding:0; min-width:0; }
+.research-claim-editor label { display:flex; flex-direction:column; gap:6px; font-size:11px; color:var(--text-soft); margin:12px 0; }
+.research-claim-editor :is(input,textarea,select) { box-sizing:border-box; width:100%; min-width:0; padding:8px; border:1px solid var(--line-strong); border-radius:5px; background:var(--surface); color:var(--text); font:12px/1.5 var(--font-sans); }
+.research-claim-editor textarea { resize:vertical; min-height:60px; }
+.research-claim-source { border-top:1px solid var(--line); padding-top:6px; margin-top:16px; }
+.research-claim-source .source-text { min-height:150px; max-height:300px; font-family:var(--font-reading); }
+.research-claim-source-position { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.research-claim-editor .primary-button { display:flex; gap:6px; align-items:center; font-size:11px; padding:8px 12px; }
+.research-claim-editor .pending-citation { padding:10px; border:1px solid var(--line); border-radius:5px; margin:8px 0; background:var(--surface-soft); }
+.research-claim-editor .pending-citation p { white-space:pre-wrap; overflow-wrap:anywhere; margin:5px 0; }
+.research-claims-panel .claim-warning { border-left:2px solid var(--amber); padding:8px 10px; background:var(--amber-soft); }
+.research-claims-panel .claim-error { border-left:2px solid var(--red); padding:8px 10px; background:var(--red-soft); color:var(--text); }
+.research-claims-panel > footer { border-top:1px solid var(--line); padding:12px 18px; color:var(--text-faint); font-size:10px; line-height:1.6; }
+.chat-session-bar { flex-wrap:wrap; }
+.claim-conflict { border-top:1px solid var(--line); margin-top:16px; padding-top:4px; }
+.claim-conflict ul { padding-left:18px; font-size:11px; line-height:1.6; }
+.research-claims-panel > header { gap:12px; }
+.research-claims-panel > header .chat-icon-button { flex-shrink:0; }
+.research-claims-panel :is(.research-claim-actions,.research-claims-toolbar) > button { max-width:100%; white-space:normal; text-align:left; }
+@media(max-width:1150px) { .research-claims-panel { flex-basis:380px; width:380px; } }
+@media(max-width:900px) { .chat-workspace {position:relative;} .research-claims-panel { position:absolute; right:0; top:0; bottom:0; width:min(450px,100%); z-index:30; box-shadow:-8px 0 24px var(--shadow-color); } }
+@media(max-width:420px) { .research-claim-source-position { grid-template-columns:minmax(0,1fr); gap:0; } .research-claims-content { padding:12px; } .research-claim-card { padding:10px; } }

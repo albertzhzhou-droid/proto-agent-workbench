@@ -245,35 +245,47 @@ test("only actual owned child objects can be terminated", async () => {
   );
 });
 
-test("owned termination joins inherited stdio after the direct child has exited", async () => {
+test("termination after parent exit joins captured streams without claiming descendant termination", async () => {
   const workspace = await mkdtemp(resolve(tmpdir(), "proto-owned-close-"));
   const releasePath = join(workspace, "release");
+  const readyPath = join(workspace, "descendant-ready.json");
+  const parentReleasePath = join(workspace, "parent-release");
+  const nonce = randomUUID();
   const descendantCode = [
     "const fs=require('node:fs');",
+    "fs.writeFileSync(process.argv[2],JSON.stringify({pid:process.pid,ppid:process.ppid,nonce:process.argv[3]}));",
     "process.stdout.write('descendant-ready');",
     "const timer=setInterval(()=>{if(fs.existsSync(process.argv[1]))process.exit(0)},5);",
-    "setTimeout(()=>process.exit(0),5000);",
+    "setTimeout(()=>process.exit(0),15000);",
   ].join("");
   const childCode = [
-    "const {spawn}=require('node:child_process');",
-    `const child=spawn(process.execPath,['-e',${JSON.stringify(descendantCode)},process.argv[1]],{windowsHide:true,stdio:['ignore','pipe','inherit']});`,
-    "child.stdout.once('data',data=>{process.stdout.write(data);process.exit(0)});",
-    "setTimeout(()=>process.exit(1),5000);",
+    "const {spawn}=require('node:child_process');const fs=require('node:fs');",
+    `const child=spawn(process.execPath,['-e',${JSON.stringify(descendantCode)},process.argv[1],process.argv[2],process.argv[3]],{windowsHide:true,stdio:['ignore','pipe','inherit']});`,
+    "child.stdout.once('data',()=>setInterval(()=>{if(fs.existsSync(process.argv[4]))process.exit(0)},5));",
+    "setTimeout(()=>process.exit(1),15000);",
   ].join("");
   let child;
+  let descendantPid;
   try {
-    child = await spawnOwned(process.execPath, ["-e", childCode, releasePath], { cwd: workspace });
+    child = await spawnOwned(process.execPath, ["-e", childCode, releasePath, readyPath, nonce, parentReleasePath], { cwd: workspace });
     const close = once(child, "close");
-    await once(child, "exit");
-    assert.equal(child.stderr.closed, false, "the bounded descendant still holds the inherited pipe");
-    let settled = false;
-    const termination = terminateOwned(child).then(() => { settled = true; });
-    await new Promise((resolvePromise) => setImmediate(resolvePromise));
-    assert.equal(settled, false, "exit alone must not claim that owned stdio is closed");
+    const exit = once(child, "exit");
+    const ready = JSON.parse(await readEventually(readyPath, 5000));
+    descendantPid = ready.pid;
+    assert.deepEqual(ready, {pid:descendantPid,ppid:child.pid,nonce});
+    assert.equal(await pidIsAlive(descendantPid), true, "the descendant acknowledges startup before the parent is released");
+    await writeFile(parentReleasePath, "release");
+    await exit;
+    // A Windows job may also close descendants when the parent exits. Neither
+    // pipe scheduling nor survival after parent exit is a portable invariant.
+    const termination = terminateOwned(child);
     await writeFile(releasePath, "release");
-    await termination;
+    const receipt = await termination;
     await close;
-    assert.equal(child.stderr.closed, true);
+    assert.equal(receipt.directChildClosed, true);
+    assert.equal(receipt.descendantsVerified, false);
+    assert.equal(receipt.windowsTreeRequest, null, "an exited parent's PID is never retargeted");
+    await waitUntilPidExited(descendantPid, 5000);
   } finally {
     await writeFile(releasePath, "release");
     if (child) {
@@ -281,11 +293,19 @@ test("owned termination joins inherited stdio after the direct child has exited"
       if (child.exitCode === null && child.signalCode === null) await terminateOwned(child);
       await closed;
     }
+    if(descendantPid)await waitUntilPidExited(descendantPid, 16000);
     await rm(workspace, { recursive: true, force: true });
   }
 });
 
 test("owned tree termination is idempotent and stops a bounded descendant", async (context) => {
+  // Negative control: prove this host lets the descendant survive a deliberately
+  // direct-child-only kill. Containment jobs can kill both automatically, which
+  // would make a broken tree terminator look correct even with native handles.
+  if(!await directChildOnlySurvivalControl(context)) {
+    context.skip("Host containment also terminates descendants on a direct-child-only kill; tree-termination mutation detection is unavailable on this host.");
+    return;
+  }
   const workspace = await mkdtemp(resolve(tmpdir(), "proto-owned-tree-"));
   const pidPath = join(workspace, "descendant.pid");
   const nonce = randomUUID();
@@ -416,5 +436,43 @@ async function pidIsAlive(pid) {
   } catch (error) {
     if (error?.code === "ESRCH") return false;
     throw error;
+  }
+}
+
+async function waitUntilPidExited(pid,timeoutMs) {
+  const deadline=Date.now()+timeoutMs;
+  while(await pidIsAlive(pid)) {
+    if(Date.now()>=deadline)throw new Error("Acknowledged fixture descendant did not exit before cleanup.");
+    await new Promise(resolvePromise=>setTimeout(resolvePromise,20));
+  }
+}
+
+async function directChildOnlySurvivalControl(context) {
+  const workspace=await mkdtemp(resolve(tmpdir(),"proto-owned-negative-control-"));
+  const readyPath=join(workspace,"descendant-ready.json"),releasePath=join(workspace,"release"),nonce=randomUUID();
+  const descendantCode="const fs=require('node:fs');fs.writeFileSync(process.argv[1],JSON.stringify({pid:process.pid,ppid:process.ppid,nonce:process.argv[3]}));setInterval(()=>{if(fs.existsSync(process.argv[2]))process.exit(0)},5);setTimeout(()=>process.exit(0),15000)";
+  const parentCode=`require('node:child_process').spawn(process.execPath,['-e',${JSON.stringify(descendantCode)},...process.argv.slice(1)],{windowsHide:true,stdio:'ignore'});setTimeout(()=>process.exit(0),16000)`;
+  let child,descendantPid;
+  try {
+    child=await spawnOwned(process.execPath,["-e",parentCode,readyPath,releasePath,nonce],{cwd:workspace});
+    const closed=once(child,"close"),ready=JSON.parse(await readEventually(readyPath,5000));
+    descendantPid=ready.pid;
+    assert.deepEqual(ready,{pid:descendantPid,ppid:child.pid,nonce});
+    assert.equal(await pidIsAlive(descendantPid),true,"negative-control descendant acknowledged startup");
+    assert.equal(child.kill("SIGKILL"),true,"negative control changes only the owned direct child");
+    await closed;
+    const survived=await pidIsAlive(descendantPid);
+    context.diagnostic(JSON.stringify({negativeControl:"direct-child-only",parentPid:child.pid,descendantPid,descendantSurvived:survived,mutationDetectionAvailable:survived}));
+    return survived;
+  } finally {
+    await writeFile(releasePath,"release");
+    if(child)await terminateOwned(child);
+    if(descendantPid)await waitUntilPidExited(descendantPid,16000);
+    // Process liveness and the owned child's close event are checked above.
+    // Windows may briefly retain the exited process's cwd directory handle;
+    // retry only removal of this exact, already-joined disposable fixture.
+    assert.equal(dirname(workspace),resolve(tmpdir()));
+    assert.ok(workspace.startsWith(resolve(tmpdir(),"proto-owned-negative-control-")));
+    await rm(workspace,{recursive:true,force:true,maxRetries:20,retryDelay:100});
   }
 }

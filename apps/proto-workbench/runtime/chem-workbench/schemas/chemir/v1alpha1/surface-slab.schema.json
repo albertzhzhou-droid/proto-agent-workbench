@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "surface-slab.schema.json",
+  "title": "ChemIR v1alpha1 derived SurfaceSlab payload",
+  "description": "Preservation-oriented descriptor for a slab derived from an explicit periodic structure. The payload records construction provenance only; constructing, importing, or geometrically validating the slab requires a versioned adapter outside this schema. Integer-only lengths are an alpha canonicalization limit, not a physical statement.",
+  "type": "object",
+  "required": [
+    "parent_structure_reference",
+    "construction"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/ShortString"
+    },
+    "parent_structure_reference": {
+      "$ref": "common.schema.json#/$defs/Reference"
+    },
+    "construction": {
+      "$ref": "#/$defs/SlabConstruction"
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "SlabConstruction": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "algorithm_version",
+        "miller",
+        "termination",
+        "layers",
+        "vacuum"
+      ],
+      "properties": {
+        "algorithm": {
+          "enum": [
+            "fcc-cubic-cell-cut"
+          ]
+        },
+        "algorithm_version": {
+          "const": "v1alpha1"
+        },
+        "miller": {
+          "$ref": "common.schema.json#/$defs/IntegerVector3"
+        },
+        "termination": {
+          "$ref": "common.schema.json#/$defs/ShortString"
+        },
+        "layers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "vacuum": {
+          "$ref": "#/$defs/VacuumExtent"
+        },
+        "extensions": {
+          "$ref": "common.schema.json#/$defs/NamespacedExtensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "VacuumExtent": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "unit": {
+          "const": "angstrom"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

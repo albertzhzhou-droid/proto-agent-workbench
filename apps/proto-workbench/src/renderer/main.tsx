@@ -6,8 +6,15 @@ import "monaco-editor/language/json/monaco.contribution.js";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
+import "./fonts.css";
 import "./styles.css";
 import "./workbench-theme.css";
+import "./paper-workbench.css";
+import "./workbench-typography.css";
+import "./compute-workspace.css";
+import "./chat-workspace.css";
+import "./chem-workspace.css";
+import "./paper-motion.css";
 
 type MonacoWorker = new () => Worker;
 const workerScope = globalThis as typeof globalThis & {
@@ -22,8 +29,15 @@ workerScope.MonacoEnvironment = {
 };
 loader.config({ monaco });
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+// Load measuring fonts before mounting canvas and Monaco views. Remaining
+// weights and italics load on demand through the same local @font-face rules.
+void Promise.all([
+  document.fonts.load('400 14px "Anthropic Sans Text"'),
+  document.fonts.load('400 28px "Anthropic Serif Display"'),
+  document.fonts.load('400 14px "Anthropic Serif Text"'),
+  document.fonts.load('400 12px "Anthropic Mono Web"'),
+]).catch(() => undefined).then(() => {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode><App /></React.StrictMode>,
+  );
+});

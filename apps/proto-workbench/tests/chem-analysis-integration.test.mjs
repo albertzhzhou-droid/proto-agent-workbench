@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash,randomUUID} from 'node:crypto';
+import {mkdir,mkdtemp,readFile,writeFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import Ajv from 'ajv';
+import {ChemScienceService} from '../src/main/services/chem-science.ts';
+import {ResearchToolBridge,researchSignature} from '../src/main/services/research-tools.ts';
+const repo=fileURLToPath(new URL('../../../',import.meta.url));
+const ids=['fit_adsorption_isotherm','analyze_vanthoff_equilibrium','calculate_acid_base_speciation','fit_electrochemical_impedance','summarize_replicates','compare_assay_groups','fit_calibration_curve','analyze_spectrum','chemical_pca','prepare_molecular_dataset','search_substructures','cluster_molecules','formula_properties','balance_equation','solution_calculator'];
+test('chemistry analysis catalog, all new operator executions, canonical discovery and persisted source evidence',{timeout:180000},async t=>{
+ const base=join(repo,'build/science-expansion');await mkdir(base,{recursive:true});
+ const workspace=await mkdtemp(join(base,'integration-'));
+ const service=new ChemScienceService({repoRoot:repo,workspacePath:workspace});t.after(()=>service.close());
+ const catalog=await service.request({action:'catalog'});assert.equal(catalog.ok,true,JSON.stringify(catalog.error));
+ assert.equal(new Set(catalog.data.operators.map(o=>o.id)).size,catalog.data.operators.length);
+ assert.deepEqual(new Set(catalog.data.operators.map(o=>o.workspace)),new Set(['analysis','statistics','chemical-data']));
+ const ajv=new Ajv({strict:false,validateFormats:false});
+ const bridge=new ResearchToolBridge({tools:async()=>[],capabilities:async()=>({execution:{available:false}})},{canonicalRootPath:async()=>workspace},undefined,service);
+ const signal=new AbortController().signal,session={id:randomUUID(),moduleSettings:{profile:"custom",enabledOptional:["analysis.chemistry"]}};
+ const receipt={version:'chem-analysis-integration/v1',createdAt:new Date().toISOString(),workspace,operators:[]};
+ for(const id of ids){
+  const op=catalog.data.operators.find(o=>o.id===id);assert.ok(op,id+' in catalog');assert.equal(op.available,true,id+' available');
+  const validate=ajv.compile(op.input_schema);assert.equal(validate(op.example_input),true,id+': '+JSON.stringify(validate.errors));
+  const discovered=await bridge.execute('science_catalog',{query:id},session,signal);
+  assert.equal(discovered.tools.filter(o=>o.id==='chemistry.'+id).length,1);
+  assert.equal(researchSignature('science_run',{name:'chem.'+id,arguments:op.example_input}),researchSignature('science_run',{name:'chemistry.'+id,arguments:op.example_input}));
+  const run=await bridge.execute('science_run',{name:'chem.'+id,arguments:op.example_input},session,signal);
+  assert.equal(run.ok,true,id+': '+JSON.stringify(run.error));assert.equal(run.data.status,'completed');
+  const restored=await service.request({action:'read',runId:run.data.runId});assert.equal(restored.ok,true);
+  assert.deepEqual(restored.data.input,op.example_input);
+  const hashes=restored.data.provenance.source_files_sha256;
+  for(const name of ['chem_science.py','chem_analysis.py','chem_data.py','chem_physical.py'])assert.equal(hashes[name],createHash('sha256').update(await readFile(join(repo,'apps/proto-workbench/runtime/chem-integration',name))).digest('hex'));
+  assert.ok(restored.data.result);JSON.stringify(restored.data.result);
+  receipt.operators.push({id,workspace:op.workspace,ok:true,readback:true,runId:run.data.runId,artifacts:run.data.artifacts});
+ }
+ const history=await service.request({action:'history',limit:100});assert.equal(history.data.runs.length,ids.length);
+ await writeFile(join(base,'integration-acceptance.json'),JSON.stringify(receipt,null,2)+'\n');
+});

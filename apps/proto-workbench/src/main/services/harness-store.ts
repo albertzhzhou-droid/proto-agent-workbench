@@ -1,10 +1,19 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { HarnessCheckpoint, HarnessProjection, ToolResultEnvelope } from "../../shared/harness.ts";
+import { executionActivity, toolResultFailed, type ExecutionActivity } from "./turn-engine.ts";
+import { executionActivityState, ToolExecutionJournal, type ToolExecutionRecord } from "./tool-execution-journal.ts";
+import { applySchemaMigrations, type SchemaMigrationReport } from "./schema-migrations.ts";
+import {harnessDiagnosticCounts} from "./harness-iteration.ts";
+import {resolveToolContract} from "../../shared/tool-contracts.ts";
 
 const MAX_RESULT_BYTES = 8 * 1024 * 1024;
 const MAX_CHECKPOINT_BYTES = 8 * 1024 * 1024;
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
+const receiptData=(receipt:Record<string,unknown>):Record<string,unknown>=>{
+  const structured=receipt.structuredContent;
+  return structured&&typeof structured==="object"&&!Array.isArray(structured)?{...structured as Record<string,unknown>,...(toolResultFailed(receipt)?{ok:false}:{}),...(receipt.isError?{isError:true}:{}),...(receipt.effect_state!==undefined?{effect_state:receipt.effect_state}:{}),...(receipt.content?{content:receipt.content}:{})}:receipt;
+};
 
 export interface HarnessSourceOperation {
   schema: "proto-workbench.harness-source-operation.v1";
@@ -18,12 +27,17 @@ export interface HarnessSourceOperation {
 /** SQLite transactions bind the full execution state; projections never authorize effects. */
 export class HarnessStore {
   private readonly db: DatabaseSync;
-  constructor(db: DatabaseSync) {
+  private readonly journal?:ToolExecutionJournal;
+  readonly migrationReport:SchemaMigrationReport;
+  constructor(db: DatabaseSync,journal?:ToolExecutionJournal) {
     this.db = db;
-    db.exec(`CREATE TABLE IF NOT EXISTS harness_executions (run_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, workspace_path TEXT NOT NULL, revision INTEGER NOT NULL, state TEXT NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL, updated_at TEXT NOT NULL);
+    this.journal=journal;
+    this.migrationReport=applySchemaMigrations(db,"harness-store",[{version:1,sql:`CREATE TABLE IF NOT EXISTS harness_executions (run_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, workspace_path TEXT NOT NULL, revision INTEGER NOT NULL, state TEXT NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL, updated_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS harness_results (handle TEXT PRIMARY KEY, run_id TEXT NOT NULL, call_id TEXT NOT NULL, tool TEXT NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL, bytes INTEGER NOT NULL, UNIQUE(run_id,call_id));
       CREATE TABLE IF NOT EXISTS harness_effects (run_id TEXT NOT NULL, call_id TEXT NOT NULL, tool TEXT NOT NULL, arguments_json TEXT NOT NULL, effect TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(run_id,call_id));
-      CREATE TABLE IF NOT EXISTS harness_source_operations (run_id TEXT NOT NULL, call_id TEXT NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL, PRIMARY KEY(run_id,call_id));`);
+      CREATE TABLE IF NOT EXISTS harness_source_operations (run_id TEXT NOT NULL, call_id TEXT NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL, PRIMARY KEY(run_id,call_id));`},
+      {version:2,sql:`CREATE TABLE harness_journal_diagnostics(run_id TEXT NOT NULL,call_id TEXT NOT NULL,code TEXT NOT NULL,journal_state TEXT,legacy_state TEXT,observed_at TEXT NOT NULL,PRIMARY KEY(run_id,call_id,code));`},
+      {version:3,sql:`CREATE TABLE harness_recovery_results(handle TEXT PRIMARY KEY,run_id TEXT NOT NULL,call_id TEXT NOT NULL,tool TEXT NOT NULL,payload TEXT NOT NULL,sha256 TEXT NOT NULL,bytes INTEGER NOT NULL,UNIQUE(run_id,call_id));`}]);
   }
   save(checkpoint: HarnessCheckpoint): void {
     const previous = this.db.prepare("SELECT revision FROM harness_executions WHERE run_id=?").get(checkpoint.contract.runId) as { revision: number } | undefined;
@@ -52,7 +66,7 @@ export class HarnessStore {
     return (this.db.prepare("SELECT run_id FROM harness_executions WHERE workspace_path=? AND state IN ('queued','preparing','generating','executing','checkpointing','validating','recovering') ORDER BY updated_at").all(workspacePath) as {run_id:string}[]).map(row => this.get(row.run_id)!);
   }
   project(c: HarnessCheckpoint): HarnessProjection {
-    return {runId:c.contract.runId,threadId:c.contract.threadId,state:c.state,revision:c.revision,round:c.round,generatedTokens:c.generatedTokens,activeTimeMs:c.activeTimeMs,contextTokens:c.contract.contextTokens,resultCount:c.resultHandles.length,contextUsed:c.contextUsed,tokenCountMethod:c.tokenCountMethod,inFlightGenerationTokens:c.inFlightGenerationTokens,deliveredPaths:c.deliveredPaths,resumable:["paused","incomplete","blocked","failed","queued","preparing","validating","generating","executing","checkpointing","recovering","effect-unknown"].includes(c.state) && c.error?.code!=="OWNED_RESOURCE_CLEANUP_FAILED",error:c.error,hostRecovered:c.hostRecovered,recoveryCounters:c.recoveryCounters?{...c.recoveryCounters}:undefined,budgets:{...c.contract.budgets}};
+    return {runId:c.contract.runId,threadId:c.contract.threadId,state:c.state,revision:c.revision,round:c.round,generatedTokens:c.generatedTokens,activeTimeMs:c.activeTimeMs,contextTokens:c.contract.contextTokens,resultCount:c.resultHandles.length,contextUsed:c.contextUsed,tokenCountMethod:c.tokenCountMethod,inFlightGenerationTokens:c.inFlightGenerationTokens,deliveredPaths:c.deliveredPaths,resumable:["paused","incomplete","blocked","failed","queued","preparing","validating","generating","executing","checkpointing","recovering","effect-unknown"].includes(c.state) && c.error?.code!=="OWNED_RESOURCE_CLEANUP_FAILED",error:c.error,hostRecovered:c.hostRecovered,recoveryCounters:c.recoveryCounters?{...c.recoveryCounters}:undefined,repairBudget:c.repairBudget?{...c.repairBudget}:undefined,abstention:c.abstention?{...c.abstention,unmetRequirements:[...c.abstention.unmetRequirements]}:undefined,budgets:{...c.contract.budgets},verdicts:structuredClone(c.verdicts??[]),diagnosticCounts:harnessDiagnosticCounts(c),toolCallCounts:{...c.toolCallCounts}};
   }
   intent(runId: string, callId: string, tool: string, args: Record<string, unknown>, effect: "read" | "write"): void {
     const payload=JSON.stringify(args);
@@ -61,7 +75,47 @@ export class HarnessStore {
     this.db.prepare("INSERT OR IGNORE INTO harness_effects VALUES(?,?,?,?,?,?)").run(runId,callId,tool,payload,effect,"started");
   }
   uncertainEffect(runId: string, callId: string): boolean {
-    return Boolean(this.db.prepare("SELECT call_id FROM harness_effects WHERE run_id=? AND call_id=? AND effect='write' AND state='started'").get(runId,callId));
+    const legacy=this.db.prepare("SELECT tool,effect,state FROM harness_effects WHERE run_id=? AND call_id=?").get(runId,callId) as {tool:string;effect:string;state:string}|undefined;
+    const legacyUnknown=legacy?.effect==="write"&&legacy.state==="started";
+    const record=this.executionRecord(runId,callId);
+    if(record){
+      const unknown=record.state==="effect-unknown";
+      if(legacy&&(unknown!==legacyUnknown||record.effect!==legacy.effect||record.tool!==legacy.tool))this.diagnostic(runId,callId,"HARNESS_JOURNAL_DISAGREEMENT",record.state,legacy.state);
+      return unknown;
+    }
+    if(legacy)this.diagnostic(runId,callId,"HARNESS_LEGACY_EFFECT_FALLBACK",undefined,legacy.state);
+    return legacyUnknown;
+  }
+  /** Conservative migration: a saved dispatch reservation already spent a call. */
+  toolUsage(runId:string):{counts:Record<string,number>;operationIds:string[]} {
+    const reservations=new Map<string,string>();
+    for(const row of this.db.prepare("SELECT call_id,tool FROM harness_effects WHERE run_id=?").all(runId) as Array<{call_id:string;tool:string}>)reservations.set(row.call_id,row.tool);
+    for(const row of this.journal?.list({surface:"harness",scopeId:runId})??[])reservations.set(row.operationId,row.tool);
+    const counts:Record<string,number>={},operationIds:string[]=[];
+    for(const [id,tool] of reservations){if(tool.startsWith("harness_"))continue;const name=resolveToolContract(tool)?.name??tool;counts[name]=(counts[name]??0)+1;operationIds.push(id);}
+    return {counts,operationIds};
+  }
+  executionRecord(runId:string,callId:string):ToolExecutionRecord|undefined {
+    const record=this.journal?.get(callId);
+    if(record&&(record.scope.scopeId!==runId||record.scope.surface!=="harness"))throw new Error("HARNESS_JOURNAL_SCOPE_MISMATCH");
+    return record;
+  }
+  activityForCall(runId:string,callId:string):ExecutionActivity {
+    const result=this.resultForCall(runId,callId);
+    return executionActivity(callId,result?(result.ok?"complete":"error"):"running",this.executionRecord(runId,callId));
+  }
+  executionActivities(runId:string):ExecutionActivity[] {
+    const calls=this.db.prepare("SELECT call_id,tool FROM harness_effects WHERE run_id=?").all(runId) as Array<{call_id:string;tool:string}>;
+    const indexed=new Map(calls.map(row=>[row.call_id,row.tool]));
+    for(const record of this.journal?.list({surface:"harness",scopeId:runId})??[])indexed.set(record.operationId,record.tool);
+    return [...indexed].filter(([,tool])=>!tool.startsWith("harness_")).map(([callId])=>this.activityForCall(runId,callId));
+  }
+  recoveryReport():{journalFirst:boolean;legacyFallback:boolean;disagreements:number;legacyFallbackCalls:number} {
+    const count=(code:string)=>Number((this.db.prepare("SELECT COUNT(*) AS count FROM harness_journal_diagnostics WHERE code=?").get(code) as {count:number}).count);
+    return {journalFirst:Boolean(this.journal),legacyFallback:true,disagreements:count("HARNESS_JOURNAL_DISAGREEMENT"),legacyFallbackCalls:count("HARNESS_LEGACY_EFFECT_FALLBACK")};
+  }
+  private diagnostic(runId:string,callId:string,code:string,journalState?:string,legacyState?:string):void {
+    this.db.prepare("INSERT OR IGNORE INTO harness_journal_diagnostics VALUES(?,?,?,?,?,?)").run(runId,callId,code,journalState??null,legacyState??null,new Date().toISOString());
   }
   beginSourceOperation(runId: string, callId: string, args: Record<string, unknown>, tool: HarnessSourceOperation["tool"] = "workspace_propose_patch"): void {
     this.intent(runId, callId, tool, args, "write");
@@ -103,27 +157,46 @@ export class HarnessStore {
   }
   resultForCall(runId: string, callId: string): ToolResultEnvelope | undefined {
     const row=this.db.prepare("SELECT handle FROM harness_results WHERE run_id=? AND call_id=?").get(runId,callId) as {handle:string}|undefined;
-    return row ? this.read(runId,row.handle) : undefined;
+    const record=this.executionRecord(runId,callId);
+    if(record?.state==="effect-unknown"||record?.state==="dispatched"||record?.state==="intent")return undefined;
+    if(record?.state==="reconciled-applied"&&record.recoveredReceipt){
+      const recovered=this.db.prepare("SELECT handle FROM harness_recovery_results WHERE run_id=? AND call_id=?").get(runId,callId) as {handle:string}|undefined;
+      return recovered?this.read(runId,recovered.handle):this.cacheRecord(runId,callId,record.tool,receiptData(record.recoveredReceipt),true);
+    }
+    if(row)return this.read(runId,row.handle);
+    const receipt=record?.receipt;
+    if(receipt&&(record?.state==="completed"||record?.state==="no-effect"||record?.state==="reconciled-applied")) {
+      return this.cacheRecord(runId,callId,record.tool,receiptData(receipt));
+    }
+    if(record?.state==="reconciled-not-applied")return this.cacheRecord(runId,callId,record.tool,{ok:false,effect_state:"none",code:"TOOL_RECONCILED_NOT_APPLIED",message:"The previous operation was reconciled as not applied. A new operation ID is required to retry."});
+    return undefined;
   }
   record(runId: string, callId: string, tool: string, data: Record<string, unknown>): ToolResultEnvelope {
-    const previous=this.resultForCall(runId,callId); if(previous) return previous;
+    const row=this.db.prepare("SELECT handle FROM harness_results WHERE run_id=? AND call_id=?").get(runId,callId) as {handle:string}|undefined;
+    if(row)return this.read(runId,row.handle);
+    return this.cacheRecord(runId,callId,tool,data);
+  }
+  private cacheRecord(runId:string,callId:string,tool:string,data:Record<string,unknown>,recovered=false):ToolResultEnvelope {
     const payload=JSON.stringify(data); const bytes=Buffer.byteLength(payload);
     if(bytes>MAX_RESULT_BYTES) throw new Error("HARNESS_RESULT_LIMIT");
     const handle=randomUUID(), sha256=digest(payload);
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      this.db.prepare("INSERT INTO harness_results VALUES(?,?,?,?,?,?,?)").run(handle,runId,callId,tool,payload,sha256,bytes);
+      this.db.prepare(`INSERT INTO ${recovered?"harness_recovery_results":"harness_results"} VALUES(?,?,?,?,?,?,?)`).run(handle,runId,callId,tool,payload,sha256,bytes);
       this.db.prepare("UPDATE harness_effects SET state='completed' WHERE run_id=? AND call_id=?").run(runId,callId);
       this.db.exec("COMMIT");
     } catch(error){this.db.exec("ROLLBACK");throw error;}
-    return {schema:"proto-workbench.tool-result.v1",handle,tool,ok:data.ok!==false,sha256,bytes,data,truncated:false};
+    return this.read(runId,handle);
   }
   read(runId: string, handle: string): ToolResultEnvelope {
-    const row=this.db.prepare("SELECT tool,payload,sha256,bytes FROM harness_results WHERE run_id=? AND handle=?").get(runId,handle) as {tool:string;payload:string;sha256:string;bytes:number}|undefined;
+    const row=this.db.prepare("SELECT call_id,tool,payload,sha256,bytes,0 AS recovered FROM harness_results WHERE run_id=? AND handle=? UNION ALL SELECT call_id,tool,payload,sha256,bytes,1 AS recovered FROM harness_recovery_results WHERE run_id=? AND handle=?").get(runId,handle,runId,handle) as {call_id:string;tool:string;payload:string;sha256:string;bytes:number;recovered:number}|undefined;
     if(!row) throw new Error("HARNESS_RESULT_NOT_FOUND");
     if(digest(row.payload)!==row.sha256 || Buffer.byteLength(row.payload)!==row.bytes) throw new Error("HARNESS_RESULT_DIGEST_MISMATCH");
     const data=JSON.parse(row.payload) as Record<string,unknown>;
-    return {schema:"proto-workbench.tool-result.v1",handle,tool:row.tool,ok:data.ok!==false,sha256:row.sha256,bytes:row.bytes,data,truncated:false};
+    const record=this.executionRecord(runId,row.call_id);
+    if(row.recovered&&(!record?.recoveredReceipt||digest(JSON.stringify(receiptData(record.recoveredReceipt)))!==row.sha256))throw new Error("HARNESS_RECOVERY_RECEIPT_BINDING_MISMATCH");
+    const ok=!toolResultFailed(data)&&(record?executionActivityState(record)==="complete":!row.recovered);
+    return {schema:"proto-workbench.tool-result.v1",handle,tool:row.tool,ok,sha256:row.sha256,bytes:row.bytes,data,truncated:false};
   }
   page(runId:string,handle:string,offset=0,limit=12_000):Record<string,unknown>{
     if(!Number.isSafeInteger(offset)||offset<0||!Number.isSafeInteger(limit)||limit<1||limit>24_000)throw new Error("HARNESS_RESULT_RANGE_INVALID");
