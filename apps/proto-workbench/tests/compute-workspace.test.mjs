@@ -1,3 +1,4 @@
+import { ManagedMcpTestClient } from "./helpers/managed-mcp.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -25,7 +26,7 @@ test("the UI computation service preserves submitted input and returns real sour
   const repo=fileURLToPath(new URL("../../../",import.meta.url));
   const parent=resolve("build/test-compute-workspace"); await mkdir(parent,{recursive:true});
   const workspace=await mkdtemp(join(parent,"run-"));
-  const client=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,
+  const client=new ManagedMcpTestClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,
     workspaceCapability:randomBytes(32).toString("hex"),materialsRoot:join(workspace,"materials"),pythonExecutable:join(repo,".venv/Scripts/python.exe")});
   try {
     const request={tool:"compare_two_groups",arguments:{group_a:[1,1,1],group_b:[1,2,3],method:"welch_t"}};
@@ -67,7 +68,7 @@ test("new digit-bearing methods and ordered file lists execute through the real 
   const parent=resolve("build/test-compute-workspace"); await mkdir(parent,{recursive:true});
   const workspace=await mkdtemp(join(parent,"new-methods-"));
   const python=join(repo,".venv/Scripts/python.exe");
-  const client=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,
+  const client=new ManagedMcpTestClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,
     workspaceCapability:randomBytes(32).toString("hex"),materialsRoot:join(workspace,"materials"),pythonExecutable:python});
   try {
     const tool=(await client.call("proto_compute_catalog",{tool:"analyze_abr_waveform_p1_metrics"})).tools[0];

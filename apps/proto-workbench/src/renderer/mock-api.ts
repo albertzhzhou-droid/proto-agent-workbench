@@ -66,7 +66,7 @@ import type {
   WorkbenchApi,
 } from "../shared/contracts.ts";
 import { CORE_MODULES, OPTIONAL_MODULES } from "../shared/modules.ts";
-import { previewResearchChat, configurePreviewChatModules } from "./research-chat-api.ts";
+import { previewResearchChat, configurePreviewChatModules, previewScienceModules } from "./research-chat-api.ts";
 import { previewJournal } from "./journal-preview.ts";
 import {
   emptyReview,
@@ -1425,6 +1425,13 @@ async function previewTransparencyWitnessCatalog(): Promise<TransparencyWitnessC
 const mockWorkbench: IpcWorkbenchApi = {
   journal: previewJournal,
   chat: previewResearchChat,
+  research: {async request(request) {
+    if (!import.meta.env?.DEV) throw new Error('Managed Studies require the desktop host or local development server.');
+    const response = await fetch('/__proto/research', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request,modules:previewScienceModules()})});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'The Study request failed.');
+    return data;
+  }},
   compute: previewCompute,
   app: {
     async getSettings() {

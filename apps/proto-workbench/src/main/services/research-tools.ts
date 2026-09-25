@@ -102,7 +102,7 @@ export class ResearchToolBridge {
   private mcp:McpClient; private files:WorkspaceFiles; private modules:()=>ModuleSettings;private chem?:ChemScienceService;
   constructor(mcp:McpClient,files:WorkspaceFiles,modules:()=>ModuleSettings=defaultModuleSettings,chem?:ChemScienceService) {this.mcp=mcp;this.files=files;this.modules=modules;this.chem=chem;}
   private sendGrants=new Map<string,PolicyGrant>();
-  authorizeSend(grant:PolicyGrant) {this.sendGrants.set(grant.scopeId,structuredClone(grant));}
+  authorizeSend(grant:PolicyGrant) {this.sendGrants.set(grant.scopeId,grant);}
   finishSend(scopeId:string) {this.sendGrants.delete(scopeId);}
   executionRecord(operationId:string) {return this.mcp.executionRecord?.(operationId)??this.chem?.executionRecord(operationId);}
   settings() {return structuredClone(this.modules());}

@@ -2160,6 +2160,7 @@ chem-workbench = [
     { name = "sympy" },
 ]
 compute = [
+    { name = "jsonschema" },
     { name = "numpy" },
     { name = "scipy" },
 ]
@@ -2222,6 +2223,7 @@ requires-dist = [
     { name = "gguf", marker = "extra == 'workbench'", specifier = ">=0.17.1" },
     { name = "h5py", marker = "extra == 'compute-genomics'", specifier = ">=3.10" },
     { name = "jsonschema", marker = "extra == 'chem-workbench'", specifier = ">=4.23,<5" },
+    { name = "jsonschema", marker = "extra == 'compute'", specifier = ">=4.23,<5" },
     { name = "matplotlib", marker = "extra == 'research-figures'", specifier = ">=3.9,<4" },
     { name = "msprime", marker = "extra == 'compute-genomics'", specifier = ">=1.3" },
     { name = "networkx", marker = "extra == 'compute-genomics'", specifier = ">=3.2" },

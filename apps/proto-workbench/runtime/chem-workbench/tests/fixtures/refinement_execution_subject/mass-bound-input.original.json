@@ -1,0 +1,748 @@
+{
+  "version": "refinement-worker-request/v1",
+  "mode": "gradient",
+  "spec": {
+    "version": "molecular-refinement-spec/v2",
+    "profile": {
+      "version": "refinement-method-profile/v1",
+      "profile_id": "psi4.wb97x_d3bj.def2_tzvppd.optimize.v1",
+      "engine": "psi4",
+      "method": "wb97x-d3bj",
+      "basis": "def2-tzvppd",
+      "task": "geometry_optimization",
+      "backend_verified": false,
+      "availability": "registered_descriptor_only",
+      "scientific_validation": "not_performed",
+      "scope": {
+        "elements": [
+          "H",
+          "C",
+          "N",
+          "O",
+          "F",
+          "S",
+          "Cl"
+        ],
+        "charge": 0,
+        "multiplicity": 1,
+        "reference": "rks",
+        "heavy_atoms": [
+          8,
+          32
+        ],
+        "maximum_atoms": 120,
+        "carbon_required": true,
+        "boundary": "isolated",
+        "environment": "gas_phase",
+        "isotopes": "runtime_defaults_only",
+        "connectivity": "one_connected_molecule_requires_upstream_validation"
+      },
+      "geometry_units": "angstrom",
+      "gradient_units": "hartree/bohr",
+      "energy_units": "hartree",
+      "angstrom_to_bohr": "1.8897261254578281",
+      "trajectory_clock": "gradient_evaluation_index",
+      "physical_time": "unavailable_for_geometry_optimization",
+      "minimum_certification": "requires_separate_hessian_branch",
+      "unresolved": [
+        "Admit actual functional, LibXC, D3(BJ) engine/parameters, effective options and basis bytes.",
+        "Verify analytic gradients and optimizer API on the bound runtime.",
+        "Validate atom identity, connectivity, hydrogen count and stereochemistry upstream.",
+        "Choose and validate explicit SCF, integration and optimization thresholds.",
+        "Observe and account backend attempts; requested zero retries is not proof.",
+        "Validate reference geometries and relative energies on complex held-out molecules.",
+        "Add bound Hessian, frequency and minimum classification before minimum claims.",
+        "Ions, radicals, metals, periodic solids and interfaces require further profiles."
+      ],
+      "nuclear_identity": "explicit_runtime_default_isotope_binding_required",
+      "dispersion": {
+        "engine": "s-dftd3",
+        "type": "d3bj2b",
+        "nonlocal_correlation": false,
+        "parameters": {
+          "s6": "1",
+          "s8": "0.2641",
+          "a1": "0",
+          "a2": "5.4959",
+          "s9": "0"
+        },
+        "three_body_atm": false
+      },
+      "profile_hash": "sha256:398bc4e28e3c90f62340dd28e54f0b5f4db192029586baae94905f0465346d30"
+    },
+    "source_binding": {
+      "kind": "candidate_geometry",
+      "source_hash": "sha256:d4c2d79fd6020a5e8feea875b8d70318ce42754ae00cb8f132d340fba5f3298e",
+      "candidate_hash": "sha256:c312a810cbbe0b8cb300d3941a403649e2a16a0701a3f7eaeb58a82421f538b3",
+      "atom_identity_hash": "sha256:5111d97fc18db1b93361b5e8b49ff9b3d80798f1cd59beafb612d058f4ae5d6f",
+      "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b",
+      "artifact": {
+        "path": "build/refinement-complex-cohort-20260913.json",
+        "sha256": "60b5e69850e1bed2f6d6949e8c5c016ea237e700c968d698d0ff5b124a200403"
+      }
+    },
+    "geometry": {
+      "version": "refinement-geometry/v1",
+      "units": "angstrom",
+      "charge": 0,
+      "multiplicity": 1,
+      "atoms": [
+        {
+          "id": "atom-1",
+          "element": "O",
+          "position": [
+            "-0.43922736421237696",
+            "-1.8681574194890882",
+            "-1.5911733222229225"
+          ]
+        },
+        {
+          "id": "atom-2",
+          "element": "C",
+          "position": [
+            "-0.7030503795790239",
+            "-1.3396652230980082",
+            "-0.45937442562962183"
+          ]
+        },
+        {
+          "id": "atom-3",
+          "element": "N",
+          "position": [
+            "0.2721735368037474",
+            "-1.5192321244766607",
+            "0.5492681055274766"
+          ]
+        },
+        {
+          "id": "atom-4",
+          "element": "C",
+          "position": [
+            "1.4693265352612424",
+            "-2.2453657152898967",
+            "0.30712178724360223"
+          ]
+        },
+        {
+          "id": "atom-5",
+          "element": "C",
+          "position": [
+            "2.333328850162166",
+            "-1.6758923375753019",
+            "-0.7850140608063857"
+          ]
+        },
+        {
+          "id": "atom-6",
+          "element": "C",
+          "position": [
+            "-1.940418939132722",
+            "-0.599340091275292",
+            "-0.23913435477560754"
+          ]
+        },
+        {
+          "id": "atom-7",
+          "element": "C",
+          "position": [
+            "-2.2846117416751146",
+            "-0.010136863944427279",
+            "0.9436781200661096"
+          ]
+        },
+        {
+          "id": "atom-8",
+          "element": "C",
+          "position": [
+            "-3.4920609222791525",
+            "0.6795077804716091",
+            "1.062697009723163"
+          ]
+        },
+        {
+          "id": "atom-9",
+          "element": "O",
+          "position": [
+            "-3.836832907089114",
+            "1.272482978127866",
+            "2.2556362048905445"
+          ]
+        },
+        {
+          "id": "atom-10",
+          "element": "C",
+          "position": [
+            "-4.377612219317338",
+            "0.7962561602068341",
+            "0.011553960398896288"
+          ]
+        },
+        {
+          "id": "atom-11",
+          "element": "O",
+          "position": [
+            "-5.583592460610233",
+            "1.4819469519378843",
+            "0.12131319352951828"
+          ]
+        },
+        {
+          "id": "atom-12",
+          "element": "C",
+          "position": [
+            "-4.021637486396768",
+            "0.1994903467686025",
+            "-1.1748590367216898"
+          ]
+        },
+        {
+          "id": "atom-13",
+          "element": "C",
+          "position": [
+            "-2.8272928326529763",
+            "-0.4825516575499737",
+            "-1.2922402871332281"
+          ]
+        },
+        {
+          "id": "atom-14",
+          "element": "C",
+          "position": [
+            "2.75121997227081",
+            "-0.28725536645566174",
+            "-0.45691769571253443"
+          ]
+        },
+        {
+          "id": "atom-15",
+          "element": "C",
+          "position": [
+            "3.9211683170246863",
+            "-0.07228607860732326",
+            "0.24962618574844245"
+          ]
+        },
+        {
+          "id": "atom-16",
+          "element": "C",
+          "position": [
+            "4.379808505368366",
+            "1.1771609541900836",
+            "0.5933275313194838"
+          ]
+        },
+        {
+          "id": "atom-17",
+          "element": "C",
+          "position": [
+            "3.6439897435453537",
+            "2.282927841481016",
+            "0.22002401087275777"
+          ]
+        },
+        {
+          "id": "atom-18",
+          "element": "C",
+          "position": [
+            "2.482729997453942",
+            "2.096526215955487",
+            "-0.4797360920135556"
+          ]
+        },
+        {
+          "id": "atom-19",
+          "element": "C",
+          "position": [
+            "2.0333246854162437",
+            "0.8280300245491437",
+            "-0.8190573108139874"
+          ]
+        },
+        {
+          "id": "atom-20",
+          "element": "H",
+          "position": [
+            "0.10694588707032582",
+            "-1.1050121532161385",
+            "1.501859568751947"
+          ]
+        },
+        {
+          "id": "atom-21",
+          "element": "H",
+          "position": [
+            "2.1027251025852887",
+            "-2.30322473587043",
+            "1.2166565702772398"
+          ]
+        },
+        {
+          "id": "atom-22",
+          "element": "H",
+          "position": [
+            "1.2863708286012971",
+            "-3.318423508013419",
+            "0.02562398732377649"
+          ]
+        },
+        {
+          "id": "atom-23",
+          "element": "H",
+          "position": [
+            "3.266220526587496",
+            "-2.273456846448499",
+            "-0.8562665712149591"
+          ]
+        },
+        {
+          "id": "atom-24",
+          "element": "H",
+          "position": [
+            "1.8836018090469846",
+            "-1.711555870677618",
+            "-1.792218855123137"
+          ]
+        },
+        {
+          "id": "atom-25",
+          "element": "H",
+          "position": [
+            "-1.632115116899022",
+            "-0.07657297615123691",
+            "1.775473559017067"
+          ]
+        },
+        {
+          "id": "atom-26",
+          "element": "H",
+          "position": [
+            "-4.3299567280072955",
+            "2.1540812203757937",
+            "2.336497351530631"
+          ]
+        },
+        {
+          "id": "atom-27",
+          "element": "H",
+          "position": [
+            "-6.054836537197406",
+            "1.3799191811206661",
+            "1.0234699399525096"
+          ]
+        },
+        {
+          "id": "atom-28",
+          "element": "H",
+          "position": [
+            "-4.683565026623398",
+            "0.25663001620805465",
+            "-2.048733924323687"
+          ]
+        },
+        {
+          "id": "atom-29",
+          "element": "H",
+          "position": [
+            "-2.60853692906538",
+            "-0.9324471247762107",
+            "-2.2646912282833886"
+          ]
+        },
+        {
+          "id": "atom-30",
+          "element": "H",
+          "position": [
+            "4.493881832829309",
+            "-0.9590923896498867",
+            "0.5386809754618903"
+          ]
+        },
+        {
+          "id": "atom-31",
+          "element": "H",
+          "position": [
+            "5.303861359528375",
+            "1.2266171169746656",
+            "1.1444828090188297"
+          ]
+        },
+        {
+          "id": "atom-32",
+          "element": "H",
+          "position": [
+            "4.038930272719534",
+            "3.2447973624795554",
+            "0.5094661615177012"
+          ]
+        },
+        {
+          "id": "atom-33",
+          "element": "H",
+          "position": [
+            "1.924424398199713",
+            "2.982899543461743",
+            "-0.7602702070226095"
+          ]
+        },
+        {
+          "id": "atom-34",
+          "element": "H",
+          "position": [
+            "1.121315430260774",
+            "0.720394788258378",
+            "-1.3667696603749473"
+          ]
+        }
+      ],
+      "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b"
+    },
+    "electronic_settings": {
+      "native_keywords": {
+        "reference": "rks",
+        "scf_type": "direct",
+        "ints_tolerance": 1e-12,
+        "df_scf_guess": false,
+        "e_convergence": 1e-09,
+        "d_convergence": 1e-09,
+        "maxiter": 200,
+        "fail_on_maxiter": true,
+        "dft_radial_points": 99,
+        "dft_spherical_points": 590,
+        "dft_pruning_scheme": "treutler",
+        "dft_density_tolerance": 1e-12,
+        "function_kwargs": {
+          "dertype": 1,
+          "engine": "s-dftd3"
+        },
+        "puream": true
+      },
+      "functional_definition_hash": "sha256:95c033c97930f332bf6235932dfc728beb6ad20481819a2a9681ff4c5fb82ddb",
+      "effective_options_artifact": {
+        "path": "build/refinement-d3bj-complex-gradient-20260913/declared-native-options.json",
+        "sha256": "aa1097825824999552e3a954ccef4f1fc00b14bd3c51c81d36f7a90fce5c9781"
+      }
+    },
+    "optimizer_settings": {
+      "engine": "optking",
+      "coordinates": "cartesian",
+      "flexible_g_convergence": false,
+      "criteria": {
+        "max_force_hartree_per_bohr": "0.000015",
+        "rms_force_hartree_per_bohr": "0.00001",
+        "max_displacement_bohr": "0.00006",
+        "rms_displacement_bohr": "0.00004"
+      },
+      "maximum_iterations": 150,
+      "max_gradient_evaluations": 151
+    },
+    "environment": {
+      "boundary": "isolated",
+      "phase": "gas",
+      "solvent": null,
+      "physical_temperature_kelvin": null
+    },
+    "runtime_binding": {
+      "version": "refinement-runtime-binding/v1",
+      "engine": "psi4",
+      "versions": {
+        "python": "3.12.14",
+        "psi4": "1.11",
+        "optking": "0.5.0",
+        "qcengine": "0.51.0",
+        "qcelemental": "0.51.0",
+        "libxc": "7.1.2"
+      },
+      "files": [
+        {
+          "path": "build/refinement-d3bj-complex-gradient-20260913/runtime-manifest.json",
+          "sha256": "590a1d2fb140ae80345ce49bfb414c7ee11b0482514a9a39cd2a5f607d7efb8a"
+        }
+      ],
+      "binding_hash": "sha256:659a9e53e4cd85b23e1a99428dd1e2fc7891a5656e050043617da5073cade78f"
+    },
+    "basis_binding": {
+      "version": "refinement-basis-binding/v1",
+      "basis": "def2-tzvppd",
+      "elements": [
+        "H",
+        "C",
+        "N",
+        "O",
+        "F",
+        "S",
+        "Cl"
+      ],
+      "files": [
+        {
+          "path": ".chem-backends/psi4/Library/share/psi4/basis/def2-tzvppd.gbs",
+          "sha256": "0b3c5f3a8bfe9a158dabff8b6437dd3706c65757f42a56a70918fc2d78291d13"
+        }
+      ],
+      "binding_hash": "sha256:1bcfe0853c84b4fe11facb72e646bb6b6314d41bafb989bfc32c72180881c645"
+    },
+    "resources": {
+      "wall_seconds": 7200,
+      "memory_bytes": 17179869184,
+      "cpu_seconds": 57600,
+      "threads": 8,
+      "max_output_bytes": 20971520,
+      "backend_retry_policy": {
+        "requested_retries": 0,
+        "effective_retries": 0,
+        "accounting": "observe_every_backend_attempt"
+      }
+    },
+    "isotope_binding": {
+      "version": "refinement-isotope-binding/v1",
+      "policy": "runtime_default_isotopes",
+      "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b",
+      "runtime_binding_hash": "sha256:659a9e53e4cd85b23e1a99428dd1e2fc7891a5656e050043617da5073cade78f",
+      "atoms": [
+        {
+          "atom_id": "atom-1",
+          "element": "O",
+          "atomic_number": 8,
+          "mass_number": 16,
+          "mass_dalton": "15.99491461957"
+        },
+        {
+          "atom_id": "atom-2",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-3",
+          "element": "N",
+          "atomic_number": 7,
+          "mass_number": 14,
+          "mass_dalton": "14.00307400443"
+        },
+        {
+          "atom_id": "atom-4",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-5",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-6",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-7",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-8",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-9",
+          "element": "O",
+          "atomic_number": 8,
+          "mass_number": 16,
+          "mass_dalton": "15.99491461957"
+        },
+        {
+          "atom_id": "atom-10",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-11",
+          "element": "O",
+          "atomic_number": 8,
+          "mass_number": 16,
+          "mass_dalton": "15.99491461957"
+        },
+        {
+          "atom_id": "atom-12",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-13",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-14",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-15",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-16",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-17",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-18",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-19",
+          "element": "C",
+          "atomic_number": 6,
+          "mass_number": 12,
+          "mass_dalton": "12"
+        },
+        {
+          "atom_id": "atom-20",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-21",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-22",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-23",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-24",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-25",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-26",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-27",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-28",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-29",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-30",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-31",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-32",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-33",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        },
+        {
+          "atom_id": "atom-34",
+          "element": "H",
+          "atomic_number": 1,
+          "mass_number": 1,
+          "mass_dalton": "1.00782503223"
+        }
+      ],
+      "artifact": {
+        "path": "build/refinement-d3bj-complex-gradient-20260913/isotope-observation.json",
+        "sha256": "3d36e6eccda78afcb69a52d6c47a9dcff5fdd7364dd84736580ac3cebc4a9b78"
+      },
+      "binding_hash": "sha256:566f183529ec5ef13a0c471839a0f30a2f8760ddae96a8d736b88acfcfb45487"
+    },
+    "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734"
+  }
+}

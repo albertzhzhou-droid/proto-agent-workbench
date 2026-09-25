@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import dns from "node:dns";
 import net from "node:net";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -11,6 +11,7 @@ import {
   OFFLINE_NETWORK_STATUS,
   PINNED_TYPESCRIPT_PACKAGE,
   buildOfflineVerificationPlan,
+  partitionOfflineTestFiles,
   verifyPinnedTypeScriptPackage,
 } from "../scripts/verify-offline.mjs";
 
@@ -29,14 +30,30 @@ test("offline verification uses only the current Node runtime and pinned local c
     defenseInDepth: true,
   });
   assert.ok(plan.testFileCount > 0);
-  assert.equal(plan.commands.length, 2);
+  assert.equal(plan.commands.length, 3);
   for (const command of plan.commands) {
     assert.equal(command.executable, process.execPath);
     assert.ok(command.args.some((argument) => argument.startsWith("--import=file:")));
     assert.equal(command.args.some((argument) => /(?:^|[\\/])(?:pnpm|npm|npx)(?:\.cmd|\.exe)?$/i.test(argument)), false);
   }
-  assert.ok(plan.commands[1].args.some((argument) => /node_modules[\\/]\.pnpm[\\/]typescript@5\.9\.3[\\/]node_modules[\\/]typescript[\\/]bin[\\/]tsc$/i.test(argument)));
-  assert.equal(plan.commands[1].preflight?.type, "pinned-typescript");
+  assert.ok(plan.commands[0].args.includes("--test-concurrency=1"));
+  assert.ok(plan.commands[1].args.includes("--test-concurrency=4"));
+  const compiler = plan.commands.at(-1);
+  assert.ok(compiler.args.some((argument) => /node_modules[\\/]\.pnpm[\\/]typescript@5\.9\.3[\\/]node_modules[\\/]typescript[\\/]bin[\\/]tsc$/i.test(argument)));
+  assert.equal(compiler.preflight?.type, "pinned-typescript");
+  const actualTests = plan.commands.flatMap(command => command.args.filter(argument => argument.endsWith(".test.mjs")));
+  const expectedTests = (await readdir(join(root, "tests"))).filter(name => name.endsWith(".test.mjs")).map(name => join(root, "tests", name));
+  assert.deepEqual(actualTests.toSorted(), expectedTests.toSorted());
+  assert.equal(new Set(actualTests).size, plan.testFileCount);
+});
+
+test("offline resource serialization preserves every discovered test exactly once", () => {
+  const paths = ["package-builder.test.mjs", "packaged-process-ownership.test.mjs", "offline-verification.test.mjs", "new-future.test.mjs"].map(name => join(root, "tests", name));
+  const groups = partitionOfflineTestFiles(paths);
+  assert.deepEqual(groups.serial, paths.slice(0, 2));
+  assert.deepEqual(groups.parallel, paths.slice(2));
+  assert.deepEqual([...groups.serial, ...groups.parallel].toSorted(), paths.toSorted());
+  assert.equal(new Set([...groups.serial, ...groups.parallel]).size, paths.length);
 });
 
 test("Node TCP guard blocks positional external hosts through Socket and net helpers", async () => {

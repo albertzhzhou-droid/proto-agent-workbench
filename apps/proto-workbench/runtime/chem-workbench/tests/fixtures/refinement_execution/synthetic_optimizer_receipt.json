@@ -1,0 +1,432 @@
+{
+  "version": "refinement-installed-optking-synthetic-api-fixture/v1",
+  "at_utc": "2026-09-13T18:02:23.756755+00:00",
+  "role": "synthetic_api_compatibility_fixture",
+  "eligible_scientific_evidence": false,
+  "accepted_science": false,
+  "production_admission_exercised": false,
+  "electronic_method_availability_exercised": false,
+  "production_worker_result_generated": false,
+  "frame_sealer_replaced": false,
+  "candidate_geometry": {
+    "input_path": "C:\\chem-fixture\\build\\refinement-first-complex-gradient-direct-v3-20260913\\input.json",
+    "input_sha256": "6fd1b32be20066b035b789c94cf252099ec7594eab3d4946b130f6c83ef99c25",
+    "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b",
+    "atom_count": 34,
+    "heavy_atom_count": 19,
+    "stable_atom_ids": [
+      "atom-1",
+      "atom-2",
+      "atom-3",
+      "atom-4",
+      "atom-5",
+      "atom-6",
+      "atom-7",
+      "atom-8",
+      "atom-9",
+      "atom-10",
+      "atom-11",
+      "atom-12",
+      "atom-13",
+      "atom-14",
+      "atom-15",
+      "atom-16",
+      "atom-17",
+      "atom-18",
+      "atom-19",
+      "atom-20",
+      "atom-21",
+      "atom-22",
+      "atom-23",
+      "atom-24",
+      "atom-25",
+      "atom-26",
+      "atom-27",
+      "atom-28",
+      "atom-29",
+      "atom-30",
+      "atom-31",
+      "atom-32",
+      "atom-33",
+      "atom-34"
+    ],
+    "initial_geometry_copied_exactly": true
+  },
+  "status": "api_completed_with_parameter_differences",
+  "api_path_completed": true,
+  "effective_configuration_matches_requested": false,
+  "parameter_differences": [
+    {
+      "key": "intrafrag_hess",
+      "requested": "simple",
+      "effective": "LINDH"
+    }
+  ],
+  "checks": {
+    "two_or_three_product_steps_observed": true,
+    "real_wrapper_created_once": true,
+    "real_compute_used_for_every_evaluation": true,
+    "real_geometry_update_used_for_every_evaluation": true,
+    "real_start_and_take_step_completed": true,
+    "stable_labels_and_coordinate_updates_match": true,
+    "native_trajectory_and_energy_bookkeeping_match": true,
+    "actual_geometry_changed_between_evaluations": true,
+    "all_four_native_criteria_active_without_preset": true,
+    "native_numpy_history_observed": true,
+    "installed_history_serializer_completed": true,
+    "no_forbidden_dispatch_or_import_attempt": true,
+    "electronic_backend_modules_absent": true,
+    "product_backend_source_unchanged": true,
+    "frozen_complex_candidate_input_unchanged": true,
+    "product_loop_returned_without_exception": true
+  },
+  "synthetic_evaluation_count": 3,
+  "electronic_evaluations": 0,
+  "model_requests": 0,
+  "native_optimizer_dispatcher_calls": 0,
+  "product_optimize_calls": 1,
+  "product_optimizer_reported_converged": false,
+  "native_call_counts": {
+    "computer.__init__": 1,
+    "manager.__init__": 1,
+    "manager.start_step": 3,
+    "computer.compute": 3,
+    "computer.update_geometry": 3,
+    "manager.take_step": 3,
+    "manager.converged": 3
+  },
+  "blocked_operations": [],
+  "error": null,
+  "native_parameters": [
+    {
+      "requested": {
+        "program": "psi4",
+        "opt_coordinates": "cartesian",
+        "step_type": "rfo",
+        "full_hess_every": -1,
+        "intrafrag_hess": "simple",
+        "linesearch": false,
+        "write_trajectory": false,
+        "geom_maxiter": 3,
+        "flexible_g_convergence": false,
+        "max_force_g_convergence": 1e-14,
+        "rms_force_g_convergence": 1e-14,
+        "max_disp_g_convergence": 1e-14,
+        "rms_disp_g_convergence": 1e-14
+      },
+      "returned": true,
+      "implementation": "optking.v2.optparams",
+      "effective": {
+        "geom_maxiter": 3,
+        "alg_geom_maxiter": 3,
+        "print_lvl": 1,
+        "opt_type": "MIN",
+        "step_type": "RFO",
+        "program": "PSI4",
+        "steepest_descent_type": "OVERLAP",
+        "conjugate_gradient_type": "FLETCHER",
+        "opt_coordinates": "CARTESIAN",
+        "rfo_follow_root": false,
+        "rfo_root": 0,
+        "accept_symmetry_breaking": false,
+        "dynamic_level": 0,
+        "dynamic_lvl_max": 0,
+        "irc_step_size": 0.2,
+        "irc_direction": "FORWARD",
+        "irc_points": 20,
+        "irc_mode": "NORMAL",
+        "irc_convergence": -0.7,
+        "intrafrag_trust": 0.5,
+        "intrafrag_trust_min": 0.001,
+        "intrafrag_trust_max": 1.0,
+        "interfrag_trust": 0.5,
+        "interfrag_trust_min": 0.001,
+        "interfrag_trust_max": 1.0,
+        "ensure_bt_convergence": false,
+        "simple_step_scaling": false,
+        "consecutive_backsteps_allowed": 0,
+        "rfo_normalization_max": 100,
+        "rsrfo_alpha_max": 100000000.0,
+        "print_trajectory_xyz_file": false,
+        "write_trajectory": false,
+        "frozen_distance": "",
+        "frozen_bend": "",
+        "frozen_dihedral": "",
+        "frozen_oofp": "",
+        "frozen_cartesian": "",
+        "freeze_all_dihedrals": false,
+        "unfreeze_dihedrals": "",
+        "ranged_distance": "",
+        "ranged_bend": "",
+        "ranged_dihedral": "",
+        "ranged_oofp": "",
+        "ranged_cartesian": "",
+        "ext_force_distance": "",
+        "ext_force_bend": "",
+        "ext_force_dihedral": "",
+        "ext_force_oofp": "",
+        "ext_force_cartesian": "",
+        "g_convergence": "QCHEM",
+        "conv_max_force": 1e-14,
+        "conv_rms_force": 1e-14,
+        "conv_max_DE": 1e-06,
+        "conv_max_disp": 1e-14,
+        "conv_rms_disp": 1e-14,
+        "flexible_g_convergence": false,
+        "hess_update": "BFGS",
+        "hess_update_use_last": 4,
+        "hess_update_limit": true,
+        "hess_update_limit_max": 1.0,
+        "hess_update_limit_scale": 0.5,
+        "hess_update_den_tol": 1e-07,
+        "hess_update_dq_tol": 0.5,
+        "cart_hess_read": false,
+        "hessian_file": ".",
+        "full_hess_every": -1,
+        "intrafrag_hess": "LINDH",
+        "h_guess_every": false,
+        "bt_max_iter": 25,
+        "bt_dx_conv": 1e-07,
+        "bt_dx_rms_change_conv": 1e-12,
+        "bt_pinv_rcond": 1e-06,
+        "frag_mode": "SINGLE",
+        "frag_ref_atoms": [],
+        "freeze_intrafrag": false,
+        "interfrag_mode": "FIXED",
+        "add_auxiliary_bonds": false,
+        "auxiliary_bond_factor": 2.5,
+        "interfrag_dist_inv": false,
+        "interfrag_collinear_tol": 0.01,
+        "interfrag_coords": [],
+        "interfrag_hess": "DEFAULT",
+        "covalent_connect": 1.3,
+        "interfragment_connect": 1.8,
+        "h_bond_connect": 4.3,
+        "include_oofp": false,
+        "test_B": false,
+        "test_derivative_B": false,
+        "linesearch_step": 0.1,
+        "linesearch": false,
+        "sd_hessian": 1.0,
+        "fix_val_near_pi": 1.57,
+        "v3d_tors_angle_lim": 0.017,
+        "v3d_tors_cos_tol": 1e-10,
+        "linear_bend_threshold": 3.05,
+        "small_bend_fix_threshold": 0.35,
+        "redundant_eval_tol": 1e-10,
+        "linear_algebra_tol": 1e-10
+      },
+      "active_criteria": {
+        "_i_max_force": true,
+        "_i_rms_force": true,
+        "_i_max_disp": true,
+        "_i_rms_disp": true,
+        "_i_max_DE": false,
+        "_i_untampered": false
+      },
+      "requested_effective_differences": [
+        {
+          "key": "intrafrag_hess",
+          "requested": "simple",
+          "effective": "LINDH"
+        }
+      ]
+    }
+  ],
+  "original_installed_signatures": {
+    "initialize_options": "(opt_keys, silent=False)",
+    "computer.__init__": "(self, molecule, model, keywords, program, protocols, dtype)",
+    "computer.update_geometry": "(self, geom: numpy.ndarray)",
+    "computer.compute": "(self, geom, driver, return_full=True, print_result=False)",
+    "manager.__init__": "(self, molsys: optking.molsys.Molsys, history_object: optking.history.History, params: optking.v2.optparams.OptParams, computer: optking.compute_wrappers.ComputeWrapper)",
+    "manager.start_step": "(self, H: numpy.ndarray)",
+    "manager.take_step": "(self, fq=None, H=None, energy=None, return_str=False, **kwargs)",
+    "manager.converged": "(self, E, fq, dq, step_number=None, str_mode=None, **kwargs)"
+  },
+  "history_serialization": {
+    "attempted": true,
+    "succeeded": true,
+    "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\optimizer-events-native-serialization.json",
+    "sha256": "10d0291300156aea339f0d281ff049b29ef9083446ba542ab2d6ac6a61bf3edc",
+    "event_count": 3,
+    "note": "Exact installed serializer output; diagnostic only, arrays may be flattened."
+  },
+  "module_files": [
+    {
+      "module": "chem_workbench.refinement_backend",
+      "path": "C:\\chem-fixture\\src\\chem_workbench\\refinement_backend.py",
+      "sha256": "209e11f9023e102121cd150c23e36e9a86c7122d5d8ba03cd9a3c1d47b61a570"
+    },
+    {
+      "module": "chem_workbench.molecular_refinement",
+      "path": "C:\\chem-fixture\\src\\chem_workbench\\molecular_refinement.py",
+      "sha256": "de77c786b8fd4a1d1d9826bf5de8926afafcde16ec833e6a87b74168146c449d"
+    },
+    {
+      "module": "chem_workbench.method_profiles",
+      "path": "C:\\chem-fixture\\src\\chem_workbench\\method_profiles.py",
+      "sha256": "e84aefa0239123a204f8f90e4a1a5c704e674552ebfe8a0a22af1f844abdd991"
+    },
+    {
+      "module": "optking.optimize",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\optimize.py",
+      "sha256": "f49f4a7b53920beb782e8c19a061024fc0a9271298b25f006ccdd338f0b50453"
+    },
+    {
+      "module": "optking.compute_wrappers",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\compute_wrappers.py",
+      "sha256": "99132732b14ce919e6c602e5ae4a00029f91a60cd9b10dbeb4c8404b41b01d10"
+    },
+    {
+      "module": "optking.stepAlgorithms",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\stepAlgorithms.py",
+      "sha256": "df6cff534a2b781ddf930b5070edaca2b8f243e3b3152909701849e33c5c8134"
+    },
+    {
+      "module": "optking.history",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\history.py",
+      "sha256": "361981b4d1a963f536814546122d44e40d4f13589172b1ade5485d3a916a9c88"
+    },
+    {
+      "module": "optking.optwrapper",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\optwrapper.py",
+      "sha256": "cb564d0a1285919cf55d540f9d292d42981b9a9feb99e7055fd04706911eb24d"
+    },
+    {
+      "module": "optking.v2.optparams",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\v2\\optparams.py",
+      "sha256": "5d03e5fb7980da1c7e172bf05fe4c68ea28dbce7191526f6485797e1de636970"
+    },
+    {
+      "module": "optking.molsys",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\molsys.py",
+      "sha256": "0ed66afc8af41d5e3e8ffc33b33202e6ad75f41449f5a2cc9cc12a292baab425"
+    },
+    {
+      "module": "optking.convcheck",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\convcheck.py",
+      "sha256": "8339d763a736b13d8f73d64e63f2821d936c7c4027a451eaca3b16916fc55507"
+    },
+    {
+      "module": "optking.cart",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\optking\\cart.py",
+      "sha256": "c78d32b6aee9340fcef4e630af52624a40a43ac14e29036c2b8857d1eee5bce7"
+    },
+    {
+      "module": "qcelemental.util.serialization",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\qcelemental\\util\\serialization.py",
+      "sha256": "8e95bfd1552998861deaf288166ad0ac4c30fc61abb8b365fcf5ad40c65c2423"
+    },
+    {
+      "module": "numpy",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\numpy\\__init__.py",
+      "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+    },
+    {
+      "module": "pydantic",
+      "path": "C:\\chem-fixture\\.chem-backends\\psi4\\Lib\\site-packages\\pydantic\\__init__.py",
+      "sha256": "e62127278c07bf5384cdd2903f368a69929f3b8a524000bae4e0eb608ebf4bc6"
+    }
+  ],
+  "packages": {
+    "optking": "0.5.0",
+    "qcelemental": "0.51.0",
+    "numpy": "2.5.2",
+    "pydantic": "2.13.5"
+  },
+  "python": {
+    "executable": "C:\\chem-fixture\\.chem-backends\\psi4\\python.exe",
+    "version": "3.12.14 | packaged by conda-forge | (main, Sep  2 2026, 23:18:20) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "backend_source_before_sha256": "209e11f9023e102121cd150c23e36e9a86c7122d5d8ba03cd9a3c1d47b61a570",
+  "backend_source_after_sha256": "209e11f9023e102121cd150c23e36e9a86c7122d5d8ba03cd9a3c1d47b61a570",
+  "script": {
+    "path": "C:\\chem-fixture\\build\\probe_refinement_installed_optking_synthetic_20260913.py",
+    "sha256": "b884accdcfc14c1e2bacaf6c2021f01baeaba8a31dd485ca47ce3a47a13e1457"
+  },
+  "argv": [
+    "C:\\chem-fixture\\build\\probe_refinement_installed_optking_synthetic_20260913.py",
+    "--output",
+    "build/refinement-installed-optking-synthetic-api-20260913",
+    "--expected-backend-sha256",
+    "209e11f9023e102121cd150c23e36e9a86c7122d5d8ba03cd9a3c1d47b61a570",
+    "--candidate-input",
+    "build/refinement-first-complex-gradient-direct-v3-20260913/input.json",
+    "--expected-candidate-input-sha256",
+    "6fd1b32be20066b035b789c94cf252099ec7594eab3d4946b130f6c83ef99c25"
+  ],
+  "artifacts": [
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\call-trace.jsonl",
+      "sha256": "3508f40ed43f541e928720489ef1cab353d3bb22066408c1483f54a6a326c004",
+      "bytes": 1876015
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\native-parameter-observation.json",
+      "sha256": "21b3137f6b68360cea77d114785ddfb098cb008249faeaecb12384812a629c98",
+      "bytes": 4023
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\opt_log.out",
+      "sha256": "ca13fee95c86c8cddc3bd9ef754ff9db71b38117839674a0d0d745145c5b1b4a",
+      "bytes": 998684
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\optimizer-events-diagnostic.json",
+      "sha256": "b7531b8951cb8defed7830589be5a75c3f9b12c7df9d11ca748132122ba1aaa3",
+      "bytes": 136558
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\optimizer-events-native-serialization.json",
+      "sha256": "10d0291300156aea339f0d281ff049b29ef9083446ba542ab2d6ac6a61bf3edc",
+      "bytes": 77413
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-definition.json",
+      "sha256": "485e42e306f18a96cbf5da75af7a69480090810688c8895af7370677eec693a2",
+      "bytes": 13370
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-00-input.json",
+      "sha256": "2057965194e29263ad85f22d9b750ccfb7690ae997caab0033009ffac96e4bb6",
+      "bytes": 2573
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-00-result.json",
+      "sha256": "0600d93c92a5658e42e802af7d523cbe2723b9840f5cbc8000d7792f5d3ced61",
+      "bytes": 5047
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-01-input.json",
+      "sha256": "c485366defdf0834f70469ec6d51a0e9b18fea413e455c27470b48695940679b",
+      "bytes": 3348
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-01-result.json",
+      "sha256": "0123fac01bfd05701875deb551dee851e336fc1f526b8157a5a6d1c6178228d0",
+      "bytes": 5829
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-02-input.json",
+      "sha256": "8501cd30a5937242779e3f35c552545aace811687de30f07fb3a388dc4b88dfc",
+      "bytes": 3337
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-evaluation-02-result.json",
+      "sha256": "4e4ccdf1604996acc3cb63867e4c0d172e773e7ff8c27583006d46cf98f8d961",
+      "bytes": 5862
+    },
+    {
+      "path": "C:\\chem-fixture\\build\\refinement-installed-optking-synthetic-api-20260913\\synthetic-trajectory.json",
+      "sha256": "7f936f273076b831130aaed2a3ea3e21cfc1126b5d0797709ae62980ceca953b",
+      "bytes": 21711
+    }
+  ],
+  "limitations": [
+    "No real electronic calculation, scientific convergence, accuracy or minimum proof.",
+    "No production admission, worker supervisor, derivative gate or result() invocation.",
+    "Three-step harmonic trajectory does not guarantee an actual native rejected backstep.",
+    "Final gradient reevaluation is not added or simulated into the current product loop.",
+    "Trace wrappers observe native methods; evaluate supplies synthetic AtomicResults."
+  ]
+}

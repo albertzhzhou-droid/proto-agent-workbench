@@ -5,7 +5,7 @@ import { join,resolve } from "node:path";
 import test from "node:test";
 import { HarnessStore } from "../src/main/services/harness-store.ts";
 import { ToolExecutionJournal } from "../src/main/services/tool-execution-journal.ts";
-import { invokeJournaledTool,recordPolicyDenial } from "../src/main/services/execution-kernel.ts";
+import { invokeJournaledTool,recordPolicyDenial } from "./helpers/ephemeral-kernel.mjs";
 import { executionActivity,completionGate } from "../src/main/services/turn-engine.ts";
 import { AppDatabase } from "../src/main/services/database.ts";
 import { WorkspaceFiles } from "../src/main/services/workspace-files.ts";

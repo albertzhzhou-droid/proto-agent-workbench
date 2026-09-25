@@ -1,7 +1,7 @@
 """Independent evidence axes; execution and eligibility never establish validity."""
 from __future__ import annotations
 
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, Literal, TypedDict
 
 DataOrigin = Literal["fixture", "synthetic", "imported", "governed-snapshot", "unknown"]
 ExecutionStatus = Literal["not-run", "running", "completed", "error", "cancelled", "effect-unknown", "incomplete-evidence", "unverifiable", "unknown"]
@@ -9,9 +9,12 @@ MethodMaturity = Literal["not-established", "numerical-reference-tested", "metho
 METHOD_MATURITIES = frozenset({"not-established", "numerical-reference-tested", "method-implementation", "demonstration", "heuristic"})
 
 
-class EvidenceStanding(TypedDict):
+class _OptionalEvidenceStanding(TypedDict, total=False):
+    eligibility: Literal["DESIGN_ELIGIBLE", "QUARANTINED", "unknown"]
+
+
+class EvidenceStanding(_OptionalEvidenceStanding):
     dataOrigin: DataOrigin
-    eligibility: NotRequired[Literal["DESIGN_ELIGIBLE", "QUARANTINED", "unknown"]]
     methodMaturity: Literal["not-established", "numerical-reference-tested", "method-implementation", "demonstration", "heuristic"]
     executionStatus: ExecutionStatus
     humanReview: Literal["required", "reviewed-supported", "reviewed-rejected"]

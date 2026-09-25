@@ -9,6 +9,7 @@ Desktop.ini
 *~
 
 # Local agent/application configuration
+.proto/
 .agents/
 /.claude/
 .codex/
@@ -19,6 +20,7 @@ Desktop.ini
 
 # Secrets and machine-local configuration
 .env
+*.env
 .proto-agent/sandbox.json
 .proto-agent/extension-trust/
 .env.*
@@ -36,12 +38,19 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.uv-cache/
 .coverage
 .coverage.*
 htmlcov/
 *.egg-info/
 build/
 dist/
+
+# Chem CLI is published source, including tests, schemas, examples and lockfiles.
+# Ignore installed optional backends and calculation scratch, never its source root.
+.chem-backends/
+timer.dat
+/apps/proto-workbench/runtime/chem-workbench/scratch/
 
 # Node, pnpm, Vite, and Electron
 node_modules/

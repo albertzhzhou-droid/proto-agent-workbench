@@ -669,6 +669,14 @@
       "versionField": "schema"
     },
     {
+      "family": "proto-workbench.tool-policy",
+      "current": [
+        "proto-workbench.tool-policy.v1"
+      ],
+      "legacy": [],
+      "versionField": "policyVersion"
+    },
+    {
       "family": "proto-workbench.tool-result",
       "current": [
         "proto-workbench.tool-result.v1"
@@ -813,6 +821,30 @@
       "versionField": "schema_version"
     },
     {
+      "family": "proto.evidence-graph",
+      "current": [
+        "proto.evidence-graph.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.managed-plan",
+      "current": [
+        "proto.managed-plan.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.method-contract",
+      "current": [
+        "proto.method-contract.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
       "family": "proto.protein-landscape",
       "current": [
         "proto.protein-landscape.v1"
@@ -860,6 +892,46 @@
       ],
       "legacy": [],
       "versionField": "schema"
+    },
+    {
+      "family": "proto.research-plan",
+      "current": [
+        "proto.research-plan.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.research-version-capsule",
+      "current": [
+        "proto.research-version-capsule.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.retained-run-evidence",
+      "current": [
+        "proto.retained-run-evidence.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema"
+    },
+    {
+      "family": "proto.scientific-diff",
+      "current": [
+        "proto.scientific-diff.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
+    },
+    {
+      "family": "proto.study-spec",
+      "current": [
+        "proto.study-spec.v1"
+      ],
+      "legacy": [],
+      "versionField": "schemaVersion"
     }
   ]
 }

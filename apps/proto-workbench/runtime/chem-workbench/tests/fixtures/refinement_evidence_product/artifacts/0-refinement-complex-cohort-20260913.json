@@ -1,0 +1,4355 @@
+{
+  "version": "refinement-complex-cohort/v1",
+  "prepared_by": "/root/resume_evidence_audit",
+  "frozen_at_utc": "2026-09-13T16:57:24.514483+00:00",
+  "intended_profile": "psi4.wb97x_v.def2_tzvppd.optimize.v1",
+  "profile_admission_status": "unverified; cohort preparation is not backend admission",
+  "selection_policy": "Six actual retained candidates: two per original catalog scaffold. Prioritize existing phenyl/pyridyl side chains, then use retained chemically substantive side-chain contrasts where those alternatives do not exist. Select by source graph/provenance before observing any refinement result; no new candidate generation, geometry tuning or simple-compound substitution.",
+  "selection_scope": "Selected records are from the actual complete Qwen r1 final Design evaluation. Availability was inspected across retained Qwen r1/r2 and E2B r1 organic outputs. The catechol pyridyl candidate is the isolated organic generation output of an interface-oriented case, not an interface-placed/relaxed geometry.",
+  "count": 6,
+  "catalog_scaffold_family_counts": {
+    "catechol_amide": 2,
+    "carboxylate_amide": 2,
+    "pyridyl_amide": 2
+  },
+  "original_rubric": {
+    "source_artifact": {
+      "path": "build/design-precision-final-20260913/qwen-r1/code-snapshot.json",
+      "sha256": "51c75f0deb0b35cf7a11286e860a0914b8ce51c20c046a5f6a1bfe2d1d5f908c"
+    },
+    "source_key": "src/chem_workbench/evaluation.py",
+    "source_content_hash": "sha256:921e212cfbeb8878852b5362027223cc43324c3f5ac114b997ed3f66ce283a8c",
+    "features": {
+      "carbonyl_derivative": "[CX3](=[OX1])",
+      "amine": "[NX3;!$(N=*);!$(N-[CX3]=[OX1]);!$(N-[SX4](=[OX1])=[OX1])]",
+      "alcohol_phenol": "[OX2H]",
+      "ether_acetal": "[OD2]([#6;!$([C]=O)])[#6;!$([C]=O)]",
+      "nitrile": "[CX2]#N",
+      "sulfur_oxidation": "[#16](=[OX1])",
+      "heterocyclic_system": "[!#6;!#1;R]",
+      "aromatic_system": "[a]",
+      "halogen": "[F,Cl,Br,I]",
+      "carbocyclic_system": "[C;R]"
+    },
+    "per_target_requirements": {
+      "connected": true,
+      "heavy_atoms": [
+        8,
+        32
+      ],
+      "feature_classes_minimum": 2,
+      "substantive_feature_minimum": 1
+    },
+    "suite_scope_limit": "Each target passes the original substantive per-target predicate. This six-target cohort is not the original 130-case model suite and cannot meet or replace its aggregate minimum 12 Murcko families/three-size-band coverage requirements. All selected targets fall in the 13-20 heavy-atom band; catalog scaffold IDs and nonstereochemical Murcko connectivity families are separately recorded."
+  },
+  "targets": [
+    {
+      "id": "organic_4e7c7a1515dbac54",
+      "selection_index": 1,
+      "scaffold_family": "catechol_amide",
+      "fragment_id": "phenyl",
+      "selection_rationale": "Retained phenyl side chain contrasts with the available pyridyl side chain on the same catechol-amide catalog scaffold.",
+      "original_identifiers": {
+        "candidate_id": "organic_4e7c7a1515dbac54",
+        "molecule_object_id": "organic_4e7c7a1515dbac54",
+        "species_identity_hash": "sha256:4e7c7a1515dbac54e37c4936a00008fa39c46640719ed7d860379483da553a97",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:4dae28645869e26376172ee6cc3e3234833f2e03de6eeb51f248b6f6e076360e",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:73400285dd71e0c244504cd0d5818cff0a67f61bea9a6b250f57e2bad9831c68",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-organic_design-p01"
+      },
+      "canonical_isomeric_smiles": "O=C(NCCc1ccccc1)c1ccc(O)c(O)c1",
+      "original_candidate_hash": "sha256:c312a810cbbe0b8cb300d3941a403649e2a16a0701a3f7eaeb58a82421f538b3",
+      "original_display_geometry_hash": "sha256:5105f8c15adf0a5289a5447d7ed00461d561d6febd4af5d52b20407e98ad2402",
+      "original_effective_generation_request_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+      "original_candidate_source": "chem 0.1\nmolecule organic_4e7c7a1515dbac54 { structure smiles \"O=C(NCCc1ccccc1)c1ccc(O)c(O)c1\" }\n",
+      "candidate_source_text_sha256": "d4c2d79fd6020a5e8feea875b8d70318ce42754ae00cb8f132d340fba5f3298e",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1",
+        "fragment_id": "phenyl",
+        "fragment_smiles": "[*:1]c1ccccc1",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 10
+          },
+          {
+            "source_atom_index": 12,
+            "candidate_atom_index": 11
+          },
+          {
+            "source_atom_index": 13,
+            "candidate_atom_index": 12
+          }
+        ],
+        "attachment_atom_index": 4,
+        "anchor_atom_indices": [
+          0,
+          8,
+          10
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 5,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.5
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 9,
+          "order": 1.5
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 11,
+          "order": 1.5
+        },
+        {
+          "a": 11,
+          "b": 12,
+          "order": 1.5
+        },
+        {
+          "a": 12,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 13,
+          "b": 14,
+          "order": 1.5
+        },
+        {
+          "a": 14,
+          "b": 15,
+          "order": 1.5
+        },
+        {
+          "a": 15,
+          "b": 16,
+          "order": 1.5
+        },
+        {
+          "a": 16,
+          "b": 17,
+          "order": 1.5
+        },
+        {
+          "a": 17,
+          "b": 18,
+          "order": 1.5
+        },
+        {
+          "a": 18,
+          "b": 13,
+          "order": 1.5
+        },
+        {
+          "a": 4,
+          "b": 13,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 19,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 24,
+          "order": 1.0
+        },
+        {
+          "a": 8,
+          "b": 25,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 26,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 27,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 28,
+          "order": 1.0
+        },
+        {
+          "a": 14,
+          "b": 29,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 30,
+          "order": 1.0
+        },
+        {
+          "a": 16,
+          "b": 31,
+          "order": 1.0
+        },
+        {
+          "a": 17,
+          "b": 32,
+          "order": 1.0
+        },
+        {
+          "a": 18,
+          "b": 33,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "-0.43922736421237696",
+              "-1.8681574194890882",
+              "-1.5911733222229225"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "-0.7030503795790239",
+              "-1.3396652230980082",
+              "-0.45937442562962183"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "N",
+            "position": [
+              "0.2721735368037474",
+              "-1.5192321244766607",
+              "0.5492681055274766"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "1.4693265352612424",
+              "-2.2453657152898967",
+              "0.30712178724360223"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "2.333328850162166",
+              "-1.6758923375753019",
+              "-0.7850140608063857"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "-1.940418939132722",
+              "-0.599340091275292",
+              "-0.23913435477560754"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "-2.2846117416751146",
+              "-0.010136863944427279",
+              "0.9436781200661096"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "-3.4920609222791525",
+              "0.6795077804716091",
+              "1.062697009723163"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "O",
+            "position": [
+              "-3.836832907089114",
+              "1.272482978127866",
+              "2.2556362048905445"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "C",
+            "position": [
+              "-4.377612219317338",
+              "0.7962561602068341",
+              "0.011553960398896288"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "O",
+            "position": [
+              "-5.583592460610233",
+              "1.4819469519378843",
+              "0.12131319352951828"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "-4.021637486396768",
+              "0.1994903467686025",
+              "-1.1748590367216898"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "C",
+            "position": [
+              "-2.8272928326529763",
+              "-0.4825516575499737",
+              "-1.2922402871332281"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "C",
+            "position": [
+              "2.75121997227081",
+              "-0.28725536645566174",
+              "-0.45691769571253443"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "C",
+            "position": [
+              "3.9211683170246863",
+              "-0.07228607860732326",
+              "0.24962618574844245"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "C",
+            "position": [
+              "4.379808505368366",
+              "1.1771609541900836",
+              "0.5933275313194838"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "C",
+            "position": [
+              "3.6439897435453537",
+              "2.282927841481016",
+              "0.22002401087275777"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "C",
+            "position": [
+              "2.482729997453942",
+              "2.096526215955487",
+              "-0.4797360920135556"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "C",
+            "position": [
+              "2.0333246854162437",
+              "0.8280300245491437",
+              "-0.8190573108139874"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "H",
+            "position": [
+              "0.10694588707032582",
+              "-1.1050121532161385",
+              "1.501859568751947"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "2.1027251025852887",
+              "-2.30322473587043",
+              "1.2166565702772398"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "1.2863708286012971",
+              "-3.318423508013419",
+              "0.02562398732377649"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "3.266220526587496",
+              "-2.273456846448499",
+              "-0.8562665712149591"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "1.8836018090469846",
+              "-1.711555870677618",
+              "-1.792218855123137"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "-1.632115116899022",
+              "-0.07657297615123691",
+              "1.775473559017067"
+            ]
+          },
+          {
+            "id": "atom-26",
+            "element": "H",
+            "position": [
+              "-4.3299567280072955",
+              "2.1540812203757937",
+              "2.336497351530631"
+            ]
+          },
+          {
+            "id": "atom-27",
+            "element": "H",
+            "position": [
+              "-6.054836537197406",
+              "1.3799191811206661",
+              "1.0234699399525096"
+            ]
+          },
+          {
+            "id": "atom-28",
+            "element": "H",
+            "position": [
+              "-4.683565026623398",
+              "0.25663001620805465",
+              "-2.048733924323687"
+            ]
+          },
+          {
+            "id": "atom-29",
+            "element": "H",
+            "position": [
+              "-2.60853692906538",
+              "-0.9324471247762107",
+              "-2.2646912282833886"
+            ]
+          },
+          {
+            "id": "atom-30",
+            "element": "H",
+            "position": [
+              "4.493881832829309",
+              "-0.9590923896498867",
+              "0.5386809754618903"
+            ]
+          },
+          {
+            "id": "atom-31",
+            "element": "H",
+            "position": [
+              "5.303861359528375",
+              "1.2266171169746656",
+              "1.1444828090188297"
+            ]
+          },
+          {
+            "id": "atom-32",
+            "element": "H",
+            "position": [
+              "4.038930272719534",
+              "3.2447973624795554",
+              "0.5094661615177012"
+            ]
+          },
+          {
+            "id": "atom-33",
+            "element": "H",
+            "position": [
+              "1.924424398199713",
+              "2.982899543461743",
+              "-0.7602702070226095"
+            ]
+          },
+          {
+            "id": "atom-34",
+            "element": "H",
+            "position": [
+              "1.121315430260774",
+              "0.720394788258378",
+              "-1.3667696603749473"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+        "subject_hash": "sha256:4e7c7a1515dbac54e37c4936a00008fa39c46640719ed7d860379483da553a97"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 19,
+        "explicit_atoms": 34,
+        "formula": "C15H15NO3",
+        "elements": [
+          "C",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 15,
+          "H": 15,
+          "N": 1,
+          "O": 3
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 136,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "alcohol_phenol",
+            "aromatic_system"
+          ],
+          "substantive_feature_classes": [
+            "alcohol_phenol",
+            "carbonyl_derivative"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "O=C(NCCc1ccccc1)c1ccccc1",
+          "connectivity_family_hash": "sha256:91ba4383e3b3cf7b2c428f812774aaf45353a3ab779980a7cbe07baf40e84c05"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p01.json",
+          "sha256": "1b991ba1e8f587ccbec52798a2c6cc1e1ddbaccaff87dad854ec23c6dda7046c"
+        },
+        "row_hash": "sha256:16eb9da880086dbabfb07e0dca1ff9ec6144077c6541123400caf2333575c111",
+        "candidate_json_pointer": "/record/organic/candidates/2",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/73400285dd71e0c244504cd0d5818cff0a67f61bea9a6b250f57e2bad9831c68.json",
+          "sha256": "01cbb4531ed64109c692216ad33d190def6b46961ac9faebd5831180c4eae9f3"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/2",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:dd09850e7c95ffcea0489c13e1bd68b50adb65d27dc5e51f3a8d84995b290fc6",
+        "organic_result_hash": "sha256:61f22f0dfeb5e85ae6765b61ee258022501b40e32c51d75caba509f66bd1acbb"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "catechol_amide",
+          "ranking": "low_logp",
+          "max_candidates": 3,
+          "fragment_ids": [
+            "ethyl",
+            "hydroxyethyl",
+            "phenyl"
+          ],
+          "filters": {
+            "mw_max": 400,
+            "logp_min": -2,
+            "logp_max": 4,
+            "tpsa_min": 35,
+            "tpsa_max": 140
+          }
+        },
+        "inorganic": {
+          "a_elements": [
+            "Ca",
+            "Sr",
+            "Ba"
+          ],
+          "max_candidates": 8,
+          "tolerance_target": 1.0
+        },
+        "interface_parameters": {
+          "mode": "none",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "catechol_amide",
+        "ranking": "low_logp",
+        "max_candidates": 3,
+        "fragment_ids": [
+          "ethyl",
+          "hydroxyethyl",
+          "phenyl"
+        ],
+        "filters": {
+          "mw_max": 400.0,
+          "logp_min": -2.0,
+          "logp_max": 4.0,
+          "tpsa_min": 35.0,
+          "tpsa_max": 140.0
+        },
+        "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1",
+        "fragments": []
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_4e7c7a1515dbac54.retained-candidate.json",
+        "sha256": "90aa621454a820c6ebab6ab271c0ec97506b92f16732f33281dda6c99286872c"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:5111d97fc18db1b93361b5e8b49ff9b3d80798f1cd59beafb612d058f4ae5d6f",
+      "target_hash": "sha256:440dbf0011212dfdb06640fe881d1c4fc3f880e9e0fc3c130c4d7e161dc045de"
+    },
+    {
+      "id": "organic_30f6a6d736a8cb9e",
+      "selection_index": 2,
+      "scaffold_family": "catechol_amide",
+      "fragment_id": "pyridyl",
+      "selection_rationale": "Retained pyridyl side chain introduces an aromatic nitrogen while preserving the catechol-amide scaffold; use its isolated candidate coordinates before any interface placement.",
+      "original_identifiers": {
+        "candidate_id": "organic_30f6a6d736a8cb9e",
+        "molecule_object_id": "organic_30f6a6d736a8cb9e",
+        "species_identity_hash": "sha256:30f6a6d736a8cb9eb8f3b258dd02b7304052d9352c151daaedc4b67d17eb0dac",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:965fa3edae356fac6acad4011ac4ff6ccce68d8f9f3f84315ea9097c7ee0683d",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:919e15c2dd8571635f76072e63859e0ad83f7e3bf9f6ce4a27d77782bd7a6c5e",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-catalyst_reactant-p03"
+      },
+      "canonical_isomeric_smiles": "O=C(NCCc1ccncc1)c1ccc(O)c(O)c1",
+      "original_candidate_hash": "sha256:ffa7a0c09e4090729e11a9937418584a1b7ed251e7eeda1f11ef0192d44f4213",
+      "original_display_geometry_hash": "sha256:29dd2b20d8a0389e7ecea9743822719593ddecf5b952427355aafbed37e02266",
+      "original_effective_generation_request_hash": "sha256:fd9249e18f3348615192b5f9b4cb115b78e28fb9b3c4cc516479ff9b8532385b",
+      "original_candidate_source": "chem 0.1\nmolecule organic_30f6a6d736a8cb9e { structure smiles \"O=C(NCCc1ccncc1)c1ccc(O)c(O)c1\" }\n",
+      "candidate_source_text_sha256": "609f74eb0be7436733a8df2a169539a6983f2ab9a7b779c52721d54944c3a7bd",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1",
+        "fragment_id": "pyridyl",
+        "fragment_smiles": "[*:1]c1ccncc1",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 10
+          },
+          {
+            "source_atom_index": 12,
+            "candidate_atom_index": 11
+          },
+          {
+            "source_atom_index": 13,
+            "candidate_atom_index": 12
+          }
+        ],
+        "attachment_atom_index": 4,
+        "anchor_atom_indices": [
+          0,
+          8,
+          10
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 5,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.5
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 9,
+          "order": 1.5
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 11,
+          "order": 1.5
+        },
+        {
+          "a": 11,
+          "b": 12,
+          "order": 1.5
+        },
+        {
+          "a": 12,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 13,
+          "b": 14,
+          "order": 1.5
+        },
+        {
+          "a": 14,
+          "b": 15,
+          "order": 1.5
+        },
+        {
+          "a": 15,
+          "b": 16,
+          "order": 1.5
+        },
+        {
+          "a": 16,
+          "b": 17,
+          "order": 1.5
+        },
+        {
+          "a": 17,
+          "b": 18,
+          "order": 1.5
+        },
+        {
+          "a": 18,
+          "b": 13,
+          "order": 1.5
+        },
+        {
+          "a": 4,
+          "b": 13,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 19,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 24,
+          "order": 1.0
+        },
+        {
+          "a": 8,
+          "b": 25,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 26,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 27,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 28,
+          "order": 1.0
+        },
+        {
+          "a": 14,
+          "b": 29,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 30,
+          "order": 1.0
+        },
+        {
+          "a": 17,
+          "b": 31,
+          "order": 1.0
+        },
+        {
+          "a": 18,
+          "b": 32,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "0.6796165648600749",
+              "-0.5078295773358259",
+              "1.095089866367896"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "0.9585113701296029",
+              "0.2356544432126016",
+              "0.11763301924462925"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "N",
+            "position": [
+              "-0.08233381095857609",
+              "0.9175221408892383",
+              "-0.5729232311774783"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "-1.4291476666558685",
+              "0.7360844589320477",
+              "-0.13153417233308307"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "-1.996471668049729",
+              "-0.618138008393957",
+              "-0.14303636395672495"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "2.3661559121387197",
+              "0.34695622809731475",
+              "-0.24557171796038899"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "3.2828119736552184",
+              "-0.36345952621179095",
+              "0.5004998841787939"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "4.64419502974729",
+              "-0.28450382689200143",
+              "0.18537772356345777"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "O",
+            "position": [
+              "5.5922308206558595",
+              "-1.0004101942356145",
+              "0.9333667883160116"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "C",
+            "position": [
+              "5.083270906702219",
+              "0.5065577398859042",
+              "-0.8770430036528917"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "O",
+            "position": [
+              "6.458566149582568",
+              "0.569187048851325",
+              "-1.1738723662798007"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "4.1700842613066005",
+              "1.208581728807658",
+              "-1.613140401117563"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "C",
+            "position": [
+              "2.822292401810539",
+              "1.121772822224881",
+              "-1.290314946701346"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "C",
+            "position": [
+              "-3.410515850564081",
+              "-0.4797558804326378",
+              "0.37076340826593107"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "C",
+            "position": [
+              "-4.465016348981356",
+              "-0.2430004332325576",
+              "-0.4974899586006753"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "C",
+            "position": [
+              "-5.767196976470158",
+              "-0.11666301851509324",
+              "-0.01341117601544702"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "N",
+            "position": [
+              "-6.025456684492496",
+              "-0.2211246128890161",
+              "1.2966391740339576"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "C",
+            "position": [
+              "-5.009391557368571",
+              "-0.45184438913995356",
+              "2.1575405297648778"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "C",
+            "position": [
+              "-3.705095870495882",
+              "-0.5823237465548997",
+              "1.709575518470274"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "H",
+            "position": [
+              "0.1563963870383435",
+              "1.5328259926542402",
+              "-1.3830743166974508"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "-2.0877932987448355",
+              "1.3959558105747658",
+              "-0.7338512245033635"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "-1.4702511787189063",
+              "1.1212031132135638",
+              "0.912679983273755"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "-2.1206220848540283",
+              "-1.0783128684706074",
+              "-1.1351952695526806"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "-1.4572859444365238",
+              "-1.2815238733669343",
+              "0.5612151201732606"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "3.0177813384281316",
+              "-0.9954943207238983",
+              "1.3357019617548476"
+            ]
+          },
+          {
+            "id": "atom-26",
+            "element": "H",
+            "position": [
+              "5.401540724961482",
+              "-1.9699973238418667",
+              "1.1219567068471035"
+            ]
+          },
+          {
+            "id": "atom-27",
+            "element": "H",
+            "position": [
+              "6.762197827264952",
+              "1.4649522992451185",
+              "-1.5367424361811837"
+            ]
+          },
+          {
+            "id": "atom-28",
+            "element": "H",
+            "position": [
+              "4.526880889458914",
+              "1.8175949001044747",
+              "-2.4340658821596577"
+            ]
+          },
+          {
+            "id": "atom-29",
+            "element": "H",
+            "position": [
+              "2.120662453915565",
+              "1.68680663626894",
+              "-1.888061931194557"
+            ]
+          },
+          {
+            "id": "atom-30",
+            "element": "H",
+            "position": [
+              "-4.254922204865429",
+              "-0.15882577855183722",
+              "-1.5556420546123582"
+            ]
+          },
+          {
+            "id": "atom-31",
+            "element": "H",
+            "position": [
+              "-6.578311725077508",
+              "0.06944511093310402",
+              "-0.7184634141425241"
+            ]
+          },
+          {
+            "id": "atom-32",
+            "element": "H",
+            "position": [
+              "-5.268785620754902",
+              "-0.5295128712348661",
+              "3.2180171855884017"
+            ]
+          },
+          {
+            "id": "atom-33",
+            "element": "H",
+            "position": [
+              "-2.9145965201672235",
+              "-0.7669529942276563",
+              "2.4273769969958585"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:c9480b0f981ec42e88ee3aaa1fbe90b029830d3d07b2393a7c0ff25bbac31daf"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:fd9249e18f3348615192b5f9b4cb115b78e28fb9b3c4cc516479ff9b8532385b",
+        "subject_hash": "sha256:30f6a6d736a8cb9eb8f3b258dd02b7304052d9352c151daaedc4b67d17eb0dac"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 19,
+        "explicit_atoms": 33,
+        "formula": "C14H14N2O3",
+        "elements": [
+          "C",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 14,
+          "H": 14,
+          "N": 2,
+          "O": 3
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 136,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "alcohol_phenol",
+            "heterocyclic_system",
+            "aromatic_system"
+          ],
+          "substantive_feature_classes": [
+            "alcohol_phenol",
+            "carbonyl_derivative",
+            "heterocyclic_system"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "O=C(NCCc1ccncc1)c1ccccc1",
+          "connectivity_family_hash": "sha256:cec0e38f9c176378a9ad9153a0650ada8fbd2b6960275243e868e3809c84cae9"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-catalyst_reactant-p03.json",
+          "sha256": "3677714cd8cfaf50d3272cb27fe7f36ddc0ad8ac32304031216ad647690c356d"
+        },
+        "row_hash": "sha256:0096825f0f845044a2c760cfe3fcc70b056351d3e7c5962e0001ca79b25b4a0d",
+        "candidate_json_pointer": "/record/organic/candidates/0",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/919e15c2dd8571635f76072e63859e0ad83f7e3bf9f6ce4a27d77782bd7a6c5e.json",
+          "sha256": "4c6ccd1e8c8ff2e886e0c8e1114bf87c8e9d8d04d1d52c5cd904b4a97230d98f"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/0",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:0f8b6ca8e02572f294b22fbd049445c758444de02c62a363d2446750bbb16f49",
+        "organic_result_hash": "sha256:6f38e9242bcc55fb7e782d7d87bc5214e8121ee09e0767c62c3bb093a478af2b"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "catechol_amide",
+          "ranking": "high_tpsa",
+          "max_candidates": 3,
+          "fragment_ids": [
+            "pyridyl",
+            "methoxyethyl",
+            "ethyl"
+          ]
+        },
+        "inorganic": {
+          "a_elements": [
+            "Sr",
+            "Ba"
+          ],
+          "b_pairs": [
+            [
+              "Zn",
+              "W"
+            ],
+            [
+              "Y",
+              "Ta"
+            ]
+          ],
+          "tolerance_target": 1.03,
+          "max_candidates": 3
+        },
+        "interface_parameters": {
+          "mode": "illustrative",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "catechol_amide",
+        "ranking": "high_tpsa",
+        "max_candidates": 3,
+        "fragment_ids": [
+          "pyridyl",
+          "methoxyethyl",
+          "ethyl"
+        ],
+        "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1",
+        "fragments": [],
+        "filters": {}
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_30f6a6d736a8cb9e.retained-candidate.json",
+        "sha256": "d328acacc515147feaa8a012845feff40d4ec2e7239bc09df59b9f55bd603e96"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:201170c9118dd033ba210db7b3b78fe30f5fad4e1342544e6314bdbcfdf7b0bc",
+      "target_hash": "sha256:9a6401713a6c0088413788ef62d69160166f60875a444b085a3ceba13eda63b3"
+    },
+    {
+      "id": "organic_93b41ddac6ae8b2b",
+      "selection_index": 3,
+      "scaffold_family": "carboxylate_amide",
+      "fragment_id": "pyridyl",
+      "selection_rationale": "Retained pyridyl-bearing neutral carboxylic-acid/amide candidate. The original catalog identifier carboxylate_amide does not mean the acid is deprotonated.",
+      "original_identifiers": {
+        "candidate_id": "organic_93b41ddac6ae8b2b",
+        "molecule_object_id": "organic_93b41ddac6ae8b2b",
+        "species_identity_hash": "sha256:93b41ddac6ae8b2bf28eb5ac079b7477a02562d4e0ffcb99de7ac6ec4bff7e39",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:19a99f98415f1e88d7d183c274b596ce2667b200e001e458b1ec0ca4cd5ad9d7",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:ee27b5399ee95c8fb3f6f75a624415c176c1c3b37bdca0c2f5bd00d47cb2604f",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-organic_design-p02"
+      },
+      "canonical_isomeric_smiles": "O=C(O)c1ccc(C(=O)NCCc2ccncc2)cc1",
+      "original_candidate_hash": "sha256:8f103fc43a89a91ded2cedbfa67723563c1dc4b249d531bad63d981fc9aa98ac",
+      "original_display_geometry_hash": "sha256:3b3a6670e12ca0eaf14bc81a44a6d7d9af1fa88a466b0a7351096921f4645b43",
+      "original_effective_generation_request_hash": "sha256:94d29b8cea6fe0693dd79ebd72be82380b0d29f93b841c117cef4d306c87ef12",
+      "original_candidate_source": "chem 0.1\nmolecule organic_93b41ddac6ae8b2b { structure smiles \"O=C(O)c1ccc(C(=O)NCCc2ccncc2)cc1\" }\n",
+      "candidate_source_text_sha256": "7eddf858c21e444eae317d53ac474ac70dc9f8655a89a2768ab0f78f11bd2eb9",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(O)c1ccc(C(=O)NCC[*:1])cc1",
+        "fragment_id": "pyridyl",
+        "fragment_smiles": "[*:1]c1ccncc1",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 5,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 10
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 11
+          },
+          {
+            "source_atom_index": 13,
+            "candidate_atom_index": 12
+          },
+          {
+            "source_atom_index": 14,
+            "candidate_atom_index": 13
+          }
+        ],
+        "attachment_atom_index": 11,
+        "anchor_atom_indices": [
+          0,
+          2,
+          8
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.5
+        },
+        {
+          "a": 4,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 2.0
+        },
+        {
+          "a": 7,
+          "b": 9,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 11,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 12,
+          "order": 1.5
+        },
+        {
+          "a": 12,
+          "b": 13,
+          "order": 1.5
+        },
+        {
+          "a": 13,
+          "b": 3,
+          "order": 1.5
+        },
+        {
+          "a": 14,
+          "b": 15,
+          "order": 1.5
+        },
+        {
+          "a": 15,
+          "b": 16,
+          "order": 1.5
+        },
+        {
+          "a": 16,
+          "b": 17,
+          "order": 1.5
+        },
+        {
+          "a": 17,
+          "b": 18,
+          "order": 1.5
+        },
+        {
+          "a": 18,
+          "b": 19,
+          "order": 1.5
+        },
+        {
+          "a": 19,
+          "b": 14,
+          "order": 1.5
+        },
+        {
+          "a": 11,
+          "b": 14,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 24,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 25,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 26,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 27,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 28,
+          "order": 1.0
+        },
+        {
+          "a": 13,
+          "b": 29,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 30,
+          "order": 1.0
+        },
+        {
+          "a": 16,
+          "b": 31,
+          "order": 1.0
+        },
+        {
+          "a": 18,
+          "b": 32,
+          "order": 1.0
+        },
+        {
+          "a": 19,
+          "b": 33,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "-7.1180632045301495",
+              "-0.6692519023109881",
+              "0.7277339780366674"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "-6.328497400238122",
+              "-0.5883110265029533",
+              "-0.24435116002218135"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "O",
+            "position": [
+              "-6.876993488684628",
+              "-0.6283938040585088",
+              "-1.5116326545876748"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "-4.890640209268075",
+              "-0.4574345920270285",
+              "-0.027366649153813115"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "-4.43917436257638",
+              "-0.4265741802884304",
+              "1.277987411950024"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "-3.0640630130379156",
+              "-0.3010547451955136",
+              "1.4412178854755409"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "-2.19884524959186",
+              "-0.21234975641836498",
+              "0.36718771336644723"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "-0.7798942612349988",
+              "-0.08404980594419546",
+              "0.6754413018124196"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "O",
+            "position": [
+              "-0.4233945606786057",
+              "-0.061077304919013684",
+              "1.88125399769194"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "N",
+            "position": [
+              "0.23364827397598192",
+              "0.01746197510174831",
+              "-0.3060937603491517"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "C",
+            "position": [
+              "1.6025764560505797",
+              "0.1398411176104734",
+              "0.16122099442184118"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "2.5781193971964202",
+              "0.23920960938284386",
+              "-0.9937131732159789"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "C",
+            "position": [
+              "-2.66508072662361",
+              "-0.24469095539315397",
+              "-0.9234853938056045"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "C",
+            "position": [
+              "-4.04448222112378",
+              "-0.3703894503962028",
+              "-1.1129973109324658"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "C",
+            "position": [
+              "3.940715970053846",
+              "0.35968429966217275",
+              "-0.36581514472998033"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "C",
+            "position": [
+              "4.464195256187317",
+              "1.6044299753198232",
+              "-0.06439424956450317"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "C",
+            "position": [
+              "5.7336835783272395",
+              "1.6522318712250303",
+              "0.5173281533713276"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "N",
+            "position": [
+              "6.419156439174569",
+              "0.5274314150665083",
+              "0.7736290028636646"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "C",
+            "position": [
+              "5.923225639488184",
+              "-0.6811204831195462",
+              "0.4865969948972419"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "C",
+            "position": [
+              "4.666349291100736",
+              "-0.7886832125662648",
+              "-0.09237222607238632"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "-7.80137886929522",
+              "-0.22295274928787828",
+              "-1.722832110575549"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "-5.091647961573608",
+              "-0.49382377480887074",
+              "2.1294837961686715"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "-2.72564756785061",
+              "-0.278400795056397",
+              "2.477139926713491"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "-0.02862157376075335",
+              "0.0015662152706022012",
+              "-1.31428130907392"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "1.7260263274144116",
+              "1.0789648225952955",
+              "0.7473719918492651"
+            ]
+          },
+          {
+            "id": "atom-26",
+            "element": "H",
+            "position": [
+              "1.836535584953053",
+              "-0.7175179862154301",
+              "0.8096356213106178"
+            ]
+          },
+          {
+            "id": "atom-27",
+            "element": "H",
+            "position": [
+              "2.3542078461412395",
+              "1.1098821535558836",
+              "-1.640730827713868"
+            ]
+          },
+          {
+            "id": "atom-28",
+            "element": "H",
+            "position": [
+              "2.56445059122715",
+              "-0.6800602817475481",
+              "-1.6045409122466394"
+            ]
+          },
+          {
+            "id": "atom-29",
+            "element": "H",
+            "position": [
+              "-2.0116479928004942",
+              "-0.17749111868575806",
+              "-1.7581388273415355"
+            ]
+          },
+          {
+            "id": "atom-30",
+            "element": "H",
+            "position": [
+              "-4.441751627027211",
+              "-0.3988297413721048",
+              "-2.1036116828779705"
+            ]
+          },
+          {
+            "id": "atom-31",
+            "element": "H",
+            "position": [
+              "3.9074878119540086",
+              "2.510983987355926",
+              "-0.2729107002299367"
+            ]
+          },
+          {
+            "id": "atom-32",
+            "element": "H",
+            "position": [
+              "6.196927955904628",
+              "2.5981491410717243",
+              "0.7762185454257452"
+            ]
+          },
+          {
+            "id": "atom-33",
+            "element": "H",
+            "position": [
+              "6.4813678694061485",
+              "-1.5829358843809234",
+              "0.6960100348215456"
+            ]
+          },
+          {
+            "id": "atom-34",
+            "element": "H",
+            "position": [
+              "4.301150001340436",
+              "-1.7744430325229401",
+              "-0.3085148570839626"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:b2bdeed53428c61bf57bc4d104a8ca9d6e1cbe37cec3854a2c908b39f62f6e0c"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:94d29b8cea6fe0693dd79ebd72be82380b0d29f93b841c117cef4d306c87ef12",
+        "subject_hash": "sha256:93b41ddac6ae8b2bf28eb5ac079b7477a02562d4e0ffcb99de7ac6ec4bff7e39"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 20,
+        "explicit_atoms": 34,
+        "formula": "C15H14N2O3",
+        "elements": [
+          "C",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 15,
+          "H": 14,
+          "N": 2,
+          "O": 3
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 142,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "alcohol_phenol",
+            "heterocyclic_system",
+            "aromatic_system"
+          ],
+          "substantive_feature_classes": [
+            "alcohol_phenol",
+            "carbonyl_derivative",
+            "heterocyclic_system"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "O=C(NCCc1ccncc1)c1ccccc1",
+          "connectivity_family_hash": "sha256:cec0e38f9c176378a9ad9153a0650ada8fbd2b6960275243e868e3809c84cae9"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p02.json",
+          "sha256": "0987514cec56475d4f4d8e8afd9d9a3b4df54193a6b50f800636d859fd40e7b4"
+        },
+        "row_hash": "sha256:c7024468863933c173122e09c74971693e3caf0894e45d1e0ad945ecc502c3d6",
+        "candidate_json_pointer": "/record/organic/candidates/0",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/ee27b5399ee95c8fb3f6f75a624415c176c1c3b37bdca0c2f5bd00d47cb2604f.json",
+          "sha256": "a32dc46fd5ee8f4ead22fee7149711fbf156a39580334a4a768e2a7500bbc5c1"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/0",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:9d4038836438dda1cb7f9ad4dd28ae869f7d8a2b9d7dd4760364a19b37b645df",
+        "organic_result_hash": "sha256:521792e996d0c22864feea4ba6bc80fdfacb15954084036b34df56754644269f"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "catechol_amide",
+          "ranking": "high_tpsa",
+          "max_candidates": 2,
+          "fragment_ids": [
+            "methyl",
+            "methoxyethyl",
+            "pyridyl"
+          ],
+          "filters": {
+            "mw_max": 450,
+            "tpsa_min": 50
+          }
+        },
+        "inorganic": {
+          "a_elements": [
+            "Ca",
+            "Sr",
+            "Ba"
+          ],
+          "max_candidates": 8,
+          "tolerance_target": 1.0
+        },
+        "interface_parameters": {
+          "mode": "none",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "carboxylate_amide",
+        "ranking": "high_tpsa",
+        "max_candidates": 2,
+        "fragment_ids": [
+          "methyl",
+          "methoxyethyl",
+          "pyridyl"
+        ],
+        "filters": {
+          "mw_max": 450.0,
+          "tpsa_min": 50.0
+        },
+        "scaffold_smiles": "O=C(O)c1ccc(C(=O)NCC[*:1])cc1",
+        "fragments": []
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_93b41ddac6ae8b2b.retained-candidate.json",
+        "sha256": "72ae52d0e142be7b2373da7b1429b22fc5e4925b271b0eeee37b5c1198ba2e52"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:7e6dbd675cfb8ecc7cf416a51d69b80e431489f9028dd63f922df1374284e3bf",
+      "target_hash": "sha256:8c4d12098bb669a34ee344866404c347dd0339d1fcd03bfe8924daa6c9ce7d9d"
+    },
+    {
+      "id": "organic_74f3f3e092423726",
+      "selection_index": 4,
+      "scaffold_family": "carboxylate_amide",
+      "fragment_id": "methoxyethyl",
+      "selection_rationale": "Second retained candidate of this catalog scaffold; contrasts the pyridyl side chain with an ether-containing flexible side chain. No retained phenyl variant exists in the inspected final runs.",
+      "original_identifiers": {
+        "candidate_id": "organic_74f3f3e092423726",
+        "molecule_object_id": "organic_74f3f3e092423726",
+        "species_identity_hash": "sha256:74f3f3e092423726b20003e10e93ec571b7df91152fa266c02c2b1c0b54a6ad5",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:19a99f98415f1e88d7d183c274b596ce2667b200e001e458b1ec0ca4cd5ad9d7",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:ee27b5399ee95c8fb3f6f75a624415c176c1c3b37bdca0c2f5bd00d47cb2604f",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-organic_design-p02"
+      },
+      "canonical_isomeric_smiles": "COCCCCNC(=O)c1ccc(C(=O)O)cc1",
+      "original_candidate_hash": "sha256:57fc46fb0b041fa72545f78e90b5684ee0d3f7702fec2639920207e19ed36d32",
+      "original_display_geometry_hash": "sha256:c290436ca57f698b3b2e782adc30a627ed13c7875f7e9070a21fd670bebe4103",
+      "original_effective_generation_request_hash": "sha256:94d29b8cea6fe0693dd79ebd72be82380b0d29f93b841c117cef4d306c87ef12",
+      "original_candidate_source": "chem 0.1\nmolecule organic_74f3f3e092423726 { structure smiles \"COCCCCNC(=O)c1ccc(C(=O)O)cc1\" }\n",
+      "candidate_source_text_sha256": "ecb3fd9d90cc0be38612a55813ff752c348109445616e1d5b34ef6917135915b",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(O)c1ccc(C(=O)NCC[*:1])cc1",
+        "fragment_id": "methoxyethyl",
+        "fragment_smiles": "[*:1]CCOC",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 5,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 10
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 11
+          },
+          {
+            "source_atom_index": 13,
+            "candidate_atom_index": 12
+          },
+          {
+            "source_atom_index": 14,
+            "candidate_atom_index": 13
+          }
+        ],
+        "attachment_atom_index": 11,
+        "anchor_atom_indices": [
+          0,
+          2,
+          8
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.5
+        },
+        {
+          "a": 4,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 2.0
+        },
+        {
+          "a": 7,
+          "b": 9,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 11,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 12,
+          "order": 1.5
+        },
+        {
+          "a": 12,
+          "b": 13,
+          "order": 1.5
+        },
+        {
+          "a": 13,
+          "b": 3,
+          "order": 1.5
+        },
+        {
+          "a": 14,
+          "b": 15,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 16,
+          "order": 1.0
+        },
+        {
+          "a": 16,
+          "b": 17,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 14,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 18,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 19,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 24,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 25,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 26,
+          "order": 1.0
+        },
+        {
+          "a": 13,
+          "b": 27,
+          "order": 1.0
+        },
+        {
+          "a": 14,
+          "b": 28,
+          "order": 1.0
+        },
+        {
+          "a": 14,
+          "b": 29,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 30,
+          "order": 1.0
+        },
+        {
+          "a": 15,
+          "b": 31,
+          "order": 1.0
+        },
+        {
+          "a": 17,
+          "b": 32,
+          "order": 1.0
+        },
+        {
+          "a": 17,
+          "b": 33,
+          "order": 1.0
+        },
+        {
+          "a": 17,
+          "b": 34,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "-6.371079156364245",
+              "1.3622788078031471",
+              "1.136243078437417"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "-5.645594778088394",
+              "1.1038543715190348",
+              "0.13198814760088082"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "O",
+            "position": [
+              "-6.077533573572787",
+              "1.2588933400518854",
+              "-1.1724297516113"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "-4.290513721945636",
+              "0.6198445464212884",
+              "0.38837275004528415"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "-3.831446621463947",
+              "0.4551414506280268",
+              "1.6774539169465703"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "-2.5291648801044997",
+              "-0.009997480206307285",
+              "1.8875656346419478"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "-1.6926515983767343",
+              "-0.3080546371640931",
+              "0.8306861577737761"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "-0.3481377953235328",
+              "-0.7883212882212829",
+              "1.1250711661245352"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "O",
+            "position": [
+              "-0.033106787555862174",
+              "-0.9015051561060428",
+              "2.330971335754238"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "N",
+            "position": [
+              "0.5828816694711809",
+              "-1.1201981024184975",
+              "0.1152487818658565"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "C",
+            "position": [
+              "1.885186259970754",
+              "-1.5854885542135675",
+              "0.5203469653049604"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "2.7896914814706473",
+              "-1.907921075138467",
+              "-0.6083354317447992"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "C",
+            "position": [
+              "-2.1758481508895837",
+              "-0.134740300287269",
+              "-0.44728445149248885"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "C",
+            "position": [
+              "-3.443639167856165",
+              "0.3180849771957925",
+              "-0.6613199712408091"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "C",
+            "position": [
+              "3.110139240275081",
+              "-0.8351720519031511",
+              "-1.570774860963439"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "C",
+            "position": [
+              "3.785246489698273",
+              "0.336898589516299",
+              "-0.9087483023288695"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "O",
+            "position": [
+              "2.9876146182805914",
+              "0.9146853725062162",
+              "0.050904418219795015"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "C",
+            "position": [
+              "3.5978685021046344",
+              "2.003211918825816",
+              "0.6750887380252465"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "H",
+            "position": [
+              "-6.874432600118188",
+              "1.8576241816034336",
+              "-1.3494296708738822"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "H",
+            "position": [
+              "-4.46846703641873",
+              "0.6820912565127273",
+              "2.5342043350067427"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "-2.2292907273068447",
+              "-0.11771009637048288",
+              "2.9304615566136376"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "0.3364715467618022",
+              "-1.0316150730588114",
+              "-0.8948979641813002"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "1.6613949083687463",
+              "-2.5156586856465935",
+              "1.1432535105382886"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "2.4041143090920345",
+              "-0.9277928606012423",
+              "1.241119116690301"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "2.275641953649164",
+              "-2.731937096225876",
+              "-1.192329348825877"
+            ]
+          },
+          {
+            "id": "atom-26",
+            "element": "H",
+            "position": [
+              "3.731984252220287",
+              "-2.4203670474179972",
+              "-0.2560277653982282"
+            ]
+          },
+          {
+            "id": "atom-27",
+            "element": "H",
+            "position": [
+              "-1.5443241822573093",
+              "-0.3597254126359496",
+              "-1.2937316068180773"
+            ]
+          },
+          {
+            "id": "atom-28",
+            "element": "H",
+            "position": [
+              "-3.8147525485960037",
+              "0.4511978990474869",
+              "-1.6480676478179042"
+            ]
+          },
+          {
+            "id": "atom-29",
+            "element": "H",
+            "position": [
+              "2.244639516781357",
+              "-0.5091518763242816",
+              "-2.185559455396787"
+            ]
+          },
+          {
+            "id": "atom-30",
+            "element": "H",
+            "position": [
+              "3.8576169982492075",
+              "-1.1919901572424791",
+              "-2.343078683530572"
+            ]
+          },
+          {
+            "id": "atom-31",
+            "element": "H",
+            "position": [
+              "4.177825449594068",
+              "1.0692863467385247",
+              "-1.6453261232468652"
+            ]
+          },
+          {
+            "id": "atom-32",
+            "element": "H",
+            "position": [
+              "4.712043552349138",
+              "-0.016195969919005206",
+              "-0.36971270545664126"
+            ]
+          },
+          {
+            "id": "atom-33",
+            "element": "H",
+            "position": [
+              "4.532560785298857",
+              "1.7492337311244741",
+              "1.1850236706655801"
+            ]
+          },
+          {
+            "id": "atom-34",
+            "element": "H",
+            "position": [
+              "3.8432959130069686",
+              "2.7105773578004873",
+              "-0.14741704411659529"
+            ]
+          },
+          {
+            "id": "atom-35",
+            "element": "H",
+            "position": [
+              "2.8537658795961938",
+              "2.5206387738065357",
+              "1.3065619868425706"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:5fdfa3b34ec2392503c187c715a3b895c7f812eeb93d4d758ee7122146c65abd"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:94d29b8cea6fe0693dd79ebd72be82380b0d29f93b841c117cef4d306c87ef12",
+        "subject_hash": "sha256:74f3f3e092423726b20003e10e93ec571b7df91152fa266c02c2b1c0b54a6ad5"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 18,
+        "explicit_atoms": 35,
+        "formula": "C13H17NO4",
+        "elements": [
+          "C",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 13,
+          "H": 17,
+          "N": 1,
+          "O": 4
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 134,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "alcohol_phenol",
+            "ether_acetal",
+            "aromatic_system"
+          ],
+          "substantive_feature_classes": [
+            "alcohol_phenol",
+            "carbonyl_derivative",
+            "ether_acetal"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "c1ccccc1",
+          "connectivity_family_hash": "sha256:7165dcf6be1f831dd93487cded128aa99e205cdbe670460bba7c591d5119da1d"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p02.json",
+          "sha256": "0987514cec56475d4f4d8e8afd9d9a3b4df54193a6b50f800636d859fd40e7b4"
+        },
+        "row_hash": "sha256:c7024468863933c173122e09c74971693e3caf0894e45d1e0ad945ecc502c3d6",
+        "candidate_json_pointer": "/record/organic/candidates/1",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/ee27b5399ee95c8fb3f6f75a624415c176c1c3b37bdca0c2f5bd00d47cb2604f.json",
+          "sha256": "a32dc46fd5ee8f4ead22fee7149711fbf156a39580334a4a768e2a7500bbc5c1"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/1",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:9d4038836438dda1cb7f9ad4dd28ae869f7d8a2b9d7dd4760364a19b37b645df",
+        "organic_result_hash": "sha256:521792e996d0c22864feea4ba6bc80fdfacb15954084036b34df56754644269f"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "catechol_amide",
+          "ranking": "high_tpsa",
+          "max_candidates": 2,
+          "fragment_ids": [
+            "methyl",
+            "methoxyethyl",
+            "pyridyl"
+          ],
+          "filters": {
+            "mw_max": 450,
+            "tpsa_min": 50
+          }
+        },
+        "inorganic": {
+          "a_elements": [
+            "Ca",
+            "Sr",
+            "Ba"
+          ],
+          "max_candidates": 8,
+          "tolerance_target": 1.0
+        },
+        "interface_parameters": {
+          "mode": "none",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "carboxylate_amide",
+        "ranking": "high_tpsa",
+        "max_candidates": 2,
+        "fragment_ids": [
+          "methyl",
+          "methoxyethyl",
+          "pyridyl"
+        ],
+        "filters": {
+          "mw_max": 450.0,
+          "tpsa_min": 50.0
+        },
+        "scaffold_smiles": "O=C(O)c1ccc(C(=O)NCC[*:1])cc1",
+        "fragments": []
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_74f3f3e092423726.retained-candidate.json",
+        "sha256": "07bcc64dc9e1d4b24edaecad46afefb4955d65cdb9d241bbd38353f778af03c2"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:2d3d0d9a6060cc5e10f35c76228a159c7a18a858cb0d798b142c24b1969ab520",
+      "target_hash": "sha256:a4e1a924abf306351b42d405304c676ad22d3450eb42b21a77ef1233acf91b65"
+    },
+    {
+      "id": "organic_b4c1a850f0257356",
+      "selection_index": 5,
+      "scaffold_family": "pyridyl_amide",
+      "fragment_id": "aminocarbonyl",
+      "selection_rationale": "Retained heteroaromatic scaffold with an additional amide donor/acceptor side chain; no new graph or conformer is generated.",
+      "original_identifiers": {
+        "candidate_id": "organic_b4c1a850f0257356",
+        "molecule_object_id": "organic_b4c1a850f0257356",
+        "species_identity_hash": "sha256:b4c1a850f0257356d783fd5b2856ffa68d1d4ee61e9c7387732579f89b028c88",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:cf658c8a5956bf7763e569b0aab2ac5c7cd058c2db56d045c669200dd9bf64dd",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:a61410c0b95dd2c2bca151884394c3a183beaed32fea10f659118eb6c8e45a8f",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-organic_design-p03"
+      },
+      "canonical_isomeric_smiles": "NC(=O)CCNC(=O)c1ccncc1",
+      "original_candidate_hash": "sha256:8e3f36ebe9a87e3a3a21de9f51a68d596e9e31015b05c3f995fae2f20a081ebe",
+      "original_display_geometry_hash": "sha256:7b31e8c8c9c248d49e5c847f21107fb137494a683b33071773b1e55db51e59db",
+      "original_effective_generation_request_hash": "sha256:0b1776470e5d21c7ccb7d0e9130dd24a183c606050e48585445e15043c8ff91d",
+      "original_candidate_source": "chem 0.1\nmolecule organic_b4c1a850f0257356 { structure smiles \"NC(=O)CCNC(=O)c1ccncc1\" }\n",
+      "candidate_source_text_sha256": "bfa41658bd0f97df54a29fe2c5bbce8bcad9c23f505fbfef3f49740bd1cb3bc7",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(NCC[*:1])c1ccncc1",
+        "fragment_id": "aminocarbonyl",
+        "fragment_smiles": "[*:1]C(=O)N",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 10
+          }
+        ],
+        "attachment_atom_index": 4,
+        "anchor_atom_indices": [
+          0,
+          8
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 5,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.5
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 1.5
+        },
+        {
+          "a": 8,
+          "b": 9,
+          "order": 1.5
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.5
+        },
+        {
+          "a": 10,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 11,
+          "b": 12,
+          "order": 2.0
+        },
+        {
+          "a": 11,
+          "b": 13,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 11,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 14,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 15,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 16,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 17,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 18,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 19,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 13,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 13,
+          "b": 24,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "0.013691435827822588",
+              "-1.4355847114348521",
+              "-0.31482075588851954"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "-0.6272441872340878",
+              "-0.41154422053004286",
+              "0.036525430780120285"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "N",
+            "position": [
+              "0.09168789447957815",
+              "0.5694436187713731",
+              "0.770625245043096"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "1.4806164494745657",
+              "0.37747819812912065",
+              "1.0825978628292836"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "2.3818913659477032",
+              "0.2298523935762638",
+              "-0.09859989125577288"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "-2.0337969716144353",
+              "-0.28134644348486804",
+              "-0.31399429873231"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "-2.8090740707685726",
+              "0.8056928020876652",
+              "0.030475832235246803"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "-4.144740447905499",
+              "0.9165751168720597",
+              "-0.3091313607004104"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "N",
+            "position": [
+              "-4.722150208083982",
+              "-0.07093288395077234",
+              "-1.0042958982990784"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "C",
+            "position": [
+              "-4.006583044750393",
+              "-1.1544909210956256",
+              "-1.3647313060906756"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "C",
+            "position": [
+              "-2.6539405630316972",
+              "-1.2838566010151111",
+              "-1.0298521806676229"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "3.7795928675013806",
+              "0.0405888697825839",
+              "0.4255789143698308"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "O",
+            "position": [
+              "4.033470959695502",
+              "0.02530553289113535",
+              "1.6574484016856592"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "N",
+            "position": [
+              "4.869470196791125",
+              "-0.12878183506220578",
+              "-0.4627007268653284"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "H",
+            "position": [
+              "-0.4216811484838243",
+              "1.426404791828837",
+              "1.0719322359387737"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "H",
+            "position": [
+              "1.8345874195611631",
+              "1.2606985998059284",
+              "1.6522235462673946"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "H",
+            "position": [
+              "1.6200320814120068",
+              "-0.4828792405623743",
+              "1.7941169946997304"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "H",
+            "position": [
+              "2.3918958054635566",
+              "1.2145400665750425",
+              "-0.6403464150615098"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "H",
+            "position": [
+              "2.125441404050891",
+              "-0.5743010916582145",
+              "-0.8003838752794142"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "H",
+            "position": [
+              "-2.382763375721954",
+              "1.6183929633467935",
+              "0.587995456046875"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "-4.721792307446294",
+              "1.803866164075435",
+              "-0.011328750148413221"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "-4.524437354351742",
+              "-1.9309922703192224",
+              "-1.9303911461881291"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "-2.1283764514660857",
+              "-2.1781261835274415",
+              "-1.3467012022944618"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "5.706999126205238",
+              "-0.7253979977735094",
+              "-0.24989991473903705"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "4.847203124447999",
+              "0.3693952826720139",
+              "-1.3942050824842291"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:adab351979e05d3e6007fbd268269120577866fcbaf51e637f3a9f0a04c06e94"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:0b1776470e5d21c7ccb7d0e9130dd24a183c606050e48585445e15043c8ff91d",
+        "subject_hash": "sha256:b4c1a850f0257356d783fd5b2856ffa68d1d4ee61e9c7387732579f89b028c88"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 14,
+        "explicit_atoms": 25,
+        "formula": "C9H11N3O2",
+        "elements": [
+          "C",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 9,
+          "H": 11,
+          "N": 3,
+          "O": 2
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 102,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "heterocyclic_system",
+            "aromatic_system"
+          ],
+          "substantive_feature_classes": [
+            "carbonyl_derivative",
+            "heterocyclic_system"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "c1ccncc1",
+          "connectivity_family_hash": "sha256:2732e61a8f945ab5f2be8eae2304882d5732bb3f737bbf8613af482378927146"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p03.json",
+          "sha256": "9f1aef46eee9f2e6f3b43730d289c04af1843f31b52dcf91216ecc14c600c2c6"
+        },
+        "row_hash": "sha256:b27f643622ce7cc56a512271521e373f4c54f2f839775da44ce8a001e001ffe1",
+        "candidate_json_pointer": "/record/organic/candidates/0",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/a61410c0b95dd2c2bca151884394c3a183beaed32fea10f659118eb6c8e45a8f.json",
+          "sha256": "fe4866e58c641f6a490f12ea1b321cc9df394cc2ecac358536b9c0af0a3a1e3f"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/0",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:18b0ce6c714d160a1e1118daf82c6d7dbca47e02d638816f4a357acb5bf04705",
+        "organic_result_hash": "sha256:0a3e5ca7ab1b535a16ccd9e5ea5ab076c9cf7e2a8a06305cba9b1ace76149da4"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "pyridyl_amide",
+          "ranking": "low_logp",
+          "max_candidates": 3,
+          "fragment_ids": [
+            "fluoroethyl",
+            "hydroxyethyl",
+            "aminocarbonyl"
+          ]
+        },
+        "inorganic": {
+          "a_elements": [
+            "Ca",
+            "Sr",
+            "Ba"
+          ],
+          "max_candidates": 8,
+          "tolerance_target": 1.0
+        },
+        "interface_parameters": {
+          "mode": "none",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "pyridyl_amide",
+        "ranking": "low_logp",
+        "max_candidates": 3,
+        "fragment_ids": [
+          "fluoroethyl",
+          "hydroxyethyl",
+          "aminocarbonyl"
+        ],
+        "scaffold_smiles": "O=C(NCC[*:1])c1ccncc1",
+        "fragments": [],
+        "filters": {}
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_b4c1a850f0257356.retained-candidate.json",
+        "sha256": "1e7bd8ad3161674035b62a3c4237c02a4aaabd0588514137f763453b142f69c4"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:6c79e2cfc62a70afc6354af212564e80a7bf7ccc142c6efde73db852736a3531",
+      "target_hash": "sha256:1682903e7663049a28f274c9971c9505ac5d162dcd4e5bd5b5e38bbbfcb74fca"
+    },
+    {
+      "id": "organic_0b7dddc867970c31",
+      "selection_index": 6,
+      "scaffold_family": "pyridyl_amide",
+      "fragment_id": "fluoroethyl",
+      "selection_rationale": "Retained fluorinated side-chain contrast on the same pyridyl-amide scaffold. The inspected final runs contain no phenyl/pyridyl side-chain variant for this scaffold.",
+      "original_identifiers": {
+        "candidate_id": "organic_0b7dddc867970c31",
+        "molecule_object_id": "organic_0b7dddc867970c31",
+        "species_identity_hash": "sha256:0b7dddc867970c313683016a1b899dd4b933bfca2d4073430772dff218b70255",
+        "separate_species_registry_id": null,
+        "study_hash": "sha256:cf658c8a5956bf7763e569b0aab2ac5c7cd058c2db56d045c669200dd9bf64dd",
+        "separate_study_id": null,
+        "study_name": "Independent candidate study",
+        "design_run_hash": "sha256:a61410c0b95dd2c2bca151884394c3a183beaed32fea10f659118eb6c8e45a8f",
+        "original_evaluation_run_id": "eba9c65edbc14e218b59e8b81c1461cd",
+        "evaluation_case_id": "freshb-organic_design-p03"
+      },
+      "canonical_isomeric_smiles": "O=C(NCCCCF)c1ccncc1",
+      "original_candidate_hash": "sha256:41175f68e016ce0678e48947a1870d9e50ccd6334364c020a68673c1571b7fe2",
+      "original_display_geometry_hash": "sha256:c15901066db08f67ff8e957afbb3f7ed72ec8e52379c265b319b32746158feaf",
+      "original_effective_generation_request_hash": "sha256:0b1776470e5d21c7ccb7d0e9130dd24a183c606050e48585445e15043c8ff91d",
+      "original_candidate_source": "chem 0.1\nmolecule organic_0b7dddc867970c31 { structure smiles \"O=C(NCCCCF)c1ccncc1\" }\n",
+      "candidate_source_text_sha256": "72d39a5e538207b4c37a2d5d38c4d2f088c5441a403fb3ade3a00d97960d9a41",
+      "retained_generation": {
+        "scaffold_smiles": "O=C(NCC[*:1])c1ccncc1",
+        "fragment_id": "fluoroethyl",
+        "fragment_smiles": "[*:1]CCF",
+        "scaffold_atom_mapping": [
+          {
+            "source_atom_index": 0,
+            "candidate_atom_index": 0
+          },
+          {
+            "source_atom_index": 1,
+            "candidate_atom_index": 1
+          },
+          {
+            "source_atom_index": 2,
+            "candidate_atom_index": 2
+          },
+          {
+            "source_atom_index": 3,
+            "candidate_atom_index": 3
+          },
+          {
+            "source_atom_index": 4,
+            "candidate_atom_index": 4
+          },
+          {
+            "source_atom_index": 6,
+            "candidate_atom_index": 5
+          },
+          {
+            "source_atom_index": 7,
+            "candidate_atom_index": 6
+          },
+          {
+            "source_atom_index": 8,
+            "candidate_atom_index": 7
+          },
+          {
+            "source_atom_index": 9,
+            "candidate_atom_index": 8
+          },
+          {
+            "source_atom_index": 10,
+            "candidate_atom_index": 9
+          },
+          {
+            "source_atom_index": 11,
+            "candidate_atom_index": 10
+          }
+        ],
+        "attachment_atom_index": 4,
+        "anchor_atom_indices": [
+          0,
+          8
+        ],
+        "anchor_scope": "Retained potential donor atoms, not proven binding sites"
+      },
+      "retained_geometry_bonds": [
+        {
+          "a": 0,
+          "b": 1,
+          "order": 2.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "order": 1.0
+        },
+        {
+          "a": 1,
+          "b": 5,
+          "order": 1.0
+        },
+        {
+          "a": 5,
+          "b": 6,
+          "order": 1.5
+        },
+        {
+          "a": 6,
+          "b": 7,
+          "order": 1.5
+        },
+        {
+          "a": 7,
+          "b": 8,
+          "order": 1.5
+        },
+        {
+          "a": 8,
+          "b": 9,
+          "order": 1.5
+        },
+        {
+          "a": 9,
+          "b": 10,
+          "order": 1.5
+        },
+        {
+          "a": 10,
+          "b": 5,
+          "order": 1.5
+        },
+        {
+          "a": 11,
+          "b": 12,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 13,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 11,
+          "order": 1.0
+        },
+        {
+          "a": 2,
+          "b": 14,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 15,
+          "order": 1.0
+        },
+        {
+          "a": 3,
+          "b": 16,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 17,
+          "order": 1.0
+        },
+        {
+          "a": 4,
+          "b": 18,
+          "order": 1.0
+        },
+        {
+          "a": 6,
+          "b": 19,
+          "order": 1.0
+        },
+        {
+          "a": 7,
+          "b": 20,
+          "order": 1.0
+        },
+        {
+          "a": 9,
+          "b": 21,
+          "order": 1.0
+        },
+        {
+          "a": 10,
+          "b": 22,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 23,
+          "order": 1.0
+        },
+        {
+          "a": 11,
+          "b": 24,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 25,
+          "order": 1.0
+        },
+        {
+          "a": 12,
+          "b": 26,
+          "order": 1.0
+        }
+      ],
+      "state": {
+        "charge": 0,
+        "multiplicity": 1,
+        "radical_electrons": 0,
+        "multiplicity_origin": "Declared upcoming isolated closed-shell singlet profile, supported by the neutral nonradical even-electron graph. The original Design candidate has no separate multiplicity field or measured spin state.",
+        "protonation": "Exact retained neutral graph and explicit hydrogen inventory; no proton transfer or ionization",
+        "stereochemistry": "Exact retained canonical isomeric SMILES; no potential stereoelements are present in these six selected graphs."
+      },
+      "geometry": {
+        "version": "refinement-geometry/v1",
+        "units": "angstrom",
+        "charge": 0,
+        "multiplicity": 1,
+        "atoms": [
+          {
+            "id": "atom-1",
+            "element": "O",
+            "position": [
+              "-0.4258610797198255",
+              "0.4715707298780878",
+              "-1.5963490108007519"
+            ]
+          },
+          {
+            "id": "atom-2",
+            "element": "C",
+            "position": [
+              "-0.9219063857043356",
+              "0.34270504345225783",
+              "-0.4259709206366766"
+            ]
+          },
+          {
+            "id": "atom-3",
+            "element": "N",
+            "position": [
+              "-0.011573293837713886",
+              "0.3823060287414375",
+              "0.6459783288920695"
+            ]
+          },
+          {
+            "id": "atom-4",
+            "element": "C",
+            "position": [
+              "1.4313443713274803",
+              "0.5591676648627106",
+              "0.46542398958251213"
+            ]
+          },
+          {
+            "id": "atom-5",
+            "element": "C",
+            "position": [
+              "2.0643229669333025",
+              "-0.5142700043896055",
+              "-0.3515283502386796"
+            ]
+          },
+          {
+            "id": "atom-6",
+            "element": "C",
+            "position": [
+              "-2.361111606518931",
+              "0.16768148970853652",
+              "-0.28215906525176127"
+            ]
+          },
+          {
+            "id": "atom-7",
+            "element": "C",
+            "position": [
+              "-2.9926652300279333",
+              "0.01988942314695029",
+              "0.9346084622611622"
+            ]
+          },
+          {
+            "id": "atom-8",
+            "element": "C",
+            "position": [
+              "-4.367334157928828",
+              "-0.14516151172308067",
+              "1.0391227361769102"
+            ]
+          },
+          {
+            "id": "atom-9",
+            "element": "N",
+            "position": [
+              "-5.110137738687972",
+              "-0.16138287288685885",
+              "-0.08942351706238374"
+            ]
+          },
+          {
+            "id": "atom-10",
+            "element": "C",
+            "position": [
+              "-4.546817065947503",
+              "-0.021798116854775132",
+              "-1.30077879912952"
+            ]
+          },
+          {
+            "id": "atom-11",
+            "element": "C",
+            "position": [
+              "-3.164677057581846",
+              "0.14402722605108775",
+              "-1.403870875409255"
+            ]
+          },
+          {
+            "id": "atom-12",
+            "element": "C",
+            "position": [
+              "3.5490122135164754",
+              "-0.3461235266637282",
+              "-0.5584627415975744"
+            ]
+          },
+          {
+            "id": "atom-13",
+            "element": "C",
+            "position": [
+              "4.223722705666271",
+              "-0.3481617956993779",
+              "0.788215312561779"
+            ]
+          },
+          {
+            "id": "atom-14",
+            "element": "F",
+            "position": [
+              "5.585428609643705",
+              "-0.20416259010041574",
+              "0.5710707676913558"
+            ]
+          },
+          {
+            "id": "atom-15",
+            "element": "H",
+            "position": [
+              "-0.43226862558291035",
+              "0.27505616585176607",
+              "1.617869376440498"
+            ]
+          },
+          {
+            "id": "atom-16",
+            "element": "H",
+            "position": [
+              "1.6701933234362192",
+              "1.5330295546421784",
+              "0.012434197244583365"
+            ]
+          },
+          {
+            "id": "atom-17",
+            "element": "H",
+            "position": [
+              "1.8757760626016116",
+              "0.5012468491729641",
+              "1.479504430272737"
+            ]
+          },
+          {
+            "id": "atom-18",
+            "element": "H",
+            "position": [
+              "1.6274837871054588",
+              "-0.6019516847550445",
+              "-1.386862911874026"
+            ]
+          },
+          {
+            "id": "atom-19",
+            "element": "H",
+            "position": [
+              "1.9080018186918464",
+              "-1.5351166961341585",
+              "0.0817982587915963"
+            ]
+          },
+          {
+            "id": "atom-20",
+            "element": "H",
+            "position": [
+              "-2.43113792485851",
+              "0.029081241781503144",
+              "1.8377909526830583"
+            ]
+          },
+          {
+            "id": "atom-21",
+            "element": "H",
+            "position": [
+              "-4.827260657225175",
+              "-0.2589889254384774",
+              "2.0257942741431836"
+            ]
+          },
+          {
+            "id": "atom-22",
+            "element": "H",
+            "position": [
+              "-5.192542413251562",
+              "-0.04272726791093332",
+              "-2.1709665652103833"
+            ]
+          },
+          {
+            "id": "atom-23",
+            "element": "H",
+            "position": [
+              "-2.7613027643254533",
+              "0.2520703398290821",
+              "-2.4023825744322966"
+            ]
+          },
+          {
+            "id": "atom-24",
+            "element": "H",
+            "position": [
+              "3.916014749374922",
+              "-1.2180917084010991",
+              "-1.1331965614112318"
+            ]
+          },
+          {
+            "id": "atom-25",
+            "element": "H",
+            "position": [
+              "3.7954514320412502",
+              "0.6168929042067551",
+              "-1.0594138909361206"
+            ]
+          },
+          {
+            "id": "atom-26",
+            "element": "H",
+            "position": [
+              "3.87231882176551",
+              "0.5748230744958601",
+              "1.3250805289125867"
+            ]
+          },
+          {
+            "id": "atom-27",
+            "element": "H",
+            "position": [
+              "4.0275251390941165",
+              "-1.2682820964508041",
+              "1.336674168336589"
+            ]
+          }
+        ],
+        "geometry_hash": "sha256:8007159b088cabc2cf7d311d4a27efb5259c91d6207825dcb3ab1c11ee82f0fd"
+      },
+      "geometry_encoding": {
+        "source_units": "angstrom",
+        "target_units": "angstrom",
+        "operation": "Original JSON coordinate numbers encoded as canonical decimal strings only",
+        "exact_original_decimal_numeric_values_preserved": true,
+        "atom_order_preserved": true,
+        "stable_atom_ids_preserved": true,
+        "reembedded": false,
+        "rotated": false,
+        "recentered": false,
+        "optimized": false
+      },
+      "original_geometry_provenance": {
+        "provenance": "tool_generated",
+        "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+        "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+        "source_hash": "sha256:0b1776470e5d21c7ccb7d0e9130dd24a183c606050e48585445e15043c8ff91d",
+        "subject_hash": "sha256:0b7dddc867970c313683016a1b899dd4b933bfca2d4073430772dff218b70255"
+      },
+      "graph_validation": {
+        "passed": true,
+        "rdkit_version": "2026.03.6",
+        "connected_fragments": 1,
+        "heavy_atoms": 14,
+        "explicit_atoms": 27,
+        "formula": "C10H13FN2O",
+        "elements": [
+          "C",
+          "F",
+          "H",
+          "N",
+          "O"
+        ],
+        "element_counts_including_explicit_hydrogen": {
+          "C": 10,
+          "F": 1,
+          "H": 13,
+          "N": 2,
+          "O": 1
+        },
+        "formal_charge": 0,
+        "radical_electrons": 0,
+        "explicit_electron_count": 104,
+        "closed_shell_singlet_graph_admissible": true,
+        "isotopes_present": false,
+        "unassigned_stereoelements": 0,
+        "specified_stereoelements": [],
+        "retained_bond_graph_matches_source_isomeric_smiles": true,
+        "all_explicit_hydrogens_match_source_valence": true,
+        "stable_atom_order_and_scaffold_mapping_verified": true,
+        "original_complexity_rubric": {
+          "passed_per_target_predicate": true,
+          "feature_classes": [
+            "carbonyl_derivative",
+            "heterocyclic_system",
+            "aromatic_system",
+            "halogen"
+          ],
+          "substantive_feature_classes": [
+            "carbonyl_derivative",
+            "heterocyclic_system"
+          ],
+          "stereo_centers": 0,
+          "size_band": "13-20",
+          "connectivity_family": "c1ccncc1",
+          "connectivity_family_hash": "sha256:2732e61a8f945ab5f2be8eae2304882d5732bb3f737bbf8613af482378927146"
+        },
+        "scope": "Deterministic graph, valence, atom/bond identity and supplied-coordinate preservation checks; not geometry optimization, spin-state measurement or chemical accuracy validation."
+      },
+      "original_artifacts": {
+        "evaluation_row": {
+          "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p03.json",
+          "sha256": "9f1aef46eee9f2e6f3b43730d289c04af1843f31b52dcf91216ecc14c600c2c6"
+        },
+        "row_hash": "sha256:b27f643622ce7cc56a512271521e373f4c54f2f839775da44ce8a001e001ffe1",
+        "candidate_json_pointer": "/record/organic/candidates/2",
+        "saved_design_record": {
+          "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/a61410c0b95dd2c2bca151884394c3a183beaed32fea10f659118eb6c8e45a8f.json",
+          "sha256": "fe4866e58c641f6a490f12ea1b321cc9df394cc2ecac358536b9c0af0a3a1e3f"
+        },
+        "record_candidate_json_pointer": "/organic/candidates/2",
+        "report_hash": "sha256:10a332b9e01c8c7fd54ded1eb4589d3ff5b405777ffe1dcc2e68f18a72679a43",
+        "freeze_hash": "sha256:ab8b1ea09f05c78b5aeeeb039261ee9405536d628d6fce7b5dc6827eb602a2f7",
+        "fixtures_hash": "sha256:29fdd8649f2f220a14a317ff961c87f504e5eb760ec088918983d06b91f7909e",
+        "case_hash": "sha256:18b0ce6c714d160a1e1118daf82c6d7dbca47e02d638816f4a357acb5bf04705",
+        "organic_result_hash": "sha256:0a3e5ca7ab1b535a16ccd9e5ea5ab076c9cf7e2a8a06305cba9b1ace76149da4"
+      },
+      "retained_study": {
+        "version": "design-study/v1",
+        "name": "Independent candidate study",
+        "organic": {
+          "scaffold_id": "pyridyl_amide",
+          "ranking": "low_logp",
+          "max_candidates": 3,
+          "fragment_ids": [
+            "fluoroethyl",
+            "hydroxyethyl",
+            "aminocarbonyl"
+          ]
+        },
+        "inorganic": {
+          "a_elements": [
+            "Ca",
+            "Sr",
+            "Ba"
+          ],
+          "max_candidates": 8,
+          "tolerance_target": 1.0
+        },
+        "interface_parameters": {
+          "mode": "none",
+          "specifications": []
+        },
+        "selected_candidates": null,
+        "budget": {
+          "max_candidates_per_family": 24,
+          "max_interface_runs": 3,
+          "max_interface_screening_runs": 4
+        }
+      },
+      "effective_organic_generation_request": {
+        "scaffold_id": "pyridyl_amide",
+        "ranking": "low_logp",
+        "max_candidates": 3,
+        "fragment_ids": [
+          "fluoroethyl",
+          "hydroxyethyl",
+          "aminocarbonyl"
+        ],
+        "scaffold_smiles": "O=C(NCC[*:1])c1ccncc1",
+        "fragments": [],
+        "filters": {}
+      },
+      "scientific_reference": {
+        "energy_hartree": null,
+        "gradient_hartree_per_bohr": null,
+        "optimized_geometry_hash": null,
+        "accuracy_status": "not_evaluated",
+        "local_minimum_status": "not_evaluated"
+      },
+      "retained_candidate_snapshot": {
+        "path": "build/refinement-complex-cohort-20260913/organic_0b7dddc867970c31.retained-candidate.json",
+        "sha256": "40f10e47b0b23597ff2c1cfd1124045d332638a4b012deb45338ad174a23fce8"
+      },
+      "snapshot_scope": "Exact JSON candidate value extracted from the bound original row; this derivative file is not represented as an original standalone artifact.",
+      "atom_identity_hash": "sha256:d819a103b873dc56e1f120fd51feb0012cd5e2220c014c30cdd21d9df0ac0acb",
+      "target_hash": "sha256:5e5ac12df7020eb1d0619abb66dcfba2eed2713ccac0e19aa8518aa0d2d4c930"
+    }
+  ],
+  "freeze_policy": "Bind cohort_hash and exact target.geometry.geometry_hash before a gradient/optimization attempt. Preserve failures and every actual attempt. Do not replace these coordinates, candidates or states after performance/precision results are observed; any change requires a new explicit cohort version and provenance.",
+  "scientific_limits": [
+    "Coordinates are original RDKit ETKDGv3 seed-42 generated conformers, not measured or optimized geometries.",
+    "No reference energy, force, optimized geometry, physical trajectory, local-minimum or precision claim is invented.",
+    "Singlet is the explicit upcoming admitted state of an even-electron nonradical neutral graph, not a measured ground-state determination.",
+    "Original study_hash is preserved as its content-addressed identifier. Original records have no separate species-registry or study-ID field; molecule object IDs and species identity hashes are preserved without inventing those IDs.",
+    "Worker must independently bind exact source/candidate/geometry, actual runtime/basis/effective settings, attempts and outputs. Profile registration and graph validation do not authorize a calculation."
+  ],
+  "activity": {
+    "deterministic_rdkit_graph_validation": true,
+    "rdkit_version": "2026.03.6",
+    "candidate_generation": 0,
+    "embedding": 0,
+    "force_field_evaluations": 0,
+    "energy_gradient_or_optimization_calculations": 0,
+    "model_requests": 0
+  },
+  "helper": {
+    "path": "build/prepare_refinement_complex_cohort_20260913.py",
+    "sha256": "81aaf619738f9ded4d38d973baa4f2c252a7b7e4afff5aa0495b4fd22d6a1976"
+  },
+  "evidence_refs": [
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/code-snapshot.json",
+      "sha256": "51c75f0deb0b35cf7a11286e860a0914b8ce51c20c046a5f6a1bfe2d1d5f908c"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/fixtures.json",
+      "sha256": "20b5fdcd53caabc64a96eafc35a54cbb88ad8e6099a67f22686a43bbac9db72b"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/freshb-catalyst_reactant-p03.json",
+      "sha256": "3677714cd8cfaf50d3272cb27fe7f36ddc0ad8ac32304031216ad647690c356d"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p01.json",
+      "sha256": "1b991ba1e8f587ccbec52798a2c6cc1e1ddbaccaff87dad854ec23c6dda7046c"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p02.json",
+      "sha256": "0987514cec56475d4f4d8e8afd9d9a3b4df54193a6b50f800636d859fd40e7b4"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/freshb-organic_design-p03.json",
+      "sha256": "9f1aef46eee9f2e6f3b43730d289c04af1843f31b52dcf91216ecc14c600c2c6"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/frozen.json",
+      "sha256": "a041fa495b51a7f1371ab1144479e12f1e384f3d92bb05de9085df618aee6e20"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/report.json",
+      "sha256": "ed2a1afaca7c8f55d97042a9c1d6e6ddc556969d5a53900eb107841cef3c9f9b"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/73400285dd71e0c244504cd0d5818cff0a67f61bea9a6b250f57e2bad9831c68.json",
+      "sha256": "01cbb4531ed64109c692216ad33d190def6b46961ac9faebd5831180c4eae9f3"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/919e15c2dd8571635f76072e63859e0ad83f7e3bf9f6ce4a27d77782bd7a6c5e.json",
+      "sha256": "4c6ccd1e8c8ff2e886e0c8e1114bf87c8e9d8d04d1d52c5cd904b4a97230d98f"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/a61410c0b95dd2c2bca151884394c3a183beaed32fea10f659118eb6c8e45a8f.json",
+      "sha256": "fe4866e58c641f6a490f12ea1b321cc9df394cc2ecac358536b9c0af0a3a1e3f"
+    },
+    {
+      "path": "build/design-precision-final-20260913/qwen-r1/workspace/designs/ee27b5399ee95c8fb3f6f75a624415c176c1c3b37bdca0c2f5bd00d47cb2604f.json",
+      "sha256": "a32dc46fd5ee8f4ead22fee7149711fbf156a39580334a4a768e2a7500bbc5c1"
+    },
+    {
+      "path": "build/prepare_refinement_complex_cohort_20260913.py",
+      "sha256": "81aaf619738f9ded4d38d973baa4f2c252a7b7e4afff5aa0495b4fd22d6a1976"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_0b7dddc867970c31.retained-candidate.json",
+      "sha256": "40f10e47b0b23597ff2c1cfd1124045d332638a4b012deb45338ad174a23fce8"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_30f6a6d736a8cb9e.retained-candidate.json",
+      "sha256": "d328acacc515147feaa8a012845feff40d4ec2e7239bc09df59b9f55bd603e96"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_4e7c7a1515dbac54.retained-candidate.json",
+      "sha256": "90aa621454a820c6ebab6ab271c0ec97506b92f16732f33281dda6c99286872c"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_74f3f3e092423726.retained-candidate.json",
+      "sha256": "07bcc64dc9e1d4b24edaecad46afefb4955d65cdb9d241bbd38353f778af03c2"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_93b41ddac6ae8b2b.retained-candidate.json",
+      "sha256": "72ae52d0e142be7b2373da7b1429b22fc5e4925b271b0eeee37b5c1198ba2e52"
+    },
+    {
+      "path": "build/refinement-complex-cohort-20260913/organic_b4c1a850f0257356.retained-candidate.json",
+      "sha256": "1e7bd8ad3161674035b62a3c4237c02a4aaabd0588514137f763453b142f69c4"
+    }
+  ],
+  "promotion_approved": false,
+  "scientific_accuracy_validated": false,
+  "cohort_hash": "sha256:d605f0805a38d1679c4e71c5931c4c2ef35d4451250603137aa80893c8c717ff"
+}

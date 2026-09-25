@@ -14,6 +14,21 @@ version matches. Full release acceptance remains outstanding. The previous
 Windows version was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
 
+## 2026-09-24 — Managed Study architecture increment (unreleased source)
+
+- Added a shared Study desk with source-bound plan compilation, current execution
+  previews, saved run inspection, evidence dependencies, completion blockers,
+  version comparison and checked local version-capsule export.
+- Added project SQLite and immutable source/evidence objects with attached source
+  identities, bounded readers, additive legacy import and untrusted capsule import.
+- Required host-issued production execution contexts for managed MCP and Chem
+  calls; bound queued local Harness execution to the journaled input snapshot.
+- Retained the existing method registry, Python workers, workflow DAG and legacy
+  Study/run authorities. Full storage cutover, durable resource/job scheduling,
+  managed prediction and the later scientific feature roadmap remain incomplete.
+- See the [implementation and validation report](docs/NEXT_ARCHITECTURE_IMPLEMENTATION_2026-09-24.md)
+  and [P01–P14 capability ledger](docs/NEXT_ARCHITECTURE_CAPABILITIES.md).
+
 ## 2026-09-23 — Scientific workspace and Harness upgrade (unreleased source)
 
 - Unified the source workspace around Chat / Design / Compute. Scientific Chat

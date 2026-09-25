@@ -1,4 +1,4 @@
-# Python validation profiles
+# CI validation profiles
 
 CI installs the committed `uv.lock` with `uv==0.12.3` and `uv sync --locked`.
 It never assumes the developer's populated virtual environment, sibling Chem
@@ -10,16 +10,50 @@ engine supports every Python version.
 | Profile | Automatic environment | Installed extras | Scope |
 | --- | --- | --- | --- |
 | `base` | Windows, Python 3.10 and 3.12 | None | CLI, compiler, provenance, materials, security, mocked runtime adapters, dependency-free compute contracts, test-profile selector |
-| `compute` | Windows, Python 3.12 | `compute`, `compute-research` | NumPy/SciPy calculations, statistical inference, Biopython-based protein properties, protein comparison/study tests |
+| `compute` | Windows, Python 3.12 | `compute`, `compute-research` (including JSON Schema validation) | NumPy/SciPy calculations, statistical inference, Biopython-based protein properties, protein comparison/study tests |
+| `figures` | Ubuntu and Windows, Python 3.12 | `research-figures` | Bounded figure rendering and export contracts |
 | `heavy` | Windows, Python 3.12, CPU | `compute`, `compute-models`, `compute-vision`, `compute-medical`, `compute-chem`, `compute-genomics` | Real model, image, SBML, population-genetics and cheminformatics tests using bounded fixtures |
 | `linux-worker` | Ubuntu, Python 3.12 | None | Actual Linux process cleanup, cancellation and file-integrity behavior with controlled subprocesses; does not install or validate scientific engines |
 | `xdl` | Explicit local invocation only | Existing isolated XDL environment | Real XDL parser/roundtrip tests; no device execution |
 
 The Workbench job also creates the root `.venv` using `compute`,
-`compute-research`, `compute-vision`, `compute-chem` and `chem-workbench`. Its Chem Python override
+`compute-research`, `compute-vision`, `compute-chem`, `chem-workbench`,
+`research-figures` and `workbench`. Its Chem Python override
 points at that environment. This is required by the existing Node integration
 tests which spawn Python and execute RDKit, NumPy, SciPy, OpenCV and SymPy operators.
 Electron bundle compilation is not an installer, GPU or live-model acceptance.
+The job explicitly builds and checks the required Proto sidecars before desktop
+resource-manifest generation; their executables are generated CI outputs, not
+source-controlled prerequisites. CI uses the public typography profile.
+
+The Workbench job checks the existing toy `designs/toggle_switch.proto` with
+`proto-agent check --json` and compiles it to `build/toggle_switch.ir.json` only
+after that check succeeds. This supplies the visualization regression fixture;
+it does not replace the toy parts with a reviewed biological library. After the
+mandatory and managed-study suites, CI builds the sidecars, then the desktop
+bundles, then runs the offline baseline. That order supplies the renderer assets,
+generated Chem UI overlay and runtime resources inspected by the offline tests.
+
+The offline verifier runs `package-builder.test.mjs` and
+`packaged-process-ownership.test.mjs` first with file concurrency 1. These suites
+start the actual npm collector and PowerShell/.NET; isolating them avoids
+competing with the wider suite's Python and compiler workers. The remaining
+discovered test files run with concurrency 4, followed by the pinned local
+TypeScript compiler. Every discovered file runs exactly once, and the existing
+process deadlines and assertions remain in place. This ordering does not itself
+establish a passing hosted run.
+
+Git attributes preserve the exact bytes of digest-bound fixtures and copied
+upstream licenses, including the Molstar and LM Studio notices. Newline conversion
+must not be repaired by changing an expected digest or weakening byte comparisons.
+For an attribute correction, verify the staged Git blob as well as the local file;
+a correct working copy can coexist with an older normalized blob in the index.
+
+Windows jobs canonicalize their existing temporary directory before tests.
+Hosted runners can otherwise expose an 8.3 alias such as `RUNNER~1`, while strict
+workspace APIs require the resolved path. Newly owned Node test fixtures also
+resolve their temporary roots. Production checks continue to reject supplied
+linked or noncanonical paths; an alias regression exercises that rejection.
 
 Before the offline baseline or desktop build, that job runs `pnpm typecheck`,
 checks the generated Python tool-contract snapshot, and runs named Node suites
@@ -77,6 +111,14 @@ CI preserves its plan and result JSON even on failure. If setup fails before a
 result exists, the plan is not evidence of execution. Keep failed reports when
 retesting a revision; write the retest to a new report path.
 
+The Workbench artifact retains the environment summary and named-suite TAP
+reports; the complete offline verifier output is in the hosted job log. Current
+job outcomes belong to the exact commit shown on the pull request. Source
+publication checks, bounded core Chem tests, desktop compilation and optional
+scientific/runtime acceptance remain separate claims. See the
+[source layout](source-layout.md) and [Chem source guide](../CHEM_CLI.md) for the
+dedicated publication workflow and external runtime requirements.
+
 ## WSL and other separately provisioned runtimes
 
 `test_execution_wsl.py` in `base` tests adapter contracts using mocks. The Linux
@@ -96,7 +138,11 @@ run the `xdl` profile and save its report. The profile fails preflight when that
 runtime is absent. No external runtime is installed automatically by the profile
 runner, and successful parser tests do not authorize wet-lab or device operations.
 
-## Scope verified during this change
+## Earlier local validation record
+
+The following results describe the original profile-configuration work, before
+the September 25 publication and hosted CI fixes. They remain historical local
+evidence; they do not report the status of the current pull request.
 
 A separate Windows Python 3.12 environment under `build/ci-validation/base-env`
 was synchronized from the lock with only `certifi` and this project installed.
@@ -110,8 +156,9 @@ import defect that was fixed before the compute retest.
 The same environment correctly reports the compute profile as unavailable when
 NumPy, SciPy and Biopython are absent. The existing development environment passed
 heavy dependency preflight only (`ready-not-run`). Python AST parsing, TOML/lock
-extra consistency and the workflow YAML matrix were checked locally. No hosted
-GitHub job, heavy scientific suite, GPU job, live model or live WSL engine suite
-was run as part of this CI change; the automatic lanes remain to be validated by
-their actual hosted executions. These checks complete the scoped configuration
-change, not the broader academic/engineering improvement goal.
+extra consistency and the workflow YAML matrix were checked locally. That
+original profile change did not run hosted GitHub jobs, a heavy scientific suite,
+GPU jobs, live models or live WSL engines. Subsequent hosted CI runs exposed the
+temporary-path, prerequisite-order and byte-preservation issues addressed above.
+Read the current pull request's checks for the latest commit's actual outcomes;
+this document does not certify that all current jobs have passed.

@@ -17,6 +17,7 @@ import { ResearchChatRepository, ResearchSessionCache, ResearchStorageError, typ
 
 import { TURN_LIMITS, turnBudget, completionGate, executionActivity, toolResultFailed, projectToolResult } from "./turn-engine.ts";
 import type { PolicyGrant } from "../../shared/tool-policy.ts";
+import { issueHostPolicyGrant } from "./permissions.ts";
 import { resolveToolContract } from "../../shared/tool-contracts.ts";
 
 const ID = z.string().uuid();
@@ -350,7 +351,7 @@ export class ResearchChatService {
       session.messages.push({id: randomUUID(), role: "user", content: request.content, documents, createdAt: now});
       const history = structuredClone(session.messages);
       const assistantId=randomUUID();
-      const policyGrant:PolicyGrant={id:randomUUID(),source:"session-send",actor:"local-user",surface:"chat",scopeId:assistantId,risks:[...(request.toolsEnabled&&request.networkEnabled?["network" as const]:[]),...(request.toolsEnabled&&request.codeExecutionEnabled?["code-execution" as const]:[])],grantedAt:now,expiresAt:new Date(Date.now()+TURN_LIMITS.durationMs).toISOString()};
+      const policyGrant:PolicyGrant=issueHostPolicyGrant({id:randomUUID(),source:"session-send",actor:"local-user",surface:"chat",scopeId:assistantId,risks:[...(request.toolsEnabled&&request.networkEnabled?["network" as const]:[]),...(request.toolsEnabled&&request.codeExecutionEnabled?["code-execution" as const]:[])],grantedAt:now,expiresAt:new Date(Date.now()+TURN_LIMITS.durationMs).toISOString()});
       const assistant = {id: assistantId, role: "assistant" as const, content: "", createdAt: now, state: "streaming" as const,policyGrant};
       session.messages.push(assistant); this.save(session,"mutation","acquire");
       this.options.tools?.authorizeSend?.(policyGrant);

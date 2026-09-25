@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs";
 import { copyFile, lstat, mkdir, readFile, readdir, realpath, symlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isExcludedChemSource } from "./chem-source-filter.mjs";
 
 const APP = "apps/proto-workbench";
 export const BUILD_INPUT_ROOTS = Object.freeze([
@@ -39,6 +40,8 @@ function within(root, path) {
   return slash(rel);
 }
 function ignored(path) {
+  const chemSource = `${APP}/runtime/chem-workbench/`;
+  if (path.startsWith(chemSource) && isExcludedChemSource(path.slice(chemSource.length))) return true;
   const generatedTemplate = `${APP}/runtime/workspace-template/`;
   if (path.startsWith(generatedTemplate)) {
     const managed = path.slice(generatedTemplate.length);

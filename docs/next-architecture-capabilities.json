@@ -1,0 +1,519 @@
+{
+  "schemaVersion": "proto.architecture-capabilities.v1",
+  "reviewDate": "2026-09-24",
+  "scope": "Next-architecture implementation inventory; source/test references are not execution evidence. No phase is declared complete by this ledger.",
+  "baselineReport": {
+    "source": "User-supplied Proto_Workbench_Next_Architecture_Plan.md",
+    "commit": "bacc19c6917d3a7dfdae2dcbec65bfee01226c6f",
+    "ciRun": "35951587318",
+    "conclusion": "Failure reported in the supplied plan; hosted status not refreshed by this ledger."
+  },
+  "entries": [
+    {
+      "id": "P01",
+      "title": "CI baseline and path failures",
+      "implementation": "partial",
+      "implementedScope": "Local focused regressions did not reproduce the planning document's reported hosted failures. CI now retains raw TAP and environment evidence even after failure.",
+      "sourceRefs": [
+        ".github/workflows/ci.yml",
+        "apps/proto-workbench/src/main/services/workspace-execution-journal.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/architecture-followup.test.mjs",
+        "apps/proto-workbench/tests/architecture-storage.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-applicable",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-applicable",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Reproduce the reported clean-runner failure and obtain current required hosted checks.",
+        "Keep path/junction guards and original failed evidence; this change does not establish that the hosted failure is fixed."
+      ]
+    },
+    {
+      "id": "P02",
+      "title": "Capability and evidence ledger",
+      "implementation": "scoped-implementation",
+      "implementedScope": "Explicit P01-P14 implementation scope and separate evidence dimensions generate a deterministic document. The generator rejects missing, linked or external source/test references.",
+      "sourceRefs": [
+        "docs/next-architecture-capabilities.json",
+        "scripts/generate-architecture-capabilities.mjs"
+      ],
+      "testRefs": [],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-applicable",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-applicable",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-applicable",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Update this ledger with future increments; a generated document is not runtime or scientific acceptance."
+      ]
+    },
+    {
+      "id": "P03",
+      "title": "Canonical contracts and version boundaries",
+      "implementation": "partial",
+      "implementedScope": "Existing canonical registry and generated Python view remain authoritative. Study method contracts project the live Compute catalog and explicitly preserve unavailable output schema and scientific-validation gaps.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/shared/tool-contracts.ts",
+        "src/proto_agent/data/tool-contracts.json",
+        "apps/proto-workbench/src/main/services/artifact-reader-registry.ts",
+        "apps/proto-workbench/src/main/services/research-plan-compiler.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/tool-contracts.test.mjs",
+        "apps/proto-workbench/tests/research-plan.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Physical contracts-package extraction is not performed.",
+        "Typed output schemas and complete TS/Python/IPC scientific semantic parity remain incomplete."
+      ]
+    },
+    {
+      "id": "P04",
+      "title": "Production execution context",
+      "implementation": "scoped-implementation",
+      "implementedScope": "MCP and Chem execution require opaque host-issued contexts with workspace identity, operation/scope binding, immutable invocation inputs, canonical method, policy and budget. Plain serialized grants/decisions cannot confer execution authority. Explicit ephemeral transport fixtures remain test-only.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/main/services/execution-kernel.ts",
+        "apps/proto-workbench/src/main/services/permissions.ts",
+        "apps/proto-workbench/src/main/services/mcp-client.ts",
+        "apps/proto-workbench/src/main/services/chem-science.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/production-kernel-context.test.mjs",
+        "apps/proto-workbench/tests/execution-kernel.test.mjs",
+        "apps/proto-workbench/tests/harness-journal-authority.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-applicable",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-applicable",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "The input snapshot binds invocation JSON; it does not assert complete source-file or scientific schema validation.",
+        "This does not implement the later durable job scheduler or migrate independent Python CLI results into managed execution authority."
+      ]
+    },
+    {
+      "id": "P05",
+      "title": "Project object store and legacy import",
+      "implementation": "partial",
+      "implementedScope": "A managed project SQLite store and content-addressed objects support immutable versions, checked reopening, bounded legacy import and capsule storage.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/main/services/research-project-store.ts",
+        "apps/proto-workbench/src/shared/research-project.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-project-store.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Existing Compute, Chat and execution-journal stores remain; there is no complete old-writer cutover.",
+        "Full legacy inventory/parity and supported-entrypoint migration are not established."
+      ]
+    },
+    {
+      "id": "P06",
+      "title": "Durable jobs and resource ownership",
+      "implementation": "not-implemented",
+      "implementedScope": "Existing per-operation journal, owned-process cleanup and workspace queues are retained as prerequisites.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/main/services/tool-execution-journal.ts",
+        "apps/proto-workbench/src/main/services/workspace-execution-queue.ts",
+        "apps/proto-workbench/src/main/services/process-security.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/owned-process.test.mjs",
+        "apps/proto-workbench/tests/tool-execution-journal.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "New outbox, resource scheduling, staging publication, fencing tokens and old-owner fault matrix are not implemented.",
+        "Existing process cancellation is not evidence of managed external/GPU job recovery."
+      ]
+    },
+    {
+      "id": "P07",
+      "title": "Bounded array and table artifacts",
+      "implementation": "partial",
+      "implementedScope": "Existing data-access paging is retained, with bounded managed object reads added by the project store.",
+      "sourceRefs": [
+        "src/proto_agent/data_access.py",
+        "apps/proto-workbench/src/main/services/research-project-store.ts",
+        "docs/adr/0002-bounded-research-data-access.md"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-project-store.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "No new chunked table/array backend or large-study performance acceptance is established.",
+        "Whole-object identity checks do not independently establish matrix axes or scientific coordinate identity."
+      ]
+    },
+    {
+      "id": "P08",
+      "title": "Method semantics and Quantity outputs",
+      "implementation": "partial",
+      "implementedScope": "Method projections expose input schemas, assumptions, runtime fingerprints and explicit semantic gaps. Generated unit metadata reuses the Python source; existing reviewed quantity adapters remain bounded.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/main/services/research-plan-compiler.ts",
+        "apps/proto-workbench/src/shared/scientific-units.generated.json",
+        "src/proto_agent/compute_quantities.py",
+        "docs/scientific-data-contracts.md"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-plan.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "unsupported",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Generic output quantity-to-artifact bindings are unsupported; requested quantity proof obligations must remain unsatisfied.",
+        "No new independent numerical reference coverage or complete method-family output coverage is claimed."
+      ]
+    },
+    {
+      "id": "P09",
+      "title": "StudySpec and ResearchPlanIR compilation",
+      "implementation": "partial",
+      "implementedScope": "Bounded Study specifications freeze data and method identities and compile into the existing Workflow DAG through host commands.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/shared/research-plan.ts",
+        "apps/proto-workbench/src/main/services/research-plan-compiler.ts",
+        "apps/proto-workbench/src/main/services/research-study-commands.ts",
+        "apps/proto-workbench/src/main/services/managed-research-runtime.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-plan.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "The compiler does not infer missing units, reference versions or runtime availability.",
+        "Only the exposed fixed Compute catalog is supported; cross-domain plans and managed job scheduling are not complete."
+      ]
+    },
+    {
+      "id": "P10",
+      "title": "Evidence graph and scientific diff",
+      "implementation": "partial",
+      "implementedScope": "Typed evidence graph validation separates freshness from historical integrity and reports downstream invalidation; scientific diff describes changes without causal attribution.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/shared/research-evidence-graph.ts",
+        "apps/proto-workbench/src/main/services/research-study-commands.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-plan.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Full automatic source-calculation-quantity-figure-claim linkage is incomplete.",
+        "Declared graph nodes are not independently authenticated scientific facts; host verification is still required."
+      ]
+    },
+    {
+      "id": "P11",
+      "title": "Proof-obligation completion",
+      "implementation": "partial",
+      "implementedScope": "Deterministic research completion distinguishes required and optional steps, preserves failures and blocks any unknown effect. Managed commands project retained runtime evidence into the gate.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/shared/research-evidence-graph.ts",
+        "apps/proto-workbench/src/main/services/research-study-commands.ts",
+        "apps/proto-workbench/src/main/services/turn-engine.ts"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-plan.test.mjs",
+        "apps/proto-workbench/tests/harness-journal-authority.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Chat and Harness orchestration are not fully replaced by one research scheduler.",
+        "Quantity-bound obligations and unsupported evidence cannot be marked satisfied."
+      ]
+    },
+    {
+      "id": "P12",
+      "title": "Protein Studio and managed prediction",
+      "implementation": "not-implemented",
+      "implementedScope": "Existing protein comparison and bounded structure-prediction import remain available as prerequisites. The new generic Study surface is not a complete Protein Studio.",
+      "sourceRefs": [
+        "src/proto_agent/compute_protein_study.py",
+        "src/proto_agent/compute_structure_prediction.py",
+        "docs/structure-prediction-import.md"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/structure-prediction.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "No new local prediction worker, MSA egress agreement, GPU profile or full residue-linked study UI is delivered.",
+        "Imported ColabFold results remain imports; no new local inference or functional validation is claimed."
+      ]
+    },
+    {
+      "id": "P13",
+      "title": "Capsule, independent benchmark and release",
+      "implementation": "partial",
+      "implementedScope": "The project store provides bounded manifest-only and embedded-object capsule import/export with identity verification.",
+      "sourceRefs": [
+        "apps/proto-workbench/src/main/services/research-project-store.ts",
+        "apps/proto-workbench/src/shared/research-project.ts",
+        "docs/HARNESS_ITERATION_IMPLEMENTATION_2026-09-23.md"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/research-project-store.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Full Workflow Run RO-Crate interoperability, independent scientific benchmarks and native release acceptance are not complete.",
+        "Reopening retained objects is distinct from recomputation; dependencies and numerical tolerances are not supplied by a capsule hash."
+      ]
+    },
+    {
+      "id": "P14",
+      "title": "Chem inference and RNA robustness",
+      "implementation": "not-implemented",
+      "implementedScope": "Existing forward/sensitivity Chem methods and RNA-seq analyses are preserved. They are not relabeled as new inverse inference or robust study-design capabilities.",
+      "sourceRefs": [
+        "src/proto_agent/compute_rnaseq.py",
+        "docs/chem-reaction-studies.md"
+      ],
+      "testRefs": [
+        "apps/proto-workbench/tests/rnaseq-study.test.mjs"
+      ],
+      "evidence": {
+        "software": {
+          "status": "test-handles-only",
+          "scope": "Listed test sources define checks; current run outcomes belong in the dated validation report."
+        },
+        "science": {
+          "status": "not-assessed",
+          "scope": "No new independent scientific task acceptance is claimed by this implementation ledger."
+        },
+        "model": {
+          "status": "not-run",
+          "scope": "No new local-model or paired model evaluation was run for this increment."
+        },
+        "delivery": {
+          "status": "not-run",
+          "scope": "No new installer, clean-machine, GPU or hosted-CI acceptance is claimed."
+        }
+      },
+      "remaining": [
+        "Joint calibration/posterior inference, identifiability and competing-model evaluation are not newly implemented.",
+        "Paired/batch/covariate design extensions and robustness comparison need separate independently validated work."
+      ]
+    }
+  ]
+}

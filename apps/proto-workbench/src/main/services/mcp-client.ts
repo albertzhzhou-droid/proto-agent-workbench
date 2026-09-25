@@ -5,10 +5,11 @@ import { join } from "node:path";
 import { minimalChildEnvironment, terminateOwnedProcessTree } from "./process-security.ts";
 import { RuntimeFailure, cancelled } from "./runtime-control.ts";
 import { ToolExecutionJournal, type ToolExecutionRecord } from "./tool-execution-journal.ts";
-import { contractDeadlineMs, requireToolContract } from "../../shared/tool-contracts.ts";
+import { contractDeadlineMs, requireToolContract, toolContract } from "../../shared/tool-contracts.ts";
 import type { PolicyDecision } from "../../shared/tool-policy.ts";
 import type { ExecutionScope } from "./execution-scope.ts";
-import { invokeJournaledTool, recordPolicyDenial } from "./execution-kernel.ts";
+import { createProductionKernelContext, createEphemeralKernelContext, invokeJournaledTool, recordPolicyDenial, type JournaledInvocation, type EphemeralJournaledInvocation } from "./execution-kernel.ts";
+import { evaluateToolPolicy } from "./permissions.ts";
 
 const MAX_PENDING_REQUESTS = 32;
 const MAX_REQUEST_BYTES = 512 * 1024;
@@ -90,6 +91,8 @@ export interface McpClientOptions {
   controlTimeoutMs?: number;
   startupTimeoutMs?: number;
   journal?: ToolExecutionJournal;
+  /** Explicit transport/fault testing only; rejected outside node --test. */
+  ephemeralTestContext?: boolean;
 }
 
 interface PendingRequest {
@@ -121,6 +124,7 @@ export class McpClient {
   private cleanupFailure?: Error;
 
   constructor(paths: McpPaths, options: McpClientOptions = {}) {
+    if (options.ephemeralTestContext && !process.env.NODE_TEST_CONTEXT) throw new Error("KERNEL_EPHEMERAL_CONTEXT_TEST_ONLY");
     this.paths = paths;
     for (const key of ["cancellationGraceMs", "controlTimeoutMs", "startupTimeoutMs"] as const) {
       const value = options[key];
@@ -138,15 +142,29 @@ export class McpClient {
     if(!this.options.journal)throw new Error("TOOL_EXECUTION_JOURNAL_REQUIRED");
     return this.options.journal.reconcile(operationId,verdict,actor,evidenceRef);
   }
-  invokeLocal(name:string,arguments_:Record<string,unknown>,dispatch:(markDispatched:()=>void)=>Promise<Record<string,unknown>>,options:McpCallOptions&{operationId:string}):Promise<Record<string,unknown>> {
-    return invokeJournaledTool({journal:this.options.journal,operationId:options.operationId,scope:options.scope,tool:name,arguments:arguments_,decision:options.decision,decisionId:options.decisionId},dispatch);
+  invokeLocal(name:string,arguments_:Record<string,unknown>,dispatch:(markDispatched:()=>void,inputSnapshot:Record<string,unknown>)=>Promise<Record<string,unknown>>,options:McpCallOptions&{operationId:string}):Promise<Record<string,unknown>> {
+    return invokeJournaledTool(this.invocation(name, arguments_, options),dispatch);
+  }
+  private invocation(name: string, args: Record<string, unknown>, options: McpCallOptions & { operationId: string }): JournaledInvocation | EphemeralJournaledInvocation {
+    const decision = options.decision ?? evaluateToolPolicy({ tool: name, args, surface: options.scope.surface,
+      scopeId: options.scope.scopeId, operationId: options.operationId, grants: [] });
+    const request = { journal: this.options.journal, operationId: options.operationId, scope: options.scope,
+      tool: name, arguments: args, decisionId: options.decisionId ?? decision.decisionId, decision };
+    if (this.options.ephemeralTestContext) {
+      const ephemeral = { ...request, decision: options.decision, decisionId: options.decisionId };
+      return { ...ephemeral, context: createEphemeralKernelContext(ephemeral) };
+    }
+    if (!this.options.journal) throw Object.assign(new Error("TOOL_EXECUTION_JOURNAL_REQUIRED"), { code: "TOOL_EXECUTION_JOURNAL_REQUIRED", effectState: "none" });
+    const production = { ...request, journal: this.options.journal };
+    return { ...production, context: createProductionKernelContext(production, this.paths.workspacePath,
+      Math.min(options.timeoutMs ?? contractDeadlineMs(name, args), contractDeadlineMs(name, args))) };
   }
   executionRecords(scope: ExecutionScope): ToolExecutionRecord[] { return this.options.journal?.list(scope) ?? []; }
   /** Journal a refusal so an audit can tell a denied call from one never made. */
   recordPolicyDenial(name: string, arguments_: Record<string, unknown>,
     options: { operationId: string; scope: ExecutionScope; decisionId?: string; decision: PolicyDecision }): void {
-    recordPolicyDenial({ journal: this.options.journal, operationId: options.operationId, scope: options.scope,
-      tool: name, arguments: arguments_, decisionId: options.decisionId, decision: options.decision });
+    if (!toolContract(name)) return;
+    recordPolicyDenial(this.invocation(name, arguments_, options));
   }
 
   async tools(refresh = false): Promise<McpTool[]> {
@@ -187,20 +205,20 @@ export class McpClient {
     authorization?: McpCallAuthorization, options?: McpCallOptions): Promise<Record<string, unknown>> {
     const contract = requireToolContract(name);
     if (contract.surface !== "mcp") throw Object.assign(new Error("The tool is not an MCP capability."), { code: "UNKNOWN_CAPABILITY", effectState: "none" });
-    if (this.options.journal && !options?.scope) throw new Error("TOOL_EXECUTION_SCOPE_REQUIRED");
+    if ((!this.options.ephemeralTestContext || this.options.journal) && !options?.scope) throw new Error("TOOL_EXECUTION_SCOPE_REQUIRED");
     const operationId = options?.operationId ?? randomBytes(16).toString("hex");
-    return invokeJournaledTool({ journal: this.options.journal, operationId,
-      scope: options?.scope ?? { surface: "system", scopeId: operationId }, tool: name, arguments: arguments_,
-      decisionId: options?.decisionId, decision: options?.decision }, async markDispatched => {
+    const request = this.invocation(name, arguments_, { ...options, operationId,
+      scope: options?.scope ?? { surface: "system", scopeId: operationId } });
+    return invokeJournaledTool(request, async (markDispatched, inputSnapshot) => {
       await this.start();
       const capability = authorization
-        ? this.createNetworkCapability(name, arguments_, authorization)
+        ? this.createNetworkCapability(name, inputSnapshot, authorization)
         : undefined;
       return (await this.request(
         "tools/call",
-        { name, arguments: arguments_, ...(capability ? { capability } : {}) },
+        { name, arguments: inputSnapshot, ...(capability ? { capability } : {}) },
         signal,
-        options?.timeoutMs ?? toolDeadlineMs(name, arguments_),
+        this.options.ephemeralTestContext ? options?.timeoutMs ?? toolDeadlineMs(name, inputSnapshot) : request.context.budget.timeoutMs,
         options?.onProgress, markDispatched,
       )) as Record<string, unknown>;
     });

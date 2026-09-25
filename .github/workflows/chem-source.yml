@@ -1,0 +1,49 @@
+name: Chem CLI source
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    name: Chem source, ignore rules and core compiler
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify tracked source and excluded local artifacts
+        run: node scripts/verify-chem-source-publication.mjs
+      - name: Exercise publication guard failures
+        run: node --test scripts/tests/verify-chem-source-publication.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned environment manager
+        run: python -m pip install uv==0.12.3
+      - name: Install core Chem package and development dependencies
+        working-directory: apps/proto-workbench/runtime/chem-workbench
+        run: uv sync --locked --python 3.12 --no-managed-python
+      - name: Check the core dependency environment
+        working-directory: apps/proto-workbench/runtime/chem-workbench
+        run: uv pip check
+      - name: Check the software example and core compiler contracts
+        working-directory: apps/proto-workbench/runtime/chem-workbench
+        run: |
+          uv run --no-sync chem check examples/molecules/aspirin.chem
+          uv run --no-sync python -m pytest -q tests/test_parser_and_compiler.py tests/test_json_schemas.py --junitxml=build/ci/chem-core.xml
+      - name: Retain core test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chem-core-tests
+          path: apps/proto-workbench/runtime/chem-workbench/build/ci/chem-core.xml
+          if-no-files-found: warn

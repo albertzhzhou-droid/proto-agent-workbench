@@ -17,6 +17,9 @@ import {runWorkspaceComputation} from "../main/services/compute-workspace.ts";
 import {requestComputeStudies} from "../main/services/compute-studies.ts";
 import {requestResearchFigures} from "../main/services/research-figures.ts";
 import {createResearchWorkflowService} from '../main/services/research-workflow-runtime.ts';
+import {requestManagedResearch} from '../main/services/research-study-commands.ts';
+import {managedResearchDependencies} from '../main/services/managed-research-runtime.ts';
+import {withWorkspaceWrite} from '../main/services/workspace-execution-queue.ts';
 import {ResearchWorkflowsRequestSchema,RESEARCH_WORKFLOW_REQUEST_BYTES} from '../shared/research-workflows.ts';
 import {ComputeStudiesRequestSchema} from "../shared/compute-studies.ts";
 import {ResearchFiguresRequestSchema} from "../shared/research-figures.ts";
@@ -43,7 +46,7 @@ export function researchChatPreview(): Plugin {
     server.httpServer?.once("close", () => { void workflows.close().finally(()=>service.close()).finally(async () => { await mcp.stop(); await models.shutdown(); ledger.close(); database.close(); }); });
     server.middlewares.use(async (req, res, next) => {
       const route = req.url?.split("?")[0];
-      if (route !== "/__proto/chat" && route !== "/__proto/compute" && route !== "/__proto/journal") return next();
+      if (route !== "/__proto/chat" && route !== "/__proto/compute" && route !== "/__proto/journal" && route !== '/__proto/research') return next();
       res.setHeader("Cache-Control", "no-store"); res.setHeader("Content-Type", "application/json");
       const host = req.headers.host ?? "";
       if (!/^(127\.0\.0\.1|localhost):\d+$/.test(host) || req.headers.origin !== `http://${host}` || req.headers["sec-fetch-site"] === "cross-site") {
@@ -56,13 +59,20 @@ export function researchChatPreview(): Plugin {
         const chunks: Buffer[] = []; let size = 0;
         for await (const chunk of req) {
           size += chunk.length;
-          if (size > (route === "/__proto/compute" ? RESEARCH_WORKFLOW_REQUEST_BYTES : CHAT_IMPORT_REQUEST_LIMIT)) throw new Error("Request exceeds the route input limit.");
+          if (size > (route === "/__proto/compute" || route === '/__proto/research' ? RESEARCH_WORKFLOW_REQUEST_BYTES : CHAT_IMPORT_REQUEST_LIMIT)) throw new Error("Request exceeds the route input limit.");
           chunks.push(chunk);
         }
         const payload=z.object({request:z.record(z.string(),z.unknown()),modules:z.object({profile:z.enum(["core-only","research","full","custom"]),enabledOptional:z.array(z.string()),enabledSkills:z.array(z.string()).optional()})}).strict().parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-        const requestLimit=route==='/__proto/compute'&&payload.request.action==='workflows'?RESEARCH_WORKFLOW_REQUEST_BYTES:chatRequestLimit(payload.request);
+        const requestLimit=route==='/__proto/research'||route==='/__proto/compute'&&payload.request.action==='workflows'?RESEARCH_WORKFLOW_REQUEST_BYTES:chatRequestLimit(payload.request);
         if(size > requestLimit) throw new Error("Request is too large for this action.");
         modules=normalizeModuleSettings(payload.modules as Parameters<typeof normalizeModuleSettings>[0]);
+        if(route === '/__proto/research') {
+          validateIpcArguments(IPC.managedResearch,[payload.request]);
+          const requestModules=modules;
+          const result=await withWorkspaceWrite(workspace,undefined,()=>requestManagedResearch(workspace,payload.request,
+            managedResearchDependencies(workspace,()=>mcp.fork(),workflows,()=>requestModules.enabledOptional.includes('analysis.biomni'),process.env.PROTO_COMPUTE_STUDIES_DB)));
+          res.end(JSON.stringify(result)); return;
+        }
         if(route==="/__proto/journal"){
           const request=z.object({action:z.enum(["list","inspect","reconcile"]),input:z.unknown()}).strict().parse(payload.request);
           if(request.action==="list"){

@@ -202,7 +202,8 @@ test("remedies only name available receipt producers without expanding policy or
   assert.deepEqual(toolsProducing("protein-materialization", offered).map(row => row.name), ["proto_materials_materialize_proteins"]);
   assert.deepEqual(toolsProducing("protein-materialization", ["proto_materials_search"]), []);
   assert.deepEqual(toolsProducing("workspace-read", ["workspace_search", "workspace_list"]), []);
-  assert.deepEqual(toolsProducing("scientific-export", ["proto_research_figure_render"]), [], "denied tools cannot become remedies");
+  assert.deepEqual(toolsProducing("scientific-export", ["proto_remote_run"]), [], "denied tools cannot become remedies");
+  assert.equal(toolsProducing("scientific-export", ["proto_research_figure_render"])[0].effect, "write", "fixed local figure rendering retains its journalled write boundary");
   assert.deepEqual(toolsProducing("rendered-binary", TOOL_CONTRACTS.keys()), [], "a raw export is not a trusted renderer receipt");
   assert.equal(toolContract("workspace_propose_patch").idempotent, false, "CAS proof recovery must never become write replay");
   assert.equal(toolContract("harness_report_blocked").maxCallsPerRun, Number.MAX_SAFE_INTEGER);

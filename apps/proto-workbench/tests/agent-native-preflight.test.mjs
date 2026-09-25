@@ -1,3 +1,4 @@
+import { ManagedMcpTestClient } from "./helpers/managed-mcp.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {mkdir,mkdtemp,readFile,rm} from "node:fs/promises";
@@ -14,7 +15,7 @@ import {defaultModuleSettings} from "../src/shared/modules.ts";
 test("real Python capabilities and effective AgentService registry permit the actual Act write path",async()=>{
   const repo=fileURLToPath(new URL("../../../",import.meta.url)),owned=resolve("build/test-native-preflight");await mkdir(owned,{recursive:true});const root=await mkdtemp(join(owned,"case-"));
   const db=new AppDatabase(join(root,"execution.sqlite")),files=new WorkspaceFiles(root,db);
-  const mcp=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:root,workspaceCapability:randomBytes(32).toString("hex"),materialsRoot:join(root,"isolated-materials"),pythonExecutable:process.env.PROTO_AGENT_PYTHON||join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+  const mcp=new ManagedMcpTestClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:root,workspaceCapability:randomBytes(32).toString("hex"),materialsRoot:join(root,"isolated-materials"),pythonExecutable:process.env.PROTO_AGENT_PYTHON||join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
   const model={id:"fixture",name:"Mock model for preflight integration",fingerprint:"f".repeat(64),loadState:"active",toolCapability:"agent-ready",vision:false,workbenchInstance:{id:"fixture-instance",ownedByWorkbench:true,contextLength:32768}};
   const turns=[["harness_plan",{deliverables:[{path:"build/result.md",kind:"document"}]}],["workspace_propose_patch",{path:"build/result.md",content:"# Verified fixture output\n",rationale:"Fulfill the authorized fixture mission"}],["harness_finish",{summary:"Saved and verified the requested fixture document."}]];
   const payloads=[],models={get:()=>model,getActiveModel:()=>model,getExecutionBinding:async()=>({modelId:model.id,instanceId:"fixture-instance",contextLength:32768}),countExecutionTokens:async()=>({tokens:1000,method:"exact"}),chat:async(_id,payload,chunk)=>{payloads.push(payload);const turn=turns.shift();if(!turn)throw new Error("Unexpected extra model generation");chunk({usage:{completion_tokens:10},choices:[{finish_reason:"tool_calls",delta:{tool_calls:[{index:0,function:{name:turn[0],arguments:JSON.stringify(turn[1])}}]}}]});}};

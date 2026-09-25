@@ -1,0 +1,2069 @@
+{
+  "authorization": {
+    "external_workers": false,
+    "max_candidates_per_family": 24,
+    "max_interface_runs": 3,
+    "model_grants_authority": false,
+    "network": false,
+    "origin": "explicit_user_run_request"
+  },
+  "decision": {
+    "a_elements": [],
+    "action": "run_workflow",
+    "b_pair_ids": [],
+    "fragment_ids": [
+      "ethyl",
+      "hydroxyethyl",
+      "phenyl"
+    ],
+    "interfaces": [],
+    "max_candidates": 3,
+    "message": "Generate three catechol amide candidates using ethyl, hydroxyethyl, and phenyl fragments.",
+    "missing_inputs": [],
+    "organic_filters": {
+      "logp_max": 4.0,
+      "logp_min": -2.0,
+      "mw_max": 400,
+      "tpsa_max": 140.0,
+      "tpsa_min": 35.0
+    },
+    "organic_ranking": "low_logp",
+    "scaffold_id": "catechol_amide",
+    "tolerance_target": null,
+    "unsupported_requests": [],
+    "workflow": "organic_design"
+  },
+  "inorganic": null,
+  "interfaces": [],
+  "orchestration": {
+    "decision_source": "action",
+    "execution_authorized_by_model": false,
+    "model": {
+      "available": true,
+      "display_name": "Qwen3.8 27B candidate",
+      "endpoint": "http://127.0.0.1:1234",
+      "installed": true,
+      "key": "qwen3.8-27b@q4_k_m",
+      "loaded_config": {
+        "context_length": 16384,
+        "eval_batch_size": 2048,
+        "flash_attention": true,
+        "offload_kv_cache_to_gpu": true,
+        "parallel": 1,
+        "physical_batch_size": 512,
+        "speculative_draft_max_tokens": 2,
+        "speculative_draft_min_continue_probability": 0.75,
+        "speculative_draft_min_tokens": 0,
+        "speculative_draft_model": "",
+        "speculative_draft_mtp": false,
+        "speculative_draft_simple": false
+      },
+      "message": "Ready",
+      "mode": "strict_json_actions",
+      "model_id": "chem-qwen-27b-candidate",
+      "quantization": {
+        "bits_per_weight": 4,
+        "name": "Q4_K_M"
+      },
+      "variant": null
+    },
+    "model_action": {
+      "a_elements": [],
+      "action": "run_workflow",
+      "b_pair_ids": [],
+      "fragment_ids": [
+        "ethyl",
+        "hydroxyethyl",
+        "phenyl"
+      ],
+      "interfaces": [],
+      "max_candidates": 3,
+      "message": "Generate three catechol amide candidates using ethyl, hydroxyethyl, and phenyl fragments.",
+      "missing_inputs": [],
+      "organic_filters": {
+        "logp_max": 4.0,
+        "logp_min": -2.0,
+        "mw_max": 400,
+        "tpsa_max": 140.0,
+        "tpsa_min": 35.0
+      },
+      "organic_ranking": "low_logp",
+      "scaffold_id": "catechol_amide",
+      "tolerance_target": null,
+      "unsupported_requests": [],
+      "workflow": "organic_design"
+    },
+    "prompt_hash": "sha256:a46af2facd1ba64038b165ee5294c1a62bbe580a62ee3986d9e83c0c588c13f7",
+    "provider_calls": [
+      {
+        "error": null,
+        "finish_reason": "stop",
+        "messages_hash": "sha256:88f06069074737a70ba34698553f8806da61ea25b577576b1df0d3cc452c0d2a",
+        "outcome": "valid_action",
+        "proposed_action": {
+          "disposition": "admitted",
+          "message": "The request for three catechol-amide derivatives with specified filters and ranking is fully supported by the catalog.",
+          "missing_inputs": [],
+          "requested_properties": [
+            "MW",
+            "logP",
+            "TPSA"
+          ],
+          "requested_workflow": "organic_design",
+          "unsupported_requests": []
+        },
+        "reasoning_tokens": 0,
+        "request_body_hash": "sha256:262d7a085396cb1f467d13974a452dc213e6ed5c4d553d97a5e8c868f2c1ee13",
+        "response_hash": "sha256:03eab5b7b9a91cfd048e42585c593dcc39bd1309adfcf66223cfbc3ea2a6e03d",
+        "response_model": "chem-qwen-27b-candidate",
+        "response_text": "{\n  \"requested_workflow\": \"organic_design\",\n  \"requested_properties\": [\n    \"MW\",\n    \"logP\",\n    \"TPSA\"\n  ],\n  \"missing_inputs\": [],\n  \"unsupported_requests\": [],\n  \"disposition\": \"admitted\",\n  \"message\": \"The request for three catechol-amide derivatives with specified filters and ranking is fully supported by the catalog.\"\n}",
+        "schema_valid": true,
+        "seconds": 5.383,
+        "stage": "requirements",
+        "usage": {
+          "completion_tokens": 92,
+          "completion_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "prompt_tokens": 3005,
+          "total_tokens": 3097
+        }
+      },
+      {
+        "error": null,
+        "finish_reason": "stop",
+        "messages_hash": "sha256:ac509c4bd161a27c7d06b53dc07ca3141d3e5174f953b55c7833db9f0ffcdbed",
+        "outcome": "valid_action",
+        "proposed_action": {
+          "a_elements": [],
+          "action": "run_workflow",
+          "b_pair_ids": [],
+          "fragment_ids": [
+            "ethyl",
+            "hydroxyethyl",
+            "phenyl"
+          ],
+          "interfaces": [],
+          "max_candidates": 3,
+          "message": "Generate three catechol amide candidates using ethyl, hydroxyethyl, and phenyl fragments.",
+          "missing_inputs": [],
+          "organic_filters": {
+            "logp_max": 4.0,
+            "logp_min": -2.0,
+            "mw_max": 400,
+            "tpsa_max": 140.0,
+            "tpsa_min": 35.0
+          },
+          "organic_ranking": "low_logp",
+          "scaffold_id": "catechol_amide",
+          "tolerance_target": null,
+          "unsupported_requests": [],
+          "workflow": "organic_design"
+        },
+        "reasoning_tokens": 0,
+        "request_body_hash": "sha256:0fad54d513f0ce99c4db76b0013ba3726ea3103a088cbf1f32870be32f3ee2d9",
+        "response_hash": "sha256:455be91adc4887d16cb8fc375e6c38d219c1bb4e68f0c850f95a71cdefb79aa8",
+        "response_model": "chem-qwen-27b-candidate",
+        "response_text": "{\n  \"message\": \"Generate three catechol amide candidates using ethyl, hydroxyethyl, and phenyl fragments.\",\n  \"action\": \"run_workflow\",\n  \"workflow\": \"organic_design\",\n  \"scaffold_id\": \"catechol_amide\",\n  \"organic_ranking\": \"low_logp\",\n  \"fragment_ids\": [\n    \"ethyl\",\n    \"hydroxyethyl\",\n    \"phenyl\"\n  ],\n  \"organic_filters\": {\n    \"mw_max\": 400,\n    \"logp_min\": -2.0,\n    \"logp_max\": 4.0,\n    \"tpsa_min\": 35.0,\n    \"tpsa_max\": 140.0\n  },\n  \"a_elements\": [],\n  \"tolerance_target\": null,\n  \"b_pair_ids\": [],\n  \"max_candidates\": 3,\n  \"interfaces\": [],\"missing_inputs\": [],\n  \"unsupported_requests\": []\n}",
+        "schema_valid": true,
+        "seconds": 10.884,
+        "stage": "action",
+        "usage": {
+          "completion_tokens": 224,
+          "completion_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "prompt_tokens": 3230,
+          "total_tokens": 3454
+        }
+      }
+    ],
+    "repairs": 0,
+    "requirements": {
+      "disposition": "admitted",
+      "message": "The request for three catechol-amide derivatives with specified filters and ranking is fully supported by the catalog.",
+      "missing_inputs": [],
+      "requested_properties": [
+        "MW",
+        "logP",
+        "TPSA"
+      ],
+      "requested_workflow": "organic_design",
+      "unsupported_requests": []
+    },
+    "requirements_prompt_hash": "sha256:b22d27b1eaf78ef7208dcae550a273aacb5b3deb66a598ffa472c390c60f91cb",
+    "requirements_schema_hash": "sha256:cc00d1bb1c41c68520462de1af8eb4b5862fd3616815f5119a3e4bf897e52c1e",
+    "schema_hash": "sha256:0d7edcd3bcc9003c18cac11259ae22ea476b2279337f1fea020215c0d8f19b5d",
+    "seconds": 16.295302,
+    "study_hash": "sha256:4dae28645869e26376172ee6cc3e3234833f2e03de6eeb51f248b6f6e076360e",
+    "system_prompt_hash": "sha256:726e44a54dd56c48aca48dd280de0e4e789d7d663ca568f186e376170df54a1e",
+    "version": "design-orchestration/v1"
+  },
+  "organic": {
+    "attempted_count": 3,
+    "candidate_count": 3,
+    "candidates": [
+      {
+        "candidate_hash": "sha256:d862400d3f8ad7719e09c507c5710c20e407ebf6ffac4ba1eaca65f57895fa51",
+        "canonical_smiles": "O=C(NCCCCO)c1ccc(O)c(O)c1",
+        "complexity": {
+          "heavy_atoms": 16,
+          "structural_feature_classes": [
+            "amide",
+            "aromatic_ring",
+            "hydroxyl"
+          ],
+          "substantive_functional_groups": [
+            "amide",
+            "hydroxyl"
+          ]
+        },
+        "descriptors": {
+          "formal_charge": 0,
+          "h_bond_acceptors": 4,
+          "h_bond_donors": 4,
+          "logp": 0.6000999999999999,
+          "molecular_weight": 225.24399999999997,
+          "rotatable_bonds": 5,
+          "tpsa": 89.79
+        },
+        "family": "organic",
+        "generation": {
+          "anchor_atom_indices": [
+            0,
+            8,
+            10
+          ],
+          "anchor_scope": "Retained potential donor atoms, not proven binding sites",
+          "attachment_atom_index": 4,
+          "fragment_id": "hydroxyethyl",
+          "fragment_smiles": "[*:1]CCO",
+          "scaffold_atom_mapping": [
+            {
+              "candidate_atom_index": 0,
+              "source_atom_index": 0
+            },
+            {
+              "candidate_atom_index": 1,
+              "source_atom_index": 1
+            },
+            {
+              "candidate_atom_index": 2,
+              "source_atom_index": 2
+            },
+            {
+              "candidate_atom_index": 3,
+              "source_atom_index": 3
+            },
+            {
+              "candidate_atom_index": 4,
+              "source_atom_index": 4
+            },
+            {
+              "candidate_atom_index": 5,
+              "source_atom_index": 6
+            },
+            {
+              "candidate_atom_index": 6,
+              "source_atom_index": 7
+            },
+            {
+              "candidate_atom_index": 7,
+              "source_atom_index": 8
+            },
+            {
+              "candidate_atom_index": 8,
+              "source_atom_index": 9
+            },
+            {
+              "candidate_atom_index": 9,
+              "source_atom_index": 10
+            },
+            {
+              "candidate_atom_index": 10,
+              "source_atom_index": 11
+            },
+            {
+              "candidate_atom_index": 11,
+              "source_atom_index": 12
+            },
+            {
+              "candidate_atom_index": 12,
+              "source_atom_index": 13
+            }
+          ],
+          "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1"
+        },
+        "geometry": {
+          "atoms": [
+            {
+              "element": "O",
+              "id": "atom-1",
+              "position": [
+                0.19890578725479768,
+                1.041820784497453,
+                -1.489503126563012
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-2",
+              "position": [
+                0.4856446064119548,
+                0.46485807403358415,
+                -0.39211592294667524
+              ]
+            },
+            {
+              "element": "N",
+              "id": "atom-3",
+              "position": [
+                -0.48526165631336093,
+                0.24831269648460025,
+                0.6182023792759296
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-4",
+              "position": [
+                -1.8817846639322953,
+                0.6690394899466042,
+                0.4729870608555545
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-5",
+              "position": [
+                -2.5514335585207135,
+                0.00264300536618629,
+                -0.7049598846597078
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-6",
+              "position": [
+                1.874424193669785,
+                0.04375565286565537,
+                -0.24566748872057237
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-7",
+              "position": [
+                2.769051330455021,
+                0.283038767727106,
+                -1.263103695440535
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-8",
+              "position": [
+                4.100107874604188,
+                -0.08803368879867789,
+                -1.1935680307374377
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-9",
+              "position": [
+                4.983530412795593,
+                0.17358627618046268,
+                -2.253432891670692
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-10",
+              "position": [
+                4.584840361426921,
+                -0.7256496006724888,
+                -0.07403282394296283
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-11",
+              "position": [
+                5.90399105818199,
+                -1.1271022278847413,
+                0.06825822131522688
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-12",
+              "position": [
+                3.699519986399771,
+                -0.9708796530373662,
+                0.9511869636871896
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-13",
+              "position": [
+                2.358880400981816,
+                -0.5949778241176685,
+                0.8764520964934812
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-14",
+              "position": [
+                -3.9849612025160757,
+                0.40942085666108957,
+                -0.888179029893481
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-15",
+              "position": [
+                -4.832807672236038,
+                0.06748818430253793,
+                0.3152125433002739
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-16",
+              "position": [
+                -4.812873153353383,
+                -1.2921319478743203,
+                0.5577244427991617
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-17",
+              "position": [
+                -0.21947647733638487,
+                -0.22694966088523694,
+                1.508398867596015
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-18",
+              "position": [
+                -2.4430751262393873,
+                0.4908716809166273,
+                1.4059575820795422
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-19",
+              "position": [
+                -1.8803165348417406,
+                1.7708665537951196,
+                0.31863367770755163
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-20",
+              "position": [
+                -2.4719715314998636,
+                -1.1042985612211618,
+                -0.5746611765019802
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-21",
+              "position": [
+                -1.9887189014541848,
+                0.2939115094228015,
+                -1.614190767156594
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-22",
+              "position": [
+                2.4701080214764364,
+                0.7819202062122773,
+                -2.183672430950684
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-23",
+              "position": [
+                5.434073472328631,
+                1.0701379186177062,
+                -2.376368316601371
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-24",
+              "position": [
+                6.634471012904919,
+                -0.40861914205599126,
+                0.04064812348988839
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-25",
+              "position": [
+                4.021634502073673,
+                -1.4723963584679916,
+                1.8645777663203231
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-26",
+              "position": [
+                1.7195288883734632,
+                -0.8070813887075051,
+                1.6931051491406826
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-27",
+              "position": [
+                -3.9918017458674075,
+                1.4972854144790135,
+                -1.094228592174785
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-28",
+              "position": [
+                -4.433192219694317,
+                -0.06472995783980837,
+                -1.7701398671462578
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-29",
+              "position": [
+                -4.449336026846828,
+                0.6337302844699951,
+                1.186279289960684
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-30",
+              "position": [
+                -5.9027522371062275,
+                0.36607001094346114,
+                0.1452109769637658
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-31",
+              "position": [
+                -4.908949201580735,
+                -1.4259073553593669,
+                1.5324885943985047
+              ]
+            }
+          ],
+          "bonds": [
+            {
+              "a": 0,
+              "b": 1,
+              "order": 2.0
+            },
+            {
+              "a": 1,
+              "b": 2,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 4,
+              "order": 1.0
+            },
+            {
+              "a": 1,
+              "b": 5,
+              "order": 1.0
+            },
+            {
+              "a": 5,
+              "b": 6,
+              "order": 1.5
+            },
+            {
+              "a": 6,
+              "b": 7,
+              "order": 1.5
+            },
+            {
+              "a": 7,
+              "b": 8,
+              "order": 1.0
+            },
+            {
+              "a": 7,
+              "b": 9,
+              "order": 1.5
+            },
+            {
+              "a": 9,
+              "b": 10,
+              "order": 1.0
+            },
+            {
+              "a": 9,
+              "b": 11,
+              "order": 1.5
+            },
+            {
+              "a": 11,
+              "b": 12,
+              "order": 1.5
+            },
+            {
+              "a": 12,
+              "b": 5,
+              "order": 1.5
+            },
+            {
+              "a": 13,
+              "b": 14,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 15,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 13,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 16,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 17,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 18,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 19,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 20,
+              "order": 1.0
+            },
+            {
+              "a": 6,
+              "b": 21,
+              "order": 1.0
+            },
+            {
+              "a": 8,
+              "b": 22,
+              "order": 1.0
+            },
+            {
+              "a": 10,
+              "b": 23,
+              "order": 1.0
+            },
+            {
+              "a": 11,
+              "b": 24,
+              "order": 1.0
+            },
+            {
+              "a": 12,
+              "b": 25,
+              "order": 1.0
+            },
+            {
+              "a": 13,
+              "b": 26,
+              "order": 1.0
+            },
+            {
+              "a": 13,
+              "b": 27,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 28,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 29,
+              "order": 1.0
+            },
+            {
+              "a": 15,
+              "b": 30,
+              "order": 1.0
+            }
+          ],
+          "cell": null,
+          "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+          "display_repeats": 1,
+          "geometry_hash": "sha256:6834b7168ba7ec6f5315c0dbc457ddcc9f430a186bbf176ecc3937e94cbd596d",
+          "kind": "Molecule",
+          "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+          "object_id": "organic_85006165e1151cf6",
+          "provenance": "tool_generated",
+          "source_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+          "subject_hash": "sha256:85006165e1151cf62a24449532a77a84a4f00e657196a98fdb75b655378a6fd8",
+          "unit_cell_atoms": 31,
+          "units": "angstrom",
+          "version": "display-geometry/v1"
+        },
+        "id": "organic_85006165e1151cf6",
+        "identity_hash": "sha256:85006165e1151cf62a24449532a77a84a4f00e657196a98fdb75b655378a6fd8",
+        "request_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+        "score": 0.6000999999999999,
+        "score_scope": "Descriptor objective only; lower is preferred",
+        "source": "chem 0.1\nmolecule organic_85006165e1151cf6 { structure smiles \"O=C(NCCCCO)c1ccc(O)c(O)c1\" }\n"
+      },
+      {
+        "candidate_hash": "sha256:85d11a1a599d36bc7f9776a89b45c921ca222059aafeab8c856050a8770fccb8",
+        "canonical_smiles": "CCCCNC(=O)c1ccc(O)c(O)c1",
+        "complexity": {
+          "heavy_atoms": 15,
+          "structural_feature_classes": [
+            "amide",
+            "aromatic_ring",
+            "hydroxyl"
+          ],
+          "substantive_functional_groups": [
+            "amide",
+            "hydroxyl"
+          ]
+        },
+        "descriptors": {
+          "formal_charge": 0,
+          "h_bond_acceptors": 3,
+          "h_bond_donors": 3,
+          "logp": 1.6276999999999997,
+          "molecular_weight": 209.24499999999998,
+          "rotatable_bonds": 4,
+          "tpsa": 69.56
+        },
+        "family": "organic",
+        "generation": {
+          "anchor_atom_indices": [
+            0,
+            8,
+            10
+          ],
+          "anchor_scope": "Retained potential donor atoms, not proven binding sites",
+          "attachment_atom_index": 4,
+          "fragment_id": "ethyl",
+          "fragment_smiles": "[*:1]CC",
+          "scaffold_atom_mapping": [
+            {
+              "candidate_atom_index": 0,
+              "source_atom_index": 0
+            },
+            {
+              "candidate_atom_index": 1,
+              "source_atom_index": 1
+            },
+            {
+              "candidate_atom_index": 2,
+              "source_atom_index": 2
+            },
+            {
+              "candidate_atom_index": 3,
+              "source_atom_index": 3
+            },
+            {
+              "candidate_atom_index": 4,
+              "source_atom_index": 4
+            },
+            {
+              "candidate_atom_index": 5,
+              "source_atom_index": 6
+            },
+            {
+              "candidate_atom_index": 6,
+              "source_atom_index": 7
+            },
+            {
+              "candidate_atom_index": 7,
+              "source_atom_index": 8
+            },
+            {
+              "candidate_atom_index": 8,
+              "source_atom_index": 9
+            },
+            {
+              "candidate_atom_index": 9,
+              "source_atom_index": 10
+            },
+            {
+              "candidate_atom_index": 10,
+              "source_atom_index": 11
+            },
+            {
+              "candidate_atom_index": 11,
+              "source_atom_index": 12
+            },
+            {
+              "candidate_atom_index": 12,
+              "source_atom_index": 13
+            }
+          ],
+          "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1"
+        },
+        "geometry": {
+          "atoms": [
+            {
+              "element": "O",
+              "id": "atom-1",
+              "position": [
+                -0.11635787138480133,
+                -1.5968108499492795,
+                0.33127752248668696
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-2",
+              "position": [
+                0.30680310642813635,
+                -0.5020076302159058,
+                -0.17502981110854354
+              ]
+            },
+            {
+              "element": "N",
+              "id": "atom-3",
+              "position": [
+                -0.5798422793525181,
+                0.36792733241794323,
+                -0.8559883894771093
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-4",
+              "position": [
+                -1.9881037427594177,
+                0.12203668089572804,
+                -1.0392771105328535
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-5",
+              "position": [
+                -2.6574153096880835,
+                0.01927123947870346,
+                0.3023927236239984
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-6",
+              "position": [
+                1.727771661055163,
+                -0.23935989343533443,
+                0.0041431789538076145
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-7",
+              "position": [
+                2.4929258176023095,
+                -1.1620446735642307,
+                0.6863355688612103
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-8",
+              "position": [
+                3.86248192848598,
+                -0.9772827406779709,
+                0.8966317068178257
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-9",
+              "position": [
+                4.626548418503814,
+                -1.8893100518308585,
+                1.5727171787237473
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-10",
+              "position": [
+                4.470648442650388,
+                0.1649925413963437,
+                0.4064194009715351
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-11",
+              "position": [
+                5.817532414500237,
+                0.35849310265941187,
+                0.6067411367818591
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-12",
+              "position": [
+                3.7214143398183768,
+                1.089768030088852,
+                -0.273297586887618
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-13",
+              "position": [
+                2.3685770870899687,
+                0.8800423738824114,
+                -0.4660400835203553
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-14",
+              "position": [
+                -4.1458548599660086,
+                -0.23500714096728342,
+                0.17744347792310447
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-15",
+              "position": [
+                -4.8501881300201335,
+                0.8652978880297795,
+                -0.5750325711710365
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-16",
+              "position": [
+                -0.14872892101138796,
+                1.2505032365154434,
+                -1.2455550642310962
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-17",
+              "position": [
+                -2.183387027749221,
+                -0.8109064238355127,
+                -1.6116744136840764
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-18",
+              "position": [
+                -2.4385019395927863,
+                0.9861814379174215,
+                -1.568952825912549
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-19",
+              "position": [
+                -2.4453907096120355,
+                0.9236831756818918,
+                0.9071414572269795
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-20",
+              "position": [
+                -2.2520839972556277,
+                -0.8715947562722618,
+                0.8213320316513503
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-21",
+              "position": [
+                2.0899589263622893,
+                -2.0827730071736092,
+                1.1013670315984319
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-22",
+              "position": [
+                4.269050323618295,
+                -2.65908220346347,
+                2.116001900190804
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-23",
+              "position": [
+                6.128648802165811,
+                0.45793597907319117,
+                1.5705517788979595
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-24",
+              "position": [
+                4.177217271680006,
+                1.998679849294557,
+                -0.6697716254026463
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-25",
+              "position": [
+                1.8215439759708254,
+                1.633789543052286,
+                -1.0055154544876919
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-26",
+              "position": [
+                -4.269857004045801,
+                -1.18997642967196,
+                -0.3727291286554167
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-27",
+              "position": [
+                -4.5478871084438035,
+                -0.3265604661363026,
+                1.2047182145345774
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-28",
+              "position": [
+                -5.065030474589447,
+                0.5652832984214674,
+                -1.6229459436913143
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-29",
+              "position": [
+                -4.331101231303233,
+                1.8402218483441677,
+                -0.5143021543544167
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-30",
+              "position": [
+                -5.861391909158114,
+                1.0186087100425063,
+                -0.09759603084281913
+              ]
+            }
+          ],
+          "bonds": [
+            {
+              "a": 0,
+              "b": 1,
+              "order": 2.0
+            },
+            {
+              "a": 1,
+              "b": 2,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 4,
+              "order": 1.0
+            },
+            {
+              "a": 1,
+              "b": 5,
+              "order": 1.0
+            },
+            {
+              "a": 5,
+              "b": 6,
+              "order": 1.5
+            },
+            {
+              "a": 6,
+              "b": 7,
+              "order": 1.5
+            },
+            {
+              "a": 7,
+              "b": 8,
+              "order": 1.0
+            },
+            {
+              "a": 7,
+              "b": 9,
+              "order": 1.5
+            },
+            {
+              "a": 9,
+              "b": 10,
+              "order": 1.0
+            },
+            {
+              "a": 9,
+              "b": 11,
+              "order": 1.5
+            },
+            {
+              "a": 11,
+              "b": 12,
+              "order": 1.5
+            },
+            {
+              "a": 12,
+              "b": 5,
+              "order": 1.5
+            },
+            {
+              "a": 13,
+              "b": 14,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 13,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 15,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 16,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 17,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 18,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 19,
+              "order": 1.0
+            },
+            {
+              "a": 6,
+              "b": 20,
+              "order": 1.0
+            },
+            {
+              "a": 8,
+              "b": 21,
+              "order": 1.0
+            },
+            {
+              "a": 10,
+              "b": 22,
+              "order": 1.0
+            },
+            {
+              "a": 11,
+              "b": 23,
+              "order": 1.0
+            },
+            {
+              "a": 12,
+              "b": 24,
+              "order": 1.0
+            },
+            {
+              "a": 13,
+              "b": 25,
+              "order": 1.0
+            },
+            {
+              "a": 13,
+              "b": 26,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 27,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 28,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 29,
+              "order": 1.0
+            }
+          ],
+          "cell": null,
+          "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+          "display_repeats": 1,
+          "geometry_hash": "sha256:73c9d180a81a46e1f86c719df2e132b3e68a78c175c9a962dc61384166fb90d2",
+          "kind": "Molecule",
+          "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+          "object_id": "organic_a20266d6d8f9e931",
+          "provenance": "tool_generated",
+          "source_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+          "subject_hash": "sha256:a20266d6d8f9e9313b1b2392f765e4ec2273f82a2f96a69dbfa820cdf1959754",
+          "unit_cell_atoms": 30,
+          "units": "angstrom",
+          "version": "display-geometry/v1"
+        },
+        "id": "organic_a20266d6d8f9e931",
+        "identity_hash": "sha256:a20266d6d8f9e9313b1b2392f765e4ec2273f82a2f96a69dbfa820cdf1959754",
+        "request_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+        "score": 1.6276999999999997,
+        "score_scope": "Descriptor objective only; lower is preferred",
+        "source": "chem 0.1\nmolecule organic_a20266d6d8f9e931 { structure smiles \"CCCCNC(=O)c1ccc(O)c(O)c1\" }\n"
+      },
+      {
+        "candidate_hash": "sha256:c312a810cbbe0b8cb300d3941a403649e2a16a0701a3f7eaeb58a82421f538b3",
+        "canonical_smiles": "O=C(NCCc1ccccc1)c1ccc(O)c(O)c1",
+        "complexity": {
+          "heavy_atoms": 19,
+          "structural_feature_classes": [
+            "amide",
+            "aromatic_ring",
+            "hydroxyl"
+          ],
+          "substantive_functional_groups": [
+            "amide",
+            "hydroxyl"
+          ]
+        },
+        "descriptors": {
+          "formal_charge": 0,
+          "h_bond_acceptors": 3,
+          "h_bond_donors": 3,
+          "logp": 2.0702999999999996,
+          "molecular_weight": 257.289,
+          "rotatable_bonds": 4,
+          "tpsa": 69.56
+        },
+        "family": "organic",
+        "generation": {
+          "anchor_atom_indices": [
+            0,
+            8,
+            10
+          ],
+          "anchor_scope": "Retained potential donor atoms, not proven binding sites",
+          "attachment_atom_index": 4,
+          "fragment_id": "phenyl",
+          "fragment_smiles": "[*:1]c1ccccc1",
+          "scaffold_atom_mapping": [
+            {
+              "candidate_atom_index": 0,
+              "source_atom_index": 0
+            },
+            {
+              "candidate_atom_index": 1,
+              "source_atom_index": 1
+            },
+            {
+              "candidate_atom_index": 2,
+              "source_atom_index": 2
+            },
+            {
+              "candidate_atom_index": 3,
+              "source_atom_index": 3
+            },
+            {
+              "candidate_atom_index": 4,
+              "source_atom_index": 4
+            },
+            {
+              "candidate_atom_index": 5,
+              "source_atom_index": 6
+            },
+            {
+              "candidate_atom_index": 6,
+              "source_atom_index": 7
+            },
+            {
+              "candidate_atom_index": 7,
+              "source_atom_index": 8
+            },
+            {
+              "candidate_atom_index": 8,
+              "source_atom_index": 9
+            },
+            {
+              "candidate_atom_index": 9,
+              "source_atom_index": 10
+            },
+            {
+              "candidate_atom_index": 10,
+              "source_atom_index": 11
+            },
+            {
+              "candidate_atom_index": 11,
+              "source_atom_index": 12
+            },
+            {
+              "candidate_atom_index": 12,
+              "source_atom_index": 13
+            }
+          ],
+          "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1"
+        },
+        "geometry": {
+          "atoms": [
+            {
+              "element": "O",
+              "id": "atom-1",
+              "position": [
+                -0.43922736421237696,
+                -1.8681574194890882,
+                -1.5911733222229225
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-2",
+              "position": [
+                -0.7030503795790239,
+                -1.3396652230980082,
+                -0.45937442562962183
+              ]
+            },
+            {
+              "element": "N",
+              "id": "atom-3",
+              "position": [
+                0.2721735368037474,
+                -1.5192321244766607,
+                0.5492681055274766
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-4",
+              "position": [
+                1.4693265352612424,
+                -2.2453657152898967,
+                0.30712178724360223
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-5",
+              "position": [
+                2.333328850162166,
+                -1.6758923375753019,
+                -0.7850140608063857
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-6",
+              "position": [
+                -1.940418939132722,
+                -0.599340091275292,
+                -0.23913435477560754
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-7",
+              "position": [
+                -2.2846117416751146,
+                -0.010136863944427279,
+                0.9436781200661096
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-8",
+              "position": [
+                -3.4920609222791525,
+                0.6795077804716091,
+                1.062697009723163
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-9",
+              "position": [
+                -3.836832907089114,
+                1.272482978127866,
+                2.2556362048905445
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-10",
+              "position": [
+                -4.377612219317338,
+                0.7962561602068341,
+                0.011553960398896288
+              ]
+            },
+            {
+              "element": "O",
+              "id": "atom-11",
+              "position": [
+                -5.583592460610233,
+                1.4819469519378843,
+                0.12131319352951828
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-12",
+              "position": [
+                -4.021637486396768,
+                0.1994903467686025,
+                -1.1748590367216898
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-13",
+              "position": [
+                -2.8272928326529763,
+                -0.4825516575499737,
+                -1.2922402871332281
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-14",
+              "position": [
+                2.75121997227081,
+                -0.28725536645566174,
+                -0.45691769571253443
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-15",
+              "position": [
+                3.9211683170246863,
+                -0.07228607860732326,
+                0.24962618574844245
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-16",
+              "position": [
+                4.379808505368366,
+                1.1771609541900836,
+                0.5933275313194838
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-17",
+              "position": [
+                3.6439897435453537,
+                2.282927841481016,
+                0.22002401087275777
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-18",
+              "position": [
+                2.482729997453942,
+                2.096526215955487,
+                -0.4797360920135556
+              ]
+            },
+            {
+              "element": "C",
+              "id": "atom-19",
+              "position": [
+                2.0333246854162437,
+                0.8280300245491437,
+                -0.8190573108139874
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-20",
+              "position": [
+                0.10694588707032582,
+                -1.1050121532161385,
+                1.501859568751947
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-21",
+              "position": [
+                2.1027251025852887,
+                -2.30322473587043,
+                1.2166565702772398
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-22",
+              "position": [
+                1.2863708286012971,
+                -3.318423508013419,
+                0.02562398732377649
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-23",
+              "position": [
+                3.266220526587496,
+                -2.273456846448499,
+                -0.8562665712149591
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-24",
+              "position": [
+                1.8836018090469846,
+                -1.711555870677618,
+                -1.792218855123137
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-25",
+              "position": [
+                -1.632115116899022,
+                -0.07657297615123691,
+                1.775473559017067
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-26",
+              "position": [
+                -4.3299567280072955,
+                2.1540812203757937,
+                2.336497351530631
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-27",
+              "position": [
+                -6.054836537197406,
+                1.3799191811206661,
+                1.0234699399525096
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-28",
+              "position": [
+                -4.683565026623398,
+                0.25663001620805465,
+                -2.048733924323687
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-29",
+              "position": [
+                -2.60853692906538,
+                -0.9324471247762107,
+                -2.2646912282833886
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-30",
+              "position": [
+                4.493881832829309,
+                -0.9590923896498867,
+                0.5386809754618903
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-31",
+              "position": [
+                5.303861359528375,
+                1.2266171169746656,
+                1.1444828090188297
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-32",
+              "position": [
+                4.038930272719534,
+                3.2447973624795554,
+                0.5094661615177012
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-33",
+              "position": [
+                1.924424398199713,
+                2.982899543461743,
+                -0.7602702070226095
+              ]
+            },
+            {
+              "element": "H",
+              "id": "atom-34",
+              "position": [
+                1.121315430260774,
+                0.720394788258378,
+                -1.3667696603749473
+              ]
+            }
+          ],
+          "bonds": [
+            {
+              "a": 0,
+              "b": 1,
+              "order": 2.0
+            },
+            {
+              "a": 1,
+              "b": 2,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 3,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 4,
+              "order": 1.0
+            },
+            {
+              "a": 1,
+              "b": 5,
+              "order": 1.0
+            },
+            {
+              "a": 5,
+              "b": 6,
+              "order": 1.5
+            },
+            {
+              "a": 6,
+              "b": 7,
+              "order": 1.5
+            },
+            {
+              "a": 7,
+              "b": 8,
+              "order": 1.0
+            },
+            {
+              "a": 7,
+              "b": 9,
+              "order": 1.5
+            },
+            {
+              "a": 9,
+              "b": 10,
+              "order": 1.0
+            },
+            {
+              "a": 9,
+              "b": 11,
+              "order": 1.5
+            },
+            {
+              "a": 11,
+              "b": 12,
+              "order": 1.5
+            },
+            {
+              "a": 12,
+              "b": 5,
+              "order": 1.5
+            },
+            {
+              "a": 13,
+              "b": 14,
+              "order": 1.5
+            },
+            {
+              "a": 14,
+              "b": 15,
+              "order": 1.5
+            },
+            {
+              "a": 15,
+              "b": 16,
+              "order": 1.5
+            },
+            {
+              "a": 16,
+              "b": 17,
+              "order": 1.5
+            },
+            {
+              "a": 17,
+              "b": 18,
+              "order": 1.5
+            },
+            {
+              "a": 18,
+              "b": 13,
+              "order": 1.5
+            },
+            {
+              "a": 4,
+              "b": 13,
+              "order": 1.0
+            },
+            {
+              "a": 2,
+              "b": 19,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 20,
+              "order": 1.0
+            },
+            {
+              "a": 3,
+              "b": 21,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 22,
+              "order": 1.0
+            },
+            {
+              "a": 4,
+              "b": 23,
+              "order": 1.0
+            },
+            {
+              "a": 6,
+              "b": 24,
+              "order": 1.0
+            },
+            {
+              "a": 8,
+              "b": 25,
+              "order": 1.0
+            },
+            {
+              "a": 10,
+              "b": 26,
+              "order": 1.0
+            },
+            {
+              "a": 11,
+              "b": 27,
+              "order": 1.0
+            },
+            {
+              "a": 12,
+              "b": 28,
+              "order": 1.0
+            },
+            {
+              "a": 14,
+              "b": 29,
+              "order": 1.0
+            },
+            {
+              "a": 15,
+              "b": 30,
+              "order": 1.0
+            },
+            {
+              "a": 16,
+              "b": 31,
+              "order": 1.0
+            },
+            {
+              "a": 17,
+              "b": 32,
+              "order": 1.0
+            },
+            {
+              "a": 18,
+              "b": 33,
+              "order": 1.0
+            }
+          ],
+          "cell": null,
+          "description": "Generated conformer with explicit hydrogens; no measured coordinates, energy optimization, interface binding or kinetics are inferred.",
+          "display_repeats": 1,
+          "geometry_hash": "sha256:5105f8c15adf0a5289a5447d7ed00461d561d6febd4af5d52b20407e98ad2402",
+          "kind": "Molecule",
+          "method": "RDKit 2026.3.6 ETKDGv3 seed 42",
+          "object_id": "organic_4e7c7a1515dbac54",
+          "provenance": "tool_generated",
+          "source_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+          "subject_hash": "sha256:4e7c7a1515dbac54e37c4936a00008fa39c46640719ed7d860379483da553a97",
+          "unit_cell_atoms": 34,
+          "units": "angstrom",
+          "version": "display-geometry/v1"
+        },
+        "id": "organic_4e7c7a1515dbac54",
+        "identity_hash": "sha256:4e7c7a1515dbac54e37c4936a00008fa39c46640719ed7d860379483da553a97",
+        "request_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+        "score": 2.0702999999999996,
+        "score_scope": "Descriptor objective only; lower is preferred",
+        "source": "chem 0.1\nmolecule organic_4e7c7a1515dbac54 { structure smiles \"O=C(NCCc1ccccc1)c1ccc(O)c(O)c1\" }\n"
+      }
+    ],
+    "execution_authorized": false,
+    "limitations": [
+      "Generated structures are not demonstrated synthesis routes.",
+      "Descriptor scores do not establish adsorption, catalysis or toxicity.",
+      "Neutral state only; interface protonation requires an explicit model.",
+      "No electronic energy calculation or experimental validation is performed."
+    ],
+    "profile": "rdkit.scaffold-rgroup.interface.v1",
+    "ranking": {
+      "balanced_polarity_formula": "abs(logP - 1.5) + abs(TPSA - 75) / 50",
+      "descriptor_engine": "RDKit 2026.3.6",
+      "direction": "ascending",
+      "objective": "low_logp"
+    },
+    "rejected": [],
+    "request": {
+      "filters": {
+        "logp_max": 4.0,
+        "logp_min": -2.0,
+        "mw_max": 400.0,
+        "tpsa_max": 140.0,
+        "tpsa_min": 35.0
+      },
+      "fragment_ids": [
+        "ethyl",
+        "hydroxyethyl",
+        "phenyl"
+      ],
+      "fragments": [],
+      "max_candidates": 3,
+      "ranking": "low_logp",
+      "scaffold_id": "catechol_amide",
+      "scaffold_smiles": "O=C(NCC[*:1])c1cc(O)c(O)cc1"
+    },
+    "request_hash": "sha256:f39ebb473df25ce6e034d79ded4aa49b02343bc1176821711242b24f1d7f2b87",
+    "result_hash": "sha256:61f22f0dfeb5e85ae6765b61ee258022501b40e32c51d75caba509f66bd1acbb",
+    "version": "design-candidates/v1"
+  },
+  "plan": {
+    "budget": {
+      "max_candidates_per_family": 24,
+      "max_interface_runs": 3,
+      "max_interface_screening_runs": 4
+    },
+    "inorganic": {
+      "a_elements": [
+        "Ca",
+        "Sr",
+        "Ba"
+      ],
+      "max_candidates": 3,
+      "tolerance_target": 1.0
+    },
+    "interface_parameters": {
+      "mode": "none",
+      "specifications": []
+    },
+    "interfaces": [],
+    "logical_plan_hash": "sha256:f58063021de3a890f4e0787d9ddb15fefc0922f8046abf3a4c9e4d1c0633195f",
+    "organic": {
+      "filters": {
+        "logp_max": 4.0,
+        "logp_min": -2.0,
+        "mw_max": 400.0,
+        "tpsa_max": 140.0,
+        "tpsa_min": 35.0
+      },
+      "fragment_ids": [
+        "ethyl",
+        "hydroxyethyl",
+        "phenyl"
+      ],
+      "max_candidates": 3,
+      "ranking": "low_logp",
+      "scaffold_id": "catechol_amide"
+    },
+    "runtime": {
+      "pymatgen": "2026.5.4",
+      "rdkit": "2026.3.6",
+      "scipy": "1.18.1"
+    },
+    "selected_candidates": null,
+    "workflow": "organic_design"
+  },
+  "record_hash": "sha256:73400285dd71e0c244504cd0d5818cff0a67f61bea9a6b250f57e2bad9831c68",
+  "request": {
+    "decision": null,
+    "mode": "model",
+    "prompt": "Prepare three catechol-amide derivatives using ethyl, hydroxyethyl, and phenyl attachments. Keep MW at most 400 g/mol, logP between -2 and 4, and TPSA between 35 and 140 square angstroms. Order by increasing calculated logP; retain the supplied bounds.",
+    "study": {
+      "budget": {
+        "max_candidates_per_family": 24,
+        "max_interface_runs": 3,
+        "max_interface_screening_runs": 4
+      },
+      "inorganic": {
+        "a_elements": [
+          "Ca",
+          "Sr",
+          "Ba"
+        ],
+        "max_candidates": 8,
+        "tolerance_target": 1.0
+      },
+      "interface_parameters": {
+        "mode": "none",
+        "specifications": []
+      },
+      "name": "Independent candidate study",
+      "organic": {
+        "filters": {
+          "logp_max": 4,
+          "logp_min": -2,
+          "mw_max": 400,
+          "tpsa_max": 140,
+          "tpsa_min": 35
+        },
+        "fragment_ids": [
+          "ethyl",
+          "hydroxyethyl",
+          "phenyl"
+        ],
+        "max_candidates": 3,
+        "ranking": "low_logp",
+        "scaffold_id": "catechol_amide"
+      },
+      "selected_candidates": null,
+      "version": "design-study/v1"
+    }
+  },
+  "request_hash": "sha256:be432e6b1a383c94769f56a7ab4a465c358cb5ee35410350aea77b753616dd0a",
+  "runtime": {
+    "pymatgen": "2026.5.4",
+    "rdkit": "2026.3.6",
+    "scipy": "1.18.1"
+  },
+  "sampled_decision": {
+    "a_elements": [],
+    "action": "run_workflow",
+    "b_pair_ids": [],
+    "fragment_ids": [
+      "ethyl",
+      "hydroxyethyl",
+      "phenyl"
+    ],
+    "interfaces": [],
+    "max_candidates": 3,
+    "message": "Generate three catechol amide candidates using ethyl, hydroxyethyl, and phenyl fragments.",
+    "missing_inputs": [],
+    "organic_filters": {
+      "logp_max": 4.0,
+      "logp_min": -2.0,
+      "mw_max": 400,
+      "tpsa_max": 140.0,
+      "tpsa_min": 35.0
+    },
+    "organic_ranking": "low_logp",
+    "scaffold_id": "catechol_amide",
+    "tolerance_target": null,
+    "unsupported_requests": [],
+    "workflow": "organic_design"
+  },
+  "seconds": 16.5175,
+  "state": "completed",
+  "study_hash": "sha256:4dae28645869e26376172ee6cc3e3234833f2e03de6eeb51f248b6f6e076360e",
+  "trace": [
+    {
+      "candidate_count": 3,
+      "input_hash": "sha256:5296f14dc3952016bd06fe1b85b971f12e41d53c97184b1778a8e43603793ef1",
+      "module": "organic_design",
+      "output_hash": "sha256:61f22f0dfeb5e85ae6765b61ee258022501b40e32c51d75caba509f66bd1acbb",
+      "seconds": 0.210206,
+      "status": "succeeded"
+    }
+  ],
+  "version": "design-run/v1"
+}

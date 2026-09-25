@@ -79,6 +79,8 @@ import { WorkbenchSwitcher, type WorkbenchEdition } from "./WorkbenchSwitcher.ts
 import { WorkspaceNavigation, type WorkbenchMode, type ComputeSection } from "./WorkspaceNavigation.tsx";
 import { MODEL_REFRESH_MS, isModelConnected } from "../shared/model-status.ts";
 import { modelContextLabel } from "./model-presentation.ts";
+import { ManagedStudyPanel } from './ManagedStudyPanel.tsx';
+import { useManagedStudySelection } from './managed-study-state.ts';
 
 const GIB = 1024 ** 3;
 const WorkbenchTheme = createContext<"light" | "dark">("light");
@@ -99,6 +101,7 @@ export function App() {
   const [decisionLabOpen, setDecisionLabOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [executionJournalOpen,setExecutionJournalOpen]=useState(false);
+  const [studyDeskOpen, setStudyDeskOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem("proto.paper.sidebar.expanded") !== "false");
   const [mode, setMode] = useState<WorkbenchMode>("design");
   const [edition, setEdition] = useState<WorkbenchEdition>(() => localStorage.getItem("workbench.edition") === "chem" ? "chem" : "proto");
@@ -110,6 +113,7 @@ export function App() {
   const activeMode = edition === 'chem' ? chemMode : mode;
   const changeChemMode = (value:WorkbenchMode) => {setChemUtility(null);setChemMode(value);};
   const workspacePath = useWorkbenchStore(state => state.settings.workspacePath);
+  const studySelection = useManagedStudySelection(state => state.byWorkspace[workspacePath]);
   const [computeSection, setComputeSection] = useState<ComputeSection>("all");
   const [computeNavigationRevision, setComputeNavigationRevision] = useState(0);
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -118,6 +122,7 @@ export function App() {
   useEffect(() => {localStorage.setItem("workbench.edition", edition); document.title = `${edition === "chem" ? "Chem" : "Proto"} Workbench`; setCommandOpen(false); setEvidenceOpen(false); setDecisionLabOpen(false); setVerificationOpen(false);}, [edition]);
   useEffect(() => {localStorage.setItem("proto.paper.sidebar.expanded", String(sidebarOpen));}, [sidebarOpen]);
   useEffect(()=>{const open=()=>setExecutionJournalOpen(true);window.addEventListener("proto:execution-recovery",open);return()=>window.removeEventListener("proto:execution-recovery",open);},[]);
+  useEffect(()=>{const open=()=>setStudyDeskOpen(true);window.addEventListener('proto:study-desk',open);return()=>window.removeEventListener('proto:study-desk',open);},[]);
   const closeCommands = () => {
     setCommandOpen(false);
     window.requestAnimationFrame(() => document.getElementById("mission-command-trigger")?.focus());
@@ -262,6 +267,7 @@ export function App() {
     <WorkbenchTheme value={theme}><div className={`app-shell ${edition === "chem" ? "chem-edition" : "proto-edition"} ${sidebarOpen ? "sidebar-expanded" : "sidebar-rail"} ${inspectorOpen ? "inspector-open" : "inspector-closed"}`}>
       {edition === 'proto' ? <WorkspaceNavigation mode={mode} onMode={setMode} section={computeSection} onSection={section => {setComputeSection(section); setComputeNavigationRevision(value => value + 1);}} /> : <ChemNavigation mode={chemMode} onMode={changeChemMode} target={chemTarget} onTarget={(view,section)=>{changeChemMode('design');setChemTarget(value=>({view,section,revision:value.revision+1}));}} section={chemComputeSection} onSection={section=>{changeChemMode('compute');setChemComputeSection(section);}} utility={chemUtility} onUtility={view=>{setChemMode('design');setChemUtility(view);}}/>}
       <TopBar mode={activeMode} edition={edition} onEdition={setEdition} chemTitle={chemUtility ? ({models:'Local models',settings:'Settings',help:'Help & documentation'} as Record<string,string>)[chemUtility] : chemMode==='chat'?'Chat':chemMode==='compute'?'Computation':chemTitle}>
+      <button type="button" className="topbar-control managed-study-context" onClick={() => setStudyDeskOpen(true)} title={studySelection ? `${studySelection.name} · ${studySelection.studyId}` : 'Open Study desk'}><BookOpen size={15}/><span>{studySelection?.name ?? 'Study desk'}</span></button>
       <div className="workspace-view-controls"><button type="button" aria-label="Workspace execution journal" title="Workspace execution journal" onClick={()=>setExecutionJournalOpen(true)}><History size={16}/></button><button type="button" aria-label="Toggle task sidebar" title="Toggle navigation" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={16}/></button>{edition === 'proto' && mode === "design" && <button type="button" aria-label="Toggle inspector" title="Toggle inspector" aria-pressed={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight size={16}/></button>}<button type="button" aria-label={`Use ${theme === "dark" ? "light" : "dark"} theme`} title={`Use ${theme === "dark" ? "light" : "dark"} theme`} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button></div></TopBar>
       <div className="app-body">
         <div id="design-workspace" className="mode-content" role="tabpanel" aria-labelledby="mode-design" hidden={edition !== "proto" || mode !== "design"}>
@@ -284,6 +290,7 @@ export function App() {
         {edition === 'chem' && chemUtility && <div className="mode-content" role="tabpanel" aria-labelledby="mode-design"><main className="page-workspace"><OperationalPage view={chemUtility}/></main></div>}
       </div>
       {modelsOpen && <ModelPopover />}
+      {studyDeskOpen && <ManagedStudyPanel key={workspacePath} workspace={workspacePath} onClose={() => setStudyDeskOpen(false)} onMode={value => {if(edition === 'chem') changeChemMode(value); else {setMode(value);if(value === 'compute')setComputeSection('history');}}}/>}
       {commandOpen && <CommandPalette onClose={closeCommands} onDesign={() => setMode("design")} />}
       {evidenceOpen && <GlobalEvidenceSearch onClose={closeEvidence} />}
       {decisionLabOpen && <DecisionLab onClose={closeDecisionLab} />}

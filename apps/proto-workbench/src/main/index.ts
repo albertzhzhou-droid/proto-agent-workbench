@@ -19,6 +19,9 @@ import { runWorkspaceComputation } from "./services/compute-workspace.ts";
 import { requestComputeStudies } from "./services/compute-studies.ts";
 import { requestResearchFigures } from "./services/research-figures.ts";
 import { createResearchWorkflowService } from './services/research-workflow-runtime.ts';
+import { requestManagedResearch } from './services/research-study-commands.ts';
+import { managedResearchDependencies } from './services/managed-research-runtime.ts';
+import type { ManagedResearchRequest } from '../shared/managed-research.ts';
 import type { ResearchWorkflowService } from './services/research-workflows.ts';
 import type { ResearchWorkflowsRequest } from '../shared/research-workflows.ts';
 import type { ResearchFiguresRequest } from "../shared/research-figures.ts";
@@ -735,6 +738,22 @@ function registerIpc(): void {
     try {
       return await withWorkspaceWrite(root, undefined, () => requestComputeStudies(root, request));
     } finally { sourceTransactionsInFlight -= 1; }
+  });
+  handlePrivileged(IPC.managedResearch, async (_event, request: ManagedResearchRequest) => {
+    await workspaceTransition;
+    const root=activeWorkspacePath, workflows=researchWorkflows;
+    if(!workflows) throw new Error('Research workflow storage is not ready.');
+    sourceTransactionsInFlight+=1;
+    let retained=false;
+    try {
+      const result=await withWorkspaceWrite(root,undefined,()=>requestManagedResearch(root,request,
+        managedResearchDependencies(root,()=>mcpClient.fork(),workflows,()=>readSettings().modules.enabledOptional.includes('analysis.biomni'))));
+      if(request.action==='start' && result.execution) {
+        retained=true;
+        void workflows.wait(result.execution.id).catch(reportMainProcessError).finally(()=>{sourceTransactionsInFlight-=1;});
+      }
+      return result;
+    } finally {if(!retained)sourceTransactionsInFlight-=1;}
   });
   handlePrivileged(IPC.computeFigures, async (_event, request: ResearchFiguresRequest) => {
     await workspaceTransition;

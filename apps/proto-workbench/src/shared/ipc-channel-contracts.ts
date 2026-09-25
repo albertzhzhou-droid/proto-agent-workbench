@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ManagedResearchRequestSchema } from './managed-research.ts';
 import { IPC } from "./ipc.ts";
 import { OPTIONAL_MODULES, type OptionalModuleId } from "./modules.ts";
 import { DESIGN_SKILLS } from "./design-skills.ts";
@@ -273,6 +274,7 @@ export const IPC_ARGUMENT_SCHEMAS = {
   [IPC.materialsSearch]: z.tuple([MATERIALS_SEARCH]),
   [IPC.computeCatalog]: z.tuple([z.string().regex(/^[a-z][a-z0-9_]*$/).max(100).optional()]),
   [IPC.computeStudies]: z.tuple([ComputeStudiesRequestSchema]),
+  [IPC.managedResearch]: z.tuple([ManagedResearchRequestSchema]),
   [IPC.computeFigures]: z.tuple([ResearchFiguresRequestSchema]),
   [IPC.computeWorkflows]: z.tuple([ResearchWorkflowsRequestSchema.refine(request=>new TextEncoder().encode(JSON.stringify(request)).byteLength<=RESEARCH_WORKFLOW_REQUEST_BYTES,'Workflow request is too large.')]),
   [IPC.computeRun]: z.tuple([z.object({
@@ -379,6 +381,7 @@ export const IPC_API_CHANNELS = {
   chem: {open: IPC.chemOpen},
   chemScience: {request: IPC.chemScienceRequest},
   chat: {request: IPC.researchChat},
+  research: {request: IPC.managedResearch},
   compute: {catalog: IPC.computeCatalog, run: IPC.computeRun, studies: IPC.computeStudies, figures: IPC.computeFigures, workflows: IPC.computeWorkflows},
   app: {getSettings: IPC.settingsGet, updateSettings: IPC.settingsUpdate, getRuntimeStatus: IPC.runtimeStatus, getStartupRecovery: IPC.startupRecovery, getModuleIntegrity: IPC.modulesIntegrity, listModuleAudits: IPC.modulesAuditHistory},
   models: {scan: IPC.modelsScan, list: IPC.modelsList, probeTools: IPC.modelsProbeTools, evaluationSummaries: IPC.modelsEvaluationSummaries, estimate: IPC.modelsEstimate, load: IPC.modelsLoad, unload: IPC.modelsUnload, setPolicy: IPC.modelsPolicy, pin: IPC.modelsPin},

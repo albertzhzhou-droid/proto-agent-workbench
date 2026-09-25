@@ -1,3 +1,4 @@
+import { ManagedMcpTestClient } from "./helpers/managed-mcp.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {randomBytes} from "node:crypto";
@@ -19,7 +20,7 @@ test("unified bridge runs the real computation backend and respects frozen modul
   const repo=fileURLToPath(new URL("../../../",import.meta.url));
   const root=resolve(repo,"build/chat-qa/bridge");await mkdir(root,{recursive:true});
   const workspace=await mkdtemp(join(root,"run-"));
-  const mcp=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+  const mcp=new ManagedMcpTestClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
   t.after(()=>mcp.stop());
   const bridge=new ResearchToolBridge(mcp,{canonicalRootPath:async()=>workspace},()=>normalizeModuleSettings({profile:"core-only"}));
   const session={id:"619f7278-0693-49da-a497-4c7a3fc56b11",moduleSettings:normalizeModuleSettings({profile:"full"})};

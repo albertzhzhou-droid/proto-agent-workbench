@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
+import { canonicalMkdtemp as mkdtemp } from "./helpers/canonical-temp.mjs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createResearchWorkflowService } from "../src/main/services/research-workflow-runtime.ts";
 import { ToolExecutionJournal } from "../src/main/services/tool-execution-journal.ts";
-import { invokeJournaledTool } from "../src/main/services/execution-kernel.ts";
+import { invokeJournaledTool } from "./helpers/ephemeral-kernel.mjs";
 
 test("workflow recovery preserves operation and scope identity through the actual runtime adapter", async t => {
   const root=await mkdtemp(join(tmpdir(),"proto-workflow-runtime-")),db=new DatabaseSync(":memory:"),journal=new ToolExecutionJournal(db);

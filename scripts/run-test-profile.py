@@ -40,7 +40,7 @@ PROFILES = {
 }
 DEPENDENCIES = {
     "base": {"certifi": "certifi"},
-    "compute": {"numpy": "numpy", "scipy": "scipy", "biopython": "Bio"},
+    "compute": {"numpy": "numpy", "scipy": "scipy", "biopython": "Bio", "jsonschema": "jsonschema"},
     "figures": {"matplotlib": "matplotlib"},
     "heavy": {
         "numpy": "numpy", "scipy": "scipy", "torch": "torch",

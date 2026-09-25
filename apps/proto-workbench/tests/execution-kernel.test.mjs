@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { McpClient } from "../src/main/services/mcp-client.ts";
-import { invokeJournaledTool, recordPolicyDenial } from "../src/main/services/execution-kernel.ts";
+import { invokeJournaledTool, recordPolicyDenial } from "./helpers/ephemeral-kernel.mjs";
 import { evaluateToolPolicy } from "../src/main/services/permissions.ts";
 import { ToolExecutionJournal, executionActivityState } from "../src/main/services/tool-execution-journal.ts";
 

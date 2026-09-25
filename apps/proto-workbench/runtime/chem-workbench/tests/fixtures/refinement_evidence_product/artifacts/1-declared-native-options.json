@@ -1,0 +1,43 @@
+{
+  "version": "refinement-native-options-declaration/v1",
+  "native_keywords": {
+    "reference": "rks",
+    "scf_type": "direct",
+    "ints_tolerance": 1e-12,
+    "df_scf_guess": false,
+    "e_convergence": 1e-09,
+    "d_convergence": 1e-09,
+    "maxiter": 200,
+    "fail_on_maxiter": true,
+    "dft_radial_points": 99,
+    "dft_spherical_points": 590,
+    "dft_pruning_scheme": "treutler",
+    "dft_density_tolerance": 1e-12,
+    "function_kwargs": {
+      "dertype": 1,
+      "engine": "s-dftd3"
+    },
+    "puream": true
+  },
+  "functional_definition": {
+    "name": "wB97X-D3BJ",
+    "xc_functionals": {
+      "HYB_GGA_XC_WB97X_V": {}
+    },
+    "dispersion": {
+      "nlc": false,
+      "type": "d3bj2b",
+      "citation": "    A. Najib, L. Goerigk, J. Comput. Theory Chem.,14 5725, 2018\n",
+      "params": {
+        "s6": 1.0,
+        "s8": 0.2641,
+        "a1": 0.0,
+        "a2": 5.4959
+      }
+    },
+    "description": "    wB97X-V with D3(BJ) instead of VV10 dispersion \n",
+    "citation": "    A. Najib, L. Goerigk, J. Comput. Theory Chem., 14 5725, 2018)\n    N. Mardirossian, M. Head-Gordon, Phys. Chem. Chem. Phys, 16, 9904, 2014\n"
+  },
+  "functional_definition_hash": "sha256:95c033c97930f332bf6235932dfc728beb6ad20481819a2a9681ff4c5fb82ddb",
+  "backend_calculation_verified": false
+}

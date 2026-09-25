@@ -1,0 +1,43 @@
+{
+  "version": "refinement-runtime-content/v1",
+  "profile_id": "psi4.wb97x_d3bj.def2_tzvppd.optimize.v1",
+  "prefix": "C:\\chem-fixture\\.chem-backends\\psi4",
+  "files": 2,
+  "manifest_hash": "sha256:53da60a6a62c3e5a6cab29e2480b8766908ebe2f8c9a18a9e34361d010b144c4",
+  "entries": {
+    "Library/share/psi4/basis/def2-tzvppd.gbs": "0b3c5f3a8bfe9a158dabff8b6437dd3706c65757f42a56a70918fc2d78291d13",
+    "test-runtime/not-installed.fixture": "4f17c569556e7a0d6ac99e4459de20668849e829dad934b6ae1857609bc499f3"
+  },
+  "roots": [
+    "Lib",
+    "Library/bin",
+    "conda-meta",
+    "Library/share/psi4",
+    "DLLs"
+  ],
+  "required_components": {
+    "python": "python.exe",
+    "psi4_driver": "Lib/site-packages/psi4/driver/driver.py",
+    "optking": "Lib/site-packages/optking/__init__.py",
+    "qcengine": "Lib/site-packages/qcengine/__init__.py",
+    "qcelemental": "Lib/site-packages/qcelemental/__init__.py",
+    "numpy": "Lib/site-packages/numpy/__init__.py",
+    "pydantic": "Lib/site-packages/pydantic/__init__.py",
+    "pydantic_core": "Lib/site-packages/pydantic_core/__init__.py",
+    "msgpack": "Lib/site-packages/msgpack/__init__.py",
+    "libxc": "Library/bin/xc.dll",
+    "python_lib": "Lib",
+    "native_runtime": "Library/bin",
+    "package_records": "conda-meta"
+  },
+  "psi4_core_files": {
+    "test-runtime/not-installed.fixture": "4f17c569556e7a0d6ac99e4459de20668849e829dad934b6ae1857609bc499f3"
+  },
+  "basis_files": {
+    "Library/share/psi4/basis/def2-tzvppd.gbs": "0b3c5f3a8bfe9a158dabff8b6437dd3706c65757f42a56a70918fc2d78291d13"
+  },
+  "cache_policy": "No installed runtime: publication test fixture only",
+  "excluded": "Python bytecode/cache directories, transient .log/.tmp files and named test scratch directories",
+  "scope": "Transformed software test fixture. Only the bound basis and a synthetic placeholder remain; this is not an installed runtime inventory or scientific acceptance evidence.",
+  "backend_verified": false
+}

@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, open, readFile, readdir, realpath } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -12,6 +12,14 @@ const MAX_COMPILER_TOTAL_BYTES = 64 * 1024 * 1024;
 const MAX_COMPILER_TREE_DEPTH = 8;
 const MAX_COMPILER_RELATIVE_PATH = 512;
 const COMMAND_TIMEOUT_MS = 10 * 60_000;
+const SERIAL_TEST_FILES = new Set(["package-builder.test.mjs", "packaged-process-ownership.test.mjs"]);
+
+export function partitionOfflineTestFiles(testPaths) {
+  return {
+    serial: testPaths.filter(path => SERIAL_TEST_FILES.has(basename(path))),
+    parallel: testPaths.filter(path => !SERIAL_TEST_FILES.has(basename(path))),
+  };
+}
 
 export const PINNED_TYPESCRIPT_PACKAGE = Object.freeze({
   name: "typescript",
@@ -102,6 +110,18 @@ export async function buildOfflineVerificationPlan(root) {
   }
 
   const guardArg = `--import=${pathToFileURL(guardPath).href}`;
+  const groups = partitionOfflineTestFiles(testPaths);
+  const testCommands = [
+    // These integration files start PowerShell/.NET and the actual npm collector.
+    // Run them before competing Python/compiler workers without raising their
+    // process deadlines or removing any assertions from the offline baseline.
+    { paths: groups.serial, concurrency: 1 },
+    { paths: groups.parallel, concurrency: 4 },
+  ].filter(group => group.paths.length).map(group => ({
+    executable: process.execPath,
+    args: [guardArg, "--experimental-strip-types", "--test", `--test-concurrency=${group.concurrency}`, ...group.paths],
+    cwd: canonicalRoot,
+  }));
   return {
     typescriptVersion: compiler.version,
     typescriptIntegrity: compiler.integrity,
@@ -110,13 +130,7 @@ export async function buildOfflineVerificationPlan(root) {
     typescriptTotalBytes: compiler.totalBytes,
     testFileCount: testPaths.length,
     commands: [
-      {
-        executable: process.execPath,
-        // Bound simultaneous Python workers and large workspace scans. This
-        // preserves every test and its deadline without host-size-dependent load.
-        args: [guardArg, "--experimental-strip-types", "--test", "--test-concurrency=4", ...testPaths],
-        cwd: canonicalRoot,
-      },
+      ...testCommands,
       {
         executable: process.execPath,
         args: [guardArg, compiler.compilerPath, "--noEmit"],

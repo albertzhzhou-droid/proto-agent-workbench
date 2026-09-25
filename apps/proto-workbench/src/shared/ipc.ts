@@ -5,6 +5,7 @@ export const IPC = {
   chemOpen: "chem:open",
   chemScienceRequest: 'chem-science:request',
   researchChat: "research-chat:request",
+  managedResearch: "research:request",
   computeCatalog: "compute:catalog",
   computeRun: "compute:run",
   computeStudies: "compute:studies",

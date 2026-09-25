@@ -9,7 +9,7 @@ import test from 'node:test';
 import {ResearchWorkflowService} from '../src/main/services/research-workflows.ts';
 import {requestComputeStudies} from '../src/main/services/compute-studies.ts';
 import {ToolExecutionJournal} from '../src/main/services/tool-execution-journal.ts';
-import {invokeJournaledTool} from '../src/main/services/execution-kernel.ts';
+import {invokeJournaledTool} from './helpers/ephemeral-kernel.mjs';
 
 const repository=resolve(dirname(fileURLToPath(import.meta.url)),'../../..');
 const base=join(repository,'build','research-workflows-20260922');await mkdir(base,{recursive:true});

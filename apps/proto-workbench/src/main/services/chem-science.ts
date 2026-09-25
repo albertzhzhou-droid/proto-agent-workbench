@@ -8,10 +8,10 @@ import type {ChemScienceCatalog,ChemScienceError,ChemScienceRequest,ChemScienceR
 
 import { openWorkspaceExecutionJournal } from "./workspace-execution-journal.ts";
 import { ToolExecutionJournal } from "./tool-execution-journal.ts";
-import { invokeJournaledTool } from "./execution-kernel.ts";
+import { createProductionKernelContext, invokeJournaledTool } from "./execution-kernel.ts";
 import type { ExecutionScope } from "./execution-scope.ts";
 import type { PolicyDecision } from "../../shared/tool-policy.ts";
-import { evaluateToolPolicy } from "./permissions.ts";
+import { evaluateToolPolicy, rebindHostPolicyDecision } from "./permissions.ts";
 
 import { chemistryComputeManifest } from "./chem-evidence.ts";
 import { artifactReaders } from "./artifact-reader-registry.ts";
@@ -77,9 +77,12 @@ export class ChemScienceService {
       if(signal.aborted) abort();
       const operationId=execution?.operationId??`chemistry:${runId}`;
       const scope=execution?.scope??{surface:"chemistry" as const,scopeId:runId};
-      const decision=execution?.decision??evaluateToolPolicy({tool:`chemistry.${request.operator}`,args:request.input,surface:scope.surface,scopeId:scope.scopeId,operationId,grants:[]});
+      const invocationArguments={...request,runId:request.runId??null};
+      const decision=execution?.decision?rebindHostPolicyDecision(execution.decision,invocationArguments):evaluateToolPolicy({tool:`chemistry.${request.operator}`,args:invocationArguments,surface:scope.surface,scopeId:scope.scopeId,operationId,grants:[]});
       const journal=await this.executionJournal();
-      const done=invokeJournaledTool({journal,operationId,scope,tool:`chemistry.${request.operator}`,arguments:{...request,runId:request.runId??null},decisionId:decision.decisionId,decision},async markDispatched=>{markDispatched();const value=await this.run({...request,runId},controller.signal);return {...value,...(value.data?{data:{...value.data,input:{},result:undefined,summary:true}}:{})} as unknown as Record<string,unknown>;}).then(async result=>{const receipt=result as unknown as ChemScienceResponse<ChemScienceRun>;return {...receipt,...(receipt.data?{data:await this.read(receipt.data.runId)}:{})};}).finally(()=>{signal.removeEventListener("abort",abort);this.active.delete(runId);});
+      const invocation={journal,operationId,scope,tool:`chemistry.${request.operator}`,arguments:invocationArguments,decisionId:decision.decisionId,decision};
+      const context=createProductionKernelContext(invocation,this.options.workspacePath);
+      const done=invokeJournaledTool({...invocation,context},async (markDispatched,inputSnapshot)=>{markDispatched();const value=await this.run({...inputSnapshot,runId} as typeof request & {runId:string},controller.signal);return {...value,...(value.data?{data:{...value.data,input:{},result:undefined,summary:true}}:{})} as unknown as Record<string,unknown>;}).then(async result=>{const receipt=result as unknown as ChemScienceResponse<ChemScienceRun>;return {...receipt,...(receipt.data?{data:await this.read(receipt.data.runId)}:{})};}).finally(()=>{signal.removeEventListener("abort",abort);this.active.delete(runId);});
       this.active.set(runId,{controller,done});
       return await done;
     } catch(error) {return {ok:false,error:this.error(error)};}

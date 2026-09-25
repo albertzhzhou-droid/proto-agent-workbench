@@ -9,11 +9,13 @@ import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import { LmStudioProvider, LM_STUDIO_CHAT_IDLE_TIMEOUT_MS } from "../src/main/services/lm-studio-provider.ts";
 import { McpClient } from "../src/main/services/mcp-client.ts";
+import { openWorkspaceExecutionJournal } from "../src/main/services/workspace-execution-journal.ts";
 import { minimalChildEnvironment } from "../src/main/services/process-security.ts";
 
 const repo = fileURLToPath(new URL("../../../", import.meta.url));
 const root = join(repo, "build/upgrade-20260904/wallclock-faults", new Date().toISOString().replace(/[:.]/g, "-") + "-" + randomUUID().slice(0, 8));
 await mkdir(root, {recursive: true});
+const ledger = openWorkspaceExecutionJournal(root);
 const report = {schema: "proto-workbench.wallclock-faults.v1", startedAt: new Date().toISOString(), scope: "Controlled local HTTP and owned stdio fault fixtures; no live model, biological tool execution or external network", tests: [], code: {}};
 for (const file of ["lm-studio-provider.ts", "mcp-client.ts", "runtime-control.ts", "process-security.ts"]) report.code[file] = createHash("sha256").update(await readFile(new URL(`../src/main/services/${file}`, import.meta.url))).digest("hex");
 const writeReport = () => writeFile(join(root, "report.json"), JSON.stringify(report, null, 2));
@@ -50,7 +52,7 @@ createInterface({input:process.stdin}).on('line', line=>{const msg=JSON.parse(li
 process.stdin.on('end',()=>process.exit(0));
 `);
 const makeClient = () => {
-  const client = new McpClient({packaged: false, resourcesPath: root, repoRoot: repo, workspacePath: root, workspaceCapability: "a".repeat(64)});
+  const client = new McpClient({packaged: false, resourcesPath: root, repoRoot: repo, workspacePath: root, workspaceCapability: "a".repeat(64)},{journal:ledger.journal});
   client.command = () => ({command: process.execPath, args: [fixture], env: minimalChildEnvironment()});
   clients.push(client); return client;
 };
@@ -88,9 +90,9 @@ try {
     }),
     check("an actual 181-second MCP request survives while another owned session is cancelled", async () => {
       const a = makeClient(), b = makeClient(), cancelA = new AbortController(); const began = performance.now();
-      const aResult = a.call("proto_workflow_run", {delayMs: 220_000}, AbortSignal.any([deadline, cancelA.signal]));
+      const aResult = a.call("proto_workflow_run", {delayMs: 220_000}, AbortSignal.any([deadline, cancelA.signal]), undefined, {scope:{surface:"system",scopeId:randomUUID()}});
       const cancelledA = assert.rejects(aResult, error => error.code === "USER_CANCELLED");
-      const bResult = b.call("proto_workflow_run", {delayMs: 181_500}, deadline);
+      const bResult = b.call("proto_workflow_run", {delayMs: 181_500}, deadline, undefined, {scope:{surface:"system",scopeId:randomUUID()}});
       await delay(1500, undefined, {signal: deadline});
       const childA = a.child, childB = b.child;
       assert.ok(childA?.pid && childB?.pid && childA.pid !== childB.pid);
@@ -104,6 +106,7 @@ try {
   ]);
 } finally {
   const cleanup = await Promise.allSettled(clients.map(client => client.stop()));
+  ledger.close();
   for (const timer of timers) {clearTimeout(timer); clearInterval(timer);}
   server.closeAllConnections(); await new Promise(resolveClose => server.close(resolveClose));
   report.cleanup = cleanup.map(value => ({status: value.status, ...(value.status === "rejected" ? {error: String(value.reason)} : {})}));

@@ -30,7 +30,10 @@ export function createResearchWorkflowService(workspace:string,createClient:()=>
   catalog:async(tool)=>await call('proto_compute_catalog',tool?{tool}:{}) as unknown as ComputeCatalog,
   fingerprint:async(request)=>{
    const path=await writeWorkspaceComputeRequest(workspace,request);
-   return await call('proto_compute_fingerprint',{path}) as unknown as ComputeFingerprint;
+   // McpClient preserves MCP presentation blocks alongside structuredContent.
+   // They are transport metadata, outside the strict fingerprint contract.
+   const {content: _presentation,...fingerprint}=await call('proto_compute_fingerprint',{path});
+   return fingerprint as unknown as ComputeFingerprint;
   },
   run:async(request,context)=>withWorkspaceWrite(workspace,context.signal,async()=>
    await runWorkspaceComputation(workspace,request,(name,input,operationId)=>call(name,input,context.signal,operationId),context.operationId) as ComputeRun),

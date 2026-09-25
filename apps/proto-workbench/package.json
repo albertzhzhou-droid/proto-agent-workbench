@@ -105,7 +105,11 @@
       "package.json"
     ],
     "extraResources": [
-      {"from":"runtime/chem-workbench","to":"runtime/chem-workbench","filter":["**/*"]},
+      {"from":"runtime/chem-workbench","to":"runtime/chem-workbench","filter":[
+        "**/*",
+        "!**/{.venv,.venv-*,venv,.chem-backends,__pycache__,build,dist,scratch,node_modules,.cache,.pytest_cache,.mypy_cache,.ruff_cache,.uv-cache,.vite,.vite-temp,.npm-cache,.pnpm-store,htmlcov,coverage,*.egg-info}{,/**/*}",
+        "!**/{timer.dat,.env,.env.!(example),*.env,.coverage,.coverage.*,*.pyc,*.pyo,*.gguf,*.safetensors,*.onnx,*.pt,*.pth}"
+      ]},
       {"from":"runtime/chem-ui","to":"runtime/chem-ui","filter":["**/*"]},
       {"from":"runtime/chem-integration","to":"runtime/chem-integration","filter":["**/*"]},
       {

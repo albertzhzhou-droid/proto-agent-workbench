@@ -1,0 +1,48 @@
+{
+  "version": "refinement-preparation-observation-fixtures/v1",
+  "scope": "Unchanged retained preflight observation bytes; no new native calculation or acceptance. Other bound files come from existing refinement_evidence_product fixtures.",
+  "files": [
+    {
+      "path": "preparation.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/preparation.json",
+      "sha256": "9db4f16b7b46b117ae19ae62bfe720a921a0fcc15beea58a1bf96a0b436d93e1",
+      "bytes": 1772
+    },
+    {
+      "path": "basis-observation.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/basis-observation.json",
+      "sha256": "dfe1dc684f8c4f53635bfa7f90805adc1f86230a8d5bfe30e53393a2215847c4",
+      "bytes": 124
+    },
+    {
+      "path": "derivative-preflight.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/derivative-preflight.json",
+      "sha256": "a15a0b3f15c5cdaff97ae30841d5ef88ab13e4198e576b37c506acc30b21bffe",
+      "bytes": 306
+    },
+    {
+      "path": "dispersion-preflight.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/dispersion-preflight.json",
+      "sha256": "d51dca07bafc9de9a80624f9c036424f8f6d25e6271da18919f42f271ccdc65d",
+      "bytes": 448
+    },
+    {
+      "path": "effective-native-options.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/effective-native-options.json",
+      "sha256": "009fa23154604abc2861eeb14d9bbaa2b7e2141c877d8449dd7055f53ca89fe1",
+      "bytes": 347
+    },
+    {
+      "path": "isotope-defaults-observed.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/isotope-defaults-observed.json",
+      "sha256": "252450cfe2061310b0b5332986f45af148a0d59d678fd037d24fd6a05acb2230",
+      "bytes": 3748
+    },
+    {
+      "path": "preflight-atomic-input.json",
+      "original_path": "build/refinement-d3bj-complex-gradient-20260913/preflight-atomic-input.json",
+      "sha256": "d6b8b97970e17955fa78018e58fc60ef698b0b0fb55bd9ab961c4d260a1f6134",
+      "bytes": 3519
+    }
+  ]
+}

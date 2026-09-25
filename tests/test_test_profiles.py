@@ -48,6 +48,17 @@ class TestProfilesTests(unittest.TestCase):
         self.assertEqual((counts["run"], counts["passed"], counts["failures"], counts["skipped"]), (3, 1, 1, 1))
         self.assertIn("synthetic missing capability", counts["skipped_tests"][0]["reason"])
 
+    def test_compute_preflight_requires_schema_validator_used_by_protein_tests(self):
+        def installed_version(distribution):
+            if distribution == "jsonschema":
+                raise RUNNER.importlib.metadata.PackageNotFoundError(distribution)
+            return "test-installed"
+        with patch.object(RUNNER.importlib.metadata, "version", side_effect=installed_version), \
+             patch.object(RUNNER.importlib.util, "find_spec", return_value=object()):
+            versions, problems = RUNNER.preflight("compute")
+        self.assertNotIn("jsonschema", versions)
+        self.assertEqual(problems, ["Missing dependency: jsonschema (jsonschema)"])
+
     def test_list_is_only_a_plan_and_does_not_import_optional_test_modules(self):
         output = io.StringIO()
         with patch.object(RUNNER, "preflight", side_effect=AssertionError("must not probe")), contextlib.redirect_stdout(output):

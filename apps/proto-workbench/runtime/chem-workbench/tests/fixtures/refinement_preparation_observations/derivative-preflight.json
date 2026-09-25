@@ -1,0 +1,1 @@
+{"analytic_gradient_available": true, "backend_dispatches": 0, "driver": "gradient", "method": "wb97x-d3bj", "observed_strategy": [1, 1], "required_derivative_order": 1, "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734", "version": "refinement-derivative-preflight/v1"}

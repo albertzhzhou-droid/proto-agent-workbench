@@ -18,6 +18,7 @@ import { StructurePredictionResult } from "./StructurePredictionResult.tsx";
 import { validateStructurePrediction } from "./structure-prediction.ts";
 import { ResearchStudyPanel, RunRecordStatus } from "./ResearchStudyPanel.tsx";
 import { createResearchStudyStore } from "./research-study-state.ts";
+import { useManagedStudySelection } from './managed-study-state.ts';
 import {RnaSeqStudyFields,RnaSeqStudyResults} from "./RnaSeqStudyResults.tsx";
 import {validateRnaSeqStudy} from "./rnaseq-study.ts";
 
@@ -46,6 +47,9 @@ export function ComputeWorkspace({ section, hidden, navigationRevision }: { sect
   const runOperation=useRef(0);
   const currentWorkspace=useRef(workspace);currentWorkspace.current=workspace;
   const studyStore=useMemo(()=>{const store=createResearchStudyStore(input=>workbenchApi().compute.studies(input));store.getState().activate(workspace);return store;},[workspace]);
+  const managedSelection=useManagedStudySelection(state=>state.byWorkspace[workspace]);
+  useEffect(()=>{if(managedSelection?.studyId && studyStore.getState().selectedId!==managedSelection.studyId)void studyStore.getState().select(managedSelection.studyId);},[studyStore,managedSelection?.studyId]);
+  useEffect(()=>studyStore.subscribe(state=>{if(state.study){const current=useManagedStudySelection.getState().byWorkspace[workspace];if(current?.studyId!==state.study.id||current.name!==state.study.name||current.question!==state.study.question)useManagedStudySelection.getState().select(workspace,{studyId:state.study.id,name:state.study.name,question:state.study.question});}}),[studyStore,workspace]);
   const preview = workbenchDataMode() === "preview" && catalog?.execution !== "local" && !import.meta.env?.DEV;
   useEffect(() => { let live = true; setCatalog(undefined); setSelected(undefined); setResult(undefined); setError(""); setNotebook(false);setBusy(false); revision.current++;
     workspaceRevision.current++;runOperation.current++;

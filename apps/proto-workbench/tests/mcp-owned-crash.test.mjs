@@ -1,3 +1,4 @@
+import { EphemeralMcpClient } from "./helpers/ephemeral-kernel.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {mkdir,mkdtemp,writeFile,readFile,rm} from "node:fs/promises";
@@ -33,7 +34,7 @@ test("unexpected actual owned MCP process exit preserves unknown write and does 
   const owned=resolve("build/test-mcp-crash");await mkdir(owned,{recursive:true});const root=await mkdtemp(join(owned,"case-"));
   await mkdir(join(root,"src/proto_agent"),{recursive:true});await mkdir(join(root,"build"));
   await writeFile(join(root,"src/proto_agent/__init__.py"),"");await writeFile(join(root,"src/proto_agent/mcp_server.py"),fixture);
-  const client=new McpClient({packaged:false,resourcesPath:"",repoRoot:root,workspacePath:root,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:process.env.PROTO_AGENT_PYTHON||join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+  const client=new EphemeralMcpClient({packaged:false,resourcesPath:"",repoRoot:root,workspacePath:root,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:process.env.PROTO_AGENT_PYTHON||join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
   const sibling=client.fork();let db=new DatabaseSync(join(root,"execution.sqlite"));
   try {
     const alive=await sibling.call("proto_compute_catalog",{});let generations=0;

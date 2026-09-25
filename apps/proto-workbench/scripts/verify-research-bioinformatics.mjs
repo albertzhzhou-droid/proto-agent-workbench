@@ -8,6 +8,7 @@ import {dirname, join, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {AppDatabase} from "../src/main/services/database.ts";
 import {McpClient} from "../src/main/services/mcp-client.ts";
+import {openWorkspaceExecutionJournal} from "../src/main/services/workspace-execution-journal.ts";
 import {ResearchToolBridge} from "../src/main/services/research-tools.ts";
 import {WorkspaceFiles} from "../src/main/services/workspace-files.ts";
 import {harnessToolEffect} from "../src/main/services/harness-workspace.ts";
@@ -21,8 +22,9 @@ const workspace = join(reportRoot, `run-${Date.now()}`);
 await mkdir(workspace, {recursive:true});
 const database = new AppDatabase(join(workspace,"acceptance.sqlite"));
 const files = new WorkspaceFiles(workspace,database);
+const ledger = openWorkspaceExecutionJournal(workspace,{legacyDb:database.db});
 const client = new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:workspace,
-  workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+  workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")},{journal:ledger.journal});
 let forkCount=0;
 const fork=client.fork.bind(client);
 client.fork=()=>{forkCount++;return fork();};
@@ -148,7 +150,7 @@ try {
 } catch(error) {failed=error;}
 finally {
   try {await client.stop();} catch(error) {failed??=error;results.push({name:"owned MCP cleanup",passed:false,error:String(error)});}
-  database.close();
+  ledger.close();database.close();
   const report={passed:!failed,checks:results.length,workspace,scope:"Actual ResearchToolBridge, canonical registry, owned MCP and installed WSL execution; synthetic software fixture",results};
   await writeFile(join(workspace,"report.json"),JSON.stringify(report,null,2));
   await writeFile(join(reportRoot,"latest.json"),JSON.stringify(report,null,2));

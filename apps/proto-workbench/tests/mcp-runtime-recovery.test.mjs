@@ -1,3 +1,4 @@
+import { EphemeralMcpClient } from "./helpers/ephemeral-kernel.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {EventEmitter} from "node:events";
@@ -6,7 +7,7 @@ import { McpClient, toolDeadlineMs, MCP_MAX_TOOL_TIMEOUT_MS, MCP_CANCELLATION_GR
 const paths = { packaged: false, resourcesPath: "C:/fixture", repoRoot: "C:/fixture", workspacePath: "C:/workspace", workspaceCapability: "42".repeat(32) };
 
 function connected(options = {}) {
-  const client = new McpClient(paths, options);
+  const client = new EphemeralMcpClient(paths, options);
   const sent = [];
   const terminated = [];
   const child = { exitCode: null, stdin: { write(text, callback) { sent.push(JSON.parse(text)); callback?.(); } } };
@@ -112,7 +113,7 @@ test("progress is request-bound, monotonic, bounded, and never resets the hard d
 });
 
 test("forked run sessions have independent pending and process state", async () => {
-  const root = new McpClient(paths, { cancellationGraceMs: 20 });
+  const root = new EphemeralMcpClient(paths, { cancellationGraceMs: 20 });
   const a = root.fork();
   const b = root.createSession();
   assert.notEqual(a, b);
@@ -125,7 +126,7 @@ test("forked run sessions have independent pending and process state", async () 
 });
 
 test("stop joins an owned process termination already started by a protocol failure", async () => {
-  const client = new McpClient(paths), child = new EventEmitter();
+  const client = new EphemeralMcpClient(paths), child = new EventEmitter();
   // Controlled process-handle fixture: no PID means no OS process is targeted.
   child.exitCode = null; child.signalCode = null; client.child = child;
   const protocolCleanup = client.terminateCurrent(new Error("Controlled protocol failure"));

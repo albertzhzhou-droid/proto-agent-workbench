@@ -6,7 +6,7 @@ import type { AgentRunEvent, PatchOperation, PatchProposal } from "../../shared/
 import type { AppDatabase } from "./database.ts";
 import type { WorkspaceFiles } from "./workspace-files.ts";
 import { toolDeadlineMs, type McpClient } from "./mcp-client.ts";
-import { evaluateToolPolicy } from "./permissions.ts";
+import { evaluateToolPolicy, issueHostPolicyGrant, rebindHostPolicyDecision } from "./permissions.ts";
 import type { PolicyGrant, PolicyDecision } from "../../shared/tool-policy.ts";
 import { TOOL_CONTRACTS, toolContract, toolsProducing, type ArtifactClass, type ToolContract } from "../../shared/tool-contracts.ts";
 import type { HarnessStore } from "./harness-store.ts";
@@ -65,8 +65,8 @@ export class HarnessWorkspace {
     const sourceTool = name === "workspace_propose_patch" || name === "workspace_resume_validation";
     if (sourceTool) this.store.beginSourceOperation(c.contract.runId, callId, input, name);
     let entered = false;
-    const operation = () => { entered = true; return this.executeOwned(name, input, callId, c, signal,decision); };
-    const run=async()=>{
+    const run=async(invocationInput:Record<string,unknown>=input)=>{
+    const operation = () => { entered = true; return this.executeOwned(name, invocationInput, callId, c, signal,decision); };
     try {
       return await (harnessToolEffect(name) === "write"
         ? withWorkspaceWrite(await realpath(c.contract.workspacePath), signal, operation, queueState)
@@ -86,7 +86,7 @@ export class HarnessWorkspace {
     };
     // MCP already journals its actual dispatch. Host-owned workspace/structure
     // tools use the same boundary through a local backend adapter.
-    if(toolContract(name)?.surface!=="mcp"&&this.mcp.invokeLocal)return this.mcp.invokeLocal(name,input,async mark=>{mark();return run();},
+    if(toolContract(name)?.surface!=="mcp"&&this.mcp.invokeLocal)return this.mcp.invokeLocal(name,input,async (mark,snapshot)=>{mark();return run(snapshot);},
       {operationId:callId,scope:{surface:"harness",scopeId:c.contract.runId},decision,decisionId:decision.decisionId});
     return run();
   }
@@ -94,9 +94,9 @@ export class HarnessWorkspace {
   private policyDecision(name:string,input:Record<string,unknown>,callId:string,c:HarnessCheckpoint):PolicyDecision {
     // The saved mission contract is the existing user authorization. Its grant
     // identity is stable and the full evidence is copied into each journal row.
-    const grant: PolicyGrant = {id: `mission:${c.contract.runId}`, source: "mission", actor: "user",
+    const grant: PolicyGrant = issueHostPolicyGrant({id: `mission:${c.contract.runId}`, source: "mission", actor: "user",
       surface: "harness", scopeId: c.contract.runId, grantedAt: c.createdAt,
-      risks: [...(c.contract.scope.network ? ["network" as const] : []), ...(c.contract.scope.execution ? ["code-execution" as const] : [])]};
+      risks: [...(c.contract.scope.network ? ["network" as const] : []), ...(c.contract.scope.execution ? ["code-execution" as const] : [])]});
     return evaluateToolPolicy({tool: name, args:input, surface: "harness", scopeId: c.contract.runId,
       operationId: callId, mode: c.contract.mode, grants: [grant]});
   }
@@ -128,6 +128,7 @@ export class HarnessWorkspace {
       if (rel.startsWith("..") || isAbsolute(rel)) return denied("WORKSPACE_PATH_REQUIRED", `${key} is outside the current workspace.`);
       args[key] = rel.replaceAll("\\", "/");
     }
+    decision = rebindHostPolicyDecision(decision, args);
     const result = await this.mcp.call(name, args, signal, decision.requiredRisk === "network" && decision.grantId ? {runId: c.contract.runId, approvalId: decision.grantId, expiresAt: new Date(Date.now() + Math.min(10 * 60_000, c.contract.budgets.activeTimeMs - c.activeTimeMs)).toISOString()} : undefined,
       {timeoutMs: Math.max(1, Math.min(toolDeadlineMs(name, args), c.contract.budgets.activeTimeMs - c.activeTimeMs)), operationId: callId,
         scope: {surface: "harness", scopeId: c.contract.runId}, decisionId: decision.decisionId, decision});

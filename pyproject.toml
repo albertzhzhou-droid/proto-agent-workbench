@@ -32,6 +32,7 @@ data-read = [
 compute = [
   "numpy==2.2.6",
   "scipy==1.15.3",
+  "jsonschema>=4.23,<5",
 ]
 compute-models = ["torch>=2.2", "pykalman>=0.9", "scikit-learn>=1.4"]
 compute-vision = ["opencv-python-headless>=4.9", "scikit-image>=0.22", "tifffile>=2024.1"]
