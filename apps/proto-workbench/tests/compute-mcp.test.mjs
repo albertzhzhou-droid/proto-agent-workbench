@@ -1,3 +1,4 @@
+import { ManagedMcpTestClient } from "./helpers/managed-mcp.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -35,7 +36,7 @@ test(`Workbench MCP transport discovers and executes offline computations in a r
   await mkdir(owned, { recursive: true });
   const workspace = await mkdtemp(join(owned, "actual-"));
   const outside = join(owned, `${basename(workspace)}-outside.json`);
-  const client = new McpClient({
+  const client = new ManagedMcpTestClient({
     packaged: Boolean(packagedResources), resourcesPath: packagedResources ? resolve(packagedResources) : "", repoRoot: repo, workspacePath: workspace,
     workspaceCapability: randomBytes(32).toString("hex"), materialsRoot: join(workspace, "isolated-materials"), pythonExecutable: python,
   }, { startupTimeoutMs: 10_000, controlTimeoutMs: 10_000 });

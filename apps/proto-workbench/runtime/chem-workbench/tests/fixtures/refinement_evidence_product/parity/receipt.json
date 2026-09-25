@@ -1,0 +1,263 @@
+{
+  "artifacts": [
+    {
+      "bytes": 3805,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-native-library-output.json",
+      "sha256": "c7d7dd03a4aaee079ab5dd5a1fcd2cb8938cd0a26847d0690cb4894b64a3329d"
+    },
+    {
+      "bytes": 227,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-qcengine-call-arguments.json",
+      "sha256": "8d5e985895af45a05f3f70d20ff27d0c09cdd4cb59b9d08fc65e1ae51daf26bf"
+    },
+    {
+      "bytes": 10416,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-qcengine-input.json",
+      "sha256": "a1a9020368cba00ed8ecda2d748d1562507bc0a8da4d9348c0a6552b97b31e61"
+    },
+    {
+      "bytes": 26527,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-qcengine-result.json",
+      "sha256": "ccacd5303950671b5aeab88bcbfdc9833af04fa14765fcdd9a0695126f263200"
+    },
+    {
+      "bytes": 3105,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-returned-gradient.json",
+      "sha256": "6b39eb7524f63df04793df2d3291083fb34bb08ea1b7f72620b474b5c93f37e4"
+    },
+    {
+      "bytes": 10597,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-translated-dftd3-input.json",
+      "sha256": "2857e5714bdd1b29b7cb96270763bd1c5dda8b9bedbc1fc196239dc9890bfdc8"
+    },
+    {
+      "bytes": 18883,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\bridge-translated-dftd3-result.json",
+      "sha256": "60d0d4d73a2dffee6359116891c69d233652cee5aab7089bcb7c5ff7ea3d1b87"
+    },
+    {
+      "bytes": 985,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\calltrace.jsonl",
+      "sha256": "4ef143dcb7f2d3b1c032752a1defb7608066e131f2d741b6742105754582c851"
+    },
+    {
+      "bytes": 820,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\construction-observation.json",
+      "sha256": "050f0c3f78299d634081398d3da6a7ef96f3dae3ec47acc1250cc51e21b3a310"
+    },
+    {
+      "bytes": 3748,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\isotope-defaults-observed.json",
+      "sha256": "252450cfe2061310b0b5332986f45af148a0d59d678fd037d24fd6a05acb2230"
+    },
+    {
+      "bytes": 3329,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\native-api-input.json",
+      "sha256": "1e209b217a9b5273481a3dafef965ffc8c3dd8d851ec2cd0a1ff09b319dc87b7"
+    },
+    {
+      "bytes": 4781,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\native-molecule-schema.json",
+      "sha256": "7a27698634b7433c630f087f476ea3843d4af678a78a576f802f88df07fb16a3"
+    },
+    {
+      "bytes": 3805,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\native_api-native-library-output.json",
+      "sha256": "c7d7dd03a4aaee079ab5dd5a1fcd2cb8938cd0a26847d0690cb4894b64a3329d"
+    },
+    {
+      "bytes": 521,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\parity-metrics.json",
+      "sha256": "73b74c50679484960f98ec4d8f79f8015f2cf56025f05cd2b27f3a57138bd1bd"
+    },
+    {
+      "bytes": 2835,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\product-molecule.json",
+      "sha256": "323843a1d38466cbbf84cea85f688259b695552302ec9399f5f091fc5ef36c0d"
+    },
+    {
+      "bytes": 21130,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\retained-input.json",
+      "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b"
+    },
+    {
+      "bytes": 1464265,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\runtime-after.json",
+      "sha256": "13da6400d5811e8164733a0b7718a256fab6e4cbecbcc49c9792098080d25003"
+    },
+    {
+      "bytes": 1464265,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\runtime-before.json",
+      "sha256": "13da6400d5811e8164733a0b7718a256fab6e4cbecbcc49c9792098080d25003"
+    },
+    {
+      "bytes": 6224,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\source-after.json",
+      "sha256": "5a2b24537727823c9e3c0f22cceea6d18f48488eda622744773edf01bc79beab"
+    },
+    {
+      "bytes": 6224,
+      "path": "C:\\chem-fixture\\build\\refinement-d3bj-dispersion-parity-20260913\\source-before.json",
+      "sha256": "5a2b24537727823c9e3c0f22cceea6d18f48488eda622744773edf01bc79beab"
+    }
+  ],
+  "at_utc": "2026-09-13T18:31:36.229620+00:00",
+  "calltrace": [
+    {
+      "event": "outer_qcengine_compute_enter",
+      "kwargs": {
+        "raise_error": true,
+        "return_version": 2,
+        "task_config": {
+          "ncores": 8,
+          "scratch_directory": "C:\\chem-fixture\\build\\psi4-scratch/"
+        }
+      },
+      "phase": "bridge",
+      "positional_count": 2,
+      "seconds": 31.35899999999674
+    },
+    {
+      "event": "inner_qcschema_enter",
+      "method": "wb97x",
+      "phase": "bridge",
+      "seconds": 33.17199999996228
+    },
+    {
+      "event": "dispersion_library_enter",
+      "grad": true,
+      "phase": "bridge",
+      "seconds": 33.17199999996228
+    },
+    {
+      "event": "dispersion_library_return",
+      "phase": "bridge",
+      "seconds": 33.17199999996228
+    },
+    {
+      "event": "inner_qcschema_return",
+      "phase": "bridge",
+      "seconds": 33.18699999997625,
+      "success": true
+    },
+    {
+      "event": "outer_qcengine_compute_return",
+      "phase": "bridge",
+      "seconds": 33.20299999997951,
+      "success": true
+    },
+    {
+      "event": "dispersion_library_enter",
+      "grad": true,
+      "phase": "native_api",
+      "seconds": 33.20299999997951
+    },
+    {
+      "event": "dispersion_library_return",
+      "phase": "native_api",
+      "seconds": 33.21899999998277
+    }
+  ],
+  "checks": {
+    "all_gradients_shape": true,
+    "all_results_finite": true,
+    "bridge_matrix_matches_raw_result": true,
+    "bridge_success": true,
+    "bridge_sum_force_near_zero": true,
+    "complex_34_atoms": true,
+    "distinct_d3bj_profile": true,
+    "effective_dispersion_method": true,
+    "effective_engine": true,
+    "effective_functional": true,
+    "effective_level": true,
+    "effective_parameters": true,
+    "energy_parity": true,
+    "explicit_profile_parameters": true,
+    "frozen_complex_geometry": true,
+    "gradient_parity": true,
+    "input_gradient_mode": true,
+    "input_unchanged": true,
+    "mass_bound_spec_v2": true,
+    "native_all_real_atoms": true,
+    "native_atom_ids_preserved": true,
+    "native_geometry_roundtrip": true,
+    "native_sum_force_near_zero": true,
+    "native_symbols_preserved": true,
+    "no_electronic_dispatch_requested": true,
+    "one_outer_result": true,
+    "outer_request_alias_translation": true,
+    "outer_request_gradient": true,
+    "outer_request_method": true,
+    "outer_request_two_body": true,
+    "program_found": true,
+    "runtime_unchanged": true,
+    "single_bridge_no_retry": true,
+    "source_unchanged": true,
+    "spec_artifacts_verified_after": true,
+    "spec_artifacts_verified_before": true,
+    "translated_atom_ids": true,
+    "translated_explicit_parameters": true,
+    "translated_geometry_exact": true,
+    "translated_request_d3bj": true,
+    "translated_request_gradient": true,
+    "translated_request_v2": true,
+    "two_actual_dispersion_calls": true,
+    "vv10_disabled": true
+  },
+  "counts": {
+    "blocked_electronic_dispatches": 0,
+    "dispersion_library_calls_attempted": 2,
+    "dispersion_library_calls_completed": 2,
+    "inner_qcschema_calls_forwarded": 1,
+    "outer_qcengine_calls_forwarded": 1
+  },
+  "electronic_energy_evaluations": 0,
+  "electronic_gradient_evaluations": 0,
+  "errors": [],
+  "input": {
+    "path": "C:\\chem-fixture\\build\\refinement-d3bj-complex-gradient-20260913\\input.json",
+    "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b"
+  },
+  "metrics": {
+    "absolute_energy_difference_hartree": 0.0,
+    "bridge_energy_hartree": -0.0775092927799016,
+    "bridge_sum_force_hartree_per_bohr": [
+      1.1519648082658485e-18,
+      8.673617379884035e-19,
+      -2.710505431213761e-19
+    ],
+    "maximum_bridge_matrix_result_difference_hartree_per_bohr": 0.0,
+    "maximum_gradient_difference_hartree_per_bohr": 0.0,
+    "native_energy_hartree": -0.0775092927799016,
+    "native_sum_force_hartree_per_bohr": [
+      1.1519648082658485e-18,
+      8.673617379884035e-19,
+      -2.710505431213761e-19
+    ]
+  },
+  "native_geometry_max_abs_delta_bohr": 0.0,
+  "scope": {
+    "accepted_science": false,
+    "actual_dispersion_computations_expected": 2,
+    "derivative_availability_exercised": false,
+    "electronic_calculations_authorized": false,
+    "full_dft_gradient": false,
+    "geometry_optimization": false,
+    "minimum_certification": false,
+    "scientific_accuracy_validation": false,
+    "synthetic_data": false,
+    "worker_record": false
+  },
+  "script_sha256": "0389a0fdce6e501f5573b4ee1606f1fd89eb1d9d1d598375d1ba3d5c856024a7",
+  "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734",
+  "status": "passed",
+  "tolerances": {
+    "energy_hartree": 1e-12,
+    "gradient_hartree_per_bohr": 1e-12,
+    "native_geometry_roundtrip_bohr": 1e-10,
+    "scope": "Serialization/API parity tolerances; not chemical accuracy limits",
+    "sum_force_hartree_per_bohr": 1e-12
+  },
+  "version": "refinement-d3bj-dispersion-api-parity/v1",
+  "wall_seconds": 60.73399999999674
+}

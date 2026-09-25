@@ -1,0 +1,30 @@
+{
+  "version": "refinement-d3bj-preparation/v1",
+  "started_at_utc": "2026-09-13T18:24:20.033205+00:00",
+  "electronic_evaluations": 0,
+  "dispersion_evaluations": 0,
+  "model_requests": 0,
+  "scientific_accuracy_validated": false,
+  "preparation_complete": true,
+  "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734",
+  "atom_count": 34,
+  "basis_functions": 967,
+  "runtime_files": 2,
+  "limitations": [
+    "One requested future full analytic gradient is not optimization or minimum certification.",
+    "The named method entails internal dispersion work; outer dispatcher counts are not exhaustive nested cost accounting."
+  ],
+  "completed_at_utc": "2026-09-13T18:25:02.491880+00:00",
+  "files": {
+    "basis-observation.json": "dfe1dc684f8c4f53635bfa7f90805adc1f86230a8d5bfe30e53393a2215847c4",
+    "declared-native-options.json": "aa1097825824999552e3a954ccef4f1fc00b14bd3c51c81d36f7a90fce5c9781",
+    "derivative-preflight.json": "a15a0b3f15c5cdaff97ae30841d5ef88ab13e4198e576b37c506acc30b21bffe",
+    "dispersion-preflight.json": "d51dca07bafc9de9a80624f9c036424f8f6d25e6271da18919f42f271ccdc65d",
+    "effective-native-options.json": "009fa23154604abc2861eeb14d9bbaa2b7e2141c877d8449dd7055f53ca89fe1",
+    "input.json": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+    "isotope-defaults-observed.json": "252450cfe2061310b0b5332986f45af148a0d59d678fd037d24fd6a05acb2230",
+    "isotope-observation.json": "3d36e6eccda78afcb69a52d6c47a9dcff5fdd7364dd84736580ac3cebc4a9b78",
+    "preflight-atomic-input.json": "d6b8b97970e17955fa78018e58fc60ef698b0b0fb55bd9ab961c4d260a1f6134",
+    "runtime-manifest.json": "590a1d2fb140ae80345ce49bfb414c7ee11b0482514a9a39cd2a5f607d7efb8a"
+  }
+}

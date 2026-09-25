@@ -1,0 +1,11 @@
+{
+  "evaluation_id": "evaluation-0000",
+  "memory_gib": 9.6,
+  "monotonic_seconds": 412105.5763121,
+  "ncores": 8,
+  "nested_retries": 0,
+  "scope": "Actual nested calls only; no scientific accuracy assertion",
+  "scratch_before": "C:\\chem-fixture\\build\\refinement-observed-pipeline-integration-20260913\\validation-4d72eb556b8f4e09bb6eb2521c6cae86\\pytest\\test_complete_real_staged_pipe0\\synthetic-original-scratch",
+  "scratch_forwarded": "C:\\chem-fixture\\build\\refinement-observed-pipeline-integration-20260913\\validation-4d72eb556b8f4e09bb6eb2521c6cae86\\pytest\\test_complete_real_staged_pipe0\\synthetic-run\\scratch\\evaluation-0000",
+  "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734"
+}

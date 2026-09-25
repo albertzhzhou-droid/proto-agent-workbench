@@ -1,0 +1,1183 @@
+{
+  "version": "chem-development-snapshot/v1",
+  "sourceLabel": "Chem CLI working tree",
+  "sourceCommit": "3543c91330ac2017d0ca9543e1e5ea1dd71efad7",
+  "capturedAt": "2026-09-25T00:36:44.9663799Z",
+  "includesUncommittedWorkingTree": true,
+  "sourceManifestHash": "4fab5293651958bc7763b74f510d341e2f5951538a77546b611735d6d95f655d",
+  "scope": "Development tests and fixtures, standalone desktop preview source, and project maintenance documents supporting the immutable Chem source snapshot.",
+  "excludedUpstreamFiles": [
+    {
+      "path": ".gitignore",
+      "reason": "Publication-specific ignore rules are maintained separately for the nested Chem project."
+    },
+    {
+      "path": ".gitattributes",
+      "reason": "The parent repository preserves exact Chem snapshot and fixture bytes with -text. The upstream nested file would override that policy and enable newline conversion."
+    }
+  ],
+  "notes": [
+    "The immutable 254-file scientific source snapshot and its manifest are unchanged.",
+    "Development fixtures are transformed software test copies where marked. Original source hashes and published hashes are distinct. Original source files remain unchanged.",
+    "Historical host paths were replaced with a synthetic fixture root; the installed file inventory was minimized to the bound basis entry and an inert synthetic placeholder. Dependent fixture hashes and test pins were recomputed, preserving geometry and coordinate number tokens.",
+    "Fixtures cannot establish scientific acceptance, installed runtime availability, or execution approval.",
+    "Installed environments, backend binaries, build output, caches, generated desktop runtime configuration, and scratch files are excluded."
+  ],
+  "files": {
+    ".editorconfig": {
+      "sha256": "5b7dda100ca465f7d0a0951aa8f260713d1cd77e2065b42716510de24feb7363",
+      "bytes": 213,
+      "sourceSha256": "5b7dda100ca465f7d0a0951aa8f260713d1cd77e2065b42716510de24feb7363",
+      "sourceBytes": 213,
+      "transformation": "byte-exact-copy"
+    },
+    "CHANGELOG.md": {
+      "sha256": "2fa689e6dfc2633c8313101922613f9d11e72acdc967c0667dc2b3bdc3e89c45",
+      "bytes": 17519,
+      "sourceSha256": "2fa689e6dfc2633c8313101922613f9d11e72acdc967c0667dc2b3bdc3e89c45",
+      "sourceBytes": 17519,
+      "transformation": "byte-exact-copy"
+    },
+    "Chem_Workbench_Tool_First_Implementation_Plan.md": {
+      "sha256": "fcdc5dba2aab8b585976c96be8d443cb645b4864b6d1d73903cf07c60778dce9",
+      "bytes": 77119,
+      "sourceSha256": "fcdc5dba2aab8b585976c96be8d443cb645b4864b6d1d73903cf07c60778dce9",
+      "sourceBytes": 77119,
+      "transformation": "byte-exact-copy"
+    },
+    "desktop/main.cjs": {
+      "sha256": "a2ec55de2d02c38496884dc656bd36842e7c400635d297b5da3066e902fe7f43",
+      "bytes": 3027,
+      "sourceSha256": "a2ec55de2d02c38496884dc656bd36842e7c400635d297b5da3066e902fe7f43",
+      "sourceBytes": 3027,
+      "transformation": "byte-exact-copy"
+    },
+    "desktop/package.json": {
+      "sha256": "023d3d90c06f24ca71cd9866c861020bbc21b6cfabd74809f5aa2a892490cd3e",
+      "bytes": 146,
+      "sourceSha256": "023d3d90c06f24ca71cd9866c861020bbc21b6cfabd74809f5aa2a892490cd3e",
+      "sourceBytes": 146,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/conftest.py": {
+      "sha256": "8545a5e6a14f07b7b1c8d501f9dcb60877d841e397eb6b0fb458767fbbe94740",
+      "bytes": 1240,
+      "sourceSha256": "8545a5e6a14f07b7b1c8d501f9dcb60877d841e397eb6b0fb458767fbbe94740",
+      "sourceBytes": 1240,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/dispersion_diagnostics.test.cjs": {
+      "sha256": "66adde4a79995ea127ba2b8a59090147ab5e6232537d8fef3d6a611e6c01a7c8",
+      "bytes": 14409,
+      "sourceSha256": "c4024d1c0d52bcd25bb80dfcf23a3c89aef6324bdac764ec432afeed243d81f6",
+      "sourceBytes": 14409,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/design-interface-export-retained.json": {
+      "sha256": "febdbb98a5cd4fd10db8a351be1d118b55ae411cef87214ebcdfff92f91439af",
+      "bytes": 991074,
+      "sourceSha256": "febdbb98a5cd4fd10db8a351be1d118b55ae411cef87214ebcdfff92f91439af",
+      "sourceBytes": 991074,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/dispersion-diagnostics-retained.json": {
+      "sha256": "27a05734f78b8ab5e01ef5b104e7b1babf6ec97e452edf4b3ca2c568fc8c0b7c",
+      "bytes": 29708,
+      "sourceSha256": "dcaccf169f0ca1311e6620e3884b0047bd91c047aa4d9bfae2a138b021d313f6",
+      "sourceBytes": 29708,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/interface-visualization-retained.json": {
+      "sha256": "ab2d8cbf6d34f733a01af778c78c7c6180848de24747fdc28e969805dcd5478c",
+      "bytes": 288685,
+      "sourceSha256": "ab2d8cbf6d34f733a01af778c78c7c6180848de24747fdc28e969805dcd5478c",
+      "sourceBytes": 288685,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/artifacts/0-refinement-complex-cohort-20260913.json": {
+      "sha256": "60b5e69850e1bed2f6d6949e8c5c016ea237e700c968d698d0ff5b124a200403",
+      "bytes": 134529,
+      "sourceSha256": "60b5e69850e1bed2f6d6949e8c5c016ea237e700c968d698d0ff5b124a200403",
+      "sourceBytes": 134529,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/artifacts/1-declared-native-options.json": {
+      "sha256": "aa1097825824999552e3a954ccef4f1fc00b14bd3c51c81d36f7a90fce5c9781",
+      "bytes": 1347,
+      "sourceSha256": "aa1097825824999552e3a954ccef4f1fc00b14bd3c51c81d36f7a90fce5c9781",
+      "sourceBytes": 1347,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/artifacts/2-runtime-manifest.json": {
+      "sha256": "590a1d2fb140ae80345ce49bfb414c7ee11b0482514a9a39cd2a5f607d7efb8a",
+      "bytes": 1960,
+      "sourceSha256": "a3dc9c5b354baf7bff80299d7b2e71dda6ebca75ab36c72eae25c5f94460f8cf",
+      "sourceBytes": 1476010,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/artifacts/3-def2-tzvppd.gbs": {
+      "sha256": "0b3c5f3a8bfe9a158dabff8b6437dd3706c65757f42a56a70918fc2d78291d13",
+      "bytes": 135944,
+      "sourceSha256": "0b3c5f3a8bfe9a158dabff8b6437dd3706c65757f42a56a70918fc2d78291d13",
+      "sourceBytes": 135944,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/artifacts/4-isotope-observation.json": {
+      "sha256": "3d36e6eccda78afcb69a52d6c47a9dcff5fdd7364dd84736580ac3cebc4a9b78",
+      "bytes": 5596,
+      "sourceSha256": "3ce139d2fe411423d2cc4c7d34210859290dc2b528cee0fc8aa7d5e1aeb7cf4b",
+      "sourceBytes": 5596,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/input.json": {
+      "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+      "bytes": 21130,
+      "sourceSha256": "a80480c324f41f43feb3dcea93a3b820aff5d1ec1ac851db60c412745155f577",
+      "sourceBytes": 21130,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/manifest.json": {
+      "sha256": "de78353c22e06986eb3292524d6077a161c75651c2207b44da3ec2fc557b76ec",
+      "bytes": 17713,
+      "sourceSha256": "f2736656fc7d0168e95150b18cc780ff39ed30210664d866f09fd66d34852e63",
+      "sourceBytes": 17717,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/parity/bridge-qcengine-input.json": {
+      "sha256": "a1a9020368cba00ed8ecda2d748d1562507bc0a8da4d9348c0a6552b97b31e61",
+      "bytes": 10416,
+      "sourceSha256": "a1a9020368cba00ed8ecda2d748d1562507bc0a8da4d9348c0a6552b97b31e61",
+      "sourceBytes": 10416,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/parity/bridge-qcengine-result.json": {
+      "sha256": "ccacd5303950671b5aeab88bcbfdc9833af04fa14765fcdd9a0695126f263200",
+      "bytes": 26527,
+      "sourceSha256": "ccacd5303950671b5aeab88bcbfdc9833af04fa14765fcdd9a0695126f263200",
+      "sourceBytes": 26527,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/parity/bridge-translated-dftd3-input.json": {
+      "sha256": "2857e5714bdd1b29b7cb96270763bd1c5dda8b9bedbc1fc196239dc9890bfdc8",
+      "bytes": 10597,
+      "sourceSha256": "2857e5714bdd1b29b7cb96270763bd1c5dda8b9bedbc1fc196239dc9890bfdc8",
+      "sourceBytes": 10597,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/parity/bridge-translated-dftd3-result.json": {
+      "sha256": "60d0d4d73a2dffee6359116891c69d233652cee5aab7089bcb7c5ff7ea3d1b87",
+      "bytes": 18883,
+      "sourceSha256": "60d0d4d73a2dffee6359116891c69d233652cee5aab7089bcb7c5ff7ea3d1b87",
+      "sourceBytes": 18883,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/parity/receipt.json": {
+      "sha256": "b02ff4cb40e0fe38d5db64c628a24ab3178a6c2ad5a355d3f304dd17bb66d596",
+      "bytes": 9650,
+      "sourceSha256": "a043f75d237af899c279fd27f092d2bbfb58818123f6ddc2568c86507153eacc",
+      "sourceBytes": 10046,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/dispatch-observation.json": {
+      "sha256": "030171e5d1d45db824c27ca7fdf1c09fd8a0d1ae887aec77931f67d2caf47f3a",
+      "bytes": 1471,
+      "sourceSha256": "640479597082b348a1c407a917d09a7fb4c3558254677053786fe065183280bf",
+      "sourceBytes": 1471,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/native-controls-after.json": {
+      "sha256": "fb03d479b2ed3d20ddd37d421e6e0aec8846fd28f27704273c6fcf5379c6b47e",
+      "bytes": 277,
+      "sourceSha256": "2b2fc78e74db439a089a5afd79060eb82f0bc65bbd863e40a3289af2d4da3e91",
+      "sourceBytes": 295,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/native-controls-before.json": {
+      "sha256": "3baffb56a58e3fadaf9e4950083e7038cbefa1a4b4b7d88dec24a166766c10cd",
+      "bytes": 278,
+      "sourceSha256": "2c06c13423d319e3141802bc41fe509c99972c7c155935c34cf84d93cf0647e1",
+      "sourceBytes": 296,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/context-start.json": {
+      "sha256": "e08889df9797c772190c235dbdbefe8c68e6e5475d528601f85220f93c41dd48",
+      "bytes": 741,
+      "sourceSha256": "296c30310555b92aed12ee70b57ac01d279a2cc13d148fbaf172107107e1b3c9",
+      "sourceBytes": 777,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0000-forwarded-request-after.json": {
+      "sha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd",
+      "bytes": 11688,
+      "sourceSha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd",
+      "sourceBytes": 11688,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0000-request.json": {
+      "sha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd",
+      "bytes": 11688,
+      "sourceSha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd",
+      "sourceBytes": 11688,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0000-return.json": {
+      "sha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829",
+      "bytes": 15474,
+      "sourceSha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829",
+      "sourceBytes": 15474,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0000-start.json": {
+      "sha256": "b27d783010123ef8c8f7c25d3f50fa95f017cb6b40da86093c204f729c3ef76c",
+      "bytes": 202,
+      "sourceSha256": "4742548f2b0de88c9555a2e714064d7bde6cc57bd540b225feddee21a5837899",
+      "sourceBytes": 202,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0001-forwarded-request-after.json": {
+      "sha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c",
+      "bytes": 11690,
+      "sourceSha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c",
+      "sourceBytes": 11690,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0001-request.json": {
+      "sha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c",
+      "bytes": 11690,
+      "sourceSha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c",
+      "sourceBytes": 11690,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0001-return.json": {
+      "sha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72",
+      "bytes": 17047,
+      "sourceSha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72",
+      "sourceBytes": 17047,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/inner-0001-start.json": {
+      "sha256": "70648c8d1e5c528920c446806b99c0bea44e829bbc549be20cf70ae7f15aacd9",
+      "bytes": 202,
+      "sourceSha256": "c0f892a52498506d780c47ec3bb6d886e3663a7c0f3cf8f442452b4bcb1f459b",
+      "sourceBytes": 202,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-forwarded-config.json": {
+      "sha256": "00bf1e4d20614fc861f7e8894e718ad817da576e4287eb974b3950990b9ba27a",
+      "bytes": 278,
+      "sourceSha256": "dbf4fddf8e256aa7549f621e552723f240cb79ebbfd8567ef915a9600738e9eb",
+      "sourceBytes": 296,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-forwarded-request-after.json": {
+      "sha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19",
+      "bytes": 11490,
+      "sourceSha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19",
+      "sourceBytes": 11490,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-request.json": {
+      "sha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19",
+      "bytes": 11490,
+      "sourceSha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19",
+      "sourceBytes": 11490,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-requested-config.json": {
+      "sha256": "3ec79ab025b943901b314c1408fc5e4924e0fc94459b13cd9a0349194591f325",
+      "bytes": 245,
+      "sourceSha256": "8ab49c7a236396e54298c439c48e96e7597652db4e2fc83c14a8da3ae4e8176b",
+      "sourceBytes": 263,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-return.json": {
+      "sha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829",
+      "bytes": 15474,
+      "sourceSha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829",
+      "sourceBytes": 15474,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0000-start.json": {
+      "sha256": "5c7bde1b0ced8333cc3d1cb4cb20f0976e4b0a22cacbd5977ba4722c4927cbe4",
+      "bytes": 193,
+      "sourceSha256": "b9325049fb7de4ac1231e9f16d2b1cbbb6897d9a3fd1ebea5287b9b91bace12f",
+      "sourceBytes": 193,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-forwarded-config.json": {
+      "sha256": "00bf1e4d20614fc861f7e8894e718ad817da576e4287eb974b3950990b9ba27a",
+      "bytes": 278,
+      "sourceSha256": "dbf4fddf8e256aa7549f621e552723f240cb79ebbfd8567ef915a9600738e9eb",
+      "sourceBytes": 296,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-forwarded-request-after.json": {
+      "sha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3",
+      "bytes": 11492,
+      "sourceSha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3",
+      "sourceBytes": 11492,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-request.json": {
+      "sha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3",
+      "bytes": 11492,
+      "sourceSha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3",
+      "sourceBytes": 11492,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-requested-config.json": {
+      "sha256": "3ec79ab025b943901b314c1408fc5e4924e0fc94459b13cd9a0349194591f325",
+      "bytes": 245,
+      "sourceSha256": "8ab49c7a236396e54298c439c48e96e7597652db4e2fc83c14a8da3ae4e8176b",
+      "sourceBytes": 263,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-return.json": {
+      "sha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72",
+      "bytes": 17047,
+      "sourceSha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72",
+      "sourceBytes": 17047,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/qce-0001-start.json": {
+      "sha256": "77f4915332e10eac81bb2c845204f06b522ba271a9978536c598e88e5ef38623",
+      "bytes": 192,
+      "sourceSha256": "4ab5a3707cbe986d193457959e53bb7e1338ced867d8d2d15767d4ac56be70e5",
+      "sourceBytes": 192,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/nested/summary.json": {
+      "sha256": "317bee6874de30935c2ed0396d1db26d79a5716f5811f894b02bd30264ea0e0e",
+      "bytes": 3977,
+      "sourceSha256": "38d6c805473479bc615f6706a9e2a30334ebcf614eef8a61ed8509a75f96cae5",
+      "sourceBytes": 3977,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/outer-dispatch-controls.json": {
+      "sha256": "bde043f5b9f48840bd3574ae0a4360da86dd475c152ada2e36923cd2360787d8",
+      "bytes": 635,
+      "sourceSha256": "940156202ed4c046be96fd448b9ddd380b92c8859c5cdd09a13f4f66502c4375",
+      "sourceBytes": 671,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/outer-forwarded-input-after.json": {
+      "sha256": "d94852dcfec8e236fdb05be30c074569ec9f997b061d6f15283adef5d1a6d156",
+      "bytes": 3174,
+      "sourceSha256": "d94852dcfec8e236fdb05be30c074569ec9f997b061d6f15283adef5d1a6d156",
+      "sourceBytes": 3174,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/outer-input.json": {
+      "sha256": "d94852dcfec8e236fdb05be30c074569ec9f997b061d6f15283adef5d1a6d156",
+      "bytes": 3174,
+      "sourceSha256": "d94852dcfec8e236fdb05be30c074569ec9f997b061d6f15283adef5d1a6d156",
+      "sourceBytes": 3174,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/outer-result.json": {
+      "sha256": "e085cf9f820c65a50b3a29e4bec94c99b9a57b4f1291f561c39cbbd02d863706",
+      "bytes": 3913,
+      "sourceSha256": "e085cf9f820c65a50b3a29e4bec94c99b9a57b4f1291f561c39cbbd02d863706",
+      "sourceBytes": 3913,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/evaluation-0000-dispatch/outer-start.json": {
+      "sha256": "adb0b99ceb3fcb75841288a1cd1f9003924a882f54892742bec7cd9e7c2cb43c",
+      "bytes": 821,
+      "sourceSha256": "77a274450bfc3d9870e2fb8d5e3c366e2bf7fdeebbe8539beb9f8514c4247eb5",
+      "sourceBytes": 839,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/past_run/synthetic-scientific-result.json": {
+      "sha256": "18211a7be3b88f026abe5011775e14d41b65076f551d98c24bd8746e6d6b40ff",
+      "bytes": 20667,
+      "sourceSha256": "e0214e4af4e60d3f9c76709b462c8ee0ca34bf5f250e36185d6e2891d86c4594",
+      "sourceBytes": 20667,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_evidence_product/README.md": {
+      "sha256": "f25e7384ee0eab81c3ff3862d124a41ffee62ee2caf8da72e7d5b285847be700",
+      "bytes": 2450,
+      "sourceSha256": "5c959fd02eb7b76d924041274d4464226cf2313ec9ad5dfe6b225e2508fe5335",
+      "sourceBytes": 1308,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_execution_subject/candidate-source.original.chem": {
+      "sha256": "d4c2d79fd6020a5e8feea875b8d70318ce42754ae00cb8f132d340fba5f3298e",
+      "bytes": 97,
+      "sourceSha256": "d4c2d79fd6020a5e8feea875b8d70318ce42754ae00cb8f132d340fba5f3298e",
+      "sourceBytes": 97,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_execution_subject/design-record.original.json": {
+      "sha256": "01cbb4531ed64109c692216ad33d190def6b46961ac9faebd5831180c4eae9f3",
+      "bytes": 59651,
+      "sourceSha256": "01cbb4531ed64109c692216ad33d190def6b46961ac9faebd5831180c4eae9f3",
+      "sourceBytes": 59651,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_execution_subject/mass-bound-input.original.json": {
+      "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+      "bytes": 21130,
+      "sourceSha256": "a80480c324f41f43feb3dcea93a3b820aff5d1ec1ac851db60c412745155f577",
+      "sourceBytes": 21130,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_execution_subject/README.md": {
+      "sha256": "4a486f6729d2539e5b37ab6cc6ac35644eb4ce4d33992cdde31de7aa40c0a059",
+      "bytes": 3035,
+      "sourceSha256": "df761e6dd840675de98dd7d9a7db9393a3eec222ee9949b8f68845cb5fc2bb5c",
+      "sourceBytes": 1893,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_execution/README.md": {
+      "sha256": "96cf3febf6554528088d5669d6ed0a4cebd5d4353f84dd8c84f7ac3d4636d478",
+      "bytes": 1459,
+      "sourceSha256": "82a9fcc45501360ec33d29f6957a1a2d95b4f6f91fcbfe75b847fc2199d64480",
+      "sourceBytes": 317,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_execution/synthetic_optimizer_receipt.json": {
+      "sha256": "29644495f7013b668268f9d6eb331ae6e633d566bfe3303eeade36ffa742306e",
+      "bytes": 16938,
+      "sourceSha256": "90c8c09d1c69ed699ddd5d2ba70f25706018c96660c8bab4f9ec73327001cd90",
+      "sourceBytes": 17532,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/basis-observation.json": {
+      "sha256": "dfe1dc684f8c4f53635bfa7f90805adc1f86230a8d5bfe30e53393a2215847c4",
+      "bytes": 124,
+      "sourceSha256": "dfe1dc684f8c4f53635bfa7f90805adc1f86230a8d5bfe30e53393a2215847c4",
+      "sourceBytes": 124,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_preparation_observations/derivative-preflight.json": {
+      "sha256": "a15a0b3f15c5cdaff97ae30841d5ef88ab13e4198e576b37c506acc30b21bffe",
+      "bytes": 306,
+      "sourceSha256": "63a93e5fa5c6d5bba2d1cbcc1ef3c5414423d0aa487b083ecbbe016162b98eb6",
+      "sourceBytes": 306,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/dispersion-preflight.json": {
+      "sha256": "d51dca07bafc9de9a80624f9c036424f8f6d25e6271da18919f42f271ccdc65d",
+      "bytes": 448,
+      "sourceSha256": "a402beb4b5a348077c672450b26e39aa53daaf00590c76825f45274063419336",
+      "sourceBytes": 448,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/effective-native-options.json": {
+      "sha256": "009fa23154604abc2861eeb14d9bbaa2b7e2141c877d8449dd7055f53ca89fe1",
+      "bytes": 347,
+      "sourceSha256": "009fa23154604abc2861eeb14d9bbaa2b7e2141c877d8449dd7055f53ca89fe1",
+      "sourceBytes": 347,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_preparation_observations/isotope-defaults-observed.json": {
+      "sha256": "252450cfe2061310b0b5332986f45af148a0d59d678fd037d24fd6a05acb2230",
+      "bytes": 3748,
+      "sourceSha256": "2d6485adf19cf3ff9dc7de4b399c42706a8a4927feb1c6697a9f822765ec9c56",
+      "sourceBytes": 3748,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/manifest.json": {
+      "sha256": "14af05954bb668bd1f684d0f2c9e26f03159132a7281b1ce44e564c0ffd4f4ae",
+      "bytes": 2121,
+      "sourceSha256": "3ce0cc4cd5902b6a13b7286308f7fa60d5b36081cf503430b3dc23545e8a750a",
+      "sourceBytes": 2121,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/preflight-atomic-input.json": {
+      "sha256": "d6b8b97970e17955fa78018e58fc60ef698b0b0fb55bd9ab961c4d260a1f6134",
+      "bytes": 3519,
+      "sourceSha256": "d6b8b97970e17955fa78018e58fc60ef698b0b0fb55bd9ab961c4d260a1f6134",
+      "sourceBytes": 3519,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/fixtures/refinement_preparation_observations/preparation.json": {
+      "sha256": "9db4f16b7b46b117ae19ae62bfe720a921a0fcc15beea58a1bf96a0b436d93e1",
+      "bytes": 1772,
+      "sourceSha256": "8330c040cb4cb5e3315ca979b109b06150efef255db5aa60c31aa814c7257adc",
+      "sourceBytes": 1776,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/fixtures/refinement_preparation_observations/README.md": {
+      "sha256": "e5b7887570adaa7318abafdb7dad1d71cbd95dada608d891abb8a66cc500b587",
+      "bytes": 2204,
+      "sourceSha256": "bf5e7fdd1674ed6d85dc7ae0bc56d85bb39efe26126694c7c102915053f1c888",
+      "sourceBytes": 1062,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/interface_workbench.test.cjs": {
+      "sha256": "6bfaff2d4470d234c2074cdc535674a21330f152150d37cb59866d07f0b7e1b2",
+      "bytes": 10765,
+      "sourceSha256": "6bfaff2d4470d234c2074cdc535674a21330f152150d37cb59866d07f0b7e1b2",
+      "sourceBytes": 10765,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/refinement_evidence_fixtures.py": {
+      "sha256": "b75ecbe013042e39febf50716e53aa0fee11840cae51c3b94c6c17168a7618c0",
+      "bytes": 1885,
+      "sourceSha256": "b75ecbe013042e39febf50716e53aa0fee11840cae51c3b94c6c17168a7618c0",
+      "sourceBytes": 1885,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/refinement_lab.test.cjs": {
+      "sha256": "8f070d08f1f29b871b076ebf3c5999d24745ad586b0cfb016298aa21138ddac6",
+      "bytes": 15356,
+      "sourceSha256": "8f070d08f1f29b871b076ebf3c5999d24745ad586b0cfb016298aa21138ddac6",
+      "sourceBytes": 15356,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/refinement_schema_fixture.py": {
+      "sha256": "5978980d8c22fd133f523cb5721ff80e3251999a7ee163c4095a7462183b2c5c",
+      "bytes": 5236,
+      "sourceSha256": "5978980d8c22fd133f523cb5721ff80e3251999a7ee163c4095a7462183b2c5c",
+      "sourceBytes": 5236,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_adapter_contracts.py": {
+      "sha256": "8edc096f10283e86106395db997d9cd96542c2d3f3634b5be584ed56ed506579",
+      "bytes": 25994,
+      "sourceSha256": "8edc096f10283e86106395db997d9cd96542c2d3f3634b5be584ed56ed506579",
+      "sourceBytes": 25994,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_chemistry_acceptance.py": {
+      "sha256": "cd53cda79b6b2b2f3bf0a0f005ab2e938c8eb7b6617ab5fb8acea81a39af1132",
+      "bytes": 4982,
+      "sourceSha256": "cd53cda79b6b2b2f3bf0a0f005ab2e938c8eb7b6617ab5fb8acea81a39af1132",
+      "sourceBytes": 4982,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_cif_convert.py": {
+      "sha256": "e6f3a90dda66eb79dfef9d598989e2371e8242a285293fe45f67fbc6b5180ec1",
+      "bytes": 9105,
+      "sourceSha256": "e6f3a90dda66eb79dfef9d598989e2371e8242a285293fe45f67fbc6b5180ec1",
+      "sourceBytes": 9105,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_cif_probe.py": {
+      "sha256": "2d99374677c70a8b1821234fb25b52b33d8358c3e5df243724badc66c05b260a",
+      "bytes": 10785,
+      "sourceSha256": "2d99374677c70a8b1821234fb25b52b33d8358c3e5df243724badc66c05b260a",
+      "sourceBytes": 10785,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_cli_adapters.py": {
+      "sha256": "35e7dd0d18fcc67622c6ea1758d4d563133675b0a4c96a5dca2ed25fc1df0153",
+      "bytes": 8591,
+      "sourceSha256": "35e7dd0d18fcc67622c6ea1758d4d563133675b0a4c96a5dca2ed25fc1df0153",
+      "sourceBytes": 8591,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_cli.py": {
+      "sha256": "8bc43b303e851ecccf543d8f7e359a4a110dbf1d55f9d880c31f356bbf68ebd3",
+      "bytes": 18426,
+      "sourceSha256": "8bc43b303e851ecccf543d8f7e359a4a110dbf1d55f9d880c31f356bbf68ebd3",
+      "sourceBytes": 18426,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_complex_execution_acceptance.py": {
+      "sha256": "c096be56b0bd211f2fac8088e420efdbe09a6952d4d2954246cb3c30ec6dc782",
+      "bytes": 8000,
+      "sourceSha256": "c096be56b0bd211f2fac8088e420efdbe09a6952d4d2954246cb3c30ec6dc782",
+      "sourceBytes": 8000,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_conditions_and_comparisons.py": {
+      "sha256": "3be6dc1b971e6685fbb25e1dafd82ec1cf40c6c0a82b31016842b3c318003d7e",
+      "bytes": 10381,
+      "sourceSha256": "3be6dc1b971e6685fbb25e1dafd82ec1cf40c6c0a82b31016842b3c318003d7e",
+      "sourceBytes": 10381,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_candidates.py": {
+      "sha256": "695a3a9952d65f1216ae6bdc138686a062007dd310107cc41d86cde4f2818177",
+      "bytes": 12599,
+      "sourceSha256": "695a3a9952d65f1216ae6bdc138686a062007dd310107cc41d86cde4f2818177",
+      "sourceBytes": 12599,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_evaluation.py": {
+      "sha256": "974196d8b42dab9ea571bf4f5114ee3f67ecb4ba1a5157969c6141db3c83c8f5",
+      "bytes": 33078,
+      "sourceSha256": "974196d8b42dab9ea571bf4f5114ee3f67ecb4ba1a5157969c6141db3c83c8f5",
+      "sourceBytes": 33078,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_interface_export.py": {
+      "sha256": "24dc8ffedde12ac0b75c5bc2227b40674bf064c1f22afc43e55403e02143e9d4",
+      "bytes": 12084,
+      "sourceSha256": "24dc8ffedde12ac0b75c5bc2227b40674bf064c1f22afc43e55403e02143e9d4",
+      "sourceBytes": 12084,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_promotion.py": {
+      "sha256": "9f66d480f7c673a1aea0bc1627874b74863dc281c7685ac1216dd12e45b136f9",
+      "bytes": 21904,
+      "sourceSha256": "9f66d480f7c673a1aea0bc1627874b74863dc281c7685ac1216dd12e45b136f9",
+      "sourceBytes": 21904,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_retention.py": {
+      "sha256": "09b7d019a96e0af4e810eb0e96099f8c4b214b3978ed075c301085824b9c66e8",
+      "bytes": 5820,
+      "sourceSha256": "09b7d019a96e0af4e810eb0e96099f8c4b214b3978ed075c301085824b9c66e8",
+      "sourceBytes": 5820,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_router_contract.py": {
+      "sha256": "0892ef94c5d4fd98d816d299ab292d380e4a02b27587b4c7b0994d33db16f014",
+      "bytes": 23433,
+      "sourceSha256": "0892ef94c5d4fd98d816d299ab292d380e4a02b27587b4c7b0994d33db16f014",
+      "sourceBytes": 23433,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_runtime_faults.py": {
+      "sha256": "864a031344a5ec40874ec77c8efd8febbbc18caab4e215d2ec69b40e53a59f73",
+      "bytes": 7642,
+      "sourceSha256": "864a031344a5ec40874ec77c8efd8febbbc18caab4e215d2ec69b40e53a59f73",
+      "sourceBytes": 7642,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_studio_integration.py": {
+      "sha256": "6b09847704a9530ff2bee74c3409f3b65ecd9ddfda1f422c375e8218c8e84e90",
+      "bytes": 17824,
+      "sourceSha256": "6b09847704a9530ff2bee74c3409f3b65ecd9ddfda1f422c375e8218c8e84e90",
+      "sourceBytes": 17824,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_design_studio_ui.py": {
+      "sha256": "acce02d9ccb5e0f05420d6207d3bdbeec5b6c2645beb23d2351978b6e77bedfa",
+      "bytes": 809,
+      "sourceSha256": "acce02d9ccb5e0f05420d6207d3bdbeec5b6c2645beb23d2351978b6e77bedfa",
+      "sourceBytes": 809,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_dispersion_diagnostics_ui.py": {
+      "sha256": "2b25236b403a1d913b8752521ce2e1d7f8af44441b10627d316c7ff65e59d48c",
+      "bytes": 703,
+      "sourceSha256": "2b25236b403a1d913b8752521ce2e1d7f8af44441b10627d316c7ff65e59d48c",
+      "sourceBytes": 703,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_evaluation_v4.py": {
+      "sha256": "97d45eb420f6064498183a9b9f6ef954c7065d2f890b32005b042d2ea36cceb5",
+      "bytes": 19237,
+      "sourceSha256": "97d45eb420f6064498183a9b9f6ef954c7065d2f890b32005b042d2ea36cceb5",
+      "sourceBytes": 19237,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_evaluation.py": {
+      "sha256": "76e13e0f464a3ca3e344e9992ba69febe53f00107a55d6b2ef5c88b11efb50b1",
+      "bytes": 17038,
+      "sourceSha256": "76e13e0f464a3ca3e344e9992ba69febe53f00107a55d6b2ef5c88b11efb50b1",
+      "sourceBytes": 17038,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_geometry_view_model.py": {
+      "sha256": "56e1477d966cf8dc05464cbb1e79ce649dbb9c6d896d2855be8e351967510374",
+      "bytes": 678,
+      "sourceSha256": "56e1477d966cf8dc05464cbb1e79ce649dbb9c6d896d2855be8e351967510374",
+      "sourceBytes": 678,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_governed_execution.py": {
+      "sha256": "7827df4602e5f8405323656f9868895ad91c1867308a922a4da5ba1af904e045",
+      "bytes": 22063,
+      "sourceSha256": "7827df4602e5f8405323656f9868895ad91c1867308a922a4da5ba1af904e045",
+      "sourceBytes": 22063,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_intent.py": {
+      "sha256": "ea37d72a2cfd9f6a7cb31cdb2638735963d2a511ecad53ded9081928f6e1bceb",
+      "bytes": 6867,
+      "sourceSha256": "ea37d72a2cfd9f6a7cb31cdb2638735963d2a511ecad53ded9081928f6e1bceb",
+      "sourceBytes": 6867,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_interface_mechanism_integrity.py": {
+      "sha256": "98bce4468599be040357e0bc7452544ad1776b818970ef84cd080256b9cbd133",
+      "bytes": 3140,
+      "sourceSha256": "98bce4468599be040357e0bc7452544ad1776b818970ef84cd080256b9cbd133",
+      "sourceBytes": 3140,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_interface_mechanisms.py": {
+      "sha256": "57a812d824c8e70a00bde139f1546b389ffed8a06226f25dd9bf5b970b6bd72f",
+      "bytes": 13283,
+      "sourceSha256": "57a812d824c8e70a00bde139f1546b389ffed8a06226f25dd9bf5b970b6bd72f",
+      "sourceBytes": 13283,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_interface_screening.py": {
+      "sha256": "f131bc611d88dadf2198784317a9f9b1b29ad2882e0e60dcf319c2223d876687",
+      "bytes": 6711,
+      "sourceSha256": "f131bc611d88dadf2198784317a9f9b1b29ad2882e0e60dcf319c2223d876687",
+      "sourceBytes": 6711,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_interface_simulation.py": {
+      "sha256": "c935fe7cef4578cc1beb82e244e46ec99adf4e6406c4c5f97337b9be4c9d7433",
+      "bytes": 16245,
+      "sourceSha256": "c935fe7cef4578cc1beb82e244e46ec99adf4e6406c4c5f97337b9be4c9d7433",
+      "sourceBytes": 16245,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_interface_workbench_ui.py": {
+      "sha256": "6644462b85fa817b9aeb80200be63fc173298e6c77317ad359029ae6bd87aef4",
+      "bytes": 692,
+      "sourceSha256": "6644462b85fa817b9aeb80200be63fc173298e6c77317ad359029ae6bd87aef4",
+      "sourceBytes": 692,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_json_schemas.py": {
+      "sha256": "b126521ec1010fe0299b2eac4abcff0568257fa972dde630cb61bd9d15767201",
+      "bytes": 9126,
+      "sourceSha256": "b126521ec1010fe0299b2eac4abcff0568257fa972dde630cb61bd9d15767201",
+      "sourceBytes": 9126,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_limits_and_profiles.py": {
+      "sha256": "2c418c61bc1a98b00c0693140a0967ac4a3fb5c6d5bbb8038696e6b8dc610e66",
+      "bytes": 6403,
+      "sourceSha256": "2c418c61bc1a98b00c0693140a0967ac4a3fb5c6d5bbb8038696e6b8dc610e66",
+      "sourceBytes": 6403,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_acceptance_costs.py": {
+      "sha256": "6f6d9df15434e0aa4eb7d8dd6c896924f69c400ab667164059d8452e4e81fd71",
+      "bytes": 4892,
+      "sourceSha256": "6f6d9df15434e0aa4eb7d8dd6c896924f69c400ab667164059d8452e4e81fd71",
+      "sourceBytes": 4892,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_comparison.py": {
+      "sha256": "b7129c8852813d73e9ca3c85a7cb18495d9f31e63798e5eb6a60f86d75536af7",
+      "bytes": 7537,
+      "sourceSha256": "b7129c8852813d73e9ca3c85a7cb18495d9f31e63798e5eb6a60f86d75536af7",
+      "sourceBytes": 7537,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_compute_contention.py": {
+      "sha256": "e850150088e58608cd22bb2430e4fbbb9b77815095ceebda1160c53ebb689e92",
+      "bytes": 7458,
+      "sourceSha256": "e850150088e58608cd22bb2430e4fbbb9b77815095ceebda1160c53ebb689e92",
+      "sourceBytes": 7458,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_context.py": {
+      "sha256": "739214aeb5a0c8d61b105a42dcd47f06974ef9f4f88fdd89c9c7fe8feda0c800",
+      "bytes": 3520,
+      "sourceSha256": "739214aeb5a0c8d61b105a42dcd47f06974ef9f4f88fdd89c9c7fe8feda0c800",
+      "sourceBytes": 3520,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_process_identity.py": {
+      "sha256": "e5a074c678d56bf02ba23eec433c2c1d7e38bb75ff4c697438ec92cc4bd145cd",
+      "bytes": 7547,
+      "sourceSha256": "e5a074c678d56bf02ba23eec433c2c1d7e38bb75ff4c697438ec92cc4bd145cd",
+      "sourceBytes": 7547,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_resource_monitor.py": {
+      "sha256": "b901dc1270635d080a1c44b5800d3e08a618fd3c29e583a18863159db6c5464a",
+      "bytes": 6652,
+      "sourceSha256": "b901dc1270635d080a1c44b5800d3e08a618fd3c29e583a18863159db6c5464a",
+      "sourceBytes": 6652,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_model_selection.py": {
+      "sha256": "815c76a1b0c4cbe532cf5026d592d0ad8437dc6add313597825bd909674e2511",
+      "bytes": 1353,
+      "sourceSha256": "815c76a1b0c4cbe532cf5026d592d0ad8437dc6add313597825bd909674e2511",
+      "sourceBytes": 1353,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_molecular_compute.py": {
+      "sha256": "729b53a7d4fddbc66d4c97944e3b4af1adba97550280a427be8e4d341e24bf84",
+      "bytes": 11419,
+      "sourceSha256": "729b53a7d4fddbc66d4c97944e3b4af1adba97550280a427be8e4d341e24bf84",
+      "sourceBytes": 11419,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_molecular_refinement.py": {
+      "sha256": "2b9a4bb0855abe40a3efb85b14a14bf7f7f2bc7b59d988ce099fc1606177c78e",
+      "bytes": 37834,
+      "sourceSha256": "2b9a4bb0855abe40a3efb85b14a14bf7f7f2bc7b59d988ce099fc1606177c78e",
+      "sourceBytes": 37834,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_orchestrator.py": {
+      "sha256": "f6a86711de17ad796b2508ed153045f484e7b21720f8877b5e6e430de1e8e112",
+      "bytes": 10439,
+      "sourceSha256": "f6a86711de17ad796b2508ed153045f484e7b21720f8877b5e6e430de1e8e112",
+      "sourceBytes": 10439,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_parser_and_compiler.py": {
+      "sha256": "071cc2ac3bee4bdd2165a8c7612fecf0f157d0a1b37cb9ef695d2e07cc3019e7",
+      "bytes": 11674,
+      "sourceSha256": "071cc2ac3bee4bdd2165a8c7612fecf0f157d0a1b37cb9ef695d2e07cc3019e7",
+      "sourceBytes": 11674,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_backend.py": {
+      "sha256": "0ad186b82d9bd6d5f141573f6249ec461f475669e40edeaac6751b9ed1519874",
+      "bytes": 16678,
+      "sourceSha256": "0ad186b82d9bd6d5f141573f6249ec461f475669e40edeaac6751b9ed1519874",
+      "sourceBytes": 16678,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_compute_registration_product.py": {
+      "sha256": "d693cd56eecfe0c25852ff2a4cd0454d83003e0d7d9c5cb83b9d2157f7ef589e",
+      "bytes": 13399,
+      "sourceSha256": "d693cd56eecfe0c25852ff2a4cd0454d83003e0d7d9c5cb83b9d2157f7ef589e",
+      "sourceBytes": 13399,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_d3bj_profile.py": {
+      "sha256": "5c83d90e0fb225fccea339b87b1ec0b2b6ab83ecfbc0ee94573feb315b338df9",
+      "bytes": 3002,
+      "sourceSha256": "5c83d90e0fb225fccea339b87b1ec0b2b6ab83ecfbc0ee94573feb315b338df9",
+      "sourceBytes": 3002,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_direct_profile.py": {
+      "sha256": "2cbad37b9b36f2c71bbd29dab6aedb140138e20825d6b450064f78013ced6d5f",
+      "bytes": 2236,
+      "sourceSha256": "2cbad37b9b36f2c71bbd29dab6aedb140138e20825d6b450064f78013ced6d5f",
+      "sourceBytes": 2236,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_disk_budget_product.py": {
+      "sha256": "e26f52dfeffb6c8362f823dfbb8ed70768da69868d91a3805e21f72c7495d0bb",
+      "bytes": 7256,
+      "sourceSha256": "e26f52dfeffb6c8362f823dfbb8ed70768da69868d91a3805e21f72c7495d0bb",
+      "sourceBytes": 7256,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_evidence_product.py": {
+      "sha256": "854502e7735115eb2cc8f9789da51be15947823cc52d045ae75572f9a0d96b88",
+      "bytes": 24831,
+      "sourceSha256": "854502e7735115eb2cc8f9789da51be15947823cc52d045ae75572f9a0d96b88",
+      "sourceBytes": 24831,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_contract.py": {
+      "sha256": "e0901f27b162eb7d533e99215038d234123fb40688b434546f70b6ae9bf64ebc",
+      "bytes": 14537,
+      "sourceSha256": "47b699cdb6ab9c298dc5626c15dc3170d0079344e7eb21a50bc9ee488f365beb",
+      "sourceBytes": 14537,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/test_refinement_execution_dispatch.py": {
+      "sha256": "3d00aba5d0c6fc08df82c6aaf732e3dea03532c4789cb07c4230224640cfc282",
+      "bytes": 13587,
+      "sourceSha256": "3d00aba5d0c6fc08df82c6aaf732e3dea03532c4789cb07c4230224640cfc282",
+      "sourceBytes": 13587,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_lifecycle.py": {
+      "sha256": "a23a5d21c0841f0f7085f0346e836354b97a6c5ff6cd040159e45959d2f6a912",
+      "bytes": 17510,
+      "sourceSha256": "a23a5d21c0841f0f7085f0346e836354b97a6c5ff6cd040159e45959d2f6a912",
+      "sourceBytes": 17510,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_observer.py": {
+      "sha256": "c1186c5e36f4a5362bbd8e81ef547c223e4240986de6e77b07c7197d44991871",
+      "bytes": 13796,
+      "sourceSha256": "c1186c5e36f4a5362bbd8e81ef547c223e4240986de6e77b07c7197d44991871",
+      "sourceBytes": 13796,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_optimizer_loop.py": {
+      "sha256": "31213b07d554b3d0ae8b62661a220f17b95755bc38e91ff41e10a427914df644",
+      "bytes": 13871,
+      "sourceSha256": "31213b07d554b3d0ae8b62661a220f17b95755bc38e91ff41e10a427914df644",
+      "sourceBytes": 13871,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_optimizer_policy.py": {
+      "sha256": "4fc8e77e8f020a6ec68601aea55e6426789dd1ccaa64ba6166ed0933c34dfe2b",
+      "bytes": 6811,
+      "sourceSha256": "4fc8e77e8f020a6ec68601aea55e6426789dd1ccaa64ba6166ed0933c34dfe2b",
+      "sourceBytes": 6811,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_optimizer_recorder.py": {
+      "sha256": "fbca197a8534adc0a874d508f52a09ec2c93dbe3fdcf8f8485fc31816ec063ce",
+      "bytes": 6835,
+      "sourceSha256": "fbca197a8534adc0a874d508f52a09ec2c93dbe3fdcf8f8485fc31816ec063ce",
+      "sourceBytes": 6835,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_pipeline.py": {
+      "sha256": "773ddb337a57d186939434c2df331549fc4a05d623796cd459f6007ddcf79f06",
+      "bytes": 26125,
+      "sourceSha256": "773ddb337a57d186939434c2df331549fc4a05d623796cd459f6007ddcf79f06",
+      "sourceBytes": 26125,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_recorder_dispatch.py": {
+      "sha256": "5a5e9e9abb1dbd65da26c5fa47f4b61edca9eb0364a11fbcd5823d4ff384a7b2",
+      "bytes": 3818,
+      "sourceSha256": "5a5e9e9abb1dbd65da26c5fa47f4b61edca9eb0364a11fbcd5823d4ff384a7b2",
+      "sourceBytes": 3818,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_execution_recorder.py": {
+      "sha256": "90c9cd1dd36e46a6ff1ec3b84d4214868ead8e4819249c6b45c0c012aa4539a9",
+      "bytes": 18374,
+      "sourceSha256": "e47575bc734e6003f01fe07b96d9a4bce9c1ccd208afb03244574c73da15fc52",
+      "sourceBytes": 18374,
+      "transformation": "Explicit publication fixture transformation: synthetic host paths where present, minimized runtime inventory where applicable, rebound dependent hashes/byte counts/test pins, and provenance notice. No new scientific observations."
+    },
+    "tests/test_refinement_governed_execution_product.py": {
+      "sha256": "91b0d0cd3086be2f4847b96d163c68f832e533e5441c03382568a1a3162687bf",
+      "bytes": 22578,
+      "sourceSha256": "91b0d0cd3086be2f4847b96d163c68f832e533e5441c03382568a1a3162687bf",
+      "sourceBytes": 22578,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_governed_plan_product.py": {
+      "sha256": "4103d08928ddeb7d0b4bd8f0cc031d24de3bc88c780c23b210a982bef0387210",
+      "bytes": 13735,
+      "sourceSha256": "4103d08928ddeb7d0b4bd8f0cc031d24de3bc88c780c23b210a982bef0387210",
+      "sourceBytes": 13735,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_host_evidence_product.py": {
+      "sha256": "0431edcada3f774b765217838aac3b5fd53f451e4898f97560648fbaa57496e1",
+      "bytes": 17891,
+      "sourceSha256": "0431edcada3f774b765217838aac3b5fd53f451e4898f97560648fbaa57496e1",
+      "sourceBytes": 17891,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_host_lifecycle_product.py": {
+      "sha256": "307e1e473efc7437e9776f106ca6ea80ebcff3aeaf9aad126453133e34e4f1b4",
+      "bytes": 6375,
+      "sourceSha256": "307e1e473efc7437e9776f106ca6ea80ebcff3aeaf9aad126453133e34e4f1b4",
+      "sourceBytes": 6375,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_isotopes.py": {
+      "sha256": "059f85c46e288f078f89de994ff72128895bff804b92716f204c353587817c4b",
+      "bytes": 19379,
+      "sourceSha256": "059f85c46e288f078f89de994ff72128895bff804b92716f204c353587817c4b",
+      "sourceBytes": 19379,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_lab_ui.py": {
+      "sha256": "85d7f53608b0e2a3828fb3b982107c851b9dc5fb1d662bc4987408c2d9ff7ef8",
+      "bytes": 2660,
+      "sourceSha256": "85d7f53608b0e2a3828fb3b982107c851b9dc5fb1d662bc4987408c2d9ff7ef8",
+      "sourceBytes": 2660,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_launch_context_product.py": {
+      "sha256": "50eac990b20dc18c6180d71e49fa649cc41320811a38620dd833839b9c94149f",
+      "bytes": 24039,
+      "sourceSha256": "50eac990b20dc18c6180d71e49fa649cc41320811a38620dd833839b9c94149f",
+      "sourceBytes": 24039,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_optimizer_evidence_product.py": {
+      "sha256": "642f25c700cb3da06aabbbecee16f9a1f358b5bbb1c4aa14ff8fd8a2c3f6eda1",
+      "bytes": 12595,
+      "sourceSha256": "642f25c700cb3da06aabbbecee16f9a1f358b5bbb1c4aa14ff8fd8a2c3f6eda1",
+      "sourceBytes": 12595,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_planning_product.py": {
+      "sha256": "e7f29e6539f0eff7b0abfa95bb0f841f8af333c88f397f8d582d05431615e0c1",
+      "bytes": 20586,
+      "sourceSha256": "e7f29e6539f0eff7b0abfa95bb0f841f8af333c88f397f8d582d05431615e0c1",
+      "sourceBytes": 20586,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_preparation_product.py": {
+      "sha256": "81a28cc5b1f5ddef72e7185e39570b349748b0bd0c5a5fcd223ac84b723c9120",
+      "bytes": 19659,
+      "sourceSha256": "81a28cc5b1f5ddef72e7185e39570b349748b0bd0c5a5fcd223ac84b723c9120",
+      "sourceBytes": 19659,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_result_storage_product.py": {
+      "sha256": "430d26663e3429553d2d3440df5e37200209b0eb5c6122877f712cf3b1716902",
+      "bytes": 1381,
+      "sourceSha256": "430d26663e3429553d2d3440df5e37200209b0eb5c6122877f712cf3b1716902",
+      "sourceBytes": 1381,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_runtime_identity.py": {
+      "sha256": "4806bd8a2ef8fb01f080a65cf35de00ca1457878871ebded6f566cc2fd18f938",
+      "bytes": 9240,
+      "sourceSha256": "4806bd8a2ef8fb01f080a65cf35de00ca1457878871ebded6f566cc2fd18f938",
+      "sourceBytes": 9240,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_runtime_preflight_product.py": {
+      "sha256": "c286bc01a2e3d48a7c1e2f00b0535a8cb4b58dc693d0182ef1a69811f6c8f6c6",
+      "bytes": 25625,
+      "sourceSha256": "c286bc01a2e3d48a7c1e2f00b0535a8cb4b58dc693d0182ef1a69811f6c8f6c6",
+      "sourceBytes": 25625,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_storage_supervision.py": {
+      "sha256": "cae2aa0100bd369ddf486bd01d9e20a5c745aa0e58c9d9017aadafc8dca19b9a",
+      "bytes": 10880,
+      "sourceSha256": "cae2aa0100bd369ddf486bd01d9e20a5c745aa0e58c9d9017aadafc8dca19b9a",
+      "sourceBytes": 10880,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_subject_product.py": {
+      "sha256": "f63f007796a8cf16dfc0fde9196b89412b6a7fec594f7b86f2fc3683f942143b",
+      "bytes": 16239,
+      "sourceSha256": "f63f007796a8cf16dfc0fde9196b89412b6a7fec594f7b86f2fc3683f942143b",
+      "sourceBytes": 16239,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_subject_replay_product.py": {
+      "sha256": "2e44b5efbaa2fb311153a7e77574ac01fb56abca705110ca6e538cc38d2a463d",
+      "bytes": 16648,
+      "sourceSha256": "2e44b5efbaa2fb311153a7e77574ac01fb56abca705110ca6e538cc38d2a463d",
+      "sourceBytes": 16648,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_supervision.py": {
+      "sha256": "8614960b81a766290dfdeb043f0c57095e920e0a09baccca6b328f481898a2a4",
+      "bytes": 16367,
+      "sourceSha256": "8614960b81a766290dfdeb043f0c57095e920e0a09baccca6b328f481898a2a4",
+      "sourceBytes": 16367,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_v2_supervision_product.py": {
+      "sha256": "06bf7cfb2b02549dc932704925689bbac21df2ed625ed1689ab4da7e36333d42",
+      "bytes": 10480,
+      "sourceSha256": "06bf7cfb2b02549dc932704925689bbac21df2ed625ed1689ab4da7e36333d42",
+      "sourceBytes": 10480,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_visualization.py": {
+      "sha256": "eb977d8a1ee7c8b88bb9c87d66054689e15e11dc5412368e0aeac5468e4ac904",
+      "bytes": 8923,
+      "sourceSha256": "eb977d8a1ee7c8b88bb9c87d66054689e15e11dc5412368e0aeac5468e4ac904",
+      "sourceBytes": 8923,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_workbench_routes_product.py": {
+      "sha256": "01d29348220de9727f62bb074d7a84c6cd8c61ce866d2f291b7e10138ced585b",
+      "bytes": 8274,
+      "sourceSha256": "01d29348220de9727f62bb074d7a84c6cd8c61ce866d2f291b7e10138ced585b",
+      "sourceBytes": 8274,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_worker_bridge_review_product.py": {
+      "sha256": "0525dd3f179448e0d3d5592bbd887ced33c56515b1ceb837377d9c89b2e0e887",
+      "bytes": 3946,
+      "sourceSha256": "0525dd3f179448e0d3d5592bbd887ced33c56515b1ceb837377d9c89b2e0e887",
+      "sourceBytes": 3946,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_worker_cwd_product.py": {
+      "sha256": "af5a078fcef76e50d109ca634cbce8676d97823c2384aa8c7c3632d67218a7c5",
+      "bytes": 4542,
+      "sourceSha256": "af5a078fcef76e50d109ca634cbce8676d97823c2384aa8c7c3632d67218a7c5",
+      "sourceBytes": 4542,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_workflow_ui_product.py": {
+      "sha256": "b82dae7333959db451744480093f2a12098587e32497ec43db8bc800db5859ff",
+      "bytes": 2137,
+      "sourceSha256": "b82dae7333959db451744480093f2a12098587e32497ec43db8bc800db5859ff",
+      "sourceBytes": 2137,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_refinement_workflows_product.py": {
+      "sha256": "4d68f0236d384bbce60a343ce9163b8cc9cfd973bcd30ce173c5778b9d6db743",
+      "bytes": 20581,
+      "sourceSha256": "4d68f0236d384bbce60a343ce9163b8cc9cfd973bcd30ce173c5778b9d6db743",
+      "sourceBytes": 20581,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_resolve_imports.py": {
+      "sha256": "5c5c03e0bb3127cdc7d2ee731e65e99642d839c1f6603be19caa560d5c692a6c",
+      "bytes": 7005,
+      "sourceSha256": "5c5c03e0bb3127cdc7d2ee731e65e99642d839c1f6603be19caa560d5c692a6c",
+      "sourceBytes": 7005,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_runtime_faults.py": {
+      "sha256": "ae3bdbe81a068963ff93905ea2ebc93ce0be851ac4feb128f46c66e892727998",
+      "bytes": 2256,
+      "sourceSha256": "ae3bdbe81a068963ff93905ea2ebc93ce0be851ac4feb128f46c66e892727998",
+      "sourceBytes": 2256,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_structure_lab.py": {
+      "sha256": "8ef3b6b0344f3e491db628f641dc72e4961a2ddcc5a3d3eb9541c42a6633d20d",
+      "bytes": 3137,
+      "sourceSha256": "8ef3b6b0344f3e491db628f641dc72e4961a2ddcc5a3d3eb9541c42a6633d20d",
+      "sourceBytes": 3137,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_surface_interface.py": {
+      "sha256": "09e247c9c0bee1cc069277a749ae99267d7d54d7e920e99b4f1416380ee65f69",
+      "bytes": 10516,
+      "sourceSha256": "09e247c9c0bee1cc069277a749ae99267d7d54d7e920e99b4f1416380ee65f69",
+      "sourceBytes": 10516,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_viewport_binding_ui.py": {
+      "sha256": "bf3c8dee91287e6f6a0a4097887f8d5fe3156b94f9d82c591106af0732df1c4e",
+      "bytes": 746,
+      "sourceSha256": "bf3c8dee91287e6f6a0a4097887f8d5fe3156b94f9d82c591106af0732df1c4e",
+      "sourceBytes": 746,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_visualization_and_tools.py": {
+      "sha256": "c331eec21b5af66da418ed997bb5f7358678ac7678a04d5b2c697fe8e6fd034b",
+      "bytes": 6251,
+      "sourceSha256": "c331eec21b5af66da418ed997bb5f7358678ac7678a04d5b2c697fe8e6fd034b",
+      "sourceBytes": 6251,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_web.py": {
+      "sha256": "fcca71802675b918fc942edd304f852a3f999137ee6b9763d959a59aea66e215",
+      "bytes": 4445,
+      "sourceSha256": "fcca71802675b918fc942edd304f852a3f999137ee6b9763d959a59aea66e215",
+      "sourceBytes": 4445,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_workflow_ui.py": {
+      "sha256": "296899df9c72142ebdb3325113038e5dd447b3c143a75a28db31c0fac2a9f8c5",
+      "bytes": 894,
+      "sourceSha256": "296899df9c72142ebdb3325113038e5dd447b3c143a75a28db31c0fac2a9f8c5",
+      "sourceBytes": 894,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/test_workflows.py": {
+      "sha256": "25a66bbe4874a1db8c0698458faa52c14935aab226faa2ac7eec3598d92417e3",
+      "bytes": 20544,
+      "sourceSha256": "25a66bbe4874a1db8c0698458faa52c14935aab226faa2ac7eec3598d92417e3",
+      "sourceBytes": 20544,
+      "transformation": "byte-exact-copy"
+    },
+    "tests/verify_viewport_binding.cjs": {
+      "sha256": "cf6366102d77261e6b3be8239bc8878758411b1cd85c8ff3da55259c84610140",
+      "bytes": 17583,
+      "sourceSha256": "cf6366102d77261e6b3be8239bc8878758411b1cd85c8ff3da55259c84610140",
+      "sourceBytes": 17583,
+      "transformation": "byte-exact-copy"
+    },
+    "package.json": {
+      "sha256": "525e78939b0ca3980b1cfd98d7d4e7f397861431531e7745623b83bfcc9786db",
+      "bytes": 79,
+      "sourceSha256": null,
+      "sourceBytes": null,
+      "transformation": "New publication support: preserve the original CommonJS interpretation of Chem UMD frontend modules inside the parent Proto ECMAScript-module package. No source-snapshot bytes are changed."
+    }
+  }
+}

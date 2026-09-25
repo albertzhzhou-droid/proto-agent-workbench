@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
-    watch: { ignored: ["**/build/**", "**/out/**", "**/runtime/**", "**/release*/**", "**/qa/**"] },
+    watch: { ignored: ["**/.proto/**", "**/build/**", "**/out/**", "**/runtime/**", "**/release*/**", "**/qa/**"] },
     allowedHosts: ["terminal.local"],
     warmup: {
       clientFiles: ["./src/renderer/main.tsx"],

@@ -15,6 +15,8 @@ separate evidence records.
 |---|---|
 | Tour the latest capabilities and their evidence | [September source showcase](source-showcase-2026-09.md) |
 | Open the desktop, try the CLI, or build from source | [Getting started](getting-started.md) |
+| Find, install or contribute to Chem CLI | [Chem CLI source and development guide](../CHEM_CLI.md) |
+| Find all operators, Skills and Harness implementation | [Source layout and publication scope](source-layout.md) |
 | Connect an MCP-compatible host | [MCP configuration and tools](mcp_usage.md) |
 | Understand the complete command loop | [CLI and workflow guide](cli-guide.md) |
 | Use source-backed biological records | [Materials library](materials_library.md) · [Public bundles](../materials/bundles/README.md) |
@@ -53,6 +55,8 @@ separate evidence records.
 - [Repository Skills](academicforge_skill_adaptation.md): declared, auditable capability resolution.
 
 ## Verify and maintain
+
+- [Next-architecture increment and validation boundaries](NEXT_ARCHITECTURE_IMPLEMENTATION_2026-09-24.md), with the [P01–P14 capability ledger](NEXT_ARCHITECTURE_CAPABILITIES.md).
 
 | Topic | Reference |
 |---|---|

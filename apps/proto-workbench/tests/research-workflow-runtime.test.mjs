@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createResearchWorkflowService } from "../src/main/services/research-workflow-runtime.ts";
 import { ToolExecutionJournal } from "../src/main/services/tool-execution-journal.ts";
-import { invokeJournaledTool } from "../src/main/services/execution-kernel.ts";
+import { invokeJournaledTool } from "./helpers/ephemeral-kernel.mjs";
 
 test("workflow recovery preserves operation and scope identity through the actual runtime adapter", async t => {
   const root=await mkdtemp(join(tmpdir(),"proto-workflow-runtime-")),db=new DatabaseSync(":memory:"),journal=new ToolExecutionJournal(db);

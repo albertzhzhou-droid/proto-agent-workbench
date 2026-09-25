@@ -1,7 +1,35 @@
 import type { ToolApproval } from "../../shared/contracts.ts";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolveToolContract, toolContract } from "../../shared/tool-contracts.ts";
 import type { PolicyDecision, PolicyGrant, PolicySurface } from "../../shared/tool-policy.ts";
+
+export const TOOL_POLICY_VERSION = "proto-workbench.tool-policy.v1";
+const hostGrants = new WeakMap<PolicyGrant, string>();
+const hostDecisions = new WeakMap<PolicyDecision, { snapshot: string; argumentsDigest: string; trustedGrant: boolean; grants: readonly PolicyGrant[]; mode?: "plan" | "act" }>();
+const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const invalidDecision = (): never => { throw Object.assign(new Error("The policy decision or grant was not issued by this live host for these inputs."), { code: "POLICY_DENIED", effectState: "none" }); };
+
+/** Main-process only. Call at a validated live user/mission authorization boundary.
+ * Persisted JSON retains audit evidence, never this non-serializable authority. */
+export function issueHostPolicyGrant(value: PolicyGrant): PolicyGrant {
+  const grant = structuredClone(value);
+  hostGrants.set(grant, digest(grant));
+  return grant;
+}
+
+export function assertHostPolicyDecision(decision: PolicyDecision, args: Record<string, unknown>): void {
+  const issued = hostDecisions.get(decision);
+  if (!issued || issued.snapshot !== digest(decision) || issued.argumentsDigest !== digest(args) || !issued.trustedGrant) invalidDecision();
+}
+
+/** Adapters can normalize paths/envelopes, but must reevaluate the actual input.
+ * In particular, an offline exemption cannot authorize a later online request. */
+export function rebindHostPolicyDecision(decision: PolicyDecision, args: Record<string, unknown>): PolicyDecision {
+  const issued = hostDecisions.get(decision);
+  if (!issued || issued.snapshot !== digest(decision) || !issued.trustedGrant) return invalidDecision();
+  return evaluateToolPolicy({ tool: decision.tool, args, surface: decision.surface, scopeId: decision.scopeId,
+    operationId: decision.operationId, grants: issued.grants, mode: issued.mode });
+}
 
 export type ToolPermission =
   | { allowed: true; risk: "none" }
@@ -56,9 +84,22 @@ export function evaluateToolPolicy(input: {
   scopeId: string; operationId: string; mode?: "plan" | "act";
   grants: readonly PolicyGrant[]; now?: Date;
 }): PolicyDecision {
+  const decision = evaluatePolicy(input);
+  const grant = decision.grantId ? input.grants.find(value => value.id === decision.grantId) : undefined;
+  hostDecisions.set(decision, { snapshot: digest(decision), argumentsDigest: digest(input.args),
+    trustedGrant: !decision.grantId || !!grant && hostGrants.get(grant) === digest(grant), grants: input.grants, mode: input.mode });
+  return decision;
+}
+
+function evaluatePolicy(input: {
+  tool: string; args: Record<string, unknown>; surface: PolicySurface;
+  scopeId: string; operationId: string; mode?: "plan" | "act";
+  grants: readonly PolicyGrant[]; now?: Date;
+}): PolicyDecision {
   const now = input.now ?? new Date(), contract = resolveToolContract(input.tool);
   const permission = contract ? classifyToolCall(contract.name, input.args) : DENIED_UNKNOWN;
   const base = {
+    policyVersion: TOOL_POLICY_VERSION,
     decisionId: randomUUID(), tool: contract?.name ?? input.tool,
     surface: input.surface, scopeId: input.scopeId, operationId: input.operationId,
     requiredRisk: permission.risk, decidedAt: now.toISOString(),

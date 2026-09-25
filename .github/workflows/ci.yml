@@ -89,22 +89,52 @@ jobs:
           cache-dependency-path: apps/proto-workbench/pnpm-lock.yaml
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Record Workbench validation environment
+        run: |
+          New-Item -ItemType Directory -Force ../../build/ci | Out-Null
+          @{ sourceCommit = $env:GITHUB_SHA; runnerOS = $env:RUNNER_OS; node = (node --version); scope = "Validation environment only; check outcomes are recorded separately." } |
+            ConvertTo-Json | Set-Content ../../build/ci/workbench-environment.json
       - name: Typecheck shared contracts, host, preload and renderer
         run: pnpm typecheck
       - name: Verify generated Python tool contracts match the canonical table
         run: node scripts/export-tool-contracts.mjs --check
+      - name: Verify architecture scope ledger references and generated document
+        run: node ../../scripts/generate-architecture-capabilities.mjs --check
+      - name: Verify generated scientific units match the Python contract
+        run: ../../.venv/Scripts/python.exe scripts/generate-scientific-units.py --check
       - name: Run mandatory execution and contract regression tests
         run: >-
-          node --test --test-concurrency=4 tests/tool-contracts.test.mjs tests/execution-kernel.test.mjs
+          node --test --test-concurrency=4 --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=tap --test-reporter-destination=../../build/ci/workbench-regression.tap
+          tests/tool-contracts.test.mjs tests/execution-kernel.test.mjs tests/production-kernel-context.test.mjs
           tests/tool-execution-journal.test.mjs tests/permissions.test.mjs
           tests/ipc-channel-contracts.test.mjs tests/ipc-contract-drift.test.mjs
           tests/turn-engine.test.mjs tests/owned-process.test.mjs
           tests/research-chat.test.mjs tests/research-evidence.test.mjs
           tests/research-session-state.test.mjs
           tests/architecture-followup.test.mjs
+          tests/chem-source-packaging.test.mjs
           tests/architecture-storage.test.mjs tests/harness-journal-authority.test.mjs
           tests/harness-source-recovery.test.mjs tests/research-workflow-runtime.test.mjs
+      - name: Run managed Study contracts and source-runtime CPU references
+        run: >-
+          node --test --test-concurrency=1 --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=tap --test-reporter-destination=../../build/ci/workbench-managed-study.tap
+          tests/research-project-store.test.mjs tests/research-plan.test.mjs
+          tests/managed-research.test.mjs tests/managed-research-boundaries.test.mjs
+          tests/managed-research-evidence.test.mjs tests/managed-research-cpu.test.mjs
+          tests/managed-protein-cpu.test.mjs
       - name: Verify offline baseline
         run: node scripts/verify-offline.mjs
       - name: Build desktop bundles
         run: pnpm build:desktop
+      - name: Preserve Workbench validation evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-validation-evidence
+          path: |
+            build/ci/workbench-*
+            build/next-architecture-20260924/managed-cpu-*/acceptance.json
+            build/next-architecture-20260924/managed-protein-cpu-*/acceptance.json
+          if-no-files-found: warn

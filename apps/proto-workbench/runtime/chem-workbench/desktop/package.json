@@ -1,0 +1,7 @@
+{
+  "name": "chem-workbench-desktop",
+  "version": "0.1.0-alpha.2",
+  "productName": "Chem Workbench",
+  "license": "MIT",
+  "main": "main.cjs"
+}

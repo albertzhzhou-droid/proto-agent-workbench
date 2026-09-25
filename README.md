@@ -10,6 +10,15 @@ Explore a question, work with scientific data, and keep the sources, calculation
 
 **[Explore the current source](docs/source-showcase-2026-09.md)** · **[Build and run](docs/getting-started.md#development)** · **[Documentation](docs/README.md)** · **[Historical Windows preview](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1)**
 
+**Open-source CLIs:** [Proto CLI](src/proto_agent/) · **[Chem CLI source and development guide](CHEM_CLI.md)**
+
+[Source map: all operators, Skills and Harness](docs/source-layout.md)
+
+The September 24 unreleased [managed Study increment](docs/NEXT_ARCHITECTURE_IMPLEMENTATION_2026-09-24.md)
+adds frozen source-bound plans, project objects and retained evidence inspection.
+Its [capability ledger](docs/NEXT_ARCHITECTURE_CAPABILITIES.md) distinguishes this
+implementation from the remaining next-architecture roadmap.
+
 </div>
 
 <a href="docs/assets/workbench-2026-09/compute.jpg"><img src="docs/assets/workbench-2026-09/compute.jpg" alt="Current Proto Compute workspace: searchable scientific methods, collection filters, runtime availability and shared Chat / Design / Compute navigation." width="100%"></a>

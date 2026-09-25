@@ -40,6 +40,25 @@ test('every first-party production schema literal has an explicit registered rea
   assert.equal(artifactReaders.select('protein-selection',{schema_version:'proto-agent.protein-selection.v1'}).status,'legacy-readonly');
 });
 
+test('managed research readers route actual version fields and keep future evidence read only',()=>{
+  const entries=[
+    ['proto.evidence-graph','schemaVersion'],['proto.scientific-diff','schemaVersion'],
+    ['proto.study-spec','schemaVersion'],['proto.method-contract','schemaVersion'],
+    ['proto.research-plan','schemaVersion'],['proto.research-version-capsule','schemaVersion'],
+    ['proto-workbench.tool-policy','policyVersion'],['proto.managed-plan','schema'],
+    ['proto.retained-run-evidence','schema'],
+  ];
+  for(const [family,field] of entries){
+    const current={[field]:`${family}.v1`,retained:'unchanged'};
+    assert.equal(artifactReaders.select(family,current).status,'current',family);
+    const future={...current,[field]:`${family}.v2`},before=JSON.stringify(future);
+    const selected=artifactReaders.select(family,future);
+    assert.equal(selected.code,'UNSUPPORTED_VERSION',family);assert.equal(selected.readOnly,true,family);
+    assert.equal(JSON.stringify(future),before,'Version routing does not rewrite retained evidence');
+    if(field!=='policyVersion')assert.equal(artifactReaders.inspect(current).status,'current',family);
+  }
+});
+
 test('future run artifact reopens as unsupported with original bytes preserved and linking rejected',async()=>{
   const directory=workspace(),db=new AppDatabase(join(directory,'profile.sqlite')),files=new WorkspaceFiles(directory,db);
   const content=JSON.stringify({schema_version:'proto-agent.run.v2',run_id:'future-run',ok:true});mkdirSync(join(directory,'build'));writeFileSync(join(directory,'build/manifest.json'),content);

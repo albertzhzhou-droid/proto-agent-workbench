@@ -9,8 +9,15 @@ not write files or execute supplied code. See [the tool bridge](chem-science-too
 
 ## Implemented operators
 
-The shared catalog now contains 21 operators. Analysis, Statistics and Chemical
-Data add the following 11 to the original simulation and design tools. See
+The shared catalog contains 56 operators. The table below describes the initial
+21-operator foundation: Analysis, Statistics and Chemical Data added 11 to the
+original simulation and design tools. Later families are documented in
+[coupled reactions](chem-coupled-reactions.md),
+[driven reactions](chem-driven-reactions.md),
+[interface methods](chem-interface-methods.md) and
+[network reactors](chem-network-reactors.md). The worker's `catalog` operation is
+the complete current inventory; all implementation modules are included in the
+[published source](source-layout.md). See also
 [the computation workspace](chem-computation-analysis.md),
 [analytical methods](chem-analysis-methods.md) and
 [chemical data methods](chem-data-methods.md) for sources and numerical limits.

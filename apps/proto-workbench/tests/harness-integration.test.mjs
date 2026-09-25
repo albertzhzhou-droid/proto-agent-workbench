@@ -1,3 +1,4 @@
+import { ManagedMcpTestClient } from "./helpers/managed-mcp.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
@@ -27,7 +28,7 @@ async function rig(t, turns, overrides = {}) {
   await writeFile(join(root, "input.md"), "Controlled software test input; no scientific conclusion.\n");
   const databasePath = join(root, "state.sqlite");
   let database = new AppDatabase(databasePath);
-  const mcp = new McpClient({packaged: false, resourcesPath: "", repoRoot: REPO, workspacePath: root,
+  const mcp = new ManagedMcpTestClient({packaged: false, resourcesPath: "", repoRoot: REPO, workspacePath: root,
     workspaceCapability: randomBytes(32).toString("hex"), materialsRoot: join(root, "isolated-materials"), pythonExecutable: python}, {startupTimeoutMs: 10000, controlTimeoutMs: 10000});
   t.after(async () => { await mcp.stop(); database.close(); await rm(root, {recursive: true, force: true}); });
   const scientificTools = (await mcp.tools()).map(tool => ({type: "function", function: {name: tool.name, description: tool.description, parameters: tool.inputSchema}}));

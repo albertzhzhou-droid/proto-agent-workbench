@@ -115,6 +115,7 @@ const api: IpcWorkbenchApi = {
   chem: { open: () => invoke(IPC.chemOpen) },
   chemScience: {request: input => invoke(IPC.chemScienceRequest,input)},
   chat: { request: (input) => invoke(IPC.researchChat, input) },
+  research: {request: (request) => invoke(IPC.managedResearch, request)},
   compute: {
     catalog: (tool) => invoke(IPC.computeCatalog, tool),
     run: (request) => invoke(IPC.computeRun, ...validateChannelArguments(IPC.computeRun, [request])),

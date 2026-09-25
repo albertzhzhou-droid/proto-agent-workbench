@@ -370,6 +370,23 @@ await task.destroy();"""
 
 
 class FigureEntryPointTests(unittest.TestCase):
+    def test_fixed_file_adapter_rejects_external_paths_and_code_fields_before_rendering(self):
+        with tempfile.TemporaryDirectory() as parent:
+            workspace = Path(parent) / "workspace"
+            workspace.mkdir()
+            outside = Path(parent) / "outside.json"
+            outside.write_text(json.dumps(request_fixture()), encoding="utf-8")
+            invalid = request_fixture()
+            invalid["code"] = "untrusted code must never reach a renderer"
+            (workspace / "invalid.json").write_text(json.dumps(invalid), encoding="utf-8")
+            with patch("proto_agent.figure_export._render_vectors") as render:
+                with self.assertRaises(SecurityBoundaryError):
+                    render_research_figure_file("../outside.json", workspace_root=workspace)
+                with self.assertRaises(FigureExportError):
+                    render_research_figure_file("invalid.json", workspace_root=workspace)
+                render.assert_not_called()
+            self.assertFalse((workspace / "build/research-figures/exports").exists())
+
     def test_cli_dispatches_fixed_render_command(self):
         from proto_agent.cli import main
         with patch("proto_agent.cli.render_research_figure_file", return_value={"ok": True}) as render, patch("sys.stdout", new_callable=io.StringIO):

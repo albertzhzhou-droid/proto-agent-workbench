@@ -3,6 +3,7 @@ import { ArrowUp, BookOpen, Check, ChevronDown, Code2, Copy, FileText, Lightbulb
 import { diffLines } from "diff";
 import { useResearchChat } from "./research-chat-store.ts";
 import { useWorkbenchStore } from "./store.ts";
+import { useManagedStudySelection } from './managed-study-state.ts';
 import type { ResearchActivity, ResearchDocument, ResearchDocumentPage } from "../shared/research-chat.ts";
 import { ExecutionReconciliation } from "./ExecutionReconciliation.tsx";
 import { ResearchStatePanel } from "./ResearchStatePanel.tsx";
@@ -13,6 +14,7 @@ import { researchActivityPresentation } from "./research-chat-paging.ts";
 export function ChatWorkspace({hidden,edition='proto'}: {hidden:boolean;edition?:'proto'|'chem'}) {
   const chat = useResearchChat();
   const workspace = useWorkbenchStore(state => state.settings.workspacePath);
+  const selectedStudy=useManagedStudySelection(state=>state.byWorkspace[workspace]);
   const [documentsOpen,setDocumentsOpen] = useState(false);
   const [stateOpen,setStateOpen] = useState(false);
   const [claimsOpen,setClaimsOpen] = useState(false);
@@ -91,6 +93,7 @@ export function ChatWorkspace({hidden,edition='proto'}: {hidden:boolean;edition?
   return <section id="chat-workspace" role="tabpanel" aria-labelledby="mode-chat" hidden={hidden} className={`chat-workspace${documentsOpen||stateOpen||claimsOpen ? " has-document-panel" : ""}`}>
     <div className="chat-main">
       <div className="chat-session-bar">
+        {selectedStudy && <button type="button" className="chat-text-button managed-study-context" title={`${selectedStudy.question} · ${selectedStudy.studyId}`} onClick={()=>window.dispatchEvent(new Event('proto:study-desk'))}><BookOpen size={15}/>{selectedStudy.name}</button>}
         <span className="chat-session-title">{chat.session?.title ?? "Research conversations"}</span>
         {chat.session && <button type="button" className="chat-text-button" onClick={() => {setStateOpen(!stateOpen);setDocumentsOpen(false);setClaimsOpen(false);setModelOpen(false);}} aria-expanded={stateOpen}><ListChecks size={15}/>Research state</button>}
         {chat.session && <button type="button" className="chat-text-button" onClick={() => {setClaimsOpen(!claimsOpen);setStateOpen(false);setDocumentsOpen(false);setModelOpen(false);}} aria-expanded={claimsOpen}><FileText size={15}/>Claims & sources</button>}

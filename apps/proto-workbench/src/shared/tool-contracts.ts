@@ -93,7 +93,7 @@ const MCP_ROWS: readonly Row[] = [
   ["proto_compute_run", "mcp", "write", false, "auto", "compute.run", "analysis.biomni", ["biomni.run", "science.compute.run"], BP, ["scientific-compute"]],
   ["proto_compute_fingerprint", "mcp", "read", false, "auto", "compute.fingerprint", "analysis.biomni", [], P, ["provenance-verification"]],
   ["proto_compute_value_read", "mcp", "read", false, "auto", "compute.value.read", "analysis.biomni", ["science.compute.value", "compute.pointer.read"], BP, ["result-page"]],
-  ["proto_research_figure_render", "mcp", "write", false, "denied", "research.figure.render", "analysis.biomni", [], P, ["scientific-export"]],
+  ["proto_research_figure_render", "mcp", "write", false, "auto", "research.figure.render", "analysis.biomni", [], P, ["scientific-export"]],
   ["proto_remote_catalog", "mcp", "read", false, "denied", "remote.catalog", "analysis.biomni", [], P, ["catalog"]],
   ["proto_remote_run", "mcp", "write", true, "grant-network", "remote.run", "analysis.biomni", [], P, ["scientific-compute"]],
   ["proto_language_reference", "mcp", "read", false, "auto", "design.language_reference", "core.validation", [], P, ["catalog"]],

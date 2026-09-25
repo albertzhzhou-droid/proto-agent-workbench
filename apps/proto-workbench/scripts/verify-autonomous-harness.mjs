@@ -14,6 +14,7 @@ import { AgentService } from "../src/main/services/agent-service.ts";
 import { AppDatabase } from "../src/main/services/database.ts";
 import { WorkspaceFiles } from "../src/main/services/workspace-files.ts";
 import { McpClient } from "../src/main/services/mcp-client.ts";
+import { openWorkspaceExecutionJournal } from "../src/main/services/workspace-execution-journal.ts";
 import { ModelService } from "../src/main/services/model-service.ts";
 import { LmStudioProvider } from "../src/main/services/lm-studio-provider.ts";
 import { RuntimeFailure } from "../src/main/services/runtime-control.ts";
@@ -223,9 +224,10 @@ async function runCase(scenario, modelId) {
   if (scenario.fault === "stale") await writeFile(join(root, "build/mission-result.md"), "# Original draft\nPreserve existing context.\n");
   const database = new AppDatabase(join(root, "execution.sqlite"));
   const workspace = new WorkspaceFiles(root, database);
+  const ledger = openWorkspaceExecutionJournal(root,{legacyDb:database.db});
   const mcp = new McpClient({packaged: false, resourcesPath: "", repoRoot: REPO, workspacePath: root,
     workspaceCapability: randomBytes(32).toString("hex"), materialsRoot: MATERIALS_ROOT,
-    pythonExecutable: PYTHON});
+    pythonExecutable: PYTHON},{journal:ledger.journal});
   let complete, rejectComplete;
   const freshCompletion = () => new Promise((resolveCompletion, reject) => {complete = resolveCompletion; rejectComplete = reject;});
   let completion = freshCompletion();
@@ -251,14 +253,14 @@ async function runCase(scenario, modelId) {
       const owned = (async()=>{await agent.cancelAll();await mcp.stop();await waitForIdle(agent);})();
       // Keep the DB usable until owned callbacks settle, even if an outer
       // liveness failure is reported. Never close it beneath an active write.
-      void owned.then(()=>database.close(),()=>database.close());
+      void owned.then(()=>{ledger.close();database.close();},()=>{ledger.close();database.close();});
       cleanupPromise = boundedSettlement(owned).catch(error=>{cleanupDiagnostic={code:error.code,message:String(error)};requestStop("Owned cleanup did not settle; no further matrix cases will start.");throw error;});
     }
     return cleanupPromise;
   };
   const beforeInjections = injections.length;
   try {
-    const setup = await mcp.call("proto_connectors_check", {}, new AbortController().signal);
+    const setup = await mcp.call("proto_connectors_check", {}, new AbortController().signal, undefined, {scope:{surface:"system",scopeId:randomUUID()}});
     await writeFile(join(root, "preparation-check.json"), JSON.stringify({inputOnly: true, connectorsOk: setup.ok, issues: setup.issues, fixture}, null, 2));
     if (!setup.ok) throw new Error("Fresh acceptance workspace connector preparation failed before model execution.");
     activeFault = ["prefill", "truncate"].includes(scenario.fault) ? scenario.fault : undefined;

@@ -1,5 +1,6 @@
 import { lstat, readdir } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { CHEM_SOURCE_FILTERS, isExcludedChemSource } from "./chem-source-filter.mjs";
 
 const ALL_FILES_FILTER = "**/*";
 const JSON_FILES_FILTER = "**/*.json";
@@ -44,6 +45,9 @@ export async function collectTreeFiles(projectRoot, sourceRelative, targetRelati
     for (const entry of entries) {
       const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
       const absolutePath = resolve(directory, entry.name);
+      // Prune local Chem state before reading or following its entries. An
+      // excluded virtual environment/test scratch tree can be inaccessible.
+      if (matcher.excluded?.(relativePath)) continue;
       if (entry.isSymbolicLink()) throw new Error(`Package input cannot contain symbolic links: ${sourceRelative}/${relativePath}`);
       if (entry.isDirectory()) {
         await visit(absolutePath, relativePath);
@@ -74,6 +78,11 @@ function filterMatcher(value) {
     throw new Error("extraResources filters must be an array of strings.");
   }
   const unique = [...new Set(filters)];
+  if (JSON.stringify(unique) === JSON.stringify(CHEM_SOURCE_FILTERS)) {
+    const matcher = path => !isExcludedChemSource(path);
+    matcher.excluded = isExcludedChemSource;
+    return matcher;
+  }
   if (unique.length !== 1 || (unique[0] !== ALL_FILES_FILTER && unique[0] !== JSON_FILES_FILTER)) {
     throw new Error(`Unsupported extraResources filter: ${unique.join(", ") || "<empty>"}`);
   }

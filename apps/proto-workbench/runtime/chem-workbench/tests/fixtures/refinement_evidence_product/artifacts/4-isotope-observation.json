@@ -1,0 +1,247 @@
+{
+  "version": "refinement-isotope-observation/v1",
+  "policy": "runtime_default_isotopes",
+  "geometry_hash": "sha256:55cb8dc3e440adb89cb63fb3a9dc7fb7895420d86f733fdbbc6991655a581a1b",
+  "runtime_binding_hash": "sha256:659a9e53e4cd85b23e1a99428dd1e2fc7891a5656e050043617da5073cade78f",
+  "atoms": [
+    {
+      "atom_id": "atom-1",
+      "element": "O",
+      "atomic_number": 8,
+      "mass_number": 16,
+      "mass_dalton": "15.99491461957"
+    },
+    {
+      "atom_id": "atom-2",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-3",
+      "element": "N",
+      "atomic_number": 7,
+      "mass_number": 14,
+      "mass_dalton": "14.00307400443"
+    },
+    {
+      "atom_id": "atom-4",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-5",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-6",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-7",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-8",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-9",
+      "element": "O",
+      "atomic_number": 8,
+      "mass_number": 16,
+      "mass_dalton": "15.99491461957"
+    },
+    {
+      "atom_id": "atom-10",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-11",
+      "element": "O",
+      "atomic_number": 8,
+      "mass_number": 16,
+      "mass_dalton": "15.99491461957"
+    },
+    {
+      "atom_id": "atom-12",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-13",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-14",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-15",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-16",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-17",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-18",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-19",
+      "element": "C",
+      "atomic_number": 6,
+      "mass_number": 12,
+      "mass_dalton": "12"
+    },
+    {
+      "atom_id": "atom-20",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-21",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-22",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-23",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-24",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-25",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-26",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-27",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-28",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-29",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-30",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-31",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-32",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-33",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    },
+    {
+      "atom_id": "atom-34",
+      "element": "H",
+      "atomic_number": 1,
+      "mass_number": 1,
+      "mass_dalton": "1.00782503223"
+    }
+  ],
+  "observation_hash": "sha256:471b98af06c8b5c67b4e70b76552f59b6db78a11f6dc0b960ff78ea9498c5954"
+}

@@ -124,7 +124,7 @@
       "name": "proto_research_figure_render",
       "effect": "write",
       "network": false,
-      "access": "denied",
+      "access": "auto",
       "capability_id": "research.figure.render",
       "preconditions": [
         "schema-validated",

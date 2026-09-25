@@ -1,0 +1,1217 @@
+{
+  "version": "dispersion-diagnostics-view/v1",
+  "quantity": "two_body_d3bj_dispersion",
+  "status": "passed",
+  "atom_count": 34,
+  "bridge": {
+    "energy_hartree": "-0.0775092927799016",
+    "gradient_hartree_per_bohr": [
+      [
+        "-0.00026590085153234514",
+        "-0.00047922817640677856",
+        "-0.0006688293762605763"
+      ],
+      [
+        "-0.0005634458786461609",
+        "-0.0004400116070558959",
+        "-0.00014919198690631924"
+      ],
+      [
+        "-0.00016894367685299803",
+        "-0.0005816756088355552",
+        "0.0005956642863748469"
+      ],
+      [
+        "0.00011026207665311316",
+        "-0.0008594347893289668",
+        "0.000412065811031521"
+      ],
+      [
+        "0.0005794007708405187",
+        "-0.0006538072431617146",
+        "-0.0003844374806297197"
+      ],
+      [
+        "-0.0002184090963069189",
+        "-0.00009823335376577173",
+        "-0.0000707258444489845"
+      ],
+      [
+        "-0.00013028122845755983",
+        "0.0000941083164753758",
+        "0.0003521436811528252"
+      ],
+      [
+        "-0.00007688271401134164",
+        "0.00016282089859902802",
+        "0.00037542599950128445"
+      ],
+      [
+        "-0.0000625417278861836",
+        "0.0002408057238568662",
+        "0.0005330163647645119"
+      ],
+      [
+        "-0.00052073760428346",
+        "0.0002151371061470011",
+        "-0.00012894651065685955"
+      ],
+      [
+        "-0.000543586919449473",
+        "0.000244842006385904",
+        "-0.00003536319625553212"
+      ],
+      [
+        "-0.0003941908898221344",
+        "0.000030472565361497302",
+        "-0.000528452133744707"
+      ],
+      [
+        "-0.00022544018746403858",
+        "-0.00006546133954341937",
+        "-0.0003744439027257159"
+      ],
+      [
+        "0.0005135711783508558",
+        "0.00003826135174899814",
+        "-0.0003177226647470477"
+      ],
+      [
+        "0.0006698872161048401",
+        "0.0001337129729094149",
+        "0.00015721433475152216"
+      ],
+      [
+        "0.000635002581167635",
+        "0.00023513188977024823",
+        "0.00034330666656498055"
+      ],
+      [
+        "0.00025393379337945477",
+        "0.0005713988160565237",
+        "0.000148413579515076"
+      ],
+      [
+        "-0.00017420004618127986",
+        "0.000655451783861444",
+        "-0.000176054223173496"
+      ],
+      [
+        "0.00016352309561001047",
+        "0.0007884566342358779",
+        "-0.00041994354954054907"
+      ],
+      [
+        "0.000013333150115122407",
+        "-0.00008964197879850133",
+        "0.00044217687104670304"
+      ],
+      [
+        "0.000013883659698646646",
+        "-0.0003411370172504984",
+        "0.00031143927113034327"
+      ],
+      [
+        "0.0000742870810362659",
+        "-0.00038805577997373664",
+        "0.00009970557439478242"
+      ],
+      [
+        "0.0001894341937549599",
+        "-0.0002954438552597515",
+        "-0.00017030871759851342"
+      ],
+      [
+        "0.0001665568829619854",
+        "-0.0002427248120661284",
+        "-0.00040120058136373124"
+      ],
+      [
+        "0.00003234963514633771",
+        "0.00006148688276441139",
+        "0.00035125807992887723"
+      ],
+      [
+        "-0.00004266654630314439",
+        "0.00019615666752607606",
+        "0.00027954058062541824"
+      ],
+      [
+        "-0.00031611357468767687",
+        "0.00009989651729686622",
+        "0.00003628018226275395"
+      ],
+      [
+        "-0.00015120711852541064",
+        "-0.0000037725051878101016",
+        "-0.00025265609944721595"
+      ],
+      [
+        "-0.00011362424553705984",
+        "-0.00006217081608515722",
+        "-0.00030639440218722713"
+      ],
+      [
+        "0.00033038447736742345",
+        "-0.00009617556996327481",
+        "0.0001169232332674151"
+      ],
+      [
+        "0.0002564746007368828",
+        "0.000032640470741711134",
+        "0.00014868620116249395"
+      ],
+      [
+        "0.00010272879453425146",
+        "0.0002647805503351089",
+        "0.00007234405431418758"
+      ],
+      [
+        "-0.00012068856586892399",
+        "0.0002627939341750839",
+        "-0.00007961316244966988"
+      ],
+      [
+        "-0.000016152315642195057",
+        "0.0003686193644355231",
+        "-0.00031132093965367764"
+      ]
+    ]
+  },
+  "native": {
+    "energy_hartree": "-0.0775092927799016",
+    "gradient_hartree_per_bohr": [
+      [
+        "-0.00026590085153234514",
+        "-0.00047922817640677856",
+        "-0.0006688293762605763"
+      ],
+      [
+        "-0.0005634458786461609",
+        "-0.0004400116070558959",
+        "-0.00014919198690631924"
+      ],
+      [
+        "-0.00016894367685299803",
+        "-0.0005816756088355552",
+        "0.0005956642863748469"
+      ],
+      [
+        "0.00011026207665311316",
+        "-0.0008594347893289668",
+        "0.000412065811031521"
+      ],
+      [
+        "0.0005794007708405187",
+        "-0.0006538072431617146",
+        "-0.0003844374806297197"
+      ],
+      [
+        "-0.0002184090963069189",
+        "-0.00009823335376577173",
+        "-0.0000707258444489845"
+      ],
+      [
+        "-0.00013028122845755983",
+        "0.0000941083164753758",
+        "0.0003521436811528252"
+      ],
+      [
+        "-0.00007688271401134164",
+        "0.00016282089859902802",
+        "0.00037542599950128445"
+      ],
+      [
+        "-0.0000625417278861836",
+        "0.0002408057238568662",
+        "0.0005330163647645119"
+      ],
+      [
+        "-0.00052073760428346",
+        "0.0002151371061470011",
+        "-0.00012894651065685955"
+      ],
+      [
+        "-0.000543586919449473",
+        "0.000244842006385904",
+        "-0.00003536319625553212"
+      ],
+      [
+        "-0.0003941908898221344",
+        "0.000030472565361497302",
+        "-0.000528452133744707"
+      ],
+      [
+        "-0.00022544018746403858",
+        "-0.00006546133954341937",
+        "-0.0003744439027257159"
+      ],
+      [
+        "0.0005135711783508558",
+        "0.00003826135174899814",
+        "-0.0003177226647470477"
+      ],
+      [
+        "0.0006698872161048401",
+        "0.0001337129729094149",
+        "0.00015721433475152216"
+      ],
+      [
+        "0.000635002581167635",
+        "0.00023513188977024823",
+        "0.00034330666656498055"
+      ],
+      [
+        "0.00025393379337945477",
+        "0.0005713988160565237",
+        "0.000148413579515076"
+      ],
+      [
+        "-0.00017420004618127986",
+        "0.000655451783861444",
+        "-0.000176054223173496"
+      ],
+      [
+        "0.00016352309561001047",
+        "0.0007884566342358779",
+        "-0.00041994354954054907"
+      ],
+      [
+        "0.000013333150115122407",
+        "-0.00008964197879850133",
+        "0.00044217687104670304"
+      ],
+      [
+        "0.000013883659698646646",
+        "-0.0003411370172504984",
+        "0.00031143927113034327"
+      ],
+      [
+        "0.0000742870810362659",
+        "-0.00038805577997373664",
+        "0.00009970557439478242"
+      ],
+      [
+        "0.0001894341937549599",
+        "-0.0002954438552597515",
+        "-0.00017030871759851342"
+      ],
+      [
+        "0.0001665568829619854",
+        "-0.0002427248120661284",
+        "-0.00040120058136373124"
+      ],
+      [
+        "0.00003234963514633771",
+        "0.00006148688276441139",
+        "0.00035125807992887723"
+      ],
+      [
+        "-0.00004266654630314439",
+        "0.00019615666752607606",
+        "0.00027954058062541824"
+      ],
+      [
+        "-0.00031611357468767687",
+        "0.00009989651729686622",
+        "0.00003628018226275395"
+      ],
+      [
+        "-0.00015120711852541064",
+        "-0.0000037725051878101016",
+        "-0.00025265609944721595"
+      ],
+      [
+        "-0.00011362424553705984",
+        "-0.00006217081608515722",
+        "-0.00030639440218722713"
+      ],
+      [
+        "0.00033038447736742345",
+        "-0.00009617556996327481",
+        "0.0001169232332674151"
+      ],
+      [
+        "0.0002564746007368828",
+        "0.000032640470741711134",
+        "0.00014868620116249395"
+      ],
+      [
+        "0.00010272879453425146",
+        "0.0002647805503351089",
+        "0.00007234405431418758"
+      ],
+      [
+        "-0.00012068856586892399",
+        "0.0002627939341750839",
+        "-0.00007961316244966988"
+      ],
+      [
+        "-0.000016152315642195057",
+        "0.0003686193644355231",
+        "-0.00031132093965367764"
+      ]
+    ]
+  },
+  "atoms": [
+    {
+      "id": "atom-1",
+      "element": "O",
+      "position_bohr": [
+        "-0.83001943",
+        "-3.53030588",
+        "-3.0068818"
+      ]
+    },
+    {
+      "id": "atom-2",
+      "element": "C",
+      "position_bohr": [
+        "-1.32857267",
+        "-2.53160037",
+        "-0.86809185"
+      ]
+    },
+    {
+      "id": "atom-3",
+      "element": "N",
+      "position_bohr": [
+        "0.51433344",
+        "-2.87093264",
+        "1.03796629"
+      ]
+    },
+    {
+      "id": "atom-4",
+      "element": "C",
+      "position_bohr": [
+        "2.77662474",
+        "-4.24312625",
+        "0.58037607"
+      ]
+    },
+    {
+      "id": "atom-5",
+      "element": "C",
+      "position_bohr": [
+        "4.40935249",
+        "-3.16697753",
+        "-1.48346158"
+      ]
+    },
+    {
+      "id": "atom-6",
+      "element": "C",
+      "position_bohr": [
+        "-3.66686036",
+        "-1.13258863",
+        "-0.45189844"
+      ]
+    },
+    {
+      "id": "atom-7",
+      "element": "C",
+      "position_bohr": [
+        "-4.31729049",
+        "-0.0191559",
+        "1.7832932"
+      ]
+    },
+    {
+      "id": "atom-8",
+      "element": "C",
+      "position_bohr": [
+        "-6.59903876",
+        "1.28408361",
+        "2.0082063"
+      ]
+    },
+    {
+      "id": "atom-9",
+      "element": "O",
+      "position_bohr": [
+        "-7.25056338",
+        "2.40464433",
+        "4.26253467"
+      ]
+    },
+    {
+      "id": "atom-10",
+      "element": "C",
+      "position_bohr": [
+        "-8.27248818",
+        "1.50470607",
+        "0.02183382"
+      ]
+    },
+    {
+      "id": "atom-11",
+      "element": "O",
+      "position_bohr": [
+        "-10.55146055",
+        "2.80047387",
+        "0.22924871"
+      ]
+    },
+    {
+      "id": "atom-12",
+      "element": "C",
+      "position_bohr": [
+        "-7.59979343",
+        "0.37698212",
+        "-2.22016182"
+      ]
+    },
+    {
+      "id": "atom-13",
+      "element": "C",
+      "position_bohr": [
+        "-5.34280913",
+        "-0.91189047",
+        "-2.44198023"
+      ]
+    },
+    {
+      "id": "atom-14",
+      "element": "C",
+      "position_bohr": [
+        "5.19905226",
+        "-0.54283397",
+        "-0.86344931"
+      ]
+    },
+    {
+      "id": "atom-15",
+      "element": "C",
+      "position_bohr": [
+        "7.40993421",
+        "-0.13660089",
+        "0.47172512"
+      ]
+    },
+    {
+      "id": "atom-16",
+      "element": "C",
+      "position_bohr": [
+        "8.27663856",
+        "2.22451181",
+        "1.12122654"
+      ]
+    },
+    {
+      "id": "atom-17",
+      "element": "C",
+      "position_bohr": [
+        "6.88614262",
+        "4.31410838",
+        "0.41578512"
+      ]
+    },
+    {
+      "id": "atom-18",
+      "element": "C",
+      "position_bohr": [
+        "4.69167974",
+        "3.96186036",
+        "-0.90656983"
+      ]
+    },
+    {
+      "id": "atom-19",
+      "element": "C",
+      "position_bohr": [
+        "3.84242678",
+        "1.56474997",
+        "-1.547794"
+      ]
+    },
+    {
+      "id": "atom-20",
+      "element": "H",
+      "position_bohr": [
+        "0.20209844",
+        "-2.08817033",
+        "2.83810326"
+      ]
+    },
+    {
+      "id": "atom-21",
+      "element": "H",
+      "position_bohr": [
+        "3.97357456",
+        "-4.35246396",
+        "2.29914771"
+      ]
+    },
+    {
+      "id": "atom-22",
+      "element": "H",
+      "position_bohr": [
+        "2.43088856",
+        "-6.2709116",
+        "0.04842232"
+      ]
+    },
+    {
+      "id": "atom-23",
+      "element": "H",
+      "position_bohr": [
+        "6.17226226",
+        "-4.2962108",
+        "-1.61810931"
+      ]
+    },
+    {
+      "id": "atom-24",
+      "element": "H",
+      "position_bohr": [
+        "3.55949155",
+        "-3.23437184",
+        "-3.38680279"
+      ]
+    },
+    {
+      "id": "atom-25",
+      "element": "H",
+      "position_bohr": [
+        "-3.08425058",
+        "-0.14470195",
+        "3.35515877"
+      ]
+    },
+    {
+      "id": "atom-26",
+      "element": "H",
+      "position_bohr": [
+        "-8.18243235",
+        "4.07062356",
+        "4.41534009"
+      ]
+    },
+    {
+      "id": "atom-27",
+      "element": "H",
+      "position_bohr": [
+        "-11.44198279",
+        "2.60766933",
+        "1.93407788"
+      ]
+    },
+    {
+      "id": "atom-28",
+      "element": "H",
+      "position_bohr": [
+        "-8.85065519",
+        "0.48496045",
+        "-3.87154602"
+      ]
+    },
+    {
+      "id": "atom-29",
+      "element": "H",
+      "position_bohr": [
+        "-4.92942038",
+        "-1.76206969",
+        "-4.27964618"
+      ]
+    },
+    {
+      "id": "atom-30",
+      "element": "H",
+      "position_bohr": [
+        "8.4922059",
+        "-1.81242195",
+        "1.01795951"
+      ]
+    },
+    {
+      "id": "atom-31",
+      "element": "H",
+      "position_bohr": [
+        "10.02284538",
+        "2.31797041",
+        "2.16275906"
+      ]
+    },
+    {
+      "id": "atom-32",
+      "element": "H",
+      "position_bohr": [
+        "7.63247206",
+        "6.13177835",
+        "0.96275152"
+      ]
+    },
+    {
+      "id": "atom-33",
+      "element": "H",
+      "position_bohr": [
+        "3.63663506",
+        "5.6368632",
+        "-1.43670247"
+      ]
+    },
+    {
+      "id": "atom-34",
+      "element": "H",
+      "position_bohr": [
+        "2.11897906",
+        "1.36134885",
+        "-2.58282033"
+      ]
+    }
+  ],
+  "metrics": {
+    "absolute_energy_difference_hartree": "0",
+    "bridge_energy_hartree": "-0.0775092927799016",
+    "bridge_sum_force_hartree_per_bohr": [
+      "0.0000000000000000011519648082658485",
+      "0.0000000000000000008673617379884035",
+      "-0.0000000000000000002710505431213761"
+    ],
+    "maximum_bridge_matrix_result_difference_hartree_per_bohr": "0",
+    "maximum_gradient_difference_hartree_per_bohr": "0",
+    "native_energy_hartree": "-0.0775092927799016",
+    "native_sum_force_hartree_per_bohr": [
+      "0.0000000000000000011519648082658485",
+      "0.0000000000000000008673617379884035",
+      "-0.0000000000000000002710505431213761"
+    ]
+  },
+  "input_hash": "sha256:d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+  "input_ref": {
+    "path": "build/refinement-d3bj-complex-gradient-20260913/input.json",
+    "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b"
+  },
+  "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734",
+  "receipt_ref": {
+    "path": "build/refinement-d3bj-dispersion-parity-20260913/receipt.json",
+    "sha256": "b02ff4cb40e0fe38d5db64c628a24ab3178a6c2ad5a355d3f304dd17bb66d596"
+  },
+  "source_refs": [
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-native-library-output.json",
+      "sha256": "c7d7dd03a4aaee079ab5dd5a1fcd2cb8938cd0a26847d0690cb4894b64a3329d",
+      "bytes": 3805
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-qcengine-call-arguments.json",
+      "sha256": "8d5e985895af45a05f3f70d20ff27d0c09cdd4cb59b9d08fc65e1ae51daf26bf",
+      "bytes": 227
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-qcengine-input.json",
+      "sha256": "a1a9020368cba00ed8ecda2d748d1562507bc0a8da4d9348c0a6552b97b31e61",
+      "bytes": 10416
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-qcengine-result.json",
+      "sha256": "ccacd5303950671b5aeab88bcbfdc9833af04fa14765fcdd9a0695126f263200",
+      "bytes": 26527
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-returned-gradient.json",
+      "sha256": "6b39eb7524f63df04793df2d3291083fb34bb08ea1b7f72620b474b5c93f37e4",
+      "bytes": 3105
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-translated-dftd3-input.json",
+      "sha256": "2857e5714bdd1b29b7cb96270763bd1c5dda8b9bedbc1fc196239dc9890bfdc8",
+      "bytes": 10597
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/bridge-translated-dftd3-result.json",
+      "sha256": "60d0d4d73a2dffee6359116891c69d233652cee5aab7089bcb7c5ff7ea3d1b87",
+      "bytes": 18883
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/calltrace.jsonl",
+      "sha256": "4ef143dcb7f2d3b1c032752a1defb7608066e131f2d741b6742105754582c851",
+      "bytes": 985
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/construction-observation.json",
+      "sha256": "050f0c3f78299d634081398d3da6a7ef96f3dae3ec47acc1250cc51e21b3a310",
+      "bytes": 820
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/isotope-defaults-observed.json",
+      "sha256": "252450cfe2061310b0b5332986f45af148a0d59d678fd037d24fd6a05acb2230",
+      "bytes": 3748
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/native-api-input.json",
+      "sha256": "1e209b217a9b5273481a3dafef965ffc8c3dd8d851ec2cd0a1ff09b319dc87b7",
+      "bytes": 3329
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/native-molecule-schema.json",
+      "sha256": "7a27698634b7433c630f087f476ea3843d4af678a78a576f802f88df07fb16a3",
+      "bytes": 4781
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/native_api-native-library-output.json",
+      "sha256": "c7d7dd03a4aaee079ab5dd5a1fcd2cb8938cd0a26847d0690cb4894b64a3329d",
+      "bytes": 3805
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/parity-metrics.json",
+      "sha256": "73b74c50679484960f98ec4d8f79f8015f2cf56025f05cd2b27f3a57138bd1bd",
+      "bytes": 521
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/product-molecule.json",
+      "sha256": "323843a1d38466cbbf84cea85f688259b695552302ec9399f5f091fc5ef36c0d",
+      "bytes": 2835
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/retained-input.json",
+      "sha256": "d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+      "bytes": 21130
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/runtime-after.json",
+      "sha256": "13da6400d5811e8164733a0b7718a256fab6e4cbecbcc49c9792098080d25003",
+      "bytes": 1464265
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/runtime-before.json",
+      "sha256": "13da6400d5811e8164733a0b7718a256fab6e4cbecbcc49c9792098080d25003",
+      "bytes": 1464265
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/source-after.json",
+      "sha256": "5a2b24537727823c9e3c0f22cceea6d18f48488eda622744773edf01bc79beab",
+      "bytes": 6224
+    },
+    {
+      "path": "build/refinement-d3bj-dispersion-parity-20260913/source-before.json",
+      "sha256": "5a2b24537727823c9e3c0f22cceea6d18f48488eda622744773edf01bc79beab",
+      "bytes": 6224
+    }
+  ],
+  "receipt_checks": {
+    "all_gradients_shape": true,
+    "all_results_finite": true,
+    "bridge_matrix_matches_raw_result": true,
+    "bridge_success": true,
+    "bridge_sum_force_near_zero": true,
+    "complex_34_atoms": true,
+    "distinct_d3bj_profile": true,
+    "effective_dispersion_method": true,
+    "effective_engine": true,
+    "effective_functional": true,
+    "effective_level": true,
+    "effective_parameters": true,
+    "energy_parity": true,
+    "explicit_profile_parameters": true,
+    "frozen_complex_geometry": true,
+    "gradient_parity": true,
+    "input_gradient_mode": true,
+    "input_unchanged": true,
+    "mass_bound_spec_v2": true,
+    "native_all_real_atoms": true,
+    "native_atom_ids_preserved": true,
+    "native_geometry_roundtrip": true,
+    "native_sum_force_near_zero": true,
+    "native_symbols_preserved": true,
+    "no_electronic_dispatch_requested": true,
+    "one_outer_result": true,
+    "outer_request_alias_translation": true,
+    "outer_request_gradient": true,
+    "outer_request_method": true,
+    "outer_request_two_body": true,
+    "program_found": true,
+    "runtime_unchanged": true,
+    "single_bridge_no_retry": true,
+    "source_unchanged": true,
+    "spec_artifacts_verified_after": true,
+    "spec_artifacts_verified_before": true,
+    "translated_atom_ids": true,
+    "translated_explicit_parameters": true,
+    "translated_geometry_exact": true,
+    "translated_request_d3bj": true,
+    "translated_request_gradient": true,
+    "translated_request_v2": true,
+    "two_actual_dispersion_calls": true,
+    "vv10_disabled": true
+  },
+  "method": {
+    "functional": "wb97x-d3bj",
+    "engine": "s-dftd3",
+    "level": "d3bj2b",
+    "parameters": {
+      "s6": "1",
+      "s8": "0.2641",
+      "a1": "0",
+      "a2": "5.4959",
+      "s9": "0"
+    },
+    "cutoffs": "unmodified bound installed-library defaults on both paths"
+  },
+  "counts": {
+    "blocked_electronic_dispatches": 0,
+    "dispersion_library_calls_attempted": 2,
+    "dispersion_library_calls_completed": 2,
+    "inner_qcschema_calls_forwarded": 1,
+    "outer_qcengine_calls_forwarded": 1
+  },
+  "electronic_energy_evaluations": 0,
+  "electronic_gradient_evaluations": 0,
+  "timing": {
+    "wall_seconds": "60.73399999999674",
+    "physical_time_s": null
+  },
+  "tolerances": {
+    "energy_hartree": "0.000000000001",
+    "gradient_hartree_per_bohr": "0.000000000001",
+    "native_geometry_roundtrip_bohr": "0.0000000001",
+    "scope": "Serialization/API parity tolerances; not chemical accuracy limits",
+    "sum_force_hartree_per_bohr": "0.000000000001"
+  },
+  "scope": {
+    "accepted_science": false,
+    "actual_dispersion_computations_expected": 2,
+    "derivative_availability_exercised": false,
+    "electronic_calculations_authorized": false,
+    "full_dft_gradient": false,
+    "geometry_optimization": false,
+    "minimum_certification": false,
+    "scientific_accuracy_validation": false,
+    "synthetic_data": false,
+    "worker_record": false,
+    "physical_time_s": null,
+    "total_dft_energy": false,
+    "physical_trajectory": false,
+    "electronic_energy_evaluations": 0,
+    "electronic_gradient_evaluations": 0
+  },
+  "scene": {
+    "version": "display-geometry/v1",
+    "object_id": "dispersion-parity-common-input",
+    "kind": "Molecule",
+    "units": "angstrom",
+    "atoms": [
+      {
+        "id": "atom-1",
+        "element": "O",
+        "position": [
+          -0.43922736676930335,
+          -1.8681574183902996,
+          -1.5911733237383887
+        ]
+      },
+      {
+        "id": "atom-2",
+        "element": "C",
+        "position": [
+          -0.7030503796829944,
+          -1.33966522232774,
+          -0.4593744237883601
+        ]
+      },
+      {
+        "id": "atom-3",
+        "element": "N",
+        "position": [
+          0.27217353513350584,
+          -1.5192321264566593,
+          0.5492681061116883
+        ]
+      },
+      {
+        "id": "atom-4",
+        "element": "C",
+        "position": [
+          1.469326534990514,
+          -2.2453657134956573,
+          0.30712178986221667
+        ]
+      },
+      {
+        "id": "atom-5",
+        "element": "C",
+        "position": [
+          2.333328851519019,
+          -1.6758923355799664,
+          -0.7850140610405111
+        ]
+      },
+      {
+        "id": "atom-6",
+        "element": "C",
+        "position": [
+          -1.940418937221192,
+          -0.5993400920599568,
+          -0.23913435598532437
+        ]
+      },
+      {
+        "id": "atom-7",
+        "element": "C",
+        "position": [
+          -2.284611739150318,
+          -0.010136865729873453,
+          0.9436781213827784
+        ]
+      },
+      {
+        "id": "atom-8",
+        "element": "C",
+        "position": [
+          -3.4920609241200156,
+          0.6795077830068641,
+          1.062697008283921
+        ]
+      },
+      {
+        "id": "atom-9",
+        "element": "O",
+        "position": [
+          -3.836832905214447,
+          1.272482979202831,
+          2.255636207054769
+        ]
+      },
+      {
+        "id": "atom-10",
+        "element": "C",
+        "position": [
+          -4.377612220392945,
+          0.7962561610008178,
+          0.01155395996587086
+        ]
+      },
+      {
+        "id": "atom-11",
+        "element": "O",
+        "position": [
+          -5.583592462343544,
+          1.48194695108082,
+          0.12131319290749573
+        ]
+      },
+      {
+        "id": "atom-12",
+        "element": "C",
+        "position": [
+          -4.021637488955592,
+          0.1994903467340632,
+          -1.1748590391436307
+        ]
+      },
+      {
+        "id": "atom-13",
+        "element": "C",
+        "position": [
+          -2.8272928325556097,
+          -0.48255165535115535,
+          -1.292240286622685
+        ]
+      },
+      {
+        "id": "atom-14",
+        "element": "C",
+        "position": [
+          2.7512199730743596,
+          -0.28725536610152247,
+          -0.4569176974207362
+        ]
+      },
+      {
+        "id": "atom-15",
+        "element": "C",
+        "position": [
+          3.9211683164960105,
+          -0.0722860779452395,
+          0.24962618320457103
+        ]
+      },
+      {
+        "id": "atom-16",
+        "element": "C",
+        "position": [
+          4.379808506904566,
+          1.177160954718273,
+          0.5933275329663753
+        ]
+      },
+      {
+        "id": "atom-17",
+        "element": "C",
+        "position": [
+          3.643989743927406,
+          2.2829278390564727,
+          0.22002401003969124
+        ]
+      },
+      {
+        "id": "atom-18",
+        "element": "C",
+        "position": [
+          2.4827299981701505,
+          2.096526214368842,
+          -0.47973609391697614
+        ]
+      },
+      {
+        "id": "atom-19",
+        "element": "C",
+        "position": [
+          2.03332468564411,
+          0.8280300245205662,
+          -0.819057311611762
+        ]
+      },
+      {
+        "id": "atom-20",
+        "element": "H",
+        "position": [
+          0.10694588875995835,
+          -1.1050121506332535,
+          1.501859566720234
+        ]
+      },
+      {
+        "id": "atom-21",
+        "element": "H",
+        "position": [
+          2.1027251020500723,
+          -2.3032247378945025,
+          1.2166565720961182
+        ]
+      },
+      {
+        "id": "atom-22",
+        "element": "H",
+        "position": [
+          1.286370827630413,
+          -3.3184235088461467,
+          0.025623988231770155
+        ]
+      },
+      {
+        "id": "atom-23",
+        "element": "H",
+        "position": [
+          3.2662205262705104,
+          -2.2734568475943293,
+          -0.8562665712249583
+        ]
+      },
+      {
+        "id": "atom-24",
+        "element": "H",
+        "position": [
+          1.883601809832435,
+          -1.7115558685607957,
+          -1.7922188535015737
+        ]
+      },
+      {
+        "id": "atom-25",
+        "element": "H",
+        "position": [
+          -1.6321151189317298,
+          -0.0765729742795098,
+          1.7754735592635882
+        ]
+      },
+      {
+        "id": "atom-26",
+        "element": "H",
+        "position": [
+          -4.329956727468973,
+          2.154081221168385,
+          2.336497352985627
+        ]
+      },
+      {
+        "id": "atom-27",
+        "element": "H",
+        "position": [
+          -6.054836537346345,
+          1.3799191823991077,
+          1.023469937756947
+        ]
+      },
+      {
+        "id": "atom-28",
+        "element": "H",
+        "position": [
+          -4.683565026046159,
+          0.256630018216268,
+          -2.0487339238441398
+        ]
+      },
+      {
+        "id": "atom-29",
+        "element": "H",
+        "position": [
+          -2.6085369269082515,
+          -0.9324471235603515,
+          -2.264691228186921
+        ]
+      },
+      {
+        "id": "atom-30",
+        "element": "H",
+        "position": [
+          4.493881830597317,
+          -0.9590923920580823,
+          0.5386809740768
+        ]
+      },
+      {
+        "id": "atom-31",
+        "element": "H",
+        "position": [
+          5.303861361165096,
+          1.2266171159793964,
+          1.1444828067220711
+        ]
+      },
+      {
+        "id": "atom-32",
+        "element": "H",
+        "position": [
+          4.038930275227509,
+          3.2447973636996954,
+          0.5094661639219027
+        ]
+      },
+      {
+        "id": "atom-33",
+        "element": "H",
+        "position": [
+          1.9244243972755282,
+          2.9828995451043703,
+          -0.7602702056372993
+        ]
+      },
+      {
+        "id": "atom-34",
+        "element": "H",
+        "position": [
+          1.1213154284389386,
+          0.7203947871918123,
+          -1.366769657891169
+        ]
+      }
+    ],
+    "bonds": [],
+    "cell": null,
+    "unit_cell_atoms": 34,
+    "provenance": "evaluated_geometry",
+    "method": "Two-body D3(BJ) dispersion diagnostic",
+    "description": "Common geometry evaluated by two dispersion-only calls. Angstrom rendering projection of the retained native Bohr coordinates; no geometry optimization or total DFT result.",
+    "input_record_hash": "sha256:d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b",
+    "display_source": {
+      "coordinate_units": "bohr",
+      "angstrom_to_bohr": "1.8897261254578281",
+      "input_hash": "sha256:d6620a22961dde59508be55acaaaf8123d69852b41cdb2673ce65840fbaa733b"
+    },
+    "geometry_hash": "sha256:81a498b4f016188232bdfb0a911b4efae9fb01ad51372e9ec866ee3b772a3e44"
+  },
+  "view_hash": "sha256:61ae19172d460e930d4bb6cd71769f65c5c42008200493ad032a874702449b97"
+}

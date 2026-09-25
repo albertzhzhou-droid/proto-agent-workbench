@@ -1,0 +1,107 @@
+{
+  "coordinateFrames": {
+    "array-axis": {
+      "origin": 0,
+      "unit": "index"
+    },
+    "cartesian": {
+      "origin": 0,
+      "unit": "angstrom"
+    },
+    "image-pixel": {
+      "origin": 0,
+      "unit": "pixel"
+    },
+    "pdb-auth-residue": {
+      "origin": 1,
+      "unit": "residue"
+    },
+    "pdb-label-residue": {
+      "origin": 1,
+      "unit": "residue"
+    }
+  },
+  "source": "src/proto_agent/scientific_contracts.py",
+  "units": {
+    "1": {
+      "dimension": "dimensionless",
+      "quantityKind": "value"
+    },
+    "angstrom": {
+      "dimension": "length",
+      "quantityKind": "value"
+    },
+    "base_pair": {
+      "dimension": "base-pair-index",
+      "quantityKind": "value"
+    },
+    "count": {
+      "dimension": "count",
+      "quantityKind": "value"
+    },
+    "dalton": {
+      "dimension": "particle-mass",
+      "quantityKind": "value"
+    },
+    "degree_Celsius": {
+      "dimension": "temperature",
+      "quantityKind": "absolute"
+    },
+    "delta_degree_Celsius": {
+      "dimension": "temperature",
+      "quantityKind": "interval"
+    },
+    "delta_kelvin": {
+      "dimension": "temperature",
+      "quantityKind": "interval"
+    },
+    "gram_per_mole": {
+      "dimension": "molar-mass",
+      "quantityKind": "value"
+    },
+    "index": {
+      "dimension": "array-index",
+      "quantityKind": "value"
+    },
+    "kelvin": {
+      "dimension": "temperature",
+      "quantityKind": "absolute"
+    },
+    "meter": {
+      "dimension": "length",
+      "quantityKind": "value"
+    },
+    "micrometer": {
+      "dimension": "length",
+      "quantityKind": "value"
+    },
+    "millisecond": {
+      "dimension": "time",
+      "quantityKind": "value"
+    },
+    "mmol/L": {
+      "dimension": "concentration",
+      "quantityKind": "value"
+    },
+    "mol/L": {
+      "dimension": "concentration",
+      "quantityKind": "value"
+    },
+    "nanometer": {
+      "dimension": "length",
+      "quantityKind": "value"
+    },
+    "pixel": {
+      "dimension": "pixel",
+      "quantityKind": "value"
+    },
+    "residue": {
+      "dimension": "residue-index",
+      "quantityKind": "value"
+    },
+    "second": {
+      "dimension": "time",
+      "quantityKind": "value"
+    }
+  }
+}

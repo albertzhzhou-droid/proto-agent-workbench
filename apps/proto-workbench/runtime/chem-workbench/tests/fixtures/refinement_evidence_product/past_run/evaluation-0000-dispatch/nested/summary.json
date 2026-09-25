@@ -1,0 +1,126 @@
+{
+  "artifacts": [
+    {
+      "bytes": 741,
+      "name": "context-start.json",
+      "sha256": "e08889df9797c772190c235dbdbefe8c68e6e5475d528601f85220f93c41dd48"
+    },
+    {
+      "bytes": 193,
+      "name": "qce-0000-start.json",
+      "sha256": "5c7bde1b0ced8333cc3d1cb4cb20f0976e4b0a22cacbd5977ba4722c4927cbe4"
+    },
+    {
+      "bytes": 11490,
+      "name": "qce-0000-request.json",
+      "sha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19"
+    },
+    {
+      "bytes": 245,
+      "name": "qce-0000-requested-config.json",
+      "sha256": "3ec79ab025b943901b314c1408fc5e4924e0fc94459b13cd9a0349194591f325"
+    },
+    {
+      "bytes": 278,
+      "name": "qce-0000-forwarded-config.json",
+      "sha256": "00bf1e4d20614fc861f7e8894e718ad817da576e4287eb974b3950990b9ba27a"
+    },
+    {
+      "bytes": 202,
+      "name": "inner-0000-start.json",
+      "sha256": "b27d783010123ef8c8f7c25d3f50fa95f017cb6b40da86093c204f729c3ef76c"
+    },
+    {
+      "bytes": 11688,
+      "name": "inner-0000-request.json",
+      "sha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd"
+    },
+    {
+      "bytes": 15474,
+      "name": "inner-0000-return.json",
+      "sha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829"
+    },
+    {
+      "bytes": 11688,
+      "name": "inner-0000-forwarded-request-after.json",
+      "sha256": "3ea98913df9f667b26e63c4d1046b5c46b10597f53e6b3bae75c3fdc39b708dd"
+    },
+    {
+      "bytes": 15474,
+      "name": "qce-0000-return.json",
+      "sha256": "373ea8883d3d41730214128c8f7bdf1cf9f4d5ce042d7e7c64671680431a5829"
+    },
+    {
+      "bytes": 11490,
+      "name": "qce-0000-forwarded-request-after.json",
+      "sha256": "f8e4ea60b90aa9bd033d5532bb760ba8da94117ac811f7b9becd945b6a708d19"
+    },
+    {
+      "bytes": 192,
+      "name": "qce-0001-start.json",
+      "sha256": "77f4915332e10eac81bb2c845204f06b522ba271a9978536c598e88e5ef38623"
+    },
+    {
+      "bytes": 11492,
+      "name": "qce-0001-request.json",
+      "sha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3"
+    },
+    {
+      "bytes": 245,
+      "name": "qce-0001-requested-config.json",
+      "sha256": "3ec79ab025b943901b314c1408fc5e4924e0fc94459b13cd9a0349194591f325"
+    },
+    {
+      "bytes": 278,
+      "name": "qce-0001-forwarded-config.json",
+      "sha256": "00bf1e4d20614fc861f7e8894e718ad817da576e4287eb974b3950990b9ba27a"
+    },
+    {
+      "bytes": 202,
+      "name": "inner-0001-start.json",
+      "sha256": "70648c8d1e5c528920c446806b99c0bea44e829bbc549be20cf70ae7f15aacd9"
+    },
+    {
+      "bytes": 11690,
+      "name": "inner-0001-request.json",
+      "sha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c"
+    },
+    {
+      "bytes": 17047,
+      "name": "inner-0001-return.json",
+      "sha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72"
+    },
+    {
+      "bytes": 11690,
+      "name": "inner-0001-forwarded-request-after.json",
+      "sha256": "369079decd9f3ccb84cf673a1312d6e1350a17b7aa681888311ddcec9596751c"
+    },
+    {
+      "bytes": 17047,
+      "name": "qce-0001-return.json",
+      "sha256": "b4134925f83f671cb157c323427f3b9761d896056520fa019c93ce88760d7e72"
+    },
+    {
+      "bytes": 11492,
+      "name": "qce-0001-forwarded-request-after.json",
+      "sha256": "668f8faeb0bc2ca5a4a9c79ce2069862f075545d84bdd3b24d498ac12f7c08e3"
+    }
+  ],
+  "context_exception": null,
+  "counts": {
+    "inner_calls_forwarded": 2,
+    "inner_calls_returned": 2,
+    "inner_calls_seen": 2,
+    "qce_calls_forwarded": 2,
+    "qce_calls_returned": 2,
+    "qce_calls_seen": 2
+  },
+  "evaluation_id": "evaluation-0000",
+  "finalized": true,
+  "monotonic_seconds": 412105.6490242,
+  "outer_electronic_attempts_observed": false,
+  "restoration_errors": [],
+  "scientific_accuracy_validated": false,
+  "spec_hash": "sha256:9406708e20ca22a163604919e63fd85637bf550afac1b3a56c2647c849f0b734",
+  "version": "nested-d3-observation-staged/v1"
+}

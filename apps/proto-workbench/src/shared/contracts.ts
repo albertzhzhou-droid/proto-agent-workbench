@@ -1924,6 +1924,7 @@ export interface WorkbenchApi {
   chemScience?: import('./chem-science-api.ts').ChemScienceApi;
   chat: import("./research-chat.ts").ResearchChatApi;
   compute: import("./compute.ts").ComputeApi;
+  research: import("./managed-research.ts").ManagedResearchApi;
   app: {
     getSettings(): Promise<AppSettings>;
     updateSettings(patch: AppSettingsUpdate): Promise<AppSettings>;

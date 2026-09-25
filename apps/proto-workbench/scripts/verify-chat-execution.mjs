@@ -1,21 +1,27 @@
 import assert from "node:assert/strict";
-import {randomBytes} from "node:crypto";
+import {randomBytes,randomUUID} from "node:crypto";
 import {execFile} from "node:child_process";
 import {mkdir,readFile,writeFile} from "node:fs/promises";
 import {join,relative,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
 import {McpClient} from "../src/main/services/mcp-client.ts";
+import {openWorkspaceExecutionJournal} from "../src/main/services/workspace-execution-journal.ts";
+import {evaluateToolPolicy,issueHostPolicyGrant} from "../src/main/services/permissions.ts";
 
 const repo=resolve(fileURLToPath(new URL("../../../",import.meta.url)));
 const root=join(repo,"build","chat-runtime-qa",new Date().toISOString().replace(/[:.]/g,"-"));
 await mkdir(root,{recursive:true});
 const rel=path=>relative(repo,path).replaceAll("\\","/");
-const mcp=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:repo,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")});
+const ledger=openWorkspaceExecutionJournal(repo);
+const mcp=new McpClient({packaged:false,resourcesPath:"",repoRoot:repo,workspacePath:repo,workspaceCapability:randomBytes(32).toString("hex"),pythonExecutable:join(repo,process.platform==="win32"?".venv/Scripts/python.exe":".venv/bin/python")},{journal:ledger.journal});
 const checks=[];
 async function call(name,args,verify){
   const startedAt=new Date().toISOString();
-  const result=await mcp.call(name,args);
+  const operationId=randomUUID(),scope={surface:"system",scopeId:operationId};
+  const grant=issueHostPolicyGrant({id:randomUUID(),source:"explicit-approval",actor:"verification-script",...scope,risks:["code-execution"],grantedAt:startedAt});
+  const decision=evaluateToolPolicy({tool:name,args,...scope,operationId,grants:[grant]});
+  const result=await mcp.call(name,args,undefined,undefined,{operationId,scope,decision});
   const artifact=result.stdout_path?await readFile(join(repo,result.stdout_path),"utf8"):"";
   await writeFile(join(root,`${checks.length+1}-${name}.json`),JSON.stringify(result,null,2));
   verify(result,artifact);
@@ -56,4 +62,4 @@ try {
 } catch(error) {
   await writeFile(join(root,"verification.json"),JSON.stringify({ok:false,checks,error:String(error)},null,2));
   throw error;
-} finally {await mcp.stop();}
+} finally {try {await mcp.stop();} finally {ledger.close();}}

@@ -146,6 +146,13 @@ provides a static browser preview. Use `pnpm dev` for the browser development
 server's local Chat, Chemistry and model service routes. Neither browser mode
 establishes native desktop or installer acceptance.
 
+On a fresh checkout, the final desktop module-manifest step also needs the
+generated Proto sidecars. Build them with `pnpm build:sidecars` after installing
+PyInstaller in the project Python environment; see the
+[sidecar source and build notes](../apps/proto-workbench/runtime/proto-agent/README.md).
+Their generated executables remain Git-ignored. Main, preload and renderer
+compilation alone does not establish a complete desktop resource bundle.
+
 Public checkouts bundle **Newsreader**, **Hanken Grotesk** and **Commit Mono**
 under their upstream Open Font Licenses. Local self-use builds continue to use
 the supplied Anthropic families when available; those original font files remain
