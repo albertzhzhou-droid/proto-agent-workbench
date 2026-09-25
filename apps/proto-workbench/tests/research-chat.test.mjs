@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtemp,readFile,mkdir} from "node:fs/promises";
+import {readFile,mkdir} from "node:fs/promises";
+import {canonicalMkdtemp as mkdtemp} from "./helpers/canonical-temp.mjs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {ResearchChatService} from "../src/main/services/research-chat.ts";

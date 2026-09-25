@@ -10,16 +10,26 @@ engine supports every Python version.
 | Profile | Automatic environment | Installed extras | Scope |
 | --- | --- | --- | --- |
 | `base` | Windows, Python 3.10 and 3.12 | None | CLI, compiler, provenance, materials, security, mocked runtime adapters, dependency-free compute contracts, test-profile selector |
-| `compute` | Windows, Python 3.12 | `compute`, `compute-research` | NumPy/SciPy calculations, statistical inference, Biopython-based protein properties, protein comparison/study tests |
+| `compute` | Windows, Python 3.12 | `compute`, `compute-research` (including JSON Schema validation) | NumPy/SciPy calculations, statistical inference, Biopython-based protein properties, protein comparison/study tests |
 | `heavy` | Windows, Python 3.12, CPU | `compute`, `compute-models`, `compute-vision`, `compute-medical`, `compute-chem`, `compute-genomics` | Real model, image, SBML, population-genetics and cheminformatics tests using bounded fixtures |
 | `linux-worker` | Ubuntu, Python 3.12 | None | Actual Linux process cleanup, cancellation and file-integrity behavior with controlled subprocesses; does not install or validate scientific engines |
 | `xdl` | Explicit local invocation only | Existing isolated XDL environment | Real XDL parser/roundtrip tests; no device execution |
 
 The Workbench job also creates the root `.venv` using `compute`,
-`compute-research`, `compute-vision`, `compute-chem` and `chem-workbench`. Its Chem Python override
+`compute-research`, `compute-vision`, `compute-chem`, `chem-workbench`,
+`research-figures` and `workbench`. Its Chem Python override
 points at that environment. This is required by the existing Node integration
 tests which spawn Python and execute RDKit, NumPy, SciPy, OpenCV and SymPy operators.
 Electron bundle compilation is not an installer, GPU or live-model acceptance.
+The job explicitly builds and checks the required Proto sidecars before desktop
+resource-manifest generation; their executables are generated CI outputs, not
+source-controlled prerequisites. CI uses the public typography profile.
+
+Windows jobs canonicalize their existing temporary directory before tests.
+Hosted runners can otherwise expose an 8.3 alias such as `RUNNER~1`, while strict
+workspace APIs require the resolved path. Newly owned Node test fixtures also
+resolve their temporary roots. Production checks continue to reject supplied
+linked or noncanonical paths; an alias regression exercises that rejection.
 
 Before the offline baseline or desktop build, that job runs `pnpm typecheck`,
 checks the generated Python tool-contract snapshot, and runs named Node suites

@@ -56,14 +56,22 @@ class PortContractTests(unittest.TestCase):
                   if metadata["implementation"] == "proto-native"}
         self.assertEqual(native, {"design_sgrna_spacers"})
 
-    def test_every_example_validates_and_runs(self):
+    def test_every_port_example_validates_and_runs(self):
         from proto_agent.compute import HANDLERS as ALL_HANDLERS, TOOLS as ALL_TOOLS, _validate
-        for identifier, metadata in ALL_TOOLS.items():
-            example = json.loads(json.dumps(metadata["example"]))
-            _validate(example, metadata["input_schema"])
-            if metadata.get("file_inputs"):
-                continue  # File-backed tools run through tests.test_compute_batch3 with real fixtures.
-            json.dumps(ALL_HANDLERS[identifier](json.loads(json.dumps(example))), allow_nan=False)
+        # This profile owns the five port modules, not the later heavy catalog.
+        # Batch 3/4 validate the whole catalog and execute their own native tools.
+        executed = set()
+        for module in MODULES.values():
+            for identifier in module.TOOLS:
+                with self.subTest(tool=identifier):
+                    metadata = ALL_TOOLS[identifier]
+                    self.assertIs(ALL_HANDLERS[identifier], module.HANDLERS[identifier])
+                    self.assertFalse(metadata.get("file_inputs"))
+                    example = json.loads(json.dumps(metadata["example"]))
+                    _validate(example, metadata["input_schema"])
+                    json.dumps(ALL_HANDLERS[identifier](example), allow_nan=False)
+                    executed.add(identifier)
+        self.assertEqual(len(executed), sum(EXPECTED_COUNTS.values()))
 
 
 class SequencePortTests(unittest.TestCase):

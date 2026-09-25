@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import {
   link,
   mkdir,
-  mkdtemp,
   readFile,
   rename,
   rm,
@@ -16,6 +15,7 @@ import { once } from "node:events";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import test from "node:test";
+import { canonicalMkdtemp as mkdtemp } from "./helpers/canonical-temp.mjs";
 
 import {
   OwnedProcessError,

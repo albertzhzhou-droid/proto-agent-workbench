@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from proto_agent.evidence_standing import TOY_LIBRARY_NOTICE, evidence_standing, library_data_origin, standing_from_manifest
+from proto_agent.evidence_standing import EvidenceStanding, TOY_LIBRARY_NOTICE, evidence_standing, library_data_origin, standing_from_manifest
 from proto_agent.provenance import verify_provenance
 from proto_agent.review import build_review_packet
 from proto_agent.workflow import run_design_review
@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class EvidenceStandingTests(unittest.TestCase):
+    def test_evidence_type_requires_axes_and_only_eligibility_is_optional(self) -> None:
+        self.assertEqual(EvidenceStanding.__required_keys__,
+                         {"dataOrigin", "methodMaturity", "executionStatus", "humanReview"})
+        self.assertEqual(EvidenceStanding.__optional_keys__, {"eligibility"})
+
     def test_origin_requires_explicit_fixture_metadata_and_axes_stay_independent(self) -> None:
         self.assertEqual(library_data_origin({"notice": TOY_LIBRARY_NOTICE}), "fixture")
         self.assertEqual(library_data_origin({"path": "parts/ecoli_k12_library.json"}), "unknown")

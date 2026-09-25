@@ -36,6 +36,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Canonicalize Windows temporary paths
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $canonicalTemp = python -c "from pathlib import Path; import tempfile; print(Path(tempfile.gettempdir()).resolve(strict=True))"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($name in @('TEMP', 'TMP', 'TMPDIR')) {
+            "$name=$canonicalTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
       - name: Install pinned environment manager
         run: python -m pip install uv==0.12.3
       - name: Classify every Python test before environment setup
@@ -57,11 +66,12 @@ jobs:
   workbench:
     name: Workbench contracts, typecheck and offline baseline
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       PROTO_CHEM_PYTHON: ${{ github.workspace }}/.venv/Scripts/python.exe
       PYTHONDONTWRITEBYTECODE: "1"
       CUDA_VISIBLE_DEVICES: ""
+      PROTO_TYPOGRAPHY_PROFILE: public
     defaults:
       run:
         working-directory: apps/proto-workbench
@@ -70,11 +80,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Canonicalize Windows temporary paths
+        shell: pwsh
+        run: |
+          $canonicalTemp = python -c "from pathlib import Path; import tempfile; print(Path(tempfile.gettempdir()).resolve(strict=True))"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($name in @('TEMP', 'TMP', 'TMPDIR')) {
+            "$name=$canonicalTemp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
       - name: Install pinned Python environment manager
         run: python -m pip install uv==0.12.3
       - name: Provision actual Python and Chem runtimes used by integration tests
         working-directory: .
-        run: uv sync --locked --python 3.12 --no-managed-python --extra compute --extra compute-research --extra compute-vision --extra compute-chem --extra chem-workbench --extra research-figures
+        run: uv sync --locked --python 3.12 --no-managed-python --extra compute --extra compute-research --extra compute-vision --extra compute-chem --extra chem-workbench --extra research-figures --extra workbench
       - name: Check Python runtime dependencies
         working-directory: .
         run: uv pip check
@@ -110,6 +128,7 @@ jobs:
           tests/tool-execution-journal.test.mjs tests/permissions.test.mjs
           tests/ipc-channel-contracts.test.mjs tests/ipc-contract-drift.test.mjs
           tests/turn-engine.test.mjs tests/owned-process.test.mjs
+          tests/canonical-temp.test.mjs
           tests/research-chat.test.mjs tests/research-evidence.test.mjs
           tests/research-session-state.test.mjs
           tests/architecture-followup.test.mjs
@@ -126,6 +145,8 @@ jobs:
           tests/managed-protein-cpu.test.mjs
       - name: Verify offline baseline
         run: node scripts/verify-offline.mjs
+      - name: Build and verify required Proto sidecars from source
+        run: pnpm build:sidecars
       - name: Build desktop bundles
         run: pnpm build:desktop
       - name: Preserve Workbench validation evidence even on failure

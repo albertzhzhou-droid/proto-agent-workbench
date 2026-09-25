@@ -16,7 +16,8 @@
 # These byte-pinned fixtures intentionally preserve their upstream EOF shape.
 apps/proto-workbench/runtime/trust/sigstore-public-good/trusted_root.json text eol=lf whitespace=-blank-at-eof
 apps/proto-workbench/tests/fixtures/sigstore/statement.json text eol=lf whitespace=-blank-at-eof
-tests/security_corpus/LICENSE-BLNS.txt text eol=crlf whitespace=-blank-at-eof
+# Corpus receipts bind upstream bytes, including original mixed line endings.
+tests/security_corpus/** -text whitespace=-blank-at-eol,-blank-at-eof
 
 # Preserve exact bytes and upstream whitespace of the sealed Chem source snapshot.
 apps/proto-workbench/runtime/chem-workbench/** -text whitespace=-blank-at-eol,-blank-at-eof
