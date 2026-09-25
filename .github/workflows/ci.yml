@@ -120,6 +120,12 @@ jobs:
         run: node ../../scripts/generate-architecture-capabilities.mjs --check
       - name: Verify generated scientific units match the Python contract
         run: ../../.venv/Scripts/python.exe scripts/generate-scientific-units.py --check
+      - name: Check and compile the toy visualization fixture
+        working-directory: .
+        run: |
+          uv run --locked --no-sync proto-agent check designs/toggle_switch.proto --json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --locked --no-sync proto-agent compile designs/toggle_switch.proto --out build/toggle_switch.ir.json
       - name: Run mandatory execution and contract regression tests
         run: >-
           node --test --test-concurrency=4 --test-reporter=spec --test-reporter-destination=stdout
@@ -143,12 +149,12 @@ jobs:
           tests/managed-research.test.mjs tests/managed-research-boundaries.test.mjs
           tests/managed-research-evidence.test.mjs tests/managed-research-cpu.test.mjs
           tests/managed-protein-cpu.test.mjs
-      - name: Verify offline baseline
-        run: node scripts/verify-offline.mjs
       - name: Build and verify required Proto sidecars from source
         run: pnpm build:sidecars
       - name: Build desktop bundles
         run: pnpm build:desktop
+      - name: Verify offline baseline against generated resources
+        run: node scripts/verify-offline.mjs
       - name: Preserve Workbench validation evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
