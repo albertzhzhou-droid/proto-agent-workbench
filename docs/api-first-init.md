@@ -31,6 +31,18 @@ proto-agent init status
 proto-agent init verify --approve-network
 ```
 
+For user interfaces and scripts there are three more:
+
+```text
+proto-agent init catalog     # providers, profiles and categories as data, so nothing is hardcoded
+proto-agent init overview    # catalog + offline detection + current status in one process
+proto-agent init start ...   # apply (+ optional --verify --approve-network) + status in one process
+```
+
+`python -m proto_agent.workspace_init <command>` runs the same commands without importing the
+rest of the CLI. It starts in roughly 100 ms instead of roughly 400 ms, which is what the
+desktop app uses for every setup action.
+
 Custom gateway and subscription examples:
 
 ```text
@@ -55,6 +67,15 @@ All commands print structured JSON, and `apply`, `status` and `verify` include `
 * Everything except `verify` is offline (`network_requests: 0`). `verify` makes exactly one
   request.
 
+## Last verification
+
+A `verify` that actually reached the network is recorded in `verification.json` (provider, host,
+model, category, HTTP status, time, and a digest of the configuration it checked; never a
+credential). `status` reports it as `verified`, `failed`, `stale` (the configuration changed since)
+or `unknown`, and a failed category names the repair (`check_credential`, `choose_model`,
+`check_base_url`, `check_gateway_protocol`, `retry_verify`). It is history, not a live connection:
+requests refused before sending (no approval, missing key) are never recorded.
+
 ## What is written
 
 Files go to `.proto/workspace/` (Git-ignored, machine-local):
@@ -65,6 +86,7 @@ Files go to `.proto/workspace/` (Git-ignored, machine-local):
 | `r.json` | Profile (`none`, `core`, `rnaseq`), required packages, sandbox-or-explicit-CLI execution policy, no inherited environment |
 | `workspace.proto` | Starter design using toy fixture parts; validate with `proto-agent check` |
 | `workspace.json` | Provider choice (variable names only) and SHA-256 digests of the three files above |
+| `verification.json` | Last recorded `verify` outcome; advisory, not digest-protected |
 | `credentials/<provider>/` | Subscription providers, isolated mode only: an empty owner-only (0700) directory with a `*` `.gitignore` for the provider CLI's login |
 
 `workspace.json` is written last, so it exists only when every file it digests was written.
@@ -115,6 +137,29 @@ that usually includes `/v1`).
   in, so the login is separate from the CLI's default profile.
 * **Shared**: the login lives in the CLI's default profile, shared with every project on the
   machine; `init` warns about this.
+
+## Desktop app
+
+Settings has a **Model provider setup** section, and the Launchpad shows a one-line provider
+strip. Both follow the workbench's paper and ink theme in light and dark, using only shared
+tokens, the shared type hierarchy and the shared motion vocabulary.
+
+* The interface never takes, shows or stores a key. It reads provider choices from `init catalog`,
+  shows only whether the variable is visible to the app, and writes through `init start`.
+* Verification is a deliberate step: **Verify with provider…** opens a consent panel naming the
+  host and the variable, and only **Send request** sends anything. The host is pinned in code for
+  Anthropic and OpenAI, and for a gateway it is the saved host.
+* The setup helper never inherits the app's environment. Setup and detection see a
+  presence-only sentinel for the three default key variables. Only `verify` receives the single real
+  variable belonging to the provider being verified, so a tampered workspace file cannot select
+  another secret. A custom variable name (a command-line option) is not handed over; the panel says
+  to verify it from the command line.
+* A desktop app started from the dock or start menu may not see variables exported in a shell. If
+  the panel reports the variable as not visible, start Proto from a shell that exports it.
+* Chat in this release still runs against LM Studio. Provider setup records and verifies the
+  configuration; it does not yet route chat to a cloud provider, so it never changes the LM Studio
+  readiness steps.
+* The browser preview is session-only: it writes nothing, reads no key and cannot verify.
 
 ## Design lineage
 

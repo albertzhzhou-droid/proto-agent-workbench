@@ -1969,6 +1969,7 @@ export interface WorkbenchApi {
   };
   designs: import("./dna-edits.ts").DesignEditApi;
   proteinStructures: import("./protein-structures.ts").ProteinStructureApi;
+  providerSetup: import("./provider-setup.ts").ProviderSetupApi;
   materials: {
     status(): Promise<MaterialsStatus>;
     search(input: MaterialsSearchRequest): Promise<MaterialsSearchResult>;

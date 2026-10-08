@@ -14,6 +14,7 @@ import "./workbench-typography.css";
 import "./compute-workspace.css";
 import "./chat-workspace.css";
 import "./chem-workspace.css";
+import "./provider-setup.css";
 import "./paper-motion.css";
 
 type MonacoWorker = new () => Worker;

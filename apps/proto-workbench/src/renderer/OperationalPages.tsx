@@ -1,4 +1,5 @@
 import { DesignExtensions } from "./DesignExtensions.tsx";
+import { ProviderSetupSection, ProviderSetupStrip } from "./ProviderSetup.tsx";
 import { isModelConnected } from "../shared/model-status.ts";
 import {
   Archive,
@@ -244,6 +245,7 @@ function LaunchpadPage() {
           </li>
         ))}
       </ol>
+      <ProviderSetupStrip onOpen={() => navigate("settings")} />
       <section className="operator-cockpit" aria-labelledby="operator-cockpit-title">
         <header className="operator-cockpit-heading">
           <span className="operator-cockpit-icon" aria-hidden="true"><Inbox size={18} /></span>
@@ -1106,6 +1108,7 @@ function SettingsPage() {
       <section className="settings-section"><div className="settings-section-title"><HardDrive size={17} /><div><h2>Storage</h2><p>LM Studio owns model weights; generated artifacts remain inside the selected workspace.</p></div></div><SettingPath label="Workspace" value={settings.workspacePath} onBrowse={() => void chooseWorkspace()} /></section>
       <section className="settings-section"><div className="settings-section-title"><Cpu size={17} /><div><h2>LM Studio inference</h2><p>{runtime.detail}</p></div></div><div className="settings-field"><label>Fixed endpoint</label><code>{settings.inference.baseUrl}</code><output>Native v1 + OpenAI SSE</output></div><div className="settings-field"><label>Optional bearer token</label><code>{settings.inference.tokenEnvNames.join(" → ")}</code><output>Environment only; never persisted</output></div><div className={`runtime-status-line is-${runtime.available ? "cuda" : "missing"}`}><span />{runtime.available ? `${runtime.modelCount ?? 0} models · ${runtime.loadedModelCount ?? 0} loaded instances` : "LM Studio unavailable"}</div></section>
       <section className="settings-section"><div className="settings-section-title"><MemoryStick size={17} /><div><h2>Workbench connections</h2><p>Controls Workbench's explicit instance bindings; LM Studio remains authoritative for allocation and engine policy.</p></div></div><div className="settings-field"><label>Policy</label><div className="segmented-control"><button className={mode === "quick-switch" ? "is-selected" : ""} type="button" onClick={() => setMode("quick-switch")}>One connection</button><button className={mode === "auto-evict" ? "is-selected" : ""} type="button" onClick={() => setMode("auto-evict")}>Managed warm pool</button></div></div><div className="settings-field"><label htmlFor="warm-ttl">Warm connection TTL</label><input id="warm-ttl" className="number-field" type="number" min={1} max={240} value={ttl} onChange={(event) => setTtl(Number(event.target.value))} /><output>minutes; only owned instances unload</output></div></section>
+      <ProviderSetupSection onWorkspaceNeeded={() => void chooseWorkspace()} />
       <section className="settings-section module-settings-section">
         <div className="settings-section-title">
           <Fingerprint size={17} />

@@ -389,6 +389,14 @@
       "versionField": "schema_version"
     },
     {
+      "family": "proto-agent.workspace-verification",
+      "current": [
+        "proto-agent.workspace-verification.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
       "family": "proto-workbench.context-retention",
       "current": [
         "proto-workbench.context-retention.v1"

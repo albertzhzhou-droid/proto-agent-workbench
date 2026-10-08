@@ -14,6 +14,19 @@ version matches. Full release acceptance remains outstanding. The previous
 Windows version was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
 
+## 2026-10-09 — Provider setup in the desktop app (unreleased source)
+
+- Added **Model provider setup** to Settings and a provider strip to the Launchpad, in the
+  workbench's paper and ink theme (light and dark, shared typography and motion). The interface
+  never takes or stores a key; verification is an explicit consent step naming the host and variable.
+- Added `init catalog`, `init overview`, `init start` and a standalone `python -m
+  proto_agent.workspace_init` entry that starts about four times faster than the full CLI.
+- Added a persisted last-verification record (`verification.json`) with stale detection, and typed
+  failure categories that map to repairs. `status` now returns the saved non-secret configuration.
+- Main process: three new IPC channels with strict schemas and field-validated results. The setup
+  helper receives a presence-only sentinel for key variables, and the single matching real
+  variable only for `verify`.
+
 ## 2026-10-08 — API-first workspace initialization (unreleased source)
 
 - Added `proto-agent init` (`detect`, `plan`, `apply`, `status`, `verify`): selects an

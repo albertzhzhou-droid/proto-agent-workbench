@@ -133,6 +133,7 @@ jobs:
           tests/tool-contracts.test.mjs tests/execution-kernel.test.mjs tests/production-kernel-context.test.mjs
           tests/tool-execution-journal.test.mjs tests/permissions.test.mjs
           tests/ipc-channel-contracts.test.mjs tests/ipc-contract-drift.test.mjs
+          tests/provider-setup.test.mjs tests/provider-setup-presentation.test.mjs
           tests/turn-engine.test.mjs tests/owned-process.test.mjs
           tests/canonical-temp.test.mjs
           tests/research-chat.test.mjs tests/research-evidence.test.mjs

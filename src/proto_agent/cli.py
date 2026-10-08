@@ -50,22 +50,7 @@ from .skill_sdk import (
     trust_skill_adapter,
 )
 from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
-from .workspace_init import (
-    CREDENTIAL_MODES,
-    DEFAULT_INIT_DIR,
-    GATEWAY_PROTOCOLS,
-    PROVIDERS as INIT_PROVIDERS,
-    PYTHON_PROFILES,
-    R_PROFILES,
-    InitError,
-    apply_plan,
-    build_plan,
-    detect_environment,
-    load_manifest_provider,
-    public_plan,
-    verify_provider,
-    workspace_status,
-)
+from .workspace_init import register_init_commands, run_init_command
 from .mcp_server import TOOLS, main as mcp_main
 from .execution import ExecutionBroker, ExecutionDenied
 from .security import (
@@ -382,44 +367,7 @@ def main(argv: list[str] | None = None) -> int:
     review_run.add_argument("--literature-query")
     review_run.add_argument("path")
 
-    init_parser = subparsers.add_parser(
-        "init",
-        help="API-first workspace setup: provider, Python, R and Proto configuration without storing secrets.",
-    )
-    init_subparsers = init_parser.add_subparsers(dest="init_command", required=True)
-    init_subparsers.add_parser("detect", help="Offline probe of credential presence, provider CLIs, runtimes and workspace write access (booleans only).")
-    for init_name, init_help in (
-        ("plan", "Render the workspace configuration without writing files."),
-        ("apply", "Write the workspace configuration under .proto/workspace/ (a repeat of the same configuration is a no-op)."),
-    ):
-        init_cmd = init_subparsers.add_parser(init_name, help=init_help)
-        init_cmd.add_argument("--provider", choices=sorted(INIT_PROVIDERS), help="Defaults to the best detected path.")
-        init_cmd.add_argument("--key-env", help="Environment-variable NAME holding the API key (never the key itself).")
-        init_cmd.add_argument("--model", help="Provider model ID to validate (required for custom-gateway).")
-        init_cmd.add_argument("--base-url", help="custom-gateway only: https:// root (http:// only for loopback).")
-        init_cmd.add_argument("--protocol", choices=sorted(GATEWAY_PROTOCOLS), help="custom-gateway only: API protocol.")
-        init_cmd.add_argument(
-            "--credential-mode",
-            choices=list(CREDENTIAL_MODES),
-            default="isolated",
-            help="Subscription providers: keep the login in a workspace-isolated directory (default) or the CLI's shared profile.",
-        )
-        init_cmd.add_argument("--python-profile", choices=sorted(PYTHON_PROFILES), default="analysis")
-        init_cmd.add_argument("--r-profile", choices=sorted(R_PROFILES), default="none")
-        init_cmd.add_argument("--design-name", default="workspace_starter")
-        init_cmd.add_argument("--chassis", default="ecoli_k12")
-        init_cmd.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
-        if init_name == "apply":
-            init_cmd.add_argument("--force", action="store_true", help="Replace a different existing workspace configuration.")
-    init_status = init_subparsers.add_parser("status", help="Re-check digests, secret-shaped content and readiness, with next actions.")
-    init_status.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
-    init_verify = init_subparsers.add_parser("verify", help="One approved handshake that probes the exact configured model.")
-    init_verify.add_argument("--provider", choices=sorted(INIT_PROVIDERS), help="Defaults to the initialized workspace's provider.")
-    init_verify.add_argument("--key-env")
-    init_verify.add_argument("--model")
-    init_verify.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
-    init_verify.add_argument("--approve-network", action="store_true", help="Authorize this single request.")
-    init_verify.add_argument("--approve-host", help="custom-gateway only: the exact gateway host that may receive the key.")
+    register_init_commands(subparsers)
 
     mcp_parser = subparsers.add_parser("mcp", help="Run the Proto Agent MCP stdio server.")
     mcp_parser.add_argument("--once", help="Handle one JSON-RPC request passed as JSON.")
@@ -512,7 +460,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     if args.command == "literature" and args.literature_command == "pubmed":
         return _pubmed_search(args.query, args.retmax, args.cache_dir, not args.offline, args.fixture, args.cafile)
     if args.command == "init":
-        return _init(args)
+        return run_init_command(args)
     if args.command == "doctor":
         return _doctor(args.as_json)
     if args.command == "capabilities":
@@ -1092,56 +1040,6 @@ def _notebook_run(path: str, out_dir: str, timeout: int, broker: ExecutionBroker
 def _r_status() -> int:
     _print_json(r_status())
     return 0
-
-
-def _init(args: argparse.Namespace) -> int:
-    command = args.init_command
-    if command == "detect":
-        _print_json({"ok": True, **detect_environment(workspace_root=Path.cwd())})
-        return 0
-    if command in {"plan", "apply"}:
-        provider = args.provider or detect_environment()["recommended_provider"]
-        plan = build_plan(
-            provider=provider,
-            python_profile=args.python_profile,
-            r_profile=args.r_profile,
-            design_name=args.design_name,
-            chassis=args.chassis,
-            key_env=args.key_env,
-            model=args.model,
-            base_url=args.base_url,
-            protocol=args.protocol,
-            credential_mode=args.credential_mode,
-            out_dir=args.out_dir,
-        )
-        if command == "plan":
-            _print_json(public_plan(plan))
-            return 0
-        _print_json(apply_plan(plan, out_dir=args.out_dir, force=args.force))
-        return 0
-    if command == "status":
-        result = workspace_status(out_dir=args.out_dir)
-        _print_json(result)
-        return 0 if result["ok"] else 1
-    if command == "verify":
-        stored = load_manifest_provider(out_dir=args.out_dir)
-        provider = args.provider or (stored or {}).get("id")
-        if provider is None:
-            raise InitError("PROVIDER_REQUIRED", "No initialized workspace found; pass --provider or run `proto-agent init apply` first.")
-        config = stored if stored and stored.get("id") == provider else None
-        if config is None and INIT_PROVIDERS[provider]["kind"] == "api_gateway":
-            raise InitError("CONFIG_REQUIRED", "Gateway verification needs an initialized workspace for that gateway.")
-        result = verify_provider(
-            provider,
-            approve_network=args.approve_network,
-            key_env=args.key_env,
-            model=args.model,
-            config=config,
-            approve_host=args.approve_host,
-        )
-        _print_json(result)
-        return 0 if result["ok"] else 1
-    return 2
 
 
 def _doctor(as_json: bool) -> int:
