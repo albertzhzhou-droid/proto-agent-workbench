@@ -35,6 +35,76 @@
       ]
     },
     {
+      "id": "anthropic-api",
+      "kind": "model_provider_api",
+      "status": "local_configuration_required",
+      "purpose": "Preferred API-first model provider path. Initialized by `proto-agent init`; the key is read from the environment and never stored.",
+      "base_url": "https://api.anthropic.com",
+      "http_routes": [
+        "GET /v1/models"
+      ],
+      "governed_operations": [
+        "verify-handshake"
+      ],
+      "credential_environment": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "commands": [
+        "proto-agent init plan --provider anthropic-api",
+        "proto-agent init verify --provider anthropic-api --approve-network"
+      ],
+      "documentation": "docs/api-first-init.md",
+      "safety_notes": [
+        "The authority is a fixed host; redirects are refused and arbitrary provider URLs are rejected.",
+        "Credentials are environment values only and are never written to configuration, manifests, logs or command output.",
+        "Network access requires an explicit per-call --approve-network and reports only status and model counts.",
+        "Registry availability describes implemented integration, not a live reachability or authorization result."
+      ]
+    },
+    {
+      "id": "openai-api",
+      "kind": "model_provider_api",
+      "status": "local_configuration_required",
+      "purpose": "API-first model provider path for OpenAI-compatible workflows. Initialized by `proto-agent init`; the key is read from the environment and never stored.",
+      "base_url": "https://api.openai.com",
+      "http_routes": [
+        "GET /v1/models"
+      ],
+      "governed_operations": [
+        "verify-handshake"
+      ],
+      "credential_environment": [
+        "OPENAI_API_KEY"
+      ],
+      "commands": [
+        "proto-agent init plan --provider openai-api",
+        "proto-agent init verify --provider openai-api --approve-network"
+      ],
+      "documentation": "docs/api-first-init.md",
+      "safety_notes": [
+        "The authority is a fixed host; redirects are refused and arbitrary provider URLs are rejected.",
+        "Credentials are environment values only and are never written to configuration, manifests, logs or command output.",
+        "Network access requires an explicit per-call --approve-network and reports only status and model counts.",
+        "Registry availability describes implemented integration, not a live reachability or authorization result."
+      ]
+    },
+    {
+      "id": "provider-subscription-cli",
+      "kind": "model_provider_subscription",
+      "status": "local_configuration_required",
+      "purpose": "Subscription path delegated to the installed claude or codex CLI login. Proto Agent only records that the CLI holds the login.",
+      "commands": [
+        "proto-agent init plan --provider claude-subscription",
+        "proto-agent init plan --provider codex-subscription"
+      ],
+      "documentation": "docs/api-first-init.md",
+      "safety_notes": [
+        "Detection uses PATH lookup only; the provider CLI is never executed and its credential store is never read.",
+        "No token is requested, stored or logged by Proto Agent.",
+        "Registry availability describes implemented integration, not a signed-in session."
+      ]
+    },
+    {
       "id": "lm-studio",
       "kind": "local_model_service",
       "status": "available",

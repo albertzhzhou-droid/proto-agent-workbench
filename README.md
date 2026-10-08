@@ -82,6 +82,7 @@ flowchart LR
 | Run the current workspaces | [Source development setup](docs/getting-started.md#development) |
 | Try the earlier Windows preview | [Historical download](https://github.com/albertzhzhou-droid/proto-agent-workbench/releases/tag/v0.2.0-rc.1) · [Desktop setup](docs/getting-started.md#desktop) |
 | Use the deterministic CLI | [CLI installation and toy example](docs/getting-started.md#cli) |
+| Set up a workspace with an API key or provider subscription | [API-first initialization](docs/api-first-init.md) |
 | Connect an AI host | [MCP configuration and tools](docs/mcp_usage.md) |
 | Reproduce a scoped check | [Current source evidence](docs/source-showcase-2026-09.md) · [CI profiles](docs/ci-validation.md) |
 

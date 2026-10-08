@@ -50,6 +50,18 @@ from .skill_sdk import (
     trust_skill_adapter,
 )
 from .workflow import DEFAULT_WORKFLOW_PATH, run_design_review
+from .workspace_init import (
+    DEFAULT_INIT_DIR,
+    PROVIDERS as INIT_PROVIDERS,
+    PYTHON_PROFILES,
+    R_PROFILES,
+    apply_plan,
+    build_plan,
+    detect_environment,
+    public_plan,
+    verify_provider,
+    workspace_status,
+)
 from .mcp_server import TOOLS, main as mcp_main
 from .execution import ExecutionBroker, ExecutionDenied
 from .security import (
@@ -366,6 +378,33 @@ def main(argv: list[str] | None = None) -> int:
     review_run.add_argument("--literature-query")
     review_run.add_argument("path")
 
+    init_parser = subparsers.add_parser(
+        "init",
+        help="API-first workspace setup: provider, Python, R and Proto configuration without storing secrets.",
+    )
+    init_subparsers = init_parser.add_subparsers(dest="init_command", required=True)
+    init_subparsers.add_parser("detect", help="Offline probe of credential presence, provider CLIs and runtimes (booleans only).")
+    for init_name, init_help in (
+        ("plan", "Render the workspace configuration without writing files."),
+        ("apply", "Write the workspace configuration under .proto/workspace/."),
+    ):
+        init_cmd = init_subparsers.add_parser(init_name, help=init_help)
+        init_cmd.add_argument("--provider", choices=sorted(INIT_PROVIDERS), help="Defaults to the best detected path.")
+        init_cmd.add_argument("--key-env", help="Environment-variable NAME holding the API key (never the key itself).")
+        init_cmd.add_argument("--python-profile", choices=sorted(PYTHON_PROFILES), default="analysis")
+        init_cmd.add_argument("--r-profile", choices=sorted(R_PROFILES), default="none")
+        init_cmd.add_argument("--design-name", default="workspace_starter")
+        init_cmd.add_argument("--chassis", default="ecoli_k12")
+        if init_name == "apply":
+            init_cmd.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+            init_cmd.add_argument("--force", action="store_true", help="Replace an existing workspace configuration.")
+    init_status = init_subparsers.add_parser("status", help="Re-check digests, secret-shaped content and credential presence.")
+    init_status.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+    init_verify = init_subparsers.add_parser("verify", help="One approved credentialed handshake with the fixed provider host.")
+    init_verify.add_argument("--provider", required=True, choices=sorted(INIT_PROVIDERS))
+    init_verify.add_argument("--key-env")
+    init_verify.add_argument("--approve-network", action="store_true", help="Authorize this single request to the provider host.")
+
     mcp_parser = subparsers.add_parser("mcp", help="Run the Proto Agent MCP stdio server.")
     mcp_parser.add_argument("--once", help="Handle one JSON-RPC request passed as JSON.")
     mcp_parser.add_argument("--once-file", help="Handle one JSON-RPC request loaded from a file.")
@@ -456,6 +495,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return _literature_search(args.query, args.registry, args.limit)
     if args.command == "literature" and args.literature_command == "pubmed":
         return _pubmed_search(args.query, args.retmax, args.cache_dir, not args.offline, args.fixture, args.cafile)
+    if args.command == "init":
+        return _init(args)
     if args.command == "doctor":
         return _doctor(args.as_json)
     if args.command == "capabilities":
@@ -1035,6 +1076,37 @@ def _notebook_run(path: str, out_dir: str, timeout: int, broker: ExecutionBroker
 def _r_status() -> int:
     _print_json(r_status())
     return 0
+
+
+def _init(args: argparse.Namespace) -> int:
+    command = args.init_command
+    if command == "detect":
+        _print_json({"ok": True, **detect_environment()})
+        return 0
+    if command in {"plan", "apply"}:
+        provider = args.provider or detect_environment()["recommended_provider"]
+        plan = build_plan(
+            provider=provider,
+            python_profile=args.python_profile,
+            r_profile=args.r_profile,
+            design_name=args.design_name,
+            chassis=args.chassis,
+            key_env=args.key_env,
+        )
+        if command == "plan":
+            _print_json(public_plan(plan))
+            return 0
+        _print_json(apply_plan(plan, out_dir=args.out_dir, force=args.force))
+        return 0
+    if command == "status":
+        result = workspace_status(out_dir=args.out_dir)
+        _print_json(result)
+        return 0 if result["ok"] else 1
+    if command == "verify":
+        result = verify_provider(args.provider, approve_network=args.approve_network, key_env=args.key_env)
+        _print_json(result)
+        return 0 if result["ok"] else 1
+    return 2
 
 
 def _doctor(as_json: bool) -> int:
