@@ -226,6 +226,13 @@ const api: IpcWorkbenchApi = {
       return invokeBinary(IPC.structureExportImage, ...validateChannelArguments(IPC.structureExportImage, [input]));
     },
   },
+  providerSetup: {
+    overview: () => invoke(IPC.providerSetupOverview),
+    apply: request => invoke(IPC.providerSetupApply, request),
+    verify: request => invoke(IPC.providerSetupVerify, request),
+    storeKey: request => invoke(IPC.providerSetupStoreKey, request),
+    removeKey: request => invoke(IPC.providerSetupRemoveKey, request),
+  },
   materials: {
     status: () => invoke(IPC.materialsStatus),
     search: (input: MaterialsSearchRequest) => {

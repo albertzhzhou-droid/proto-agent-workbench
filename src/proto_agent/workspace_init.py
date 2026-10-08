@@ -27,6 +27,7 @@ workbenches; this module is an independent implementation.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import ipaddress
 import json
@@ -66,6 +67,8 @@ R_CONFIG_NAME = "r.json"
 PROTO_CONFIG_NAME = "workspace.proto"
 GENERATED_FILES = (PYTHON_CONFIG_NAME, R_CONFIG_NAME, PROTO_CONFIG_NAME)
 CREDENTIALS_DIR = "credentials"
+VERIFICATION_NAME = "verification.json"
+VERIFICATION_SCHEMA_VERSION = "proto-agent.workspace-verification.v1"
 
 MAX_VERIFY_RESPONSE_BYTES = 256 * 1024
 VERIFY_TIMEOUT_SECONDS = 10
@@ -496,7 +499,7 @@ def parse_gateway_url(value: str) -> dict[str, Any]:
         raise InitError("INVALID_BASE_URL", "--base-url must start with http:// or https:// and name a host.")
     if parts.username is not None or parts.password is not None or parts.query or parts.fragment or "@" in parts.netloc:
         raise InitError("INVALID_BASE_URL", "--base-url must not contain credentials, a query string or a fragment.")
-    if not _URL_PATH.fullmatch(path) or ".." in path.split("/"):
+    if not _URL_PATH.fullmatch(path) or any(segment in {".", ".."} for segment in path.split("/")):
         raise InitError("INVALID_BASE_URL", "--base-url path contains unsupported characters.")
     loopback = _is_loopback(host)
     if not loopback:
@@ -516,6 +519,16 @@ def parse_gateway_url(value: str) -> dict[str, Any]:
         "loopback": loopback,
         "base_url": f"{parts.scheme}://{authority}{path}",
     }
+
+
+def gateway_origin(base_url: str) -> str:
+    """Scheme, host and port with default ports dropped, so two spellings of one origin compare equal."""
+
+    endpoint = parse_gateway_url(base_url)
+    port = endpoint["port"]
+    default = 443 if endpoint["scheme"] == "https" else 80
+    host = f"[{endpoint['host']}]" if ":" in endpoint["host"] else endpoint["host"]
+    return f"{endpoint['scheme']}://{host}" + (f":{port}" if port is not None and port != default else "")
 
 
 def _is_ip_literal(host: str) -> bool:
@@ -698,8 +711,10 @@ def workspace_status(
     provider = provider if isinstance(provider, dict) else {}
     checks: dict[str, dict[str, str]] = {}
     next_actions: list[dict[str, Any]] = []
+    verification: dict[str, Any] = {"state": "never"}
     if not problems:
-        checks, next_actions = _readiness(paths, manifest, provider, env, which)
+        verification = _verification_state(paths, relative_dir, manifest)
+        checks, next_actions = _readiness(paths, manifest, provider, env, which, verification)
     if issues:
         next_actions.insert(0, {"code": "repair_configuration", "argv": ["init", "apply", "--force"]})
     credential: dict[str, Any] = {}
@@ -714,10 +729,24 @@ def workspace_status(
         "directory": relative_dir,
         "provider": provider.get("id"),
         **credential,
+        "verification": verification,
+        **({"configuration": _configuration_summary(manifest, provider)} if not problems else {}),
         "checks": checks,
         "next": next_actions,
         "issues": issues,
         "metrics": _metrics(started, files_written=0),
+    }
+
+
+def _configuration_summary(manifest: Mapping[str, Any], provider: Mapping[str, Any]) -> dict[str, Any]:
+    """The saved, non-secret choices, so an interface can show and edit them faithfully."""
+
+    python_section = manifest.get("python")
+    r_section = manifest.get("r")
+    return {
+        "provider": dict(provider),
+        "python_profile": python_section.get("profile") if isinstance(python_section, dict) else None,
+        "r_profile": r_section.get("profile") if isinstance(r_section, dict) else None,
     }
 
 
@@ -727,6 +756,7 @@ def _readiness(
     provider: Mapping[str, Any],
     env: Mapping[str, str],
     which: Callable[[str], str | None],
+    verification: Mapping[str, Any],
 ) -> tuple[dict[str, dict[str, str]], list[dict[str, Any]]]:
     checks: dict[str, dict[str, str]] = {}
     next_actions: list[dict[str, Any]] = []
@@ -734,11 +764,25 @@ def _readiness(
     variable = provider.get("credential_environment")
     if kind in {"api_key_env", "api_gateway"} and isinstance(variable, str):
         if str(env.get(variable, "")).strip():
-            checks["provider"] = {"status": "unverified", "reason": "credential_present_not_verified"}
             argv = ["init", "verify", "--approve-network"]
             if kind == "api_gateway" and not provider.get("loopback"):
                 argv += ["--approve-host", str(provider.get("host"))]
-            next_actions.append({"code": "verify_provider", "argv": argv})
+            state = verification.get("state")
+            if state == "verified":
+                checks["provider"] = {"status": "ready", "reason": "verified"}
+            elif state == "failed":
+                category = str(verification.get("category"))
+                checks["provider"] = {"status": "not_ready", "reason": f"verify_failed_{category}"}
+                action = dict(_CATEGORY_ACTIONS.get(category, _CATEGORY_ACTIONS["unknown"]))
+                if action["code"] == "check_credential":
+                    action["variable"] = variable
+                if action["code"] == "retry_verify":
+                    action["argv"] = argv
+                next_actions.append(action)
+            else:
+                reason = "verification_stale" if state == "stale" else "credential_present_not_verified"
+                checks["provider"] = {"status": "unverified", "reason": reason}
+                next_actions.append({"code": "verify_provider", "argv": argv})
         else:
             checks["provider"] = {"status": "not_ready", "reason": "credential_missing"}
             next_actions.append({"code": "set_environment", "variable": variable})
@@ -778,6 +822,177 @@ def _readiness(
     else:
         checks["r"] = {"status": "disabled", "reason": "r_profile_none"}
     return checks, next_actions
+
+
+# ---------------------------------------------------------------------------
+# Catalog (data for UIs) and one-shot start
+# ---------------------------------------------------------------------------
+
+
+def provider_catalog() -> dict[str, Any]:
+    """Everything a UI needs to render the setup choices, so none of it is hardcoded there."""
+
+    providers = []
+    for provider_id, spec in PROVIDERS.items():
+        entry: dict[str, Any] = {
+            "id": provider_id,
+            "label": spec["label"],
+            "kind": spec["kind"],
+            "security_rank": spec["security_rank"],
+            "fallback": spec["kind"] == "local_only",
+            "requires": ["base_url", "model", "protocol"] if spec["kind"] == "api_gateway" else [],
+        }
+        if spec["kind"] == "api_key_env":
+            entry["pinned_host"] = spec["host"]
+        if spec["kind"] in {"api_key_env", "api_gateway"}:
+            entry["credential_environment"] = spec["credential_environment"]
+        if spec["kind"] == "subscription_cli":
+            entry["executable"] = spec["executable"]
+            entry["home_environment"] = spec["home_environment"]
+        providers.append(entry)
+    return {
+        "providers": providers,
+        "python_profiles": [{"id": key, "summary": value["summary"], "extras": value["extras"]} for key, value in PYTHON_PROFILES.items()],
+        "r_profiles": [
+            {"id": key, "summary": value["summary"], "enabled": value["enabled"], "packages": value["packages"]}
+            for key, value in R_PROFILES.items()
+        ],
+        "gateway_protocols": list(GATEWAY_PROTOCOLS),
+        "credential_modes": list(CREDENTIAL_MODES),
+        "validation_categories": list(VALIDATION_CATEGORIES),
+        "default_out_dir": DEFAULT_INIT_DIR.as_posix(),
+    }
+
+
+def start_workspace(
+    *,
+    workspace_root: str | Path | None = None,
+    out_dir: str | Path = DEFAULT_INIT_DIR,
+    force: bool = False,
+    verify: bool = False,
+    approve_network: bool = False,
+    approve_host: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    opener: urllib.request.OpenerDirector | None = None,
+    **plan_options: Any,
+) -> dict[str, Any]:
+    """Plan, apply, optionally verify and re-read status in one process (one spawn for a UI)."""
+
+    started = time.perf_counter()
+    plan = build_plan(out_dir=out_dir, environ=environ, **plan_options)
+    applied = apply_plan(plan, workspace_root=workspace_root, out_dir=out_dir, force=force)
+    verification: dict[str, Any] | None = None
+    if verify:
+        verification = verify_provider(
+            plan["provider"],
+            approve_network=approve_network,
+            environ=environ,
+            model=plan["manifest"]["provider"].get("model"),
+            config=plan["manifest"]["provider"],
+            approve_host=approve_host,
+            opener=opener,
+        )
+        record_verification(verification, workspace_root=workspace_root, out_dir=out_dir)
+    status = workspace_status(workspace_root=workspace_root, out_dir=out_dir, environ=environ)
+    return {
+        "ok": bool(applied["ok"] and (verification is None or verification["ok"])),
+        "apply": applied,
+        "verify": verification,
+        "status": status,
+        "metrics": _metrics(
+            started,
+            files_written=applied["metrics"]["files_written"],
+            network_requests=verification["metrics"]["network_requests"] if verification else 0,
+        ),
+    }
+
+
+# Failure categories name the repair; a UI or agent can act on them without parsing prose.
+_CATEGORY_ACTIONS: dict[str, dict[str, Any]] = {
+    "auth": {"code": "check_credential"},
+    "model-not-found": {"code": "choose_model"},
+    "bad-url": {"code": "check_base_url"},
+    "incompatible": {"code": "check_gateway_protocol"},
+    "network": {"code": "retry_verify"},
+    "timeout": {"code": "retry_verify"},
+    "server-error": {"code": "retry_verify"},
+    "unknown": {"code": "retry_verify"},
+}
+
+
+def config_digest(manifest: Mapping[str, Any]) -> str:
+    """Digest of the configuration that matters, ignoring only the generation time."""
+
+    return _sha256(_dump({key: value for key, value in manifest.items() if key != "generated_at"}))
+
+
+def record_verification(
+    result: Mapping[str, Any],
+    *,
+    workspace_root: str | Path | None = None,
+    out_dir: str | Path = DEFAULT_INIT_DIR,
+) -> bool:
+    """Persist the outcome of a verify that reached the network.  Holds no credential.
+
+    Requests refused before sending (no approval, missing key, ...) are not recorded:
+    they say nothing about the provider.
+    """
+
+    metrics = result.get("metrics")
+    if not isinstance(metrics, Mapping) or metrics.get("network_requests") != 1:
+        return False
+    paths = WorkspacePaths.create(workspace_root)
+    relative_dir = _relative_out_dir(paths, out_dir).relative_to(paths.workspace).as_posix()
+    try:
+        manifest_file = paths.workspace_file(f"{relative_dir}/{MANIFEST_NAME}", extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+        manifest = strict_json_loads(read_text_bounded(manifest_file, MAX_JSON_FILE_BYTES), max_bytes=MAX_JSON_FILE_BYTES)
+    except (SecurityBoundaryError, JsonValidationError):
+        return False
+    if _manifest_problems(manifest) or result.get("provider") != manifest["provider"].get("id"):
+        return False
+    record = {
+        "schema_version": VERIFICATION_SCHEMA_VERSION,
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "provider": result["provider"],
+        "host": result.get("host"),
+        "model": result.get("model"),
+        "model_probe": bool(result.get("model_probe")),
+        "ok": bool(result.get("ok")),
+        "category": result.get("category") if result.get("category") in VALIDATION_CATEGORIES else "unknown",
+        "http_status": result.get("http_status"),
+        "config_digest": config_digest(manifest),
+    }
+    text = _dump(record)
+    if looks_like_secret(text):
+        return False
+    target = paths.ensure_directory(_relative_out_dir(paths, out_dir), boundary=paths.workspace)
+    write_text_bounded(target / VERIFICATION_NAME, text, MAX_TEXT_FILE_BYTES, boundary=paths.workspace)
+    return True
+
+
+def _verification_state(paths: WorkspacePaths, relative_dir: str, manifest: Mapping[str, Any]) -> dict[str, Any]:
+    """Last recorded verify: never, verified, failed, stale (configuration changed) or unknown."""
+
+    try:
+        path = paths.workspace_file(f"{relative_dir}/{VERIFICATION_NAME}", extensions={".json"}, max_bytes=MAX_JSON_FILE_BYTES)
+    except SecurityBoundaryError:
+        return {"state": "never"}
+    try:
+        record = strict_json_loads(read_text_bounded(path, MAX_JSON_FILE_BYTES), max_bytes=MAX_JSON_FILE_BYTES)
+    except (SecurityBoundaryError, JsonValidationError):
+        return {"state": "unknown"}
+    if not isinstance(record, dict) or select_artifact_reader("proto-agent.workspace-verification", record)["readOnly"]:
+        return {"state": "unknown"}
+    summary = {
+        "verified_at": record.get("verified_at"),
+        "category": record.get("category"),
+        "http_status": record.get("http_status"),
+        "host": record.get("host"),
+        "model": record.get("model"),
+    }
+    if record.get("config_digest") != config_digest(manifest) or record.get("provider") != (manifest.get("provider") or {}).get("id"):
+        return {"state": "stale", **summary, "reason": "configuration_changed"}
+    return {"state": "verified" if record.get("ok") is True else "failed", **summary}
 
 
 # ---------------------------------------------------------------------------
@@ -821,6 +1036,7 @@ def verify_provider(
     model: str | None = None,
     config: Mapping[str, Any] | None = None,
     approve_host: str | None = None,
+    bind_origin: str | None = None,
     opener: urllib.request.OpenerDirector | None = None,
 ) -> dict[str, Any]:
     """One approved, credentialed ``GET`` that probes the exact configured model.
@@ -857,6 +1073,9 @@ def verify_provider(
         if not isinstance(stored_url, str) or not isinstance(model, str):
             return refuse("bad-url", "CONFIG_REQUIRED", "Gateway verification needs the stored workspace configuration (run init apply first).")
         pinned = parse_gateway_url(stored_url)
+        if bind_origin is not None and gateway_origin(stored_url) != bind_origin:
+            # The caller holds the trusted binding for the key; the saved address no longer matches it.
+            return refuse("bad-url", "BINDING_MISMATCH", "The saved gateway address differs from the address this key was stored for.")
         if not pinned["loopback"] and approve_host != pinned["host"]:
             return refuse("unknown", "HOST_NOT_APPROVED", f"Pass --approve-host {pinned['host']} to send the key to this gateway.")
         protocol = config.get("protocol")
@@ -1049,3 +1268,172 @@ def _ssl_context() -> ssl.SSLContext:
         return ssl.create_default_context(cafile=certifi.where())
     except ImportError:
         return ssl.create_default_context()
+
+
+# ---------------------------------------------------------------------------
+# Command line (shared by `proto-agent init` and `python -m proto_agent.workspace_init`)
+# ---------------------------------------------------------------------------
+
+
+def register_init_commands(subparsers: Any) -> None:
+    """Add the ``init`` command group to a parent parser's subparsers."""
+
+    init_parser = subparsers.add_parser(
+        "init",
+        help="API-first workspace setup: provider, Python, R and Proto configuration without storing secrets.",
+    )
+    _add_init_subcommands(init_parser)
+
+
+def _add_init_subcommands(init_parser: argparse.ArgumentParser) -> None:
+    sub = init_parser.add_subparsers(dest="init_command", required=True)
+    sub.add_parser("detect", help="Offline probe of credential presence, provider CLIs, runtimes and workspace write access (booleans only).")
+    sub.add_parser("catalog", help="Machine-readable provider and profile choices for user interfaces.")
+    overview = sub.add_parser("overview", help="Catalog, offline detection and current status in one call (for user interfaces).")
+    overview.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+    for name, help_text in (
+        ("plan", "Render the workspace configuration without writing files."),
+        ("apply", "Write the workspace configuration under .proto/workspace/ (a repeat of the same configuration is a no-op)."),
+        ("start", "Apply, optionally verify, and re-read status in one process (for user interfaces)."),
+    ):
+        command = sub.add_parser(name, help=help_text)
+        command.add_argument("--provider", choices=sorted(PROVIDERS), help="Defaults to the best detected path.")
+        command.add_argument("--key-env", help="Environment-variable NAME holding the API key (never the key itself).")
+        command.add_argument("--model", help="Provider model ID to validate (required for custom-gateway).")
+        command.add_argument("--base-url", help="custom-gateway only: https:// root (http:// only for loopback).")
+        command.add_argument("--protocol", choices=sorted(GATEWAY_PROTOCOLS), help="custom-gateway only: API protocol.")
+        command.add_argument(
+            "--credential-mode",
+            choices=list(CREDENTIAL_MODES),
+            default="isolated",
+            help="Subscription providers: keep the login in a workspace-isolated directory (default) or the CLI's shared profile.",
+        )
+        command.add_argument("--python-profile", choices=sorted(PYTHON_PROFILES), default="analysis")
+        command.add_argument("--r-profile", choices=sorted(R_PROFILES), default="none")
+        command.add_argument("--design-name", default="workspace_starter")
+        command.add_argument("--chassis", default="ecoli_k12")
+        command.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+        if name in {"apply", "start"}:
+            command.add_argument("--force", action="store_true", help="Replace a different existing workspace configuration.")
+        if name == "start":
+            command.add_argument("--verify", action="store_true", help="After writing, run the live handshake in the same process.")
+            command.add_argument("--approve-network", action="store_true", help="With --verify: authorize the single request.")
+            command.add_argument("--approve-host", help="With --verify on a custom gateway: the exact host that may receive the key.")
+    status = sub.add_parser("status", help="Re-check digests, secret-shaped content, readiness and the last verification, with next actions.")
+    status.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+    verify = sub.add_parser("verify", help="One approved handshake that probes the exact configured model.")
+    verify.add_argument("--provider", choices=sorted(PROVIDERS), help="Defaults to the initialized workspace's provider.")
+    verify.add_argument("--key-env")
+    verify.add_argument("--model")
+    verify.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
+    verify.add_argument("--approve-network", action="store_true", help="Authorize this single request.")
+    verify.add_argument("--approve-host", help="custom-gateway only: the exact gateway host that may receive the key.")
+    verify.add_argument("--bind-origin", help="custom-gateway only: refuse unless the saved gateway origin equals this trusted value.")
+
+
+def _emit(payload: Mapping[str, Any], *, stderr: bool = False) -> None:
+    print(json.dumps(payload, indent=2, allow_nan=False), file=sys.stderr if stderr else sys.stdout)
+
+
+def run_init_command(args: argparse.Namespace) -> int:
+    """Execute a parsed ``init`` command against the current working directory."""
+
+    command = args.init_command
+    root = Path.cwd()
+    if command == "detect":
+        _emit({"ok": True, **detect_environment(workspace_root=root)})
+        return 0
+    if command == "catalog":
+        _emit({"ok": True, **provider_catalog()})
+        return 0
+    if command == "overview":
+        _emit({
+            "ok": True,
+            "catalog": provider_catalog(),
+            "detection": detect_environment(workspace_root=root),
+            "status": workspace_status(workspace_root=root, out_dir=args.out_dir),
+        })
+        return 0
+    if command in {"plan", "apply", "start"}:
+        options = {
+            "provider": args.provider or detect_environment()["recommended_provider"],
+            "python_profile": args.python_profile,
+            "r_profile": args.r_profile,
+            "design_name": args.design_name,
+            "chassis": args.chassis,
+            "key_env": args.key_env,
+            "model": args.model,
+            "base_url": args.base_url,
+            "protocol": args.protocol,
+            "credential_mode": args.credential_mode,
+        }
+        if command == "plan":
+            _emit(public_plan(build_plan(out_dir=args.out_dir, **options)))
+            return 0
+        if command == "start":
+            result = start_workspace(
+                workspace_root=root,
+                out_dir=args.out_dir,
+                force=args.force,
+                verify=args.verify,
+                approve_network=args.approve_network,
+                approve_host=args.approve_host,
+                **options,
+            )
+            _emit(result)
+            return 0 if result["ok"] else 1
+        plan = build_plan(out_dir=args.out_dir, **options)
+        _emit(apply_plan(plan, workspace_root=root, out_dir=args.out_dir, force=args.force))
+        return 0
+    if command == "status":
+        status = workspace_status(workspace_root=root, out_dir=args.out_dir)
+        _emit(status)
+        return 0 if status["ok"] else 1
+    if command == "verify":
+        stored = load_manifest_provider(workspace_root=root, out_dir=args.out_dir)
+        provider = args.provider or (stored or {}).get("id")
+        if provider is None:
+            raise InitError("PROVIDER_REQUIRED", "No initialized workspace found; pass --provider or run `proto-agent init apply` first.")
+        config = stored if stored and stored.get("id") == provider else None
+        if config is None and PROVIDERS[provider]["kind"] == "api_gateway":
+            raise InitError("CONFIG_REQUIRED", "Gateway verification needs an initialized workspace for that gateway.")
+        verdict = verify_provider(
+            provider,
+            approve_network=args.approve_network,
+            key_env=args.key_env,
+            model=args.model,
+            config=config,
+            approve_host=args.approve_host,
+            bind_origin=args.bind_origin,
+        )
+        if config is not None and not args.model and not args.key_env:
+            record_verification(verdict, workspace_root=root, out_dir=args.out_dir)
+        if stored is not None:
+            verdict = {**verdict, "status": workspace_status(workspace_root=root, out_dir=args.out_dir)}
+        _emit(verdict)
+        return 0 if verdict["ok"] else 1
+    return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Standalone entry: starts in a fraction of the full CLI's import time."""
+
+    parser = argparse.ArgumentParser(prog="proto-agent-init")
+    _add_init_subcommands(parser)
+    args = parser.parse_args(argv)
+    try:
+        return run_init_command(args)
+    except (InitError, SecurityBoundaryError, ValueError, KeyError, OSError) as exc:
+        _emit(
+            {
+                "ok": False,
+                "diagnostics": [{"severity": "error", "file": "", "line": 0, "code": getattr(exc, "code", "INVALID_INPUT"), "message": str(exc)}],
+                "artifacts": [],
+            },
+            stderr=True,
+        )
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

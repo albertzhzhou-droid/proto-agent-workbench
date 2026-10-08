@@ -21,13 +21,19 @@ from proto_agent.workspace_init import (
     _NoRedirect,
     apply_plan,
     build_plan,
+    VALIDATION_CATEGORIES,
     classify_http_status,
+    config_digest,
     detect_environment,
+    gateway_origin,
     load_manifest_provider,
     looks_like_secret,
     parse_gateway_url,
+    provider_catalog,
     public_plan,
     recommend_provider,
+    record_verification,
+    start_workspace,
     verify_provider,
     workspace_status,
 )
@@ -271,6 +277,8 @@ class GatewayAndModelTests(unittest.TestCase):
             "https://gateway.example.com/v1?x=1": "INVALID_BASE_URL",
             "https://gateway.example.com/v1#frag": "INVALID_BASE_URL",
             "https://gateway.example.com/../etc": "INVALID_BASE_URL",
+            "https://gateway.example.com/./v1": "INVALID_BASE_URL",
+            "https://gateway.example.com/v1/.": "INVALID_BASE_URL",
             "https://gateway.example.com:99999": "INVALID_BASE_URL",
             "ftp://gateway.example.com": "INVALID_BASE_URL",
             "https://": "INVALID_BASE_URL",
@@ -380,6 +388,16 @@ class ReadinessTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._temporary.cleanup()
 
+    def test_status_exposes_the_saved_non_secret_configuration(self) -> None:
+        plan = build_plan(provider="custom-gateway", base_url="https://gw.example.com/v1", model="team/m-1", protocol="messages",
+                          python_profile="sequence", r_profile="rnaseq", environ={}, which=_which(set()))
+        apply_plan(plan, workspace_root=self.workspace)
+        configuration = workspace_status(workspace_root=self.workspace, environ={})["configuration"]
+        self.assertEqual((configuration["python_profile"], configuration["r_profile"]), ("sequence", "rnaseq"))
+        saved = configuration["provider"]
+        self.assertEqual((saved["id"], saved["model"], saved["host"], saved["protocol"]), ("custom-gateway", "team/m-1", "gw.example.com", "messages"))
+        self.assertFalse(looks_like_secret(json.dumps(configuration)))
+
     def test_status_reports_next_actions_and_metrics(self) -> None:
         plan = build_plan(provider="anthropic-api", r_profile="core", model="claude-sonnet-5-5", environ={}, which=_which(set()))
         apply_plan(plan, workspace_root=self.workspace)
@@ -460,6 +478,28 @@ class ModelProbeVerifyTests(unittest.TestCase):
         self.assertEqual(request.full_url, "https://gw.example.com/v1/models/team%2Fmodel-1")
         self.assertEqual(request.get_header("Authorization"), "Bearer tok_abcdefghijkl")
 
+    def test_a_trusted_binding_refuses_an_edited_gateway_address(self) -> None:
+        env = {"PROTO_GATEWAY_API_KEY": "tok_abcdefghijkl"}
+        opener = _FakeOpener(_FakeResponse(b"{}"))
+        edited = {**self.GATEWAY, "base_url": "https://evil.example.com/v1", "host": "evil.example.com"}
+        refused = verify_provider("custom-gateway", approve_network=True, environ=env, config=edited, approve_host="evil.example.com",
+                                  bind_origin=gateway_origin("https://gw.example.com/v1"), opener=opener)
+        self.assertEqual((refused["code"], refused["category"]), ("BINDING_MISMATCH", "bad-url"))
+        self.assertEqual(opener.requests, [])
+        accepted = verify_provider("custom-gateway", approve_network=True, environ=env, config=self.GATEWAY, approve_host="gw.example.com",
+                                   bind_origin=gateway_origin("https://GW.example.com:443/v1/"), opener=opener)
+        self.assertTrue(accepted["ok"], accepted)
+        loopback = {**self.GATEWAY, "base_url": "http://127.0.0.1:9999/v1", "host": "127.0.0.1", "loopback": True, "credential_environment": None}
+        other_port = verify_provider("custom-gateway", approve_network=True, environ={}, config=loopback,
+                                     bind_origin=gateway_origin("http://127.0.0.1:11434/v1"), opener=opener)
+        self.assertEqual(other_port["code"], "BINDING_MISMATCH", "a loopback key is bound to its port too")
+
+    def test_origins_ignore_default_ports_case_and_path(self) -> None:
+        self.assertEqual(gateway_origin("https://GW.Example.com:443/v1/"), "https://gw.example.com")
+        self.assertEqual(gateway_origin("http://localhost:80"), "http://localhost")
+        self.assertEqual(gateway_origin("https://gw.example.com:8443/x"), "https://gw.example.com:8443")
+        self.assertEqual(gateway_origin("http://[::1]:8000"), "http://[::1]:8000")
+
     def test_gateway_without_the_models_route_is_incompatible_not_missing(self) -> None:
         error = urllib.error.HTTPError("https://gw.example.com/v1/models/m", 404, "nf", {}, io.BytesIO(b""))
         result = verify_provider("custom-gateway", approve_network=True, environ={"PROTO_GATEWAY_API_KEY": "tok_abcdefghijkl"},
@@ -485,6 +525,180 @@ class ModelProbeVerifyTests(unittest.TestCase):
     def test_gateway_needs_stored_configuration(self) -> None:
         result = verify_provider("custom-gateway", approve_network=True, environ={}, config=None, opener=_FakeOpener(_FakeResponse(b"{}")))
         self.assertEqual(result["code"], "CONFIG_REQUIRED")
+
+
+class CatalogAndStartTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temporary = tempfile.TemporaryDirectory(prefix="proto-init-start-")
+        self.workspace = Path(self._temporary.name).resolve()
+        self.env = {"ANTHROPIC_API_KEY": FAKE_KEY}
+
+    def tearDown(self) -> None:
+        self._temporary.cleanup()
+
+    def test_catalog_describes_every_choice_without_secrets(self) -> None:
+        catalog = provider_catalog()
+        by_id = {entry["id"]: entry for entry in catalog["providers"]}
+        self.assertEqual(set(by_id), set(PROVIDERS))
+        self.assertEqual(by_id["anthropic-api"]["pinned_host"], "api.anthropic.com")
+        self.assertEqual(by_id["custom-gateway"]["requires"], ["base_url", "model", "protocol"])
+        self.assertTrue(by_id["local-lm-studio"]["fallback"])
+        self.assertEqual(by_id["claude-subscription"]["home_environment"], "CLAUDE_CONFIG_DIR")
+        self.assertEqual(catalog["validation_categories"], list(VALIDATION_CATEGORIES))
+        self.assertEqual(catalog["default_out_dir"], ".proto/workspace")
+        self.assertIn("rnaseq", [entry["id"] for entry in catalog["r_profiles"]])
+        self.assertFalse(looks_like_secret(json.dumps(catalog)))
+
+    def test_start_applies_verifies_and_records_in_one_call(self) -> None:
+        opener = _FakeOpener(_FakeResponse(b'{"id": "claude-sonnet-5-5"}'))
+        result = start_workspace(
+            workspace_root=self.workspace, provider="anthropic-api", model="claude-sonnet-5-5", environ=self.env,
+            verify=True, approve_network=True, opener=opener,
+        )
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(result["apply"]["changed"])
+        self.assertEqual(result["verify"]["category"], "ok")
+        self.assertEqual(result["metrics"]["network_requests"], 1)
+        self.assertEqual(len(opener.requests), 1)
+        self.assertEqual(result["status"]["verification"]["state"], "verified")
+        self.assertEqual(result["status"]["checks"]["provider"], {"status": "ready", "reason": "verified"})
+        self.assertTrue(result["status"]["ready"])
+        record = (self.workspace / ".proto" / "workspace" / "verification.json").read_text(encoding="utf-8")
+        self.assertNotIn(FAKE_KEY, record)
+        self.assertNotIn(FAKE_KEY, json.dumps(result))
+
+    def test_start_without_approval_writes_config_but_no_record_and_makes_no_request(self) -> None:
+        opener = _FakeOpener(_FakeResponse(b"{}"))
+        result = start_workspace(workspace_root=self.workspace, provider="anthropic-api", environ=self.env,
+                                 verify=True, approve_network=False, opener=opener)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["verify"]["code"], "NETWORK_NOT_APPROVED")
+        self.assertEqual(opener.requests, [])
+        self.assertTrue(result["apply"]["ok"])
+        self.assertEqual(result["status"]["verification"]["state"], "never")
+        self.assertFalse((self.workspace / ".proto" / "workspace" / "verification.json").exists())
+
+    def test_failed_verification_is_recorded_and_drives_the_next_action(self) -> None:
+        cases = {401: ("auth", "check_credential"), 404: ("model-not-found", "choose_model"), 503: ("server-error", "retry_verify")}
+        for status_code, (category, action) in cases.items():
+            with tempfile.TemporaryDirectory(prefix="proto-init-fail-") as raw:
+                root = Path(raw).resolve()
+                error = urllib.error.HTTPError("https://api.anthropic.com/v1/models/m", status_code, "err", {}, io.BytesIO(b""))
+                result = start_workspace(workspace_root=root, provider="anthropic-api", model="claude-sonnet-5-5", environ=self.env,
+                                         verify=True, approve_network=True, opener=_FakeOpener(error))
+                state = result["status"]
+                self.assertEqual(state["verification"]["state"], "failed")
+                self.assertEqual(state["verification"]["category"], category)
+                self.assertEqual(state["checks"]["provider"]["reason"], f"verify_failed_{category}")
+                self.assertFalse(state["ready"])
+                self.assertEqual(state["next"][0]["code"], action)
+                if action == "check_credential":
+                    self.assertEqual(state["next"][0]["variable"], "ANTHROPIC_API_KEY")
+                if action == "retry_verify":
+                    self.assertEqual(state["next"][0]["argv"], ["init", "verify", "--approve-network"])
+
+    def test_changing_the_configuration_marks_the_verification_stale(self) -> None:
+        opener = _FakeOpener(_FakeResponse(b"{}"))
+        start_workspace(workspace_root=self.workspace, provider="anthropic-api", model="claude-sonnet-5-5", environ=self.env,
+                        verify=True, approve_network=True, opener=opener)
+        changed = start_workspace(workspace_root=self.workspace, provider="anthropic-api", model="claude-opus-5-5",
+                                  environ=self.env, force=True)
+        verification = changed["status"]["verification"]
+        self.assertEqual((verification["state"], verification["reason"]), ("stale", "configuration_changed"))
+        self.assertEqual(changed["status"]["checks"]["provider"]["reason"], "verification_stale")
+        self.assertEqual(changed["status"]["next"][0]["code"], "verify_provider")
+
+    def test_identical_reapply_keeps_the_verification_fresh(self) -> None:
+        opener = _FakeOpener(_FakeResponse(b"{}"))
+        options = {"workspace_root": self.workspace, "provider": "anthropic-api", "model": "claude-sonnet-5-5", "environ": self.env}
+        start_workspace(verify=True, approve_network=True, opener=opener, **options)
+        again = start_workspace(force=True, **options)
+        self.assertEqual(again["status"]["verification"]["state"], "verified")
+
+    def test_only_requests_that_reached_the_network_are_recorded(self) -> None:
+        apply_plan(build_plan(provider="anthropic-api", environ=self.env, which=_which(set())), workspace_root=self.workspace)
+        refused = verify_provider("anthropic-api", approve_network=False, environ=self.env)
+        self.assertFalse(record_verification(refused, workspace_root=self.workspace))
+        other = {"provider": "openai-api", "metrics": {"network_requests": 1}, "ok": True, "category": "ok"}
+        self.assertFalse(record_verification(other, workspace_root=self.workspace))
+        self.assertFalse((self.workspace / ".proto" / "workspace" / "verification.json").exists())
+
+    def test_unreadable_or_future_records_are_unknown_not_verified(self) -> None:
+        start_workspace(workspace_root=self.workspace, provider="anthropic-api", environ=self.env,
+                        verify=True, approve_network=True, opener=_FakeOpener(_FakeResponse(b"{}")))
+        record = self.workspace / ".proto" / "workspace" / "verification.json"
+        data = json.loads(record.read_text(encoding="utf-8"))
+        data["schema_version"] = "proto-agent.workspace-verification.v9"
+        record.write_text(json.dumps(data), encoding="utf-8")
+        self.assertEqual(workspace_status(workspace_root=self.workspace, environ=self.env)["verification"]["state"], "unknown")
+        record.write_text("not json", encoding="utf-8")
+        self.assertEqual(workspace_status(workspace_root=self.workspace, environ=self.env)["verification"]["state"], "unknown")
+
+    def test_config_digest_ignores_only_generation_time(self) -> None:
+        manifest = build_plan(provider="openai-api", environ={}, which=_which(set()))["manifest"]
+        self.assertEqual(config_digest(manifest), config_digest({**manifest, "generated_at": "elsewhen"}))
+        self.assertNotEqual(config_digest(manifest), config_digest({**manifest, "provider": {**manifest["provider"], "model": "x"}}))
+
+
+class StandaloneEntryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temporary = tempfile.TemporaryDirectory(prefix="proto-init-entry-")
+        self.workspace = Path(self._temporary.name).resolve()
+        for name in ("parts", "connectors", "literature", "workflows"):
+            shutil.copytree(ROOT / name, self.workspace / name)
+        self.env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+        self.env.pop("ANTHROPIC_API_KEY", None)
+
+    def tearDown(self) -> None:
+        self._temporary.cleanup()
+
+    def _run(self, module: str, *args: str) -> subprocess.CompletedProcess:
+        command = [sys.executable, "-m", module, *args]
+        return subprocess.run(command, cwd=self.workspace, env=self.env, capture_output=True, text=True, timeout=60)
+
+    def test_module_entry_and_cli_entry_agree(self) -> None:
+        for command in (["catalog"], ["detect"]):
+            direct = self._run("proto_agent.workspace_init", *command)
+            via_cli = self._run("proto_agent.cli", "init", *command)
+            self.assertEqual((direct.returncode, via_cli.returncode), (0, 0), direct.stderr + via_cli.stderr)
+            self.assertEqual(json.loads(direct.stdout)["ok"], json.loads(via_cli.stdout)["ok"])
+        self.assertEqual(json.loads(self._run("proto_agent.workspace_init", "catalog").stdout)["default_out_dir"], ".proto/workspace")
+
+    def test_overview_returns_catalog_detection_and_status_in_one_process(self) -> None:
+        done = self._run("proto_agent.workspace_init", "overview")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        payload = json.loads(done.stdout)
+        self.assertEqual(set(payload), {"ok", "catalog", "detection", "status"})
+        self.assertFalse(payload["status"]["initialized"])
+        self.assertTrue(payload["detection"]["workspace_writable"])
+        self.assertIn("anthropic-api", [entry["id"] for entry in payload["catalog"]["providers"]])
+
+    def test_module_entry_avoids_importing_the_heavy_cli(self) -> None:
+        probe = "import sys, proto_agent.workspace_init as m; print(any(n in sys.modules for n in ('proto_agent.cli','proto_agent.compute','proto_agent.mcp_server')))"
+        done = subprocess.run([sys.executable, "-c", probe], env=self.env, capture_output=True, text=True, timeout=60)
+        self.assertEqual(done.stdout.strip(), "False", done.stderr)
+
+    def test_start_verify_without_approval_exits_nonzero_with_json_on_stdout(self) -> None:
+        done = self._run("proto_agent.workspace_init", "start", "--provider", "anthropic-api", "--verify")
+        self.assertEqual(done.returncode, 1, done.stderr)
+        payload = json.loads(done.stdout)
+        self.assertEqual(payload["verify"]["code"], "NETWORK_NOT_APPROVED")
+        self.assertTrue(payload["apply"]["ok"])
+        self.assertTrue(payload["status"]["initialized"])
+        self.assertEqual(payload["status"]["verification"]["state"], "never")
+
+    def test_verify_returns_the_refreshed_status_for_an_initialized_workspace(self) -> None:
+        self._run("proto_agent.workspace_init", "apply", "--provider", "anthropic-api")
+        done = self._run("proto_agent.workspace_init", "verify")
+        self.assertEqual(done.returncode, 1, done.stderr)
+        payload = json.loads(done.stdout)
+        self.assertEqual(payload["code"], "NETWORK_NOT_APPROVED")
+        self.assertEqual(payload["status"]["provider"], "anthropic-api")
+
+    def test_errors_use_the_diagnostics_shape_on_stderr(self) -> None:
+        done = self._run("proto_agent.workspace_init", "plan", "--provider", "custom-gateway")
+        self.assertEqual(done.returncode, 2)
+        self.assertEqual(json.loads(done.stderr)["diagnostics"][0]["code"], "GATEWAY_BASE_URL_REQUIRED")
 
 
 if __name__ == "__main__":

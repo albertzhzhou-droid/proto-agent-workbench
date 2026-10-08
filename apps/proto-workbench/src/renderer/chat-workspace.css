@@ -68,6 +68,14 @@
 .chat-model-options small { display:block; color:var(--text-faint); font-size:10px; margin-top:5px; }
 .chat-model-action { display:flex; flex-direction:column; gap:5px; padding-top:12px; margin-top:8px; border-top:1px solid var(--line); font:11px "Proto Sans Text",sans-serif; color:var(--text-soft); }
 .chat-model-action button { border:1px solid var(--line-strong); background:var(--paper-button); color:var(--text); border-radius:6px; padding:9px; font:11px "Proto Sans Text",sans-serif; overflow-wrap:anywhere; }
+.chat-cloud-heading { margin:12px 0 6px !important; padding-top:10px; border-top:1px solid var(--line); color:var(--text-soft) !important; font:11px "Proto Sans Text",sans-serif !important; letter-spacing:.02em; }
+.chat-model-options.is-cloud > button small { font-style:italic; }
+.chat-cloud-approval { display:flex; flex-direction:column; gap:8px; padding-top:12px; margin-top:8px; border-top:1px solid var(--line); }
+.chat-cloud-approval > p { margin:0 !important; color:var(--text-soft) !important; }
+.chat-cloud-approve { border:1px solid var(--paper-primary); background:var(--paper-primary); color:var(--on-primary); border-radius:6px; padding:9px; font:11px "Proto Sans Text",sans-serif; }
+.chat-cloud-approved { display:flex; align-items:center; gap:7px; color:var(--text); font:11px "Proto Sans Text",sans-serif; }
+.chat-cloud-approved button { margin-left:auto; border:0; background:none; color:var(--text-soft); text-decoration:underline; text-underline-offset:2px; padding:4px; font:11px "Proto Sans Text",sans-serif; }
+.chat-local-status.is-cloud { color:var(--text-soft); }
 .chat-local-status { margin-left:auto; color:var(--text-faint); font:10px "Proto Sans Text",sans-serif; white-space:nowrap; }
 .chat-submit { display:grid; place-items:center; flex:0 0 31px; width:31px; height:31px; padding:0; border:1px solid var(--paper-primary); background:var(--paper-primary); color:var(--on-primary); border-radius:8px; }
 .chat-submit:disabled { opacity:.32; }

@@ -1,0 +1,128 @@
+/* Model provider setup. It extends the Settings vocabulary (settings-section, settings-field,
+ * segmented-control) and uses only the shared paper/ink tokens, so light and dark themes and both
+ * typography profiles apply without per-theme overrides. Status colour is limited to small text
+ * and hairlines; there are no coloured surfaces. Motion lives in paper-motion.css. */
+
+.provider-setup .settings-section-title { align-items: flex-start; }
+.provider-setup .settings-section-title > div { flex: 1; min-width: 0; }
+.provider-refresh { margin-left: auto; flex-shrink: 0; }
+
+.provider-loading { display: flex; align-items: center; gap: 8px; margin: 6px 0; color: var(--text-soft); font-size: 11px; }
+
+.provider-alert {
+  display: flex; align-items: center; gap: 9px; margin: 0 0 14px; padding: 9px 12px;
+  border: 1px solid var(--red); border-radius: 5px; background: var(--red-soft); color: var(--red); font-size: 11px;
+}
+.provider-alert > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Summary: where this workspace stands, with the last recorded check as history, never as a live link. */
+.provider-summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px;
+  margin-bottom: 14px; padding: 11px 14px;
+  border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface-soft); color: var(--text);
+}
+.provider-summary.is-fail { border-color: var(--red); }
+.provider-summary > div > strong { display: block; font-size: 12px; font-weight: 600; }
+.provider-summary > div > span { display: block; margin-top: 3px; color: var(--text-soft); font-size: 10px; overflow-wrap: anywhere; }
+.provider-summary dl { display: flex; gap: 18px; margin: 0; }
+.provider-summary dl > div { min-width: 70px; }
+.provider-summary dt { margin: 0; color: var(--text-soft); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.provider-summary dd { margin: 3px 0 0; font-family: var(--font-mono); font-size: 10px; overflow-wrap: anywhere; }
+
+.provider-chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+  border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface);
+  color: var(--text-soft); font-size: 10px; white-space: nowrap;
+}
+.provider-chip.is-ok { color: var(--green); border-color: var(--green); }
+.provider-chip.is-warn { color: var(--amber); border-color: var(--amber); }
+.provider-chip.is-fail { color: var(--red); border-color: var(--red); }
+
+/* Provider choice: a ruled list. Cells never lift; the chosen row takes a margin stroke. */
+.provider-options { margin: 0 0 14px; padding: 0; border: 1px solid var(--line); border-radius: 5px; min-width: 0; }
+.provider-options > legend { padding: 0 6px; margin-left: 8px; color: var(--text-soft); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.provider-option {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); cursor: pointer;
+}
+.provider-options > legend + .provider-option { border-top: 0; }
+.provider-option:hover { background: var(--surface-selected); }
+.provider-option.is-selected { background: var(--surface-soft); box-shadow: inset 2px 0 var(--paper-primary); }
+.provider-option input[type="radio"] { margin: 0; }
+.provider-option:focus-within { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.provider-option-body { min-width: 0; }
+.provider-option-body > strong { display: block; font-size: 12px; font-weight: 600; color: var(--text); }
+.provider-option-body > small { display: block; margin-top: 3px; color: var(--text-soft); font-size: 10px; line-height: 1.5; }
+.provider-option-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; max-width: 220px; }
+.provider-option-tags em {
+  padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-soft);
+  color: var(--text-soft); font-size: 9px; font-style: normal; white-space: nowrap;
+}
+.provider-option-tags em.is-found { color: var(--green); }
+.provider-option-tags em.is-missing { color: var(--amber); }
+
+/* Fields reuse .settings-field; identifiers and addresses are set in the mono face. */
+.provider-fields { margin-bottom: 4px; }
+.provider-fields .settings-field { grid-template-columns: 170px minmax(0, 1fr) minmax(0, 220px); padding: 8px 0; }
+.provider-fields .settings-field > output { color: var(--text-soft); font-size: 10px; overflow-wrap: anywhere; }
+.provider-fields input[type="text"], .provider-fields input[type="url"] {
+  width: 100%; min-height: 30px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 5px;
+  background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 11px;
+}
+.provider-fields input::placeholder { font-family: var(--font-sans); }
+.provider-fields .segmented-control { flex-wrap: wrap; width: fit-content; max-width: 100%; }
+
+/* Key entry: a password field and its single action, or the fact that a key is stored. */
+.provider-key-body { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.provider-key-body input[type="password"] {
+  flex: 1; min-width: 0; min-height: 30px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 5px;
+  background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 11px;
+}
+.provider-key-body input[type="password"]::placeholder { font-family: var(--font-sans); }
+.provider-key-state { display: inline-flex; align-items: center; gap: 6px; flex: 1; min-width: 0; color: var(--text-soft); font-size: 11px; overflow-wrap: anywhere; }
+.provider-key-state > svg { flex-shrink: 0; color: var(--green); }
+.provider-key-state.is-unavailable { color: var(--amber); line-height: 1.5; }
+
+.provider-hint { margin: 10px 0 0; padding-left: 10px; border-left: 2px solid var(--line-strong); color: var(--text-soft); font-size: 10px; line-height: 1.6; }
+
+.provider-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 14px; }
+.provider-problem { flex: 1 1 220px; min-width: 0; color: var(--text-soft); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Consent for the single network request: a paper panel, not a modal. */
+.provider-confirm {
+  margin-top: 12px; padding: 14px 16px;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); box-shadow: var(--lift-rest);
+}
+.provider-confirm > strong { display: block; font-size: 12px; font-weight: 600; }
+.provider-confirm > p { margin: 7px 0 12px; color: var(--text-soft); font-size: 11px; line-height: 1.65; overflow-wrap: anywhere; }
+.provider-confirm-actions { display: flex; gap: 8px; }
+
+.provider-outcome { margin-top: 10px; }
+.provider-outcome:empty { display: none; }
+.provider-outcome > p { display: flex; align-items: flex-start; gap: 7px; margin: 6px 0 0; color: var(--text-soft); font-size: 11px; line-height: 1.55; }
+.provider-outcome > p > svg { flex-shrink: 0; margin-top: 2px; }
+.provider-outcome > p.is-ok { color: var(--green); }
+.provider-outcome > p.is-warn { color: var(--amber); }
+.provider-outcome > p.is-fail { color: var(--red); }
+
+.provider-next, .provider-issues { margin: 12px 0 0; padding-left: 18px; color: var(--text-soft); font-size: 11px; line-height: 1.65; }
+.provider-issues { list-style: none; padding-left: 0; color: var(--red); }
+.provider-issues li { display: flex; gap: 7px; align-items: flex-start; }
+.provider-issues li > svg { flex-shrink: 0; margin-top: 3px; }
+
+/* Launchpad strip: informs, never gates the LM Studio readiness steps. */
+.provider-strip {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  margin: 0 22px 18px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.provider-strip-icon { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-selected); color: var(--text-soft); }
+.provider-strip > div > strong { display: block; font-size: 12px; font-weight: 600; color: var(--text); }
+.provider-strip > div > span { display: block; margin-top: 2px; color: var(--text-soft); font-size: 10px; overflow-wrap: anywhere; }
+
+@media (max-width: 980px) {
+  .provider-summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .provider-summary dl { grid-column: 1 / -1; }
+  .provider-fields .settings-field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .provider-option { grid-template-columns: auto minmax(0, 1fr); }
+  .provider-option-tags { grid-column: 2; justify-content: flex-start; max-width: none; }
+}

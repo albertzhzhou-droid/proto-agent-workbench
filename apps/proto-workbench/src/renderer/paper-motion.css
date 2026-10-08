@@ -585,6 +585,17 @@
   scroll-behavior: smooth;
 }
 
+/* Provider setup. The consent panel drops in from the control that opened it; outcomes
+   settle with opacity alone, so a result appearing never shifts the form beneath it. */
+.provider-confirm {
+  animation: paper-drop-in var(--tempo-panel) var(--ease-page) both;
+  transform-origin: top left;
+}
+
+.provider-outcome > p {
+  animation: paper-fade var(--tempo-control) var(--ease-state) both;
+}
+
 /* ---------------------------------------------------------------------------
  * Reduced motion. workbench-theme.css already collapses every duration; this
  * removes the displacement itself so nothing jumps to a translated position.

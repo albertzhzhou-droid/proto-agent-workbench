@@ -13,6 +13,9 @@ interface ChatState extends SessionListState {
   recoveryIssueCount: number; listBusy: boolean; listError?: string;
   error?: string; modelError?: string; busy: boolean; selectedModel: string;
   draft: string; selectedDocuments: string[];
+  /** Approval to send this conversation to a cloud host. Per model, cleared on any conversation or model switch. */
+  cloudApproval?: { modelId: string; host: string };
+  approveCloud(): void; revokeCloud(): void;
   workflow: import("../shared/research-chat.ts").ResearchWorkflow; toolsEnabled:boolean; networkEnabled:boolean; codeExecutionEnabled:boolean;
   setDraft(value: string): void; setModel(value: string): void; selectDocuments(value: string[]): void;
   refresh(): Promise<void>; refreshModels(): Promise<void>; select(id: string): Promise<void>;
@@ -82,8 +85,14 @@ export const useResearchChat = create<ChatState>((set,get) => {
   };
   return ({
   ...initial,
-  reset() { epoch++; selectionGeneration++; busyOperationGeneration++; listRequestGeneration++; sessionReadGeneration++; messageReadGeneration++; selectionTarget=""; set({...initial,session:undefined,messagePage:undefined,error:undefined,modelError:undefined,listError:undefined}); },
-  setDraft: draft => set({draft}), setModel: selectedModel => set({selectedModel}), selectDocuments: selectedDocuments => set({selectedDocuments}),
+  reset() { epoch++; selectionGeneration++; busyOperationGeneration++; listRequestGeneration++; sessionReadGeneration++; messageReadGeneration++; selectionTarget=""; set({...initial,cloudApproval:undefined,session:undefined,messagePage:undefined,error:undefined,modelError:undefined,listError:undefined}); },
+  setDraft: draft => set({draft}),
+  setModel: selectedModel => set(state => ({ selectedModel, cloudApproval: state.cloudApproval?.modelId === selectedModel ? state.cloudApproval : undefined })),
+  approveCloud: () => set(state => {
+    const model = state.models.find(candidate => candidate.id === state.selectedModel);
+    return model?.cloud ? { cloudApproval: { modelId: model.id, host: model.cloud.host } } : {};
+  }),
+  revokeCloud: () => set({ cloudApproval: undefined }), selectDocuments: selectedDocuments => set({selectedDocuments}),
   async request(input) {
     if(input.action==="list")return loadList(input.cursor?"older":"poll",input);
     const generation = epoch;
@@ -127,7 +136,8 @@ export const useResearchChat = create<ChatState>((set,get) => {
     const token={workspaceGeneration:epoch,selectionGeneration:++selectionGeneration,sessionId:id};
     const operation=++busyOperationGeneration;
     selectionTarget=id;
-    set({busy:true});
+    // Approval belongs to the conversation it was given in.
+    set(state=>({busy:true,...(state.session?.id!==id?{cloudApproval:undefined}:{})}));
     const currentToken=()=>({workspaceGeneration:epoch,selectionGeneration,sessionId:selectionTarget});
     try {
       const result = await workbenchApi().chat.request({action:"get",sessionId:id});
@@ -157,7 +167,7 @@ export const useResearchChat = create<ChatState>((set,get) => {
   },
   async newChat() {
     selectionGeneration++;selectionTarget="";
-    const token=beginBusy();set({busy:true,error:undefined});
+    const token=beginBusy();set({busy:true,error:undefined,cloudApproval:undefined});
     try {
       const result=await get().request({action:"create"});
       if(!adoptCreated(token,result.session))return;
@@ -170,7 +180,10 @@ export const useResearchChat = create<ChatState>((set,get) => {
     if (initialState.busy || initialState.session?.status === "generating"
       || initialState.session?.execution&&initialState.session.execution.status!=="none") return;
     const draft=initialState.draft,content=draft.trim(); if (!content) return;
-    const input={modelId:initialState.selectedModel,content,documentIds:[...initialState.selectedDocuments],workflow:initialState.workflow,toolsEnabled:initialState.toolsEnabled,networkEnabled:initialState.networkEnabled,codeExecutionEnabled:initialState.codeExecutionEnabled};
+    const selected=initialState.models.find(model=>model.id===initialState.selectedModel);
+    const cloudApproved=Boolean(selected?.cloud)&&initialState.cloudApproval?.modelId===selected?.id;
+    if(selected?.cloud&&!cloudApproved){set({error:`Approve sending this conversation to ${selected.cloud.host} before continuing.`});return;}
+    const input={modelId:initialState.selectedModel,content,documentIds:[...initialState.selectedDocuments],workflow:initialState.workflow,toolsEnabled:initialState.toolsEnabled,networkEnabled:initialState.networkEnabled,codeExecutionEnabled:initialState.codeExecutionEnabled,...(cloudApproved?{cloudEgressApproved:true as const}:{})};
     const token=beginBusy();
     set({busy:true,error:undefined});
     try {

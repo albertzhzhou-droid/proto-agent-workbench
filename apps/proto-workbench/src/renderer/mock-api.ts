@@ -1,4 +1,5 @@
 import type { IpcWorkbenchApi } from "../shared/ipc-channel-contracts.ts";
+import { createProviderSetupPreview } from "./provider-setup-preview.ts";
 import type {
   AgentRunEvent,
   AgentThread,
@@ -1753,6 +1754,7 @@ const mockWorkbench: IpcWorkbenchApi = {
       return receipt;
     },
   },
+  providerSetup: createProviderSetupPreview(),
   materials: {
     async status(): Promise<MaterialsStatus> {
       return {

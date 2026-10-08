@@ -5,8 +5,9 @@ import { z } from "zod";
 import type { ResearchChatResponse, ResearchChatSession, ResearchDocument, ResearchChatRecoveryIssue } from "../../shared/research-chat.ts";
 import { decodeResearchSession, encodeResearchSession, updateResearchState, ResearchSessionStateError, type VersionedResearchChatSession } from "../../shared/research-session-state.ts";
 import type { ModelService } from "./model-service.ts";
+import { cloudEgressStatement, isCloudModelId } from "../../shared/cloud-chat.ts";
 import { retainChatContext } from "./chat-context.ts";
-import { BLOCKED_SCHEMA, PLAN_SCHEMA, RESEARCH_TOOLS, WORKFLOW_GUIDANCE, cacheableResearchCall, planReceipt, repeatedResearchCall, researchSignature, type ResearchToolBridge } from "./research-tools.ts";
+import { BLOCKED_SCHEMA, PLAN_SCHEMA, RESEARCH_TOOLS, WORKFLOW_GUIDANCE, researchToolsFor, cacheableResearchCall, planReceipt, repeatedResearchCall, researchSignature, type ResearchToolBridge } from "./research-tools.ts";
 import type { ResearchActivity } from "../../shared/research-chat.ts";
 import { DOCUMENT_BASE64_LIMIT, importResearchDocument, isResearchDocument, readResearchDocument } from "./research-documents.ts";
 import {RESEARCH_BASELINE} from "../../shared/research-baseline.ts";
@@ -46,7 +47,7 @@ const schema = z.discriminatedUnion("action", [
   z.object({action:z.literal("claim_save"),sessionId:ID,expectedRevision:z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),claimId:ID.optional(),text:z.string().min(1).max(RESEARCH_CLAIM_LIMITS.claimCharacters).refine(value=>value.trim().length>0),evidence:z.array(claimEvidence).max(RESEARCH_CLAIM_LIMITS.evidence)}).strict(),
   z.object({action:z.literal("claim_review"),sessionId:ID,expectedRevision:z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),claimId:ID,state:z.enum(["unreviewed","reviewed"])}).strict(),
   z.object({ action: z.literal("connect"), modelId: z.string().min(1).max(1024), instanceId: z.string().min(1).max(1024).optional() }).strict(),
-  z.object({ action: z.literal("send"), sessionId: ID, modelId: z.string().min(1).max(1024), content: z.string().trim().min(1).max(32_000), documentIds: z.array(ID).max(8), workflow:z.enum(["explore","literature","analysis","reproduce"]).default("explore"),toolsEnabled:z.boolean().default(true),networkEnabled:z.boolean().default(true),codeExecutionEnabled:z.boolean().default(true) }).strict(),
+  z.object({ action: z.literal("send"), sessionId: ID, modelId: z.string().min(1).max(1024), content: z.string().trim().min(1).max(32_000), documentIds: z.array(ID).max(8), workflow:z.enum(["explore","literature","analysis","reproduce","code"]).default("explore"),toolsEnabled:z.boolean().default(true),networkEnabled:z.boolean().default(true),codeExecutionEnabled:z.boolean().default(true) , cloudEgressApproved: z.literal(true).optional() }).strict(),
   z.object({ action: z.literal("document"), sessionId: ID, name: z.string().trim().min(1).max(120), content: text, documentId: ID.optional(), expectedRevision: z.number().int().min(1).optional() }).strict(),
   z.object({ action: z.literal("read"), sessionId: ID, path: z.string().min(1).max(4096) }).strict(),
   z.object({ action: z.literal("import"), sessionId: ID, name: z.string().trim().min(1).max(120), base64: z.string().max(DOCUMENT_BASE64_LIMIT) }).strict(),
@@ -341,7 +342,12 @@ export class ResearchChatService {
         return structuredClone(document);
       });
       // Reconcile the selected binding before accepting a user message.
-      await this.options.runtime.getExecutionBinding(request.modelId);
+      const selectedBinding = await this.options.runtime.getExecutionBinding(request.modelId);
+      if (isCloudModelId(request.modelId) && request.cloudEgressApproved !== true) {
+        // Nothing has been saved or sent yet: a refused send leaves the conversation untouched.
+        const host = selectedBinding.instanceId.split(":").at(-1) ?? "the provider";
+        throw new Error(`${cloudEgressStatement(host)} Approve this for the conversation to continue.`);
+      }
       if (this.running.has(session.id) || this.closed) throw new Error("Conversation state changed before sending. Try again.");
       const now = new Date().toISOString();
       session.modelId = request.modelId; session.status = "generating"; session.error = undefined; session.updatedAt = now;
@@ -373,8 +379,8 @@ export class ResearchChatService {
       const {replyTokens,inputBudget}=turnBudget(binding.contextLength);
       assistant.modelBinding={instanceId:binding.instanceId,modelFingerprint:binding.modelFingerprint??null,contextLength:binding.contextLength};
       assistant.budget={steps:0,outputTokens:0,outputTokenMethod:"conservative-estimate",limit:TURN_LIMITS.outputTokens};
-      const tools=toolsEnabled&&this.options.tools?RESEARCH_TOOLS:[];
-      const guidance=WORKFLOW_GUIDANCE[session.workflow??"explore"] + `\nThe configured development baseline is ${RESEARCH_BASELINE.displayName} via LM Studio. The actual bound model for this session is ${session.modelId}; configured preferences do not establish model availability.` + (tools.length ? "\nOne canonical tool registry combines OpenScience research procedures, Biomni computations, Chem chemistry operators and DSH session/context handling. Both editions use the same registry and saved chemistry artifacts. Discover capabilities with science_catalog; do not create duplicate tools. For chemistry discover chemistry.catalog and chemistry.guidance, then use exact operator schemas. Report successful calculations only from actual tool receipts. When missing inputs, unavailable prerequisites or unresolved evidence prevent the requested work, call research_report_blocked with the reason and concrete unmet requirements. Distinguish concentration-based reaction visualization from measured or atomistic trajectories. Existing quantum calculation approvals remain in Chem Design; tools cannot grant them." : "\nThis turn has tools disabled. Answer from the conversation and selected references; do not claim live searches or executions.");
+      const tools=toolsEnabled&&this.options.tools?researchToolsFor(session.workflow):[];
+      const guidance=WORKFLOW_GUIDANCE[session.workflow??"explore"] + `\n${isCloudModelId(session.modelId!) ? `This conversation runs on the cloud model ${session.modelId!.split(":").slice(2).join(":")} at ${binding.instanceId.split(":").at(-1)}; your messages, tool results and any workspace files you read are sent there. Do not read files the user did not ask about.` : `The configured development baseline is ${RESEARCH_BASELINE.displayName} via LM Studio. The actual bound model for this session is ${session.modelId}; configured preferences do not establish model availability.`}` + (tools.length ? "\nOne canonical tool registry combines OpenScience research procedures, Biomni computations, Chem chemistry operators and DSH session/context handling. Both editions use the same registry and saved chemistry artifacts. Discover capabilities with science_catalog; do not create duplicate tools. For chemistry discover chemistry.catalog and chemistry.guidance, then use exact operator schemas. Report successful calculations only from actual tool receipts. When missing inputs, unavailable prerequisites or unresolved evidence prevent the requested work, call research_report_blocked with the reason and concrete unmet requirements. Distinguish concentration-based reaction visualization from measured or atomistic trajectories. Existing quantum calculation approvals remain in Chem Design; tools cannot grant them." : "\nThis turn has tools disabled. Answer from the conversation and selected references; do not claim live searches or executions.");
       const skillGuidance=session.moduleSettings?this.options.tools?.guidance?.(session.moduleSettings)??"":"";
       const retained = retainChatContext(history, inputBudget-Buffer.byteLength(JSON.stringify(tools))-Buffer.byteLength(guidance)-Buffer.byteLength(skillGuidance)-512, session);
       const messages:Record<string,unknown>[]=retained.messages;
@@ -421,7 +427,7 @@ export class ResearchChatService {
         if(!calls.size){finished=true;break;}
         if(!tools.length) throw new Error("The model requested a tool while tools were disabled.");
         const pending=[...calls.values()].map(call=>({...call,id:call.id||randomUUID()}));
-        if(pending.some(call=>!RESEARCH_TOOLS.some(tool=>tool.function.name===call.function.name))) throw new Error("Model requested a tool outside the unified registry.");
+        if(pending.some(call=>!tools.some(tool=>tool.function.name===call.function.name))) throw new Error("Model requested a tool outside the unified registry.");
         messages.push({role:"assistant",content:content||null,tool_calls:pending});
         if(content) assistant.content+="\n\n";
         for(const call of pending) {

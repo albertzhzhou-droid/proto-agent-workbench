@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
 import type { McpClient } from "./mcp-client.ts";
 import type { WorkspaceFiles } from "./workspace-files.ts";
 import { isToolExposedToModel, isNetworkTool, evaluateToolPolicy } from "./permissions.ts";
-import type { ResearchActivity, ResearchChatSession, ResearchPlanItem } from "../../shared/research-chat.ts";
+import type { ResearchActivity, ResearchChatSession, ResearchPlanItem, ResearchWorkflow } from "../../shared/research-chat.ts";
 import { canonicalScienceTools, canonicalScienceName, resolveScienceTool } from "../../shared/research-tool-registry.ts";
 import { resolveToolContract } from "../../shared/tool-contracts.ts";
 import { isToolEnabledForModules, defaultModuleSettings, type ModuleSettings } from "../../shared/modules.ts";
@@ -57,10 +58,16 @@ export const RESEARCH_TOOLS=[
   tool("conversation_read","Read complete earlier transcript messages by zero-based source index when the context-retention note identifies omitted turns. Returns whole messages only; oversized message pages fail explicitly and are never shortened.",{startIndex:{type:"integer",minimum:0},limit:{type:"integer",minimum:1,maximum:8}},["startIndex"]),
   tool("document_import","Parse a workspace PDF, DOCX or XLSX file. Saves its immutable source and structured extraction, returns a document ID and an initial excerpt. Use document_read for page, paragraph or sheet/cell evidence beyond the excerpt.",{path:{type:"string"}},["path"]),
   tool("document_read","Read extracted PDF pages, DOCX paragraphs or XLSX cells from a previously attached/imported document. startUnit is zero-based; follow nextUnit until null for the complete available extraction. Citations should use returned locators.",{documentId:{type:"string"},startUnit:{type:"integer",minimum:0},limit:{type:"integer",minimum:1,maximum:20}},["documentId"]),
+  tool("code_propose_patch","Propose a complete new version of one workspace source file for the person to review. Nothing is written: the proposal waits as a pending diff in Research runs, where it is approved, applied with a checkpoint and validated, or rejected. Read an existing file with workspace_read first; propose changes to one file per call, with the full replacement content and a short rationale.",{path:{type:"string"},content:{type:"string"},rationale:{type:"string"}},["path","content","rationale"]),
   tool("document_write","Create or revise a working text/code document and export a new version under build/chat. Returns its real path for follow-up analysis. Original source files remain available.",{name:{type:"string"},content:{type:"string"}},["name","content"]),
 ];
 
+/** Coding proposals are offered only in the coding workflow, so other conversations never see the tool. */
+export function researchToolsFor(workflow:ResearchWorkflow|undefined) {
+  return workflow==="code"?RESEARCH_TOOLS:RESEARCH_TOOLS.filter(item=>item.function.name!=="code_propose_patch");
+}
 export const WORKFLOW_GUIDANCE={
+  code:"Work as a careful coding assistant. Inspect the relevant files first (workspace_list, workspace_search, workspace_read) and state the plan briefly. Propose each change with code_propose_patch as the complete new file content, one file per call, preserving the surrounding style; never claim a change was made, because a proposal is only a pending diff the person reviews and applies in Research runs. Run only bounded checks through the available tools and report their actual output; do not call code verified that was not run. Do not touch .proto designs (use the Design workspace), version-control metadata, dependencies or generated output. Prefer the smallest change that solves the request and say what you did not verify.",
   explore:"Explore the question, distinguish hypotheses from evidence and use tools when they can resolve an uncertainty. For substantial work keep a visible research plan.",
   literature:"Conduct a focused literature review. Start with two or three targeted searches; select the closest papers, distinguish metadata from content actually read, cite stable DOI or source URLs, mark preprints, compare disagreements and identify the missing comparison. Do not infer full-paper findings from titles or snippets.",
   analysis:"Inspect inputs and missingness before choosing methods. Write a short analysis plan, run appropriate scientific tools, inspect actual outputs and save a reproducible report with assumptions and limitations. Use compute_catalog through science_run to discover exact computation parameters.",
@@ -98,9 +105,23 @@ export const CHEMISTRY_RESEARCH_GUIDANCE={
 };
 const CHEM_READ_SCHEMA={type:"object",properties:{runId:{type:"string",format:"uuid"}},required:["runId"],additionalProperties:false};
 
+/** Where proposed code is recorded for review. The host supplies the run; the model never names one. */
+export interface ChatCodeRuns {open(sessionId:string,request:string):string}
+export const CODE_PATCH_MAX_CHARS=200_000;
+const CODE_PATCH_SCHEMA=z.object({path:z.string().trim().min(1).max(4096),content:z.string().max(CODE_PATCH_MAX_CHARS),rationale:z.string().trim().min(1).max(2000)}).strict();
+/** Locations a conversation may not propose changes to, whatever the person asked. */
+export function codePatchPathProblem(path:string):string|undefined {
+  const parts=path.replaceAll("\\","/").split("/").filter(part=>part&&part!==".").map(part=>part.toLowerCase());
+  if(parts.some(part=>part===".git"||part==="node_modules"))return "Version-control metadata and dependency folders cannot be changed from Chat.";
+  if(parts.at(-1)?.endsWith(".proto"))return "Edit .proto designs in the Design workspace, where parts are bound to a reviewed materials snapshot.";
+  if(parts[0]==="build")return "Generated output under build/ is not source; change the file that produces it.";
+  return undefined;
+}
 export class ResearchToolBridge {
-  private mcp:McpClient; private files:WorkspaceFiles; private modules:()=>ModuleSettings;private chem?:ChemScienceService;
-  constructor(mcp:McpClient,files:WorkspaceFiles,modules:()=>ModuleSettings=defaultModuleSettings,chem?:ChemScienceService) {this.mcp=mcp;this.files=files;this.modules=modules;this.chem=chem;}
+  private mcp:McpClient; private files:WorkspaceFiles; private modules:()=>ModuleSettings;private chem?:ChemScienceService;private codeRuns?:ChatCodeRuns;
+  /** What this conversation last read, by lower-cased path, so a proposal can only replace content that was actually seen. */
+  private readDigests=new Map<string,Map<string,string>>();
+  constructor(mcp:McpClient,files:WorkspaceFiles,modules:()=>ModuleSettings=defaultModuleSettings,chem?:ChemScienceService,codeRuns?:ChatCodeRuns) {this.mcp=mcp;this.files=files;this.modules=modules;this.chem=chem;this.codeRuns=codeRuns;}
   private sendGrants=new Map<string,PolicyGrant>();
   authorizeSend(grant:PolicyGrant) {this.sendGrants.set(grant.scopeId,grant);}
   finishSend(scopeId:string) {this.sendGrants.delete(scopeId);}
@@ -161,7 +182,32 @@ export class ResearchToolBridge {
     if(name==="workspace_read") {
       const request=z.object({path:z.string().min(1).max(4096),offset:z.number().int().min(0).default(0),limit:z.number().int().min(100).max(20000).default(12000)}).strict().parse(input);
       const file=await this.files.read(request.path);
+      const seen=this.readDigests.get(session.id)??new Map<string,string>();seen.set(file.path.toLowerCase(),file.sha256);this.readDigests.set(session.id,seen);
       return {path:file.path,sha256:file.sha256,content:file.content.slice(request.offset,request.offset+request.limit),offset:request.offset,totalCharacters:file.content.length,truncated:request.offset+request.limit<file.content.length};
+    }
+    if(name==="code_propose_patch") {
+      if(session.workflow!=="code") throw new Error("Code proposals are available in the coding workflow only.");
+      if(!this.codeRuns) throw new Error("Code review is not available in this workspace.");
+      const request=CODE_PATCH_SCHEMA.parse(input);
+      const root=await this.files.canonicalRootPath();
+      const problem=codePatchPathProblem(relative(root,resolve(isAbsolute(request.path)?request.path:join(root,request.path))));
+      if(problem) throw new Error(problem);
+      let baseline:Awaited<ReturnType<WorkspaceFiles["read"]>>|undefined;
+      try {baseline=await this.files.read(request.path);} catch(error) {
+        if((error as Error).message!=="Workspace file does not exist."&&(error as NodeJS.ErrnoException).code!=="ENOENT") throw error;
+      }
+      if(baseline) {
+        const seen=this.readDigests.get(session.id)?.get(baseline.path.toLowerCase());
+        if(!seen) throw new Error("Read the existing file with workspace_read before proposing a replacement. No proposal was recorded.");
+        if(seen!==baseline.sha256) throw new Error("The file changed after it was last read. Read it again and rebase the change. No proposal was recorded.");
+        if(baseline.content===request.content) throw new Error("The proposed content is identical to the current file. No proposal was recorded.");
+      }
+      signal.throwIfAborted();
+      const lastUser=[...(session.messages??[])].reverse().find(message=>message.role==="user")?.content??"";
+      const runId=this.codeRuns.open(session.id,lastUser);
+      const patch=await this.files.proposePatch({runId,targetPath:request.path,after:request.content,rationale:request.rationale});
+      const diffLines=patch.unifiedDiff.split("\n");
+      return {ok:true,applied:false,status:patch.status,patchId:patch.id,path:patch.targetPath,created:!patch.baseExists,added:diffLines.filter(line=>line.startsWith("+")&&!line.startsWith("+++")).length,removed:diffLines.filter(line=>line.startsWith("-")&&!line.startsWith("---")).length,review:"Pending in Research runs. The file has not been changed; it changes only if the person approves and applies this diff."};
     }
     if(name==="workspace_search") return this.files.search(z.object({query:z.string().min(1).max(500)}).parse(input).query);
     if(name==="document_import") {

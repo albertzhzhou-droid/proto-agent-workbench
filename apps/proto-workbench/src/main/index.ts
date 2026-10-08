@@ -1,7 +1,7 @@
 import { readModelSnapshot } from "../shared/model-status.ts";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, safeStorage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
 import { lstat, realpath, stat } from "node:fs/promises";
 import { mkdirSync, realpathSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
@@ -63,7 +63,11 @@ import {
   validateMaterializedPartsArtifact,
   validateMaterializedPartsResult,
 } from "./services/materials-admin.ts";
-import { minimalChildEnvironment } from "./services/process-security.ts";
+import { minimalChildEnvironment, terminateOwnedProcessTree } from "./services/process-security.ts";
+import { CloudChatRuntime } from "./services/cloud-chat-runtime.ts";
+import { RoutingChatRuntime } from "./services/chat-runtime-router.ts";
+import { CredentialVault } from "./services/credential-vault.ts";
+import { PROVIDER_SETUP_OUTPUT_LIMIT, ProviderSetupService, type SidecarResult } from "./services/provider-setup.ts";
 import { activateStartupWorkspace } from "./services/workspace-bootstrap.ts";
 import {
   assertSafeExternalOpenPath,
@@ -291,7 +295,7 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
     const workflowMcp = mcpClient;
     researchWorkflows = createResearchWorkflowService(canonicalWorkspace,()=>workflowMcp.fork());
     chemScience=new ChemScienceService({repoRoot,workspacePath:canonicalWorkspace,journal:executionLedger.journal,runtimeRoot:join(chemistryResources,'runtime/chem-workbench'),integrationRoot:join(chemistryResources,'runtime/chem-integration')});
-    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: modelService, readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience) });
+    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: chatRuntime(), readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience,{open:(sessionId,request)=>agentService.openChatCodeRun(sessionId,request)}) });
     agentService = new AgentService(
       database,
       modelService,
@@ -357,6 +361,75 @@ async function runMaterialsCli(arguments_: string[]): Promise<Record<string, unk
       }
     });
   });
+}
+
+/**
+ * Runs the Python setup sidecar in the active workspace. Extra environment is decided by
+ * ProviderSetupService (presence sentinels, or the one matching key for a verify); nothing else
+ * from this process leaks in.
+ */
+function runProviderSetupSidecar(args: readonly string[], extraEnv: NodeJS.ProcessEnv, timeoutMs: number): Promise<SidecarResult> {
+  const command = app.isPackaged ? packagedMaterialsCliPath(process.resourcesPath) : process.env.PROTO_AGENT_PYTHON || "python";
+  const argv = app.isPackaged ? ["init", ...args] : ["-m", "proto_agent.workspace_init", ...args];
+  const childEnv = minimalChildEnvironment({
+    PYTHONUTF8: "1",
+    ...(app.isPackaged ? {} : { PYTHONPATH: join(repoRoot, "src") }),
+    ...extraEnv,
+  });
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, argv, { cwd: activeWorkspacePath, env: childEnv, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      if (stdout.length <= PROVIDER_SETUP_OUTPUT_LIMIT) stdout += chunk;
+    });
+    child.stderr.on("data", (chunk: string) => {
+      stderr = (stderr + chunk).slice(-16 * 1024);
+    });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      void terminateOwnedProcessTree(child);
+    }, timeoutMs);
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      rejectPromise(error);
+    });
+    child.once("close", (code) => {
+      clearTimeout(timer);
+      if (timedOut) {
+        rejectPromise(new Error("The provider setup helper did not finish in time and was stopped."));
+        return;
+      }
+      resolvePromise({ code, stdout, stderr });
+    });
+  });
+}
+
+/** Provider keys live only here, encrypted by the operating system; the renderer can never read one. */
+const credentialVault = new CredentialVault({ filePath: join(app.getPath("userData"), "provider-credentials.json"), safeStorage });
+
+const providerSetup = new ProviderSetupService({
+  run: runProviderSetupSidecar,
+  environment: () => process.env,
+  hasWorkspace: () => Boolean(activeWorkspacePath),
+  vault: credentialVault,
+});
+
+/**
+ * Chat sees LM Studio models and, when a provider is configured with a key available, that provider's
+ * model too. The cloud runtime reads its model name from the saved setup and its key and host from the
+ * credential vault; routing only picks the destination.
+ */
+const cloudChat = new CloudChatRuntime({
+  setup: () => providerSetup.cloudSetup(),
+  vault: credentialVault,
+  environment: () => process.env,
+});
+function chatRuntime(): RoutingChatRuntime {
+  return new RoutingChatRuntime(modelService, cloudChat);
 }
 
 type PrivilegedHandler<C extends import("../shared/ipc-channel-contracts.ts").IpcRequestChannel> = (event: IpcMainInvokeEvent, ...args: import("../shared/ipc-channel-contracts.ts").InferChannelArgs<C>) => unknown;
@@ -692,6 +765,11 @@ function registerIpc(): void {
   handlePrivileged(IPC.visualizationMapExport, (_event, input: MapExportRequest) =>
     exportVerifiedMap(activeWorkspacePath, input, verifyExportedMapImage));
 
+  handlePrivileged(IPC.providerSetupOverview, () => providerSetup.overview());
+  handlePrivileged(IPC.providerSetupApply, (_event, request) => providerSetup.apply(request));
+  handlePrivileged(IPC.providerSetupVerify, (_event, request) => providerSetup.verify(request));
+  handlePrivileged(IPC.providerSetupStoreKey, (_event, request) => providerSetup.storeKey(request));
+  handlePrivileged(IPC.providerSetupRemoveKey, (_event, request) => providerSetup.removeKey(request));
   handlePrivileged(IPC.materialsStatus, () => runMaterialsCli(["materials", "status", "--json"]));
   handlePrivileged(IPC.materialsSearch, (_event, input: Record<string, unknown>) => mcpClient.call("proto_materials_search", input,undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}}));
   handlePrivileged(IPC.journalList,(_event,input)=>{if(!executionLedger)throw new Error("Execution journal is not ready.");return executionLedger.journal.listPage(input);});
