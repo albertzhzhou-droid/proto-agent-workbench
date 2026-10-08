@@ -65,11 +65,18 @@ export function createProviderSetupPreview(): ProviderSetupApi {
       recommended_provider: "local-lm-studio",
     },
     status,
+    vault: { available: false, reason: "Preview mode cannot use the operating system credential vault; use the desktop app.", stored: [] },
   });
 
   return {
     async overview() {
       return overview();
+    },
+    async storeKey() {
+      throw new Error("Storing a key needs the desktop app; the preview never accepts one.");
+    },
+    async removeKey() {
+      return { removed: false };
     },
     async apply(request: ProviderSetupRequest): Promise<ProviderSetupResult> {
       const entry = PREVIEW_PROVIDERS.find((provider) => provider.id === request.provider)!;

@@ -60,6 +60,8 @@ export const IPC = {
   providerSetupOverview: "provider-setup:overview",
   providerSetupApply: "provider-setup:apply",
   providerSetupVerify: "provider-setup:verify",
+  providerSetupStoreKey: "provider-setup:store-key",
+  providerSetupRemoveKey: "provider-setup:remove-key",
   materialsStatus: "materials:status",
   materialsSearch: "materials:search",
   materialsGet: "materials:get",

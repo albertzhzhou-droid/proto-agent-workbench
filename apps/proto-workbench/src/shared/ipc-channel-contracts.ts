@@ -7,7 +7,7 @@ import { chatRequestLimit } from "./research-request-limits.ts";
 import { ComputeStudiesRequestSchema } from "./compute-studies.ts";
 import { ResearchFiguresRequestSchema } from "./research-figures.ts";
 import { ResearchWorkflowsRequestSchema, RESEARCH_WORKFLOW_REQUEST_BYTES } from "./research-workflows.ts";
-import { ProviderSetupOverviewSchema, ProviderSetupRequestSchema, ProviderSetupResultSchema, ProviderVerifyRequestSchema, ProviderVerifyResultSchema } from "./provider-setup.ts";
+import { ProviderRemoveKeyRequestSchema, ProviderRemoveKeyResultSchema, ProviderSetupOverviewSchema, ProviderSetupRequestSchema, ProviderSetupResultSchema, ProviderStoreKeyRequestSchema, ProviderVerifyRequestSchema, ProviderVerifyResultSchema, StoredKeySummarySchema } from "./provider-setup.ts";
 import type { WorkbenchApi } from "./contracts.ts";
 
 export type IpcPushChannel = typeof IPC.modelsChanged | typeof IPC.threadStream;
@@ -274,6 +274,8 @@ export const IPC_ARGUMENT_SCHEMAS = {
   [IPC.providerSetupOverview]: noArguments,
   [IPC.providerSetupApply]: z.tuple([ProviderSetupRequestSchema]),
   [IPC.providerSetupVerify]: z.tuple([ProviderVerifyRequestSchema]),
+  [IPC.providerSetupStoreKey]: z.tuple([ProviderStoreKeyRequestSchema]),
+  [IPC.providerSetupRemoveKey]: z.tuple([ProviderRemoveKeyRequestSchema]),
   [IPC.materialsStatus]: noArguments,
   [IPC.materialsSearch]: z.tuple([MATERIALS_SEARCH]),
   [IPC.computeCatalog]: z.tuple([z.string().regex(/^[a-z][a-z0-9_]*$/).max(100).optional()]),
@@ -393,7 +395,7 @@ export const IPC_API_CHANNELS = {
   visualization: {exportMap: IPC.visualizationMapExport},
   designs: {prepareEdit: IPC.designPrepareEdit, commitEdit: IPC.designCommitEdit},
   proteinStructures: {list: IPC.structureList, search: IPC.structureSearch, fetch: IPC.structureFetch, importFile: IPC.structureImport, read: IPC.structureRead, saveView: IPC.structureSaveView, readView: IPC.structureReadView, prepareTracks: IPC.structurePrepareTracks, exportTracks: IPC.structureExportTracks, exportImage: IPC.structureExportImage},
-  providerSetup: {overview: IPC.providerSetupOverview, apply: IPC.providerSetupApply, verify: IPC.providerSetupVerify},
+  providerSetup: {overview: IPC.providerSetupOverview, apply: IPC.providerSetupApply, verify: IPC.providerSetupVerify, storeKey: IPC.providerSetupStoreKey, removeKey: IPC.providerSetupRemoveKey},
   materials: {status: IPC.materialsStatus, search: IPC.materialsSearch, get: IPC.materialsGet, facets: IPC.materialsFacets, materialize: IPC.materialsMaterialize, activate: IPC.materialsActivate, rollback: IPC.materialsRollback, sync: IPC.materialsSync, importFile: IPC.materialsImport, diff: IPC.materialsDiff, review: IPC.materialsReview},
   threads: {create: IPC.threadsCreate, list: IPC.threadsList, get: IPC.threadsGet, update: IPC.threadsUpdate, send: IPC.threadsSend, cancel: IPC.threadsCancel},
   files: {pickAttachments: IPC.filesPickAttachments, pickWorkspace: IPC.filesPickWorkspace, pickModelRoot: IPC.filesPickModelRoot, pickRuntime: IPC.filesPickRuntime, list: IPC.filesList, open: IPC.filesOpen, reveal: IPC.filesReveal, read: IPC.filesRead, search: IPC.filesSearch, proposePatch: IPC.filesProposePatch, applyApprovedPatch: IPC.filesApplyPatch, rejectPatch: IPC.filesRejectPatch, reconcilePatchOperation: IPC.filesReconcilePatchOperation, resumePatchValidation: IPC.filesResumePatchValidation, prepareCheckpointRestore: IPC.filesPrepareCheckpointRestore},
@@ -444,6 +446,8 @@ const PROVIDER_SETUP_RESULTS: Record<string, z.ZodType> = {
   [IPC.providerSetupOverview]: ProviderSetupOverviewSchema,
   [IPC.providerSetupApply]: ProviderSetupResultSchema,
   [IPC.providerSetupVerify]: ProviderVerifyResultSchema,
+  [IPC.providerSetupStoreKey]: StoredKeySummarySchema,
+  [IPC.providerSetupRemoveKey]: ProviderRemoveKeyResultSchema,
 };
 export const IPC_CHANNEL_CONTRACTS = Object.fromEntries(Object.entries(IPC_ARGUMENT_SCHEMAS).map(([name,args]) => {
   const result = name === IPC.journalInspect ? JOURNAL_INSPECTION : name === IPC.journalReconcile ? JOURNAL_RECORD : name === IPC.journalList ? z.object({records:z.array(JOURNAL_RECORD),total:z.number().int().nonnegative(),unknownEffects:z.number().int().nonnegative()}) : PROVIDER_SETUP_RESULTS[name] ?? z.unknown();

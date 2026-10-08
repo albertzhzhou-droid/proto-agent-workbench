@@ -499,7 +499,7 @@ def parse_gateway_url(value: str) -> dict[str, Any]:
         raise InitError("INVALID_BASE_URL", "--base-url must start with http:// or https:// and name a host.")
     if parts.username is not None or parts.password is not None or parts.query or parts.fragment or "@" in parts.netloc:
         raise InitError("INVALID_BASE_URL", "--base-url must not contain credentials, a query string or a fragment.")
-    if not _URL_PATH.fullmatch(path) or ".." in path.split("/"):
+    if not _URL_PATH.fullmatch(path) or any(segment in {".", ".."} for segment in path.split("/")):
         raise InitError("INVALID_BASE_URL", "--base-url path contains unsupported characters.")
     loopback = _is_loopback(host)
     if not loopback:
@@ -519,6 +519,16 @@ def parse_gateway_url(value: str) -> dict[str, Any]:
         "loopback": loopback,
         "base_url": f"{parts.scheme}://{authority}{path}",
     }
+
+
+def gateway_origin(base_url: str) -> str:
+    """Scheme, host and port with default ports dropped, so two spellings of one origin compare equal."""
+
+    endpoint = parse_gateway_url(base_url)
+    port = endpoint["port"]
+    default = 443 if endpoint["scheme"] == "https" else 80
+    host = f"[{endpoint['host']}]" if ":" in endpoint["host"] else endpoint["host"]
+    return f"{endpoint['scheme']}://{host}" + (f":{port}" if port is not None and port != default else "")
 
 
 def _is_ip_literal(host: str) -> bool:
@@ -1026,6 +1036,7 @@ def verify_provider(
     model: str | None = None,
     config: Mapping[str, Any] | None = None,
     approve_host: str | None = None,
+    bind_origin: str | None = None,
     opener: urllib.request.OpenerDirector | None = None,
 ) -> dict[str, Any]:
     """One approved, credentialed ``GET`` that probes the exact configured model.
@@ -1062,6 +1073,9 @@ def verify_provider(
         if not isinstance(stored_url, str) or not isinstance(model, str):
             return refuse("bad-url", "CONFIG_REQUIRED", "Gateway verification needs the stored workspace configuration (run init apply first).")
         pinned = parse_gateway_url(stored_url)
+        if bind_origin is not None and gateway_origin(stored_url) != bind_origin:
+            # The caller holds the trusted binding for the key; the saved address no longer matches it.
+            return refuse("bad-url", "BINDING_MISMATCH", "The saved gateway address differs from the address this key was stored for.")
         if not pinned["loopback"] and approve_host != pinned["host"]:
             return refuse("unknown", "HOST_NOT_APPROVED", f"Pass --approve-host {pinned['host']} to send the key to this gateway.")
         protocol = config.get("protocol")
@@ -1314,6 +1328,7 @@ def _add_init_subcommands(init_parser: argparse.ArgumentParser) -> None:
     verify.add_argument("--out-dir", default=str(DEFAULT_INIT_DIR))
     verify.add_argument("--approve-network", action="store_true", help="Authorize this single request.")
     verify.add_argument("--approve-host", help="custom-gateway only: the exact gateway host that may receive the key.")
+    verify.add_argument("--bind-origin", help="custom-gateway only: refuse unless the saved gateway origin equals this trusted value.")
 
 
 def _emit(payload: Mapping[str, Any], *, stderr: bool = False) -> None:
@@ -1389,6 +1404,7 @@ def run_init_command(args: argparse.Namespace) -> int:
             model=args.model,
             config=config,
             approve_host=args.approve_host,
+            bind_origin=args.bind_origin,
         )
         if config is not None and not args.model and not args.key_env:
             record_verification(verdict, workspace_root=root, out_dir=args.out_dir)

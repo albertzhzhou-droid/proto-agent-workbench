@@ -253,3 +253,25 @@ export function nextActionText(action: ProviderSetupStatus["next"][number]): str
       return "Review the setup status.";
   }
 }
+
+/**
+ * A stored key is bound to the address it was stored for. If the form now points somewhere else,
+ * say so, because the key will not follow it.
+ */
+export function keyBindingNote(
+  stored: { host: string; baseUrl?: string } | undefined,
+  formBaseUrl: string | undefined,
+): string | undefined {
+  if (!stored?.baseUrl || formBaseUrl === undefined || !formBaseUrl.trim()) return undefined;
+  const origin = (value: string): string | undefined => {
+    try {
+      return new URL(value.trim()).origin;
+    } catch {
+      return undefined;
+    }
+  };
+  const bound = origin(stored.baseUrl);
+  const typed = origin(formBaseUrl);
+  if (!bound || !typed || bound === typed) return undefined;
+  return `The stored key is bound to ${bound}. It will not be sent to ${typed}; remove it and store it again for that address.`;
+}

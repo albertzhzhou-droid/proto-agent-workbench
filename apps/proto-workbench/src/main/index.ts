@@ -1,7 +1,7 @@
 import { readModelSnapshot } from "../shared/model-status.ts";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, safeStorage, session, shell, type IpcMainInvokeEvent, type OpenDialogOptions } from "electron";
 import { lstat, realpath, stat } from "node:fs/promises";
 import { mkdirSync, realpathSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
@@ -64,6 +64,7 @@ import {
   validateMaterializedPartsResult,
 } from "./services/materials-admin.ts";
 import { minimalChildEnvironment, terminateOwnedProcessTree } from "./services/process-security.ts";
+import { CredentialVault } from "./services/credential-vault.ts";
 import { PROVIDER_SETUP_OUTPUT_LIMIT, ProviderSetupService, type SidecarResult } from "./services/provider-setup.ts";
 import { activateStartupWorkspace } from "./services/workspace-bootstrap.ts";
 import {
@@ -405,10 +406,14 @@ function runProviderSetupSidecar(args: readonly string[], extraEnv: NodeJS.Proce
   });
 }
 
+/** Provider keys live only here, encrypted by the operating system; the renderer can never read one. */
+const credentialVault = new CredentialVault({ filePath: join(app.getPath("userData"), "provider-credentials.json"), safeStorage });
+
 const providerSetup = new ProviderSetupService({
   run: runProviderSetupSidecar,
   environment: () => process.env,
   hasWorkspace: () => Boolean(activeWorkspacePath),
+  vault: credentialVault,
 });
 
 type PrivilegedHandler<C extends import("../shared/ipc-channel-contracts.ts").IpcRequestChannel> = (event: IpcMainInvokeEvent, ...args: import("../shared/ipc-channel-contracts.ts").InferChannelArgs<C>) => unknown;
@@ -747,6 +752,8 @@ function registerIpc(): void {
   handlePrivileged(IPC.providerSetupOverview, () => providerSetup.overview());
   handlePrivileged(IPC.providerSetupApply, (_event, request) => providerSetup.apply(request));
   handlePrivileged(IPC.providerSetupVerify, (_event, request) => providerSetup.verify(request));
+  handlePrivileged(IPC.providerSetupStoreKey, (_event, request) => providerSetup.storeKey(request));
+  handlePrivileged(IPC.providerSetupRemoveKey, (_event, request) => providerSetup.removeKey(request));
   handlePrivileged(IPC.materialsStatus, () => runMaterialsCli(["materials", "status", "--json"]));
   handlePrivileged(IPC.materialsSearch, (_event, input: Record<string, unknown>) => mcpClient.call("proto_materials_search", input,undefined,undefined,{scope:{surface:"design",scopeId:randomUUID()}}));
   handlePrivileged(IPC.journalList,(_event,input)=>{if(!executionLedger)throw new Error("Execution journal is not ready.");return executionLedger.journal.listPage(input);});

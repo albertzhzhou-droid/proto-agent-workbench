@@ -187,13 +187,13 @@ const Verdict = z.object({
   metrics: Metrics,
 });
 
-export const ProviderSetupOverviewSchema = z.object({
+/** What the Python helper returns. The vault section is added by the main process, never by the helper. */
+export const SidecarOverviewSchema = z.object({
   ok: z.literal(true),
   catalog: ProviderCatalog,
   detection: Detection,
   status: Status,
 });
-export type ProviderSetupOverview = z.infer<typeof ProviderSetupOverviewSchema>;
 
 export const ProviderSetupResultSchema = z.object({
   ok: z.boolean(),
@@ -223,10 +223,126 @@ export type ProviderDetection = z.infer<typeof Detection>;
 export type SavedProviderConfiguration = z.infer<typeof Configuration>;
 
 export interface ProviderSetupApi {
-  /** Catalog, offline detection and current status in one sidecar call. */
+  /** Catalog, offline detection, current status and credential-vault state in one call. */
   overview(): Promise<ProviderSetupOverview>;
+  /** Store a key in the operating system's credential vault, bound to its host. The key is never returned. */
+  storeKey(request: ProviderStoreKeyRequest): Promise<StoredKeySummary>;
+  /** Delete a stored key. */
+  removeKey(request: ProviderRemoveKeyRequest): Promise<{ removed: boolean }>;
   /** Write the configuration (idempotent). Never sends a credential anywhere. */
   apply(request: ProviderSetupRequest): Promise<ProviderSetupResult>;
   /** One approved, credentialed request to the provider's pinned host. */
   verify(request: ProviderVerifyRequest): Promise<ProviderVerifyResult>;
 }
+
+// ---------------------------------------------------------------------------
+// Credential storage and where a stored key may be sent
+// ---------------------------------------------------------------------------
+
+/** Hosts that official providers' keys may reach. Pinned in code, never read from a workspace file. */
+export const PROVIDER_PINNED_HOST = Object.freeze({
+  "anthropic-api": "api.anthropic.com",
+  "openai-api": "api.openai.com",
+} as const);
+
+/** Printable, no whitespace, bounded: rejects pasted prose, multi-line input and header-injection attempts. */
+export const API_KEY_SHAPE = /^[\x21-\x7e]{16,512}$/;
+
+export interface GatewayEndpoint {
+  readonly baseUrl: string;
+  readonly host: string;
+  readonly origin: string;
+  readonly loopback: boolean;
+}
+
+export class GatewayEndpointError extends Error {
+  readonly code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "GatewayEndpointError";
+    this.code = code;
+  }
+}
+
+const URL_PATH = /^(?:\/[A-Za-z0-9._~-]+)*$/;
+const MAX_BASE_URL_CHARS = 256;
+
+function isLoopbackHost(host: string): boolean {
+  if (host === "localhost" || host.endsWith(".localhost") || host === "::1") return true;
+  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+}
+
+/**
+ * The gateway rules, mirrored from the Python helper (which stays authoritative for configuration):
+ * remote hosts must be https DNS names; plain http is accepted only for loopback; no credentials,
+ * query string or fragment. The main process applies this to the address a user types when storing
+ * a key, so the host a key is bound to never comes from an editable workspace file.
+ */
+export function parseGatewayEndpoint(value: string): GatewayEndpoint {
+  if (typeof value !== "string" || !value.trim() || value.length > MAX_BASE_URL_CHARS) {
+    throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address must be an http(s) URL of at most 256 characters.");
+  }
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address is not a valid URL.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address must start with https:// or http://.");
+  }
+  if (url.username || url.password || url.search || url.hash || value.includes("@")) {
+    throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address must not contain credentials, a query string or a fragment.");
+  }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  // `new URL` resolves "." and ".." and decodes dot escapes before any check could see them, so the
+  // path is validated as the user typed it, not as the parser rewrote it.
+  const rawPath = value.trim().replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, "").split(/[?#]/)[0].replace(/\/+$/, "");
+  const path = rawPath;
+  if (!host) throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address must name a host.");
+  if (!URL_PATH.test(path) || path.split("/").some(segment => segment === "." || segment === "..")) {
+    throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway address path contains unsupported characters.");
+  }
+  const loopback = isLoopbackHost(host);
+  if (!loopback) {
+    if (url.protocol !== "https:") throw new GatewayEndpointError("GATEWAY_REQUIRES_HTTPS", "Remote gateways must use https://; plain http:// is allowed only for loopback.");
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) throw new GatewayEndpointError("GATEWAY_IP_LITERAL", "Remote gateways must be addressed by DNS name, not an IP address.");
+    if (!DNS_HOST.test(host)) throw new GatewayEndpointError("INVALID_BASE_URL", "The gateway host is not a valid DNS name.");
+  }
+  return { baseUrl: `${url.origin}${path}`, host, origin: url.origin, loopback };
+}
+
+export const ProviderStoreKeyRequestSchema = z.object({
+  provider: z.enum(["anthropic-api", "openai-api", "custom-gateway"]),
+  // The only place a secret crosses IPC. It is bounded, never echoed, and never logged.
+  key: z.string().regex(API_KEY_SHAPE),
+  baseUrl: z.string().trim().min(1).max(MAX_BASE_URL_CHARS).optional(),
+  protocol: z.enum(GATEWAY_PROTOCOLS).optional(),
+}).strict();
+export type ProviderStoreKeyRequest = z.infer<typeof ProviderStoreKeyRequestSchema>;
+
+export const ProviderRemoveKeyRequestSchema = z.object({
+  provider: z.enum(["anthropic-api", "openai-api", "custom-gateway"]),
+}).strict();
+export type ProviderRemoveKeyRequest = z.infer<typeof ProviderRemoveKeyRequestSchema>;
+
+/** What the interface may know about a stored key: that it exists, where it can go, and when. Never the key. */
+export const StoredKeySummarySchema = z.object({
+  provider: z.enum(["anthropic-api", "openai-api", "custom-gateway"]),
+  host: z.string(),
+  baseUrl: z.string().optional(),
+  protocol: z.enum(GATEWAY_PROTOCOLS).optional(),
+  storedAt: z.string(),
+});
+export type StoredKeySummary = z.infer<typeof StoredKeySummarySchema>;
+
+export const VaultStatusSchema = z.object({
+  available: z.boolean(),
+  reason: z.string().optional(),
+  stored: z.array(StoredKeySummarySchema),
+});
+export type VaultStatus = z.infer<typeof VaultStatusSchema>;
+
+export const ProviderSetupOverviewSchema = SidecarOverviewSchema.extend({ vault: VaultStatusSchema });
+export type ProviderSetupOverview = z.infer<typeof ProviderSetupOverviewSchema>;
+export const ProviderRemoveKeyResultSchema = z.object({ removed: z.boolean() });

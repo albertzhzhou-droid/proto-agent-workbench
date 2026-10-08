@@ -230,6 +230,8 @@ const api: IpcWorkbenchApi = {
     overview: () => invoke(IPC.providerSetupOverview),
     apply: request => invoke(IPC.providerSetupApply, request),
     verify: request => invoke(IPC.providerSetupVerify, request),
+    storeKey: request => invoke(IPC.providerSetupStoreKey, request),
+    removeKey: request => invoke(IPC.providerSetupRemoveKey, request),
   },
   materials: {
     status: () => invoke(IPC.materialsStatus),

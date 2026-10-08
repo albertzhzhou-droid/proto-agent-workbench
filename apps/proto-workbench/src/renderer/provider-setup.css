@@ -72,6 +72,17 @@
 .provider-fields input::placeholder { font-family: var(--font-sans); }
 .provider-fields .segmented-control { flex-wrap: wrap; width: fit-content; max-width: 100%; }
 
+/* Key entry: a password field and its single action, or the fact that a key is stored. */
+.provider-key-body { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.provider-key-body input[type="password"] {
+  flex: 1; min-width: 0; min-height: 30px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 5px;
+  background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 11px;
+}
+.provider-key-body input[type="password"]::placeholder { font-family: var(--font-sans); }
+.provider-key-state { display: inline-flex; align-items: center; gap: 6px; flex: 1; min-width: 0; color: var(--text-soft); font-size: 11px; overflow-wrap: anywhere; }
+.provider-key-state > svg { flex-shrink: 0; color: var(--green); }
+.provider-key-state.is-unavailable { color: var(--amber); line-height: 1.5; }
+
 .provider-hint { margin: 10px 0 0; padding-left: 10px; border-left: 2px solid var(--line-strong); color: var(--text-soft); font-size: 10px; line-height: 1.6; }
 
 .provider-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 14px; }

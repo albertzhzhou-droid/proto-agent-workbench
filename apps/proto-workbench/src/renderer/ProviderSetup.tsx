@@ -1,10 +1,11 @@
 import { Check, CircleAlert, Cloud, LoaderCircle, RefreshCw, Save } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ProviderSetupOverview,
   ProviderSetupRequest,
   ProviderSetupResult,
   ProviderSetupStatus,
+  ProviderStoreKeyRequest,
   ProviderVerifyRequest,
   ProviderVerifyResult,
 } from "../shared/provider-setup.ts";
@@ -16,6 +17,8 @@ import {
   defaultProvider,
   detectionLabel,
   formFromStatus,
+  gatewayAddressProblem,
+  keyBindingNote,
   isDirty,
   nextActionText,
   providerName,
@@ -37,7 +40,7 @@ function messageOf(error: unknown): string {
   return String(error instanceof Error ? error.message : error).replace(/^(?:Error invoking remote method '[^']+':\s*)?(?:Error:\s*)?/i, "");
 }
 
-type Busy = "load" | "save" | "verify" | undefined;
+type Busy = "load" | "save" | "verify" | "key" | undefined;
 
 /**
  * One owner of setup state for both the Settings section and the Launchpad strip. Each action is
@@ -91,6 +94,34 @@ function useProviderSetup() {
         setBusy(undefined);
       }
     },
+    async storeKey(request: ProviderStoreKeyRequest) {
+      setBusy("key");
+      setError(undefined);
+      setSaved(undefined);
+      setVerdict(undefined);
+      try {
+        const summary = await workbenchApi().providerSetup.storeKey(request);
+        setOverview(await workbenchApi().providerSetup.overview());
+        return summary;
+      } catch (failure) {
+        setError(messageOf(failure));
+        return undefined;
+      } finally {
+        setBusy(undefined);
+      }
+    },
+    async removeKey(provider: ProviderStoreKeyRequest["provider"]) {
+      setBusy("key");
+      setError(undefined);
+      try {
+        await workbenchApi().providerSetup.removeKey({ provider });
+        setOverview(await workbenchApi().providerSetup.overview());
+      } catch (failure) {
+        setError(messageOf(failure));
+      } finally {
+        setBusy(undefined);
+      }
+    },
     async verify(request: ProviderVerifyRequest) {
       setBusy("verify");
       setError(undefined);
@@ -126,6 +157,7 @@ export function ProviderSetupSection({ onWorkspaceNeeded }: { onWorkspaceNeeded?
   const { overview } = setup;
   const [form, setForm] = useState<ProviderForm>();
   const [confirming, setConfirming] = useState(false);
+  const keyInput = useRef<HTMLInputElement>(null);
 
   const status = overview?.status;
   const catalog = overview?.catalog;
@@ -144,11 +176,30 @@ export function ProviderSetupSection({ onWorkspaceNeeded }: { onWorkspaceNeeded?
   const desktop = workbenchDataMode() === "desktop";
   const ordered = useMemo(() => [...(catalog?.providers ?? [])].sort((a, b) => a.security_rank - b.security_rank), [catalog]);
 
+  const vault = overview?.vault;
+  const keyProvider = entry && (entry.kind === "api_key_env" || entry.kind === "api_gateway") ? (entry.id as ProviderStoreKeyRequest["provider"]) : undefined;
+  const storedKey = keyProvider ? vault?.stored.find((candidate) => candidate.provider === keyProvider) : undefined;
+  const gatewayReady = entry?.kind !== "api_gateway" || (form ? !gatewayAddressProblem(form.baseUrl) && Boolean(form.protocol) : false);
+  const bindingNote = form ? keyBindingNote(storedKey, entry?.kind === "api_gateway" ? form.baseUrl : undefined) : undefined;
+
   const patch = (change: Partial<ProviderForm>) => setForm((current) => (current ? { ...current, ...change } : current));
 
   const save = async () => {
     if (!form || !catalog) return;
     await setup.save(buildRequest(form, catalog, Boolean(status?.initialized)));
+  };
+  const storeKey = async () => {
+    const input = keyInput.current;
+    if (!input || !form || !keyProvider) return;
+    const key = input.value;
+    // The value leaves the field immediately, whether or not storing succeeds; it is never kept in state.
+    input.value = "";
+    if (!key) return;
+    await setup.storeKey({
+      provider: keyProvider,
+      key,
+      ...(entry?.kind === "api_gateway" ? { baseUrl: form.baseUrl.trim(), ...(form.protocol ? { protocol: form.protocol } : {}) } : {}),
+    });
   };
   const verify = async () => {
     if (!target) return;
@@ -233,6 +284,29 @@ export function ProviderSetupSection({ onWorkspaceNeeded }: { onWorkspaceNeeded?
                 </div>
               </>
             )}
+            {keyProvider && vault && (
+              <div className="settings-field provider-key-field">
+                <label htmlFor="provider-key">API key</label>
+                <div className="provider-key-body">
+                  {!vault.available ? (
+                    <span className="provider-key-state is-unavailable">{vault.reason}</span>
+                  ) : storedKey ? (
+                    <>
+                      <span className="provider-key-state"><Check size={12} aria-hidden="true" />Stored in the system credential vault · {storedKey.host} · {formatWhen(storedKey.storedAt)}</span>
+                      <button className="quiet-button compact-command" type="button" disabled={busy !== undefined} onClick={() => void setup.removeKey(keyProvider)}>Remove</button>
+                    </>
+                  ) : (
+                    <>
+                      <input id="provider-key" ref={keyInput} type="password" name="provider-api-key" autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="Paste once. Stored encrypted by your system, never shown again." disabled={busy !== undefined || !desktop} />
+                      <button className="secondary-button compact-command" type="button" disabled={busy !== undefined || !desktop || !gatewayReady} onClick={() => void storeKey()}>
+                        {busy === "key" ? <LoaderCircle className="spin" size={12} /> : null}Store key
+                      </button>
+                    </>
+                  )}
+                </div>
+                <output>{!vault.available ? "Use the environment variable" : storedKey ? "Sent only to this host" : desktop ? "Or set the variable instead" : "Desktop app only"}</output>
+              </div>
+            )}
             {entry && entry.kind !== "subscription_cli" && (
               <div className="settings-field">
                 <label htmlFor="provider-model">Model ID</label>
@@ -271,11 +345,14 @@ export function ProviderSetupSection({ onWorkspaceNeeded }: { onWorkspaceNeeded?
             </div>
           </div>
 
-          {entry && (entry.kind === "api_key_env" || entry.kind === "api_gateway") && keyPresent === false && (
+          {entry && keyProvider && keyPresent === false && (
             <p className="provider-hint">
-              {entry.credential_environment} is not visible to this app. Export it in the shell that starts Proto, or in your system environment, then choose Recheck. Proto never asks for or stores the key.
+              {vault?.available
+                ? `No key is stored for ${providerName(entry.id)} and ${entry.credential_environment} is not visible to this app. Store the key in the system vault above, or export the variable in the shell that starts Proto and choose Recheck.`
+                : `${entry.credential_environment} is not visible to this app. Export it in the shell that starts Proto, or in your system environment, then choose Recheck.`}
             </p>
           )}
+          {bindingNote && <p className="provider-hint" role="note">{bindingNote}</p>}
 
           <div className="provider-actions">
             <button className="primary-button" type="button" onClick={() => void save()} disabled={busy !== undefined || Boolean(problem) || !dirty}>
@@ -296,7 +373,7 @@ export function ProviderSetupSection({ onWorkspaceNeeded }: { onWorkspaceNeeded?
             <div className="provider-confirm" role="alertdialog" aria-labelledby="provider-confirm-title" aria-describedby="provider-confirm-body">
               <strong id="provider-confirm-title">Send one request to {target.host}?</strong>
               <p id="provider-confirm-body">
-                Proto reads {target.variable} from this app&apos;s environment and sends it to {target.host} to check the key
+                {storedKey ? "Proto reads the key stored in your system credential vault" : `Proto reads ${target.variable} from this app's environment`} and sends it to {target.host} to check the key
                 {status?.configuration?.provider.model ? ` and the model ${status.configuration.provider.model}` : ""}. Redirects are refused, nothing is stored, and the result shows only the provider&apos;s status.
               </p>
               <div className="provider-confirm-actions">

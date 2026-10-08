@@ -25,6 +25,7 @@ from proto_agent.workspace_init import (
     classify_http_status,
     config_digest,
     detect_environment,
+    gateway_origin,
     load_manifest_provider,
     looks_like_secret,
     parse_gateway_url,
@@ -276,6 +277,8 @@ class GatewayAndModelTests(unittest.TestCase):
             "https://gateway.example.com/v1?x=1": "INVALID_BASE_URL",
             "https://gateway.example.com/v1#frag": "INVALID_BASE_URL",
             "https://gateway.example.com/../etc": "INVALID_BASE_URL",
+            "https://gateway.example.com/./v1": "INVALID_BASE_URL",
+            "https://gateway.example.com/v1/.": "INVALID_BASE_URL",
             "https://gateway.example.com:99999": "INVALID_BASE_URL",
             "ftp://gateway.example.com": "INVALID_BASE_URL",
             "https://": "INVALID_BASE_URL",
@@ -474,6 +477,28 @@ class ModelProbeVerifyTests(unittest.TestCase):
         request = opener.requests[0]
         self.assertEqual(request.full_url, "https://gw.example.com/v1/models/team%2Fmodel-1")
         self.assertEqual(request.get_header("Authorization"), "Bearer tok_abcdefghijkl")
+
+    def test_a_trusted_binding_refuses_an_edited_gateway_address(self) -> None:
+        env = {"PROTO_GATEWAY_API_KEY": "tok_abcdefghijkl"}
+        opener = _FakeOpener(_FakeResponse(b"{}"))
+        edited = {**self.GATEWAY, "base_url": "https://evil.example.com/v1", "host": "evil.example.com"}
+        refused = verify_provider("custom-gateway", approve_network=True, environ=env, config=edited, approve_host="evil.example.com",
+                                  bind_origin=gateway_origin("https://gw.example.com/v1"), opener=opener)
+        self.assertEqual((refused["code"], refused["category"]), ("BINDING_MISMATCH", "bad-url"))
+        self.assertEqual(opener.requests, [])
+        accepted = verify_provider("custom-gateway", approve_network=True, environ=env, config=self.GATEWAY, approve_host="gw.example.com",
+                                   bind_origin=gateway_origin("https://GW.example.com:443/v1/"), opener=opener)
+        self.assertTrue(accepted["ok"], accepted)
+        loopback = {**self.GATEWAY, "base_url": "http://127.0.0.1:9999/v1", "host": "127.0.0.1", "loopback": True, "credential_environment": None}
+        other_port = verify_provider("custom-gateway", approve_network=True, environ={}, config=loopback,
+                                     bind_origin=gateway_origin("http://127.0.0.1:11434/v1"), opener=opener)
+        self.assertEqual(other_port["code"], "BINDING_MISMATCH", "a loopback key is bound to its port too")
+
+    def test_origins_ignore_default_ports_case_and_path(self) -> None:
+        self.assertEqual(gateway_origin("https://GW.Example.com:443/v1/"), "https://gw.example.com")
+        self.assertEqual(gateway_origin("http://localhost:80"), "http://localhost")
+        self.assertEqual(gateway_origin("https://gw.example.com:8443/x"), "https://gw.example.com:8443")
+        self.assertEqual(gateway_origin("http://[::1]:8000"), "http://[::1]:8000")
 
     def test_gateway_without_the_models_route_is_incompatible_not_missing(self) -> None:
         error = urllib.error.HTTPError("https://gw.example.com/v1/models/m", 404, "nf", {}, io.BytesIO(b""))

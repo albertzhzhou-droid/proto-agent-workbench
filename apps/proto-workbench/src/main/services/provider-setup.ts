@@ -2,19 +2,27 @@ import type { z } from "zod";
 import {
   PRESENCE_SENTINEL,
   PROVIDER_CREDENTIAL_ENVIRONMENT,
-  ProviderSetupOverviewSchema,
+  ProviderRemoveKeyRequestSchema,
   ProviderSetupRequestSchema,
   ProviderSetupResultSchema,
+  ProviderStoreKeyRequestSchema,
   ProviderVerifyRequestSchema,
   ProviderVerifyResultSchema,
+  SidecarOverviewSchema,
+  parseGatewayEndpoint,
   type CredentialProviderId,
+  type ProviderRemoveKeyRequest,
   type ProviderSetupApi,
   type ProviderSetupOverview,
   type ProviderSetupRequest,
   type ProviderSetupResult,
+  type ProviderStoreKeyRequest,
   type ProviderVerifyRequest,
   type ProviderVerifyResult,
+  type StoredKeySummary,
+  type VaultStatus,
 } from "../../shared/provider-setup.ts";
+import { CredentialVaultError, type ReadResult, type StoreRequest, type VaultProvider } from "./credential-vault.ts";
 
 /**
  * Main-process side of API-first provider setup.
@@ -23,9 +31,13 @@ import {
  * ambient environment. What it does receive is decided here:
  *
  *  - presence-only commands (overview, apply) see a sentinel for each default key variable that is
- *    set, so the interface can say "found" without any secret leaving this process;
- *  - `verify` receives the one real variable belonging to the provider the user is verifying, and
- *    nothing else, so a tampered workspace file cannot select a different secret to send.
+ *    set in the environment or held in the credential vault, so the interface can say "found"
+ *    without any secret leaving this process;
+ *  - `verify` receives the one real key belonging to the provider being verified (from the vault,
+ *    else the environment) and nothing else, so a tampered workspace file cannot select a different
+ *    secret to send;
+ *  - a stored gateway key is bound to the address the user typed when storing it. The helper is told
+ *    that origin and refuses to send if the editable workspace file now says otherwise.
  */
 
 export interface SidecarResult {
@@ -34,6 +46,15 @@ export interface SidecarResult {
   readonly stderr: string;
 }
 export type SidecarRunner = (args: readonly string[], env: NodeJS.ProcessEnv, timeoutMs: number) => Promise<SidecarResult>;
+
+/** The slice of the credential vault this service uses, so tests can supply a plain object. */
+export interface VaultPort {
+  status(): Promise<VaultStatus>;
+  list(): Promise<StoredKeySummary[]>;
+  store(request: StoreRequest): Promise<StoredKeySummary>;
+  read(provider: VaultProvider): Promise<ReadResult | undefined>;
+  remove(provider: VaultProvider): Promise<boolean>;
+}
 
 export class ProviderSetupError extends Error {
   readonly code: string;
@@ -49,16 +70,19 @@ export const PROVIDER_SETUP_OUTPUT_LIMIT = 1024 * 1024;
 
 const ALL_CREDENTIAL_VARIABLES: readonly string[] = Object.values(PROVIDER_CREDENTIAL_ENVIRONMENT);
 
-/** Sentinel values for the default key variables that are set, for presence-only commands. */
-export function presenceEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+/** Sentinel values for default key variables that are set or vault-held, for presence-only commands. */
+export function presenceEnvironment(source: NodeJS.ProcessEnv, stored: readonly string[] = []): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   for (const name of ALL_CREDENTIAL_VARIABLES) {
     if ((source[name] ?? "").trim()) env[name] = PRESENCE_SENTINEL;
   }
+  for (const provider of stored) {
+    if (isCredentialProvider(provider)) env[PROVIDER_CREDENTIAL_ENVIRONMENT[provider]] = PRESENCE_SENTINEL;
+  }
   return env;
 }
 
-/** The single real credential for a provider, or nothing when it is unset. */
+/** The single real credential from the environment for a provider, or nothing when it is unset. */
 export function verifyEnvironment(provider: CredentialProviderId, source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const name = PROVIDER_CREDENTIAL_ENVIRONMENT[provider];
   const value = source[name];
@@ -88,8 +112,14 @@ export function setupArguments(request: ProviderSetupRequest): string[] {
   ];
 }
 
-export function verifyArguments(request: ProviderVerifyRequest): string[] {
-  return ["verify", ...option("provider", request.provider), "--approve-network", ...option("approve-host", request.approveHost)];
+export function verifyArguments(request: ProviderVerifyRequest, binding?: { readonly host?: string; readonly origin?: string }): string[] {
+  return [
+    "verify",
+    ...option("provider", request.provider),
+    "--approve-network",
+    ...option("approve-host", binding?.host ?? request.approveHost),
+    ...option("bind-origin", binding?.origin),
+  ];
 }
 
 function diagnosticFrom(stderr: string): ProviderSetupError | undefined {
@@ -126,10 +156,19 @@ function parseSidecar<S extends z.ZodType>(result: SidecarResult, schema: S): z.
   throw diagnosticFrom(result.stderr) ?? new ProviderSetupError("SIDECAR_FAILED", `The setup helper exited with code ${result.code ?? "unknown"}.`);
 }
 
+function vaultFailure(error: unknown): ProviderSetupError {
+  if (error instanceof CredentialVaultError) return new ProviderSetupError(error.code, error.message);
+  if (error && typeof error === "object" && "code" in error && typeof (error as { code: unknown }).code === "string" && error instanceof Error) {
+    return new ProviderSetupError((error as { code: string }).code, error.message);
+  }
+  return new ProviderSetupError("VAULT_FAILED", "The credential vault could not complete the request.");
+}
+
 export interface ProviderSetupServiceOptions {
   readonly run: SidecarRunner;
   readonly environment: () => NodeJS.ProcessEnv;
   readonly hasWorkspace: () => boolean;
+  readonly vault: VaultPort;
 }
 
 export class ProviderSetupService implements ProviderSetupApi {
@@ -145,17 +184,64 @@ export class ProviderSetupService implements ProviderSetupApi {
     }
   }
 
+  private async vaultStatus(): Promise<VaultStatus> {
+    try {
+      return await this.options.vault.status();
+    } catch (error) {
+      // A damaged credential file must not take the whole setup page down.
+      return { available: false, reason: vaultFailure(error).message, stored: [] };
+    }
+  }
+
+  private async storedProviders(): Promise<string[]> {
+    try {
+      return (await this.options.vault.list()).map((entry) => entry.provider);
+    } catch {
+      return [];
+    }
+  }
+
+  private async presence(): Promise<NodeJS.ProcessEnv> {
+    return presenceEnvironment(this.options.environment(), await this.storedProviders());
+  }
+
   async overview(): Promise<ProviderSetupOverview> {
     this.requireWorkspace();
-    const result = await this.options.run(["overview"], presenceEnvironment(this.options.environment()), PROVIDER_SETUP_TIMEOUTS_MS.local);
-    return parseSidecar(result, ProviderSetupOverviewSchema);
+    const [result, vault] = await Promise.all([
+      this.presence().then((env) => this.options.run(["overview"], env, PROVIDER_SETUP_TIMEOUTS_MS.local)),
+      this.vaultStatus(),
+    ]);
+    return { ...parseSidecar(result, SidecarOverviewSchema), vault };
   }
 
   async apply(request: ProviderSetupRequest): Promise<ProviderSetupResult> {
     this.requireWorkspace();
     const checked = ProviderSetupRequestSchema.parse(request);
-    const result = await this.options.run(setupArguments(checked), presenceEnvironment(this.options.environment()), PROVIDER_SETUP_TIMEOUTS_MS.local);
+    const result = await this.options.run(setupArguments(checked), await this.presence(), PROVIDER_SETUP_TIMEOUTS_MS.local);
     return parseSidecar(result, ProviderSetupResultSchema);
+  }
+
+  async storeKey(request: ProviderStoreKeyRequest): Promise<StoredKeySummary> {
+    const checked = ProviderStoreKeyRequestSchema.parse(request);
+    try {
+      return await this.options.vault.store({
+        provider: checked.provider,
+        key: checked.key,
+        ...(checked.baseUrl ? { baseUrl: checked.baseUrl } : {}),
+        ...(checked.protocol ? { protocol: checked.protocol } : {}),
+      });
+    } catch (error) {
+      throw vaultFailure(error);
+    }
+  }
+
+  async removeKey(request: ProviderRemoveKeyRequest): Promise<{ removed: boolean }> {
+    const checked = ProviderRemoveKeyRequestSchema.parse(request);
+    try {
+      return { removed: await this.options.vault.remove(checked.provider) };
+    } catch (error) {
+      throw vaultFailure(error);
+    }
   }
 
   async verify(request: ProviderVerifyRequest): Promise<ProviderVerifyResult> {
@@ -164,7 +250,26 @@ export class ProviderSetupService implements ProviderSetupApi {
     if (!isCredentialProvider(checked.provider)) {
       throw new ProviderSetupError("VERIFY_NOT_APPLICABLE", "Only API-key and gateway providers have a live check.");
     }
-    const result = await this.options.run(verifyArguments(checked), verifyEnvironment(checked.provider, this.options.environment()), PROVIDER_SETUP_TIMEOUTS_MS.verify);
+    let stored: ReadResult | undefined;
+    try {
+      stored = await this.options.vault.read(checked.provider);
+    } catch (error) {
+      throw vaultFailure(error);
+    }
+    if (stored && checked.provider === "custom-gateway") {
+      // What the user approved must be what the key is bound to; the helper checks the saved file too.
+      if (checked.approveHost !== undefined && checked.approveHost !== stored.summary.host) {
+        throw new ProviderSetupError("HOST_NOT_APPROVED", `The stored key is bound to ${stored.summary.host}, not ${checked.approveHost}.`);
+      }
+    }
+    const variable = PROVIDER_CREDENTIAL_ENVIRONMENT[checked.provider];
+    const env = stored ? { [variable]: stored.key } : verifyEnvironment(checked.provider, this.options.environment());
+    let binding: { host?: string; origin?: string } | undefined;
+    if (stored && checked.provider === "custom-gateway" && stored.summary.baseUrl) {
+      const endpoint = parseGatewayEndpoint(stored.summary.baseUrl);
+      binding = { origin: endpoint.origin, ...(endpoint.loopback ? {} : { host: endpoint.host }) };
+    }
+    const result = await this.options.run(verifyArguments(checked, binding), env, PROVIDER_SETUP_TIMEOUTS_MS.verify);
     return parseSidecar(result, ProviderVerifyResultSchema);
   }
 }
