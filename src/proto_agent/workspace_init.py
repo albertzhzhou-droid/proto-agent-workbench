@@ -35,6 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from .artifact_readers import select_artifact_reader
 from .json_validation import JsonValidationError, strict_json_loads
 from .security import (
     MAX_JSON_FILE_BYTES,
@@ -486,8 +487,9 @@ def _manifest_problems(manifest: Any) -> list[str]:
     if not isinstance(manifest, dict):
         return ["Manifest must be a JSON object."]
     problems: list[str] = []
-    if manifest.get("schema_version") != WORKSPACE_SCHEMA_VERSION:
-        problems.append(f"schema_version must be {WORKSPACE_SCHEMA_VERSION}.")
+    reader = select_artifact_reader("proto-agent.workspace", manifest)
+    if reader["readOnly"]:
+        problems.append(f"{reader['code']}: schema_version {reader['schemaVersion']!r} is not a current workspace manifest.")
     provider = manifest.get("provider")
     if not isinstance(provider, dict) or provider.get("id") not in PROVIDERS:
         problems.append("provider.id is missing or unknown.")

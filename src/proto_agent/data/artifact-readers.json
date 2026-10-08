@@ -381,6 +381,14 @@
       "versionField": "schema"
     },
     {
+      "family": "proto-agent.workspace",
+      "current": [
+        "proto-agent.workspace.v1"
+      ],
+      "legacy": [],
+      "versionField": "schema_version"
+    },
+    {
       "family": "proto-workbench.context-retention",
       "current": [
         "proto-workbench.context-retention.v1"
