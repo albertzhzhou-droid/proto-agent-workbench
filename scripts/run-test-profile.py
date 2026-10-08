@@ -27,7 +27,7 @@ PROFILES = {
         "test_model_catalog", "test_protein", "test_provenance",
         "test_security_boundaries", "test_security_stress", "test_skill_sdk",
         "test_source_search", "test_structure_prediction_import", "test_test_profiles", "test_tool_contracts", "test_topology_contract",
-        "test_workbench_bridge_retirement", "test_workflow_provenance",
+        "test_workbench_bridge_retirement", "test_workflow_provenance", "test_workspace_init",
     ),
     "compute": (
         "test_compute_bio", "test_compute_inference", "test_compute_ports", "test_compute_research",

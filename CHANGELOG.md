@@ -14,6 +14,24 @@ version matches. Full release acceptance remains outstanding. The previous
 Windows version was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
 
+## 2026-10-08 — API-first workspace initialization (unreleased source)
+
+- Added `proto-agent init` (`detect`, `plan`, `apply`, `status`, `verify`): selects an
+  Anthropic/OpenAI API key path, a user-pinned custom gateway, a Claude/Codex subscription
+  path (delegated to the provider CLI, workspace-isolated by default), or the earlier
+  local-only LM Studio path, which now ranks last, and writes Python, R and Proto
+  configuration under `.proto/workspace/`.
+- Secret values are never accepted, written or echoed: configuration records only
+  environment-variable names, generated files are scanned for secret-shaped content and
+  content-addressed so drift is detectable, and repeating an identical `apply` is a no-op.
+- `verify` needs `--approve-network`, probes the exact configured model with one request,
+  uses code-pinned provider hosts (a gateway also needs `--approve-host`), refuses
+  redirects, and reports a typed failure category and counts only.
+- `status` separates integrity from readiness and lists machine-actionable next steps.
+- Registered the provider paths in `connectors/proto_workbench.json` (and the packaged
+  template) and the `proto-agent.workspace` schema family. See
+  [API-first initialization](docs/api-first-init.md).
+
 ## 2026-09-24 — Managed Study architecture increment (unreleased source)
 
 - Added a shared Study desk with source-bound plan compilation, current execution
