@@ -295,7 +295,7 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
     const workflowMcp = mcpClient;
     researchWorkflows = createResearchWorkflowService(canonicalWorkspace,()=>workflowMcp.fork());
     chemScience=new ChemScienceService({repoRoot,workspacePath:canonicalWorkspace,journal:executionLedger.journal,runtimeRoot:join(chemistryResources,'runtime/chem-workbench'),integrationRoot:join(chemistryResources,'runtime/chem-integration')});
-    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: chatRuntime(), readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience) });
+    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: chatRuntime(), readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience,{open:(sessionId,request)=>agentService.openChatCodeRun(sessionId,request)}) });
     agentService = new AgentService(
       database,
       modelService,

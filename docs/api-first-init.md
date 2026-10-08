@@ -144,8 +144,9 @@ Settings has a **Model provider setup** section, and the Launchpad shows a one-l
 strip. Both follow the workbench's paper and ink theme in light and dark, using only shared
 tokens, the shared type hierarchy and the shared motion vocabulary.
 
-* The interface never takes, shows or stores a key. It reads provider choices from `init catalog`,
-  shows only whether the variable is visible to the app, and writes through `init start`.
+* The interface takes a key once, hands it to the main process and clears the field. It never
+  shows or keeps a stored key. Keys live only in the operating-system credential vault (see below).
+  Provider choices come from `init catalog`, and workspace settings are written through `init start`.
 * Verification is a deliberate step: **Verify with provider…** opens a consent panel naming the
   host and the variable, and only **Send request** sends anything. The host is pinned in code for
   Anthropic and OpenAI, and for a gateway it is the saved host.
@@ -156,10 +157,43 @@ tokens, the shared type hierarchy and the shared motion vocabulary.
   to verify it from the command line.
 * A desktop app started from the dock or start menu may not see variables exported in a shell. If
   the panel reports the variable as not visible, start Proto from a shell that exports it.
-* Chat in this release still runs against LM Studio. Provider setup records and verifies the
-  configuration; it does not yet route chat to a cloud provider, so it never changes the LM Studio
-  readiness steps.
+* Chat can use a configured cloud model (see below). Provider setup records and verifies the
+  configuration, and never changes the LM Studio readiness steps.
 * The browser preview is session-only: it writes nothing, reads no key and cannot verify.
+
+## Credential vault
+
+Keys are stored with Electron `safeStorage` (Keychain, DPAPI or a Linux secret service). The file
+holds ciphertext and routing metadata only, and a backend that would write plain text is refused.
+Each key is bound when stored to the one host it may reach: pinned in code for Anthropic and OpenAI,
+and the address you typed for a gateway. A workspace file cannot change where a stored key is sent.
+The interface can learn that a key exists, its host and when it was stored, never the key.
+`verify` and cloud Chat read the key in the main process only. For the official Anthropic and OpenAI
+hosts an environment variable still works when no key is stored; a stored key takes precedence. A
+gateway key is never read from the environment, because there would be no trusted host to bind it to.
+
+## Cloud Chat
+
+A model from a configured provider appears in Chat in its own **Cloud provider** group. The main
+process translates the chat loop to the Anthropic Messages API or to OpenAI chat completions (and
+compatible gateways), refuses redirects, bounds every stream, and keeps the key out of logs.
+
+* Nothing is sent until you approve the conversation. The approval states what leaves the computer:
+  your messages, attached documents and tool results, including the contents of workspace files the
+  assistant reads. Switching model or conversation revokes it, and the main process enforces it
+  whatever the interface does.
+* Cloud context is capped at 128k tokens whatever the provider advertises.
+* The OpenAI Responses protocol is not supported for Chat yet.
+* Node's `fetch` in the main process does not use system proxy settings.
+
+## Coding in Chat
+
+The **Code** workflow adds `code_propose_patch`. The assistant reads files with `workspace_read`,
+then proposes the complete new content of one file per call. The proposal is a pending diff in
+Research runs, which is the same review, apply-with-checkpoint and validation path used for Design
+changes. Nothing is written until you approve it. The tool refuses a file the conversation has not
+read in its current state, and refuses `.proto` designs, `.git`, `node_modules` and `build/`.
+Existing code-execution and network switches keep gating anything the assistant runs.
 
 ## Design lineage
 

@@ -14,6 +14,19 @@ version matches. Full release acceptance remains outstanding. The previous
 Windows version was `0.1.2`. `Stage N`, `rN`, `vN`, and
 `native-pass-N` are internal iteration identifiers, not new semantic versions.
 
+## 2026-10-10 — Credential vault, cloud Chat and coding proposals (unreleased source)
+
+- API keys can be stored in the operating-system credential vault (Electron `safeStorage`),
+  bound to one host, never returned to the interface, and used by `verify` and cloud Chat.
+- Chat can use a configured Anthropic, OpenAI or gateway model. Nothing is sent until the person
+  approves the conversation, enforced in the main process. The chat loop is translated to the
+  Anthropic Messages API and OpenAI chat completions, with redirect refusal and bounded streams.
+- Added a **Code** workflow and `code_propose_patch`: the assistant proposes a file's new content as
+  a pending diff in Research runs; the person approves, applies with a checkpoint and validates it.
+  `.proto` designs, `.git`, `node_modules` and `build/` are refused.
+- Added tests: `cloud-chat`, `chat-code-proposals`, store approval gating; the first two are in the
+  mandatory CI list.
+
 ## 2026-10-09 — Provider setup in the desktop app (unreleased source)
 
 - Added **Model provider setup** to Settings and a provider strip to the Launchpad, in the

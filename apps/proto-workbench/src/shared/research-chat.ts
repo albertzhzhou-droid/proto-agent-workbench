@@ -80,7 +80,7 @@ export interface ResearchUnlocatableValue {
   missingReason?:string;
 }
 export interface ResearchPlanItem { content: string; status: "pending" | "in_progress" | "completed" | "cancelled" }
-export type ResearchWorkflow = "explore" | "literature" | "analysis" | "reproduce";
+export type ResearchWorkflow = "explore" | "literature" | "analysis" | "reproduce" | "code";
 export interface ResearchChatSession {
   id: string; title: string; modelId?: string; createdAt: string; updatedAt: string;
   messages: ResearchMessage[]; documents: ResearchDocument[];

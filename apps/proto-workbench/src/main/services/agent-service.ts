@@ -216,6 +216,27 @@ export class AgentService {
     );
   }
 
+  /**
+   * The review record for code a Chat conversation proposes. It is an ordinary run with a goal event, so the
+   * existing patch review, checkpoint and restore surfaces apply to it unchanged. Opening it again for the
+   * same conversation returns the same run; the model never chooses the run id.
+   */
+  openChatCodeRun(sessionId: string, request: string): string {
+    const digest = createHash("sha256").update(`proto-chat-code:${sessionId}`).digest("hex");
+    const runId = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+    if (!this.workspacePath) throw new Error("No workspace is open for this conversation.");
+    if (!this.database.getRunEvents(runId).some((event) => event.stage === "goal")) {
+      const goal = this.createEvent(runId, "goal", "user", "Chat code proposal", {
+        summary: request.replace(/\s+/g, " ").trim().slice(0, 600) || "Code proposed in Chat",
+        status: "completed",
+        payload: { source: "research-chat", sessionId, workspacePath: this.workspacePath, serviceSessionId: this.serviceSessionId },
+      });
+      goal.completedAt = goal.createdAt;
+      this.database.appendEvent(goal);
+    }
+    return runId;
+  }
+
   assertRunInWorkspace(runId: string): void {
     if (!this.canAccessRun(runId)) {
       throw new Error("This run belongs to a different workspace service.");
