@@ -64,6 +64,8 @@ import {
   validateMaterializedPartsResult,
 } from "./services/materials-admin.ts";
 import { minimalChildEnvironment, terminateOwnedProcessTree } from "./services/process-security.ts";
+import { CloudChatRuntime } from "./services/cloud-chat-runtime.ts";
+import { RoutingChatRuntime } from "./services/chat-runtime-router.ts";
 import { CredentialVault } from "./services/credential-vault.ts";
 import { PROVIDER_SETUP_OUTPUT_LIMIT, ProviderSetupService, type SidecarResult } from "./services/provider-setup.ts";
 import { activateStartupWorkspace } from "./services/workspace-bootstrap.ts";
@@ -293,7 +295,7 @@ function createWorkspaceServices(workspacePath: string): Promise<void> {
     const workflowMcp = mcpClient;
     researchWorkflows = createResearchWorkflowService(canonicalWorkspace,()=>workflowMcp.fork());
     chemScience=new ChemScienceService({repoRoot,workspacePath:canonicalWorkspace,journal:executionLedger.journal,runtimeRoot:join(chemistryResources,'runtime/chem-workbench'),integrationRoot:join(chemistryResources,'runtime/chem-integration')});
-    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: modelService, readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience) });
+    researchChat = new ResearchChatService({ databasePath: join(app.getPath("userData"), "research-chat.sqlite"), workspace: canonicalWorkspace, runtime: chatRuntime(), readFile: path => chatFiles.read(path), openLink:url=>shell.openExternal(url), tools: new ResearchToolBridge(mcpClient,chatFiles,()=>readSettings().modules,chemScience) });
     agentService = new AgentService(
       database,
       modelService,
@@ -415,6 +417,20 @@ const providerSetup = new ProviderSetupService({
   hasWorkspace: () => Boolean(activeWorkspacePath),
   vault: credentialVault,
 });
+
+/**
+ * Chat sees LM Studio models and, when a provider is configured with a key available, that provider's
+ * model too. The cloud runtime reads its model name from the saved setup and its key and host from the
+ * credential vault; routing only picks the destination.
+ */
+const cloudChat = new CloudChatRuntime({
+  setup: () => providerSetup.cloudSetup(),
+  vault: credentialVault,
+  environment: () => process.env,
+});
+function chatRuntime(): RoutingChatRuntime {
+  return new RoutingChatRuntime(modelService, cloudChat);
+}
 
 type PrivilegedHandler<C extends import("../shared/ipc-channel-contracts.ts").IpcRequestChannel> = (event: IpcMainInvokeEvent, ...args: import("../shared/ipc-channel-contracts.ts").InferChannelArgs<C>) => unknown;
 

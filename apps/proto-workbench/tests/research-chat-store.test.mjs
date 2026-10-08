@@ -138,3 +138,57 @@ test("in-scope failures release busy and remain visible to the current session",
   await store.getState().select("A");store.getState().setDraft("Retryable prompt");await store.getState().send();
   assert.equal(store.getState().error,"Current model failure");assert.equal(store.getState().draft,"Retryable prompt");assert.equal(store.getState().busy,false);
 });
+
+const cloudModel={id:"cloud:anthropic-api:claude-sonnet-5-5",name:"claude-sonnet-5-5",modelKind:"llm",loadedInstances:[],loadState:"unloaded",metadataSource:"cloud",provider:"cloud",toolCapability:"unknown",
+  cloud:{provider:"anthropic-api",host:"api.anthropic.com",protocol:"anthropic-messages",keySource:"vault"}};
+const localModel={id:"local-a",name:"local-a",modelKind:"llm",loadedInstances:[],loadState:"unloaded",metadataSource:"lmstudio",provider:"lmstudio",toolCapability:"unknown"};
+
+test("a cloud model is never sent to before the conversation is approved, and the refusal names the host",async()=>{
+  const sends=[];
+  install(input=>input.action==="send"?(sends.push(input),Promise.resolve({})):fallback(input));
+  store.setState({models:[localModel,cloudModel],selectedModel:cloudModel.id,session:session("S"),draft:"hello"});
+  await store.getState().send();
+  assert.deepEqual(sends,[]);
+  assert.match(store.getState().error,/api\.anthropic\.com/);
+  assert.equal(store.getState().draft,"hello");
+});
+
+test("approval is sent as a literal true and is bound to the model, conversation and revocation",async()=>{
+  const sends=[];
+  install(input=>input.action==="send"?(sends.push(input),Promise.resolve({session:session("S",2)})):fallback(input));
+  store.setState({models:[localModel,cloudModel],selectedModel:cloudModel.id,session:session("S"),draft:"hello"});
+  store.getState().approveCloud();
+  assert.deepEqual(store.getState().cloudApproval,{modelId:cloudModel.id,host:"api.anthropic.com"});
+  await store.getState().send();
+  assert.equal(sends.length,1);
+  assert.equal(sends[0].cloudEgressApproved,true);
+  store.getState().setModel("local-a");
+  assert.equal(store.getState().cloudApproval,undefined,"switching models drops the approval");
+  store.setState({selectedModel:cloudModel.id,draft:"again"});
+  await store.getState().send();
+  assert.equal(sends.length,1,"returning to the cloud model needs a fresh approval");
+  store.getState().approveCloud();
+  store.getState().revokeCloud();
+  assert.equal(store.getState().cloudApproval,undefined);
+});
+
+test("approval does not outlive the conversation it was given in, and local sends carry no approval field",async()=>{
+  const sends=[];
+  install(input=>input.action==="send"?(sends.push(input),Promise.resolve({session:session("S",2)})):input.action==="create"?Promise.resolve({session:session("N")}):fallback(input));
+  store.setState({models:[localModel,cloudModel],selectedModel:cloudModel.id,session:session("S")});
+  store.getState().approveCloud();
+  await store.getState().select("B");
+  assert.equal(store.getState().cloudApproval,undefined,"selecting another conversation revokes");
+  store.setState({selectedModel:cloudModel.id});
+  store.getState().approveCloud();
+  await store.getState().newChat();
+  assert.equal(store.getState().cloudApproval,undefined,"a new conversation revokes");
+  store.getState().approveCloud();
+  store.getState().reset();
+  assert.equal(store.getState().cloudApproval,undefined,"reset revokes");
+  store.setState({models:[localModel],selectedModel:"local-a",session:session("S"),draft:"local"});
+  store.getState().approveCloud();
+  assert.equal(store.getState().cloudApproval,undefined,"only a cloud model can be approved");
+  await store.getState().send();
+  assert.equal("cloudEgressApproved" in sends.at(-1),false);
+});

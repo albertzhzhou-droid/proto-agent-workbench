@@ -9,6 +9,7 @@ import {
   ProviderVerifyRequestSchema,
   ProviderVerifyResultSchema,
   SidecarOverviewSchema,
+  SidecarStatusSchema,
   parseGatewayEndpoint,
   type CredentialProviderId,
   type ProviderRemoveKeyRequest,
@@ -22,6 +23,7 @@ import {
   type StoredKeySummary,
   type VaultStatus,
 } from "../../shared/provider-setup.ts";
+import type { CloudSetupView } from "./cloud-chat-runtime.ts";
 import { CredentialVaultError, type ReadResult, type StoreRequest, type VaultProvider } from "./credential-vault.ts";
 
 /**
@@ -171,11 +173,41 @@ export interface ProviderSetupServiceOptions {
   readonly vault: VaultPort;
 }
 
+/** How long the saved provider choice is reused. Chat refreshes its model list every few seconds. */
+export const CLOUD_SETUP_CACHE_MS = 30_000;
+
 export class ProviderSetupService implements ProviderSetupApi {
   private readonly options: ProviderSetupServiceOptions;
+  private cloudCache: { readonly at: number; readonly view: CloudSetupView | undefined } | undefined;
 
   constructor(options: ProviderSetupServiceOptions) {
     this.options = options;
+  }
+
+  private invalidateCloudSetup(): void {
+    this.cloudCache = undefined;
+  }
+
+  /**
+   * The saved cloud provider and model name, for the chat model list. Only the name is taken from the
+   * workspace file; where a key may go is decided by the credential vault, not by anything read here.
+   */
+  async cloudSetup(now: number = Date.now()): Promise<CloudSetupView | undefined> {
+    if (!this.options.hasWorkspace()) return undefined;
+    if (this.cloudCache && now - this.cloudCache.at < CLOUD_SETUP_CACHE_MS) return this.cloudCache.view;
+    let view: CloudSetupView | undefined;
+    try {
+      const result = await this.options.run(["status"], await this.presence(), PROVIDER_SETUP_TIMEOUTS_MS.local);
+      const status = parseSidecar(result, SidecarStatusSchema);
+      const saved = status.configuration?.provider;
+      if (status.initialized && saved && (saved.kind === "api_key_env" || saved.kind === "api_gateway") && saved.model) {
+        view = { provider: saved.id as CloudSetupView["provider"], model: saved.model };
+      }
+    } catch {
+      view = undefined;
+    }
+    this.cloudCache = { at: now, view };
+    return view;
   }
 
   private requireWorkspace(): void {
@@ -218,11 +250,13 @@ export class ProviderSetupService implements ProviderSetupApi {
     this.requireWorkspace();
     const checked = ProviderSetupRequestSchema.parse(request);
     const result = await this.options.run(setupArguments(checked), await this.presence(), PROVIDER_SETUP_TIMEOUTS_MS.local);
+    this.invalidateCloudSetup();
     return parseSidecar(result, ProviderSetupResultSchema);
   }
 
   async storeKey(request: ProviderStoreKeyRequest): Promise<StoredKeySummary> {
     const checked = ProviderStoreKeyRequestSchema.parse(request);
+    this.invalidateCloudSetup();
     try {
       return await this.options.vault.store({
         provider: checked.provider,
@@ -237,6 +271,7 @@ export class ProviderSetupService implements ProviderSetupApi {
 
   async removeKey(request: ProviderRemoveKeyRequest): Promise<{ removed: boolean }> {
     const checked = ProviderRemoveKeyRequestSchema.parse(request);
+    this.invalidateCloudSetup();
     try {
       return { removed: await this.options.vault.remove(checked.provider) };
     } catch (error) {

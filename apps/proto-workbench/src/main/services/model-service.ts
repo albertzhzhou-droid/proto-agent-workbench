@@ -221,6 +221,8 @@ export class ModelService {
   async probeToolCapability(modelId: string, signal?: AbortSignal): Promise<ModelToolCapabilityProbe> {
     const model = this.requireModel(modelId);
     const startedAt = new Date().toISOString();
+    // Cloud models are never loaded by this app, so there is no instance for a local probe to bind to.
+    if (model.provider === "cloud") throw new Error("Cloud models are not probed here; they have no loaded instance.");
     const provider = model.provider ?? "llama.cpp";
     const probe: ModelToolCapabilityProbe = {
       schema: "proto-workbench.model-tool-probe.v1",

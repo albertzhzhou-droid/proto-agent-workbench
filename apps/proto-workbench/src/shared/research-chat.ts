@@ -125,7 +125,7 @@ export type ResearchChatRequest =
   | { action: "claim_save"; sessionId: string; expectedRevision: number; claimId?: string; text: string; evidence: ResearchClaimEvidenceInput[] }
   | { action: "claim_review"; sessionId: string; expectedRevision: number; claimId: string; state: ResearchClaimReviewState }
   | { action: "connect"; modelId: string; instanceId?: string }
-  | { action: "send"; sessionId: string; modelId: string; content: string; documentIds: string[]; workflow?: ResearchWorkflow; toolsEnabled?: boolean; networkEnabled?: boolean; codeExecutionEnabled?: boolean }
+  | { action: "send"; sessionId: string; modelId: string; content: string; documentIds: string[]; workflow?: ResearchWorkflow; toolsEnabled?: boolean; networkEnabled?: boolean; codeExecutionEnabled?: boolean; cloudEgressApproved?: true }
   | { action: "document"; sessionId: string; name: string; content: string; documentId?: string; expectedRevision?: number }
   | { action: "read"; sessionId: string; path: string }
   | { action: "import"; sessionId: string; name: string; base64: string }

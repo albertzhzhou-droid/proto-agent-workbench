@@ -72,6 +72,7 @@ import { deriveRunStageStates, RUN_STAGES } from "./stage-state.ts";
 import { useWorkbenchStore, type BootstrapPhase } from "./store.ts";
 import { ComputeWorkspace } from "./ComputeWorkspace.tsx";
 import { ChatWorkspace } from "./ChatWorkspace.tsx";
+import { useResearchChat } from "./research-chat-store.ts";
 import { ChemWorkspace } from "./ChemWorkspace.tsx";
 import { ChemNavigation, type ChemDesignTarget, type ChemComputeSection, type ChemUtility } from "./ChemNavigation.tsx";
 import { ChemComputationWorkspace } from "./ChemComputationWorkspace.tsx";
@@ -343,6 +344,7 @@ function TopBar({ mode, edition, onEdition, chemTitle, children }: { mode: Workb
     document.addEventListener("pointerdown", close); document.addEventListener("keydown", escape);
     return () => {document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape);};
   }, []);
+  const chatCloudHost = useResearchChat(s => s.models.find(model => model.id === s.selectedModel)?.cloud?.host);
   const settings = useWorkbenchStore(s => s.settings);
   const chooseWorkspace = useWorkbenchStore(s => s.chooseWorkspace);
   const toggleModels = useWorkbenchStore(s => s.toggleModels);
@@ -352,7 +354,7 @@ function TopBar({ mode, edition, onEdition, chemTitle, children }: { mode: Workb
   return <header className="topbar">
     <WorkbenchSwitcher edition={edition} onChange={onEdition}/>
     <span className="breadcrumb-divider">/</span><span className="workspace-location">{edition === "chem" ? chemTitle : mode === "chat" ? "Chat" : mode === "compute" ? "Compute" : names[currentView]}</span>
-    {edition === "proto" && dataMode === "preview" && <span className="global-preview-badge" title={mode === "chat" ? "Chat uses the real local LM Studio server and saves conversations in this source workspace." : "Design workspace content uses development fixtures. LM Studio inventory is read live."}>{mode === "chat" ? "Local chat · LM Studio" : "Preview · live models"}</span>}
+    {edition === "proto" && dataMode === "preview" && <span className="global-preview-badge" title={mode === "chat" ? chatCloudHost ? `Chat is using a cloud model at ${chatCloudHost}. Nothing is sent until you approve the conversation.` : "Chat uses the real local LM Studio server and saves conversations in this source workspace." : "Design workspace content uses development fixtures. LM Studio inventory is read live."}>{mode === "chat" ? chatCloudHost ? `Cloud chat · ${chatCloudHost}` : "Local chat · LM Studio" : "Preview · live models"}</span>}
     <div className="topbar-spacer"/>
     {edition === "proto" && <><button id="mission-command-trigger" className="topbar-control command-trigger" type="button" onClick={() => window.dispatchEvent(new Event("proto:commands"))} title="Commands (Ctrl+K)"><Search size={15}/><span>Search & commands</span><kbd>Ctrl K</kbd></button>
     <details ref={toolsMenu} className="workspace-tools-menu"><summary title="Research tools"><SlidersHorizontal size={16}/><span>Tools</span></summary><div onClick={() => {if(toolsMenu.current) toolsMenu.current.open = false;}}>

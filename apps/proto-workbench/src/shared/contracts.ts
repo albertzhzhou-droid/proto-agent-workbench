@@ -195,8 +195,13 @@ export interface ModelDescriptor {
   pinned: boolean;
   lastUsedAt?: string;
   error?: string;
-  metadataSource: "gguf" | "filename" | "lmstudio";
-  provider?: "lmstudio" | "llama.cpp";
+  metadataSource: "gguf" | "filename" | "lmstudio" | "cloud";
+  provider?: "lmstudio" | "llama.cpp" | "cloud";
+  /**
+   * Present only on a configured cloud provider's model. It is never loaded, never "connected" in
+   * the LM Studio sense, and using it sends the conversation off this computer after approval.
+   */
+  cloud?: import("./cloud-chat.ts").CloudModelInfo;
   providerModelId?: string;
   publisher?: string;
   modelKind?: "llm" | "embedding";

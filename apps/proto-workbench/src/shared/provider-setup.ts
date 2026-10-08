@@ -187,6 +187,9 @@ const Verdict = z.object({
   metrics: Metrics,
 });
 
+/** `init status` output on its own, for callers that need only the saved configuration. */
+export const SidecarStatusSchema = Status;
+
 /** What the Python helper returns. The vault section is added by the main process, never by the helper. */
 export const SidecarOverviewSchema = z.object({
   ok: z.literal(true),
