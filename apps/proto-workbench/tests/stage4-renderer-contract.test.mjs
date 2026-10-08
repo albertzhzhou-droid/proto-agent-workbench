@@ -40,7 +40,8 @@ test("preview fixtures have a global, persistent safety boundary", async () => {
   assert.match(topBar, /const dataMode = workbenchDataMode\(\)/);
   assert.match(topBar, /dataMode === "preview" && <span className="global-preview-badge"/);
   assert.match(topBar, /Design workspace content uses development fixtures\. LM Studio inventory is read live\./);
-  assert.match(topBar, /mode === "chat" \? "Local chat · LM Studio" : "Preview · live models"/);
+  assert.match(topBar, /mode === "chat" \? chatCloudHost \? `Cloud chat · \$\{chatCloudHost\}` : "Local chat · LM Studio" : "Preview · live models"/);
+  assert.match(topBar, /Nothing is sent until you approve the conversation\./);
   assert.match(styles, /\.global-preview-badge\s*\{/);
 });
 
